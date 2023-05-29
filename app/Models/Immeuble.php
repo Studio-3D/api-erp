@@ -1,0 +1,32 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Immeuble extends Model
+{
+    use HasFactory;
+    protected $fillable = [
+        'nom',
+        'titre_foncier',
+        'projet_id',
+        'tranche_id',
+        'bloc_id',
+    ];
+    public function projet()
+    {
+        return $this->belongsTo(Projet::class);
+    }
+
+    public function tranche()
+    {
+        return $this->belongsTo(Tranche::class);
+    }
+
+    public function bloc()
+    {
+        return $this->belongsTo(Bloc::class);
+    }
+}
