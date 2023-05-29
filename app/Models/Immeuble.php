@@ -14,7 +14,6 @@ class Immeuble extends Model
         'projet_id',
         'tranche_id',
         'bloc_id',
-        // Add other fillable columns here
     ];
     public function projet()
     {
