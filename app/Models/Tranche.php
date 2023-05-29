@@ -13,7 +13,6 @@ class Tranche extends Model
         'projet_id',
         'tranche_id',
         'titre_foncier',
-        // Add other fillable columns here
     ];
 
     public function projet()
