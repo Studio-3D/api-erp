@@ -18,7 +18,6 @@ return new class extends Migration
             $table->unsignedBigInteger('projet_id');
             $table->unsignedBigInteger('tranche_id');
             $table->unsignedBigInteger('bloc_id');
-            // Add other columns as needed
             $table->timestamps();
 
             $table->foreign('projet_id')->references('id')->on('projets');
