@@ -27,10 +27,6 @@ return new class extends Migration
             $table->integer('nbr_blocs');
             $table->integer('nbr_immeubles');
             $table->integer('nbr_bien');
-
-
-
-
             $table->timestamps();
         });
     }
