@@ -15,6 +15,6 @@ class TypeProjet extends Model
     protected $dates = ['deleted_at'];
     public function projet()
     {
-        return $this->belongsTo(Projet::class);
+        return $this->hasMany(Projet::class);
     }
 }
