@@ -12,9 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('type_projets', function (Blueprint $table) {
+             $table->id();
             $table->string('type');
-            $table->unsignedBigInteger('projet_id');
-            $table->foreign('projet_id')->references('id')->on('projets');
             $table->timestamps();
             $table->softDeletes();
         });
