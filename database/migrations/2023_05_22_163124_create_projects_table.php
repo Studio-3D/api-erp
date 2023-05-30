@@ -22,7 +22,7 @@ return new class extends Migration
             $table->float('surface_terrain');
             $table->float('prix_acquisition');
             $table->integer('limite_annulation_reservation');
-            $table->foreign('type_id')->references('id')->on('type_projet');
+        //    $table->foreign('type_id')->references('id')->on('type_projet');   notice u  have  add this column  manually into  database
             $table->integer('nbr_tranches');
             $table->integer('nbr_blocs');
             $table->integer('nbr_immeubles');
