@@ -15,9 +15,6 @@ return new class extends Migration
             $table->id();
             $table->string('nom');
             $table->string('titre_foncier');
-            $table->unsignedBigInteger('projet_id');
-            $table->unsignedBigInteger('tranche_id');
-            $table->unsignedBigInteger('bloc_id');
             $table->timestamps();
             $table->softDeletes();
             $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
