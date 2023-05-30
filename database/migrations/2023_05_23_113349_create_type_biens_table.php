@@ -14,8 +14,6 @@ return new class extends Migration
         Schema::create('type_biens', function (Blueprint $table) {
             $table->id();
             $table->string('type');
-            $table->unsignedBigInteger('projet_id');
-            $table->foreign('projet_id')->references('id')->on('projets');
             $table->timestamps();
             $table->softDeletes();
         });
