@@ -10,10 +10,7 @@ class TypeBien extends Model
 {
     use HasFactory, SoftDeletes;
 
-    protected $fillable = [
-        'type',
-        'projet_id',
-    ];
+    protected $table = 'type_biens';
     protected $dates = ['deleted_at'];
     public function projet()
     {
