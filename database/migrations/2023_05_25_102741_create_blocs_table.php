@@ -14,8 +14,6 @@ return new class extends Migration
         Schema::create('blocs', function (Blueprint $table) {
              $table->id();
             $table->string('nom');
-            $table->unsignedBigInteger('projet_id');
-            $table->unsignedBigInteger('tranche_id');
             $table->string('titre_foncier');
             $table->timestamps();
             $table->softDeletes();
