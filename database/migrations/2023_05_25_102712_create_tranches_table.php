@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('nom');
             $table->unsignedBigInteger('projet_id');
             $table->foreign('projet_id')->references('id')->on('projets');
+            $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
             $table->date('date_lancement');
             $table->date('date_livraison');
             $table->integer('niveau_etages');
