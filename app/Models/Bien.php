@@ -35,7 +35,7 @@ class Bien extends Model
     ];
     protected $dates = ['deleted_at'];
 
-    public function type()
+    public function TypeBien()
     {
         return $this->belongsTo(TypeBien::class, 'type_id');
     }
