@@ -23,10 +23,10 @@ return new class extends Migration
             $table->float('prix_acquisition');
             $table->integer('limite_annulation_reservation');
         //    $table->foreign('type_id')->references('id')->on('type_projet');   notice u  have  add this column  manually into  database
-            $table->integer('nbr_tranches');
-            $table->integer('nbr_blocs');
-            $table->integer('nbr_immeubles');
-            $table->integer('nbr_bien');
+            $table->integer('nbr_tranches')->default(0);
+            $table->integer('nbr_blocs')->default(0);
+            $table->integer('nbr_immeubles')->default(0);
+            $table->integer('nbr_bien')->default(0);
             $table->timestamps();
             $table->softDeletes();
         });
