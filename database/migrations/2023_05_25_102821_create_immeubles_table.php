@@ -23,6 +23,8 @@ return new class extends Migration
             $table->foreign('projet_id')->references('id')->on('projets');
             $table->foreign('tranche_id')->references('id')->on('tranches');
             $table->foreign('bloc_id')->references('id')->on('blocs');
+            $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
+
         });
     }
 
