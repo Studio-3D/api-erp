@@ -9,14 +9,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class TypeProjet extends Model
 {
     use HasFactory, SoftDeletes;
+           protected $table = 'type_projets';
 
-    protected $fillable = [
-        'type',
-        'projet_id',
-    ];
+  
     protected $dates = ['deleted_at'];
     public function projet()
     {
-        return $this->belongsTo(Project::class);
+        return $this->belongsTo(Projet::class);
     }
 }
