@@ -16,8 +16,5 @@ class Tranche extends Model
     {
         return $this->belongsTo(Projet::class);
     }
-    public function tranche()
-    {
-        return $this->belongsTo(Tranche::class);
-    }
+   
 }
