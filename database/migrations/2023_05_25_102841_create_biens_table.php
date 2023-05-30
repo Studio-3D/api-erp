@@ -31,7 +31,7 @@ return new class extends Migration
             $table->string('etat');
             $table->timestamps();
             $table->softDeletes();
-            $table->foreignId('type_id')->constrained('type_biens');        
+            $table->foreignId('id')->constrained('type_biens');        
             $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
             $table->foreignId('tranche_id')->constrained('tranches')->onDelete('cascade');
             $table->foreignId('bloc_id')->constrained('blocs')->onDelete('cascade');
