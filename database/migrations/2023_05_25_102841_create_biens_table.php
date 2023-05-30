@@ -30,10 +30,6 @@ return new class extends Migration
             $table->float('superficie_jardin');
             $table->string('titre_foncier');
             $table->string('etat');
-            $table->unsignedBigInteger('projet_id');
-            $table->unsignedBigInteger('tranche_id');
-            $table->unsignedBigInteger('bloc_id');
-            $table->unsignedBigInteger('immeuble_id');
             $table->timestamps();
             $table->softDeletes();
             $table->foreignId('type_id')->constrained('type_biens');        
