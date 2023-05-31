@@ -12,8 +12,9 @@ class Projet extends Model
        protected $table = 'projets';
 
     protected $dates = ['deleted_at'];
+    
     public function typeprojet()
     {
-        return $this->HasMany(TypeProjet::class,);
+        return $this->belongsTo(TypeProjet::class,'type_id');
     }
 }

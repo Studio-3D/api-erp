@@ -18,8 +18,8 @@ return new class extends Migration
             $table->integer('niveau');
             $table->string('orientation');
             $table->boolean('conventionne');
-            $table->float('prix_unitaire');
-            $table->float('prix');
+            $table->double('prix_unitaire', 12, 2);
+            $table->double('prix', 12, 2);
             $table->float('superficie_architecte');
             $table->float('superficie_habitable');
             $table->integer('nbre_facades');
@@ -31,11 +31,11 @@ return new class extends Migration
             $table->string('etat');
             $table->timestamps();
             $table->softDeletes();
-            $table->foreignId('id')->constrained('type_biens');        
+            $table->foreignId('type_id')->constrained('type_biens');        
             $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
-            $table->foreignId('tranche_id')->constrained('tranches')->onDelete('cascade');
-            $table->foreignId('bloc_id')->constrained('blocs')->onDelete('cascade');
-            $table->foreignId('immeuble_id')->constrained('immeubles')->onDelete('cascade');
+            $table->foreignId('tranche_id')->constrained('tranches')->onDelete('cascade')->nullable();
+            $table->foreignId('bloc_id')->constrained('blocs')->onDelete('cascade')->nullable();
+            $table->foreignId('immeuble_id')->constrained('immeubles')->onDelete('cascade')->nullable();
 
         });
     }

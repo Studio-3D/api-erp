@@ -20,21 +20,21 @@ class Bien extends Model
 
     public function projet()
     {
-        return $this->belongsTo(Projet::class);
+        return $this->belongsTo(Projet::class, 'projet_id');
     }
 
     public function tranche()
     {
-        return $this->belongsTo(Tranche::class);
+        return $this->belongsTo(Tranche::class, 'tranche_id');
     }
 
     public function bloc()
     {
-        return $this->belongsTo(Bloc::class);
+        return $this->belongsTo(Bloc::class, 'bloc_id');
     }
 
     public function immeuble()
     {
-        return $this->belongsTo(Immeuble::class);
+        return $this->belongsTo(Immeuble::class, 'immeuble_id');
     }
 }

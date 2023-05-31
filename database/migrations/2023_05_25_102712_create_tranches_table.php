@@ -18,6 +18,9 @@ return new class extends Migration
             $table->date('date_lancement');
             $table->date('date_livraison');
             $table->integer('niveau_etages');
+            $table->integer('nbre_blocs')->default(0);
+            $table->integer('nbre_immeubles')->default(0);
+            $table->integer('nbre_biens')->default(0);
             $table->timestamps();
             $table->softDeletes();
         });

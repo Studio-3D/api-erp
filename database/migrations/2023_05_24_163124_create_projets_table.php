@@ -26,7 +26,7 @@ return new class extends Migration
             $table->integer('nbr_tranches')->default(0);
             $table->integer('nbr_blocs')->default(0);
             $table->integer('nbr_immeubles')->default(0);
-            $table->integer('nbr_bien')->default(0);
+            $table->integer('nbr_biens')->default(0);
             $table->timestamps();
             $table->softDeletes();
         });

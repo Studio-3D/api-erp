@@ -12,13 +12,13 @@ class Bloc extends Model
     use HasFactory, SoftDeletes;
     protected $table = 'blocs';
     protected $dates = ['deleted_at'];
+    
     public function projet()
     {
-        return $this->belongsTo(Projet::class);
+        return $this->belongsTo(Projet::class, 'projet_id');
     }
-
     public function tranche()
     {
-        return $this->belongsTo(Tranche::class);
+        return $this->belongsTo(Tranche::class, 'tranche_id');
     }
 }
