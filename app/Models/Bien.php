@@ -4,58 +4,37 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Bien extends Model
 {
 
-    use HasFactory;
-    protected $fillable = [
-        'propriete_dite_bien',
-        'numero',
-        'niveau',
-        'type_id',
-        'orientation',
-        'conventionne',
-        'prix_unitaire',
-        'prix',
-        'superficie_architecte',
-        'superficie_habitable',
-        'nbre_facades',
-        'superficie_parking',
-        'superficie_box',
-        'superficie_terrasse',
-        'superficie_jardin',
-        'titre_foncier',
-        'etat',
-        'projet_id',
-        'tranche_id',
-        'bloc_id',
-        'immeuble_id',
-        // Add other fillable columns here
-    ];
+    use HasFactory, SoftDeletes;
+    protected $table = 'biens';
+    protected $dates = ['deleted_at'];
 
-    public function type()
+    public function typebien()
     {
         return $this->belongsTo(TypeBien::class, 'type_id');
     }
 
     public function projet()
     {
-        return $this->belongsTo(Projet::class);
+        return $this->belongsTo(Projet::class, 'projet_id');
     }
 
     public function tranche()
     {
-        return $this->belongsTo(Tranche::class);
+        return $this->belongsTo(Tranche::class, 'tranche_id');
     }
 
     public function bloc()
     {
-        return $this->belongsTo(Bloc::class);
+        return $this->belongsTo(Bloc::class, 'bloc_id');
     }
 
     public function immeuble()
     {
-        return $this->belongsTo(Immeuble::class);
+        return $this->belongsTo(Immeuble::class, 'immeuble_id');
     }
 }

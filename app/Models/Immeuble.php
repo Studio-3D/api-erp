@@ -4,29 +4,26 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Immeuble extends Model
 {
-    use HasFactory;
-    protected $fillable = [
-        'nom',
-        'titre_foncier',
-        'projet_id',
-        'tranche_id',
-        'bloc_id',
-    ];
+    use HasFactory, SoftDeletes;
+     protected $table = 'immeubles';
+    protected $dates = ['deleted_at'];
+    
     public function projet()
     {
-        return $this->belongsTo(Projet::class);
+        return $this->belongsTo(Projet::class,  'projet_id');
     }
 
     public function tranche()
     {
-        return $this->belongsTo(Tranche::class);
+        return $this->belongsTo(Tranche::class, 'tranche_id');
     }
 
     public function bloc()
     {
-        return $this->belongsTo(Bloc::class);
+        return $this->belongsTo(Bloc::class, 'bloc_id');
     }
 }

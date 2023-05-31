@@ -22,12 +22,13 @@ return new class extends Migration
             $table->float('surface_terrain');
             $table->float('prix_acquisition');
             $table->integer('limite_annulation_reservation');
-            $table->foreign('type_id')->references('id')->on('type_projet');
-            $table->integer('nbr_tranches');
-            $table->integer('nbr_blocs');
-            $table->integer('nbr_immeubles');
-            $table->integer('nbr_bien');
+            $table->foreignId('type_id')->constrained('type_projets');
+            $table->integer('nbr_tranches')->default(0);
+            $table->integer('nbr_blocs')->default(0);
+            $table->integer('nbr_immeubles')->default(0);
+            $table->integer('nbr_biens')->default(0);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -36,6 +37,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('projects');
+        Schema::dropIfExists('projets');
     }
 };

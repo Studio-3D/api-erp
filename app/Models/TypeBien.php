@@ -4,17 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class TypeBien extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    protected $fillable = [
-        'type',
-        'projet_id',
-    ];
-    public function projet()
-    {
-        return $this->belongsTo(Project::class);
-    }
+    protected $table = 'type_biens';
+    protected $dates = ['deleted_at'];
+   
 }

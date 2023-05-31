@@ -6,15 +6,15 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Tranche extends Model
+class Projet extends Model
 {
     use HasFactory, SoftDeletes;
-    protected $table = 'tranches';
-    protected $dates = ['deleted_at'];
+       protected $table = 'projets';
 
-    public function projet()
+    protected $dates = ['deleted_at'];
+    
+    public function typeprojet()
     {
-        return $this->belongsTo(Projet::class, 'projet_id');
+        return $this->belongsTo(TypeProjet::class,'type_id');
     }
-   
 }

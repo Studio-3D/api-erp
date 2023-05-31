@@ -12,8 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('blocs', function (Blueprint $table) {
-            $table->id();
+             $table->id();
+            $table->string('nom');
+            $table->string('titre_foncier');
+            $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
+            $table->foreignId('tranche_id')->constrained('tranches')->onDelete('cascade')->nullable();
+            $table->integer('nbre_immeubles')->default(0);
+            $table->integer('nbre_biens')->default(0);
             $table->timestamps();
+            $table->softDeletes();
+            
         });
     }
 

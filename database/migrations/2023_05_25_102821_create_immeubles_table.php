@@ -13,16 +13,15 @@ return new class extends Migration
     {
         Schema::create('immeubles', function (Blueprint $table) {
             $table->id();
-            $table->string('nom');
-            $table->string('titre_foncier');
-            $table->unsignedBigInteger('projet_id');
-            $table->unsignedBigInteger('tranche_id');
-            $table->unsignedBigInteger('bloc_id');
+            $table->string('nom',20);
+            $table->string('titre_foncier',20)->nullable();
+            $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
+            $table->foreignId('tranche_id')->constrained('tranches')->onDelete('cascade')->nullable();
+            $table->foreignId('bloc_id')->constrained('blocs')->onDelete('cascade')->nullable();
+            $table->integer('nbre_biens')->default(0);
             $table->timestamps();
-
-            $table->foreign('projet_id')->references('id')->on('projets');
-            $table->foreign('tranche_id')->references('id')->on('tranches');
-            $table->foreign('bloc_id')->references('id')->on('blocs');
+            $table->softDeletes();
+            
         });
     }
 

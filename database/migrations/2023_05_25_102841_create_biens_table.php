@@ -16,11 +16,10 @@ return new class extends Migration
             $table->string('propriete_dite_bien');
             $table->string('numero');
             $table->integer('niveau');
-            $table->unsignedBigInteger('type_id');
             $table->string('orientation');
             $table->boolean('conventionne');
-            $table->float('prix_unitaire');
-            $table->float('prix');
+            $table->double('prix_unitaire', 12, 2);
+            $table->double('prix', 12, 2);
             $table->float('superficie_architecte');
             $table->float('superficie_habitable');
             $table->integer('nbre_facades');
@@ -30,16 +29,14 @@ return new class extends Migration
             $table->float('superficie_jardin');
             $table->string('titre_foncier');
             $table->string('etat');
-            $table->unsignedBigInteger('projet_id');
-            $table->unsignedBigInteger('tranche_id');
-            $table->unsignedBigInteger('bloc_id');
-            $table->unsignedBigInteger('immeuble_id');
             $table->timestamps();
-            $table->foreign('type_id')->references('id')->on('type_biens');
-            $table->foreign('projet_id')->references('id')->on('projets');
-            $table->foreign('tranche_id')->references('id')->on('tranches');
-            $table->foreign('bloc_id')->references('id')->on('blocs');
-            $table->foreign('immeuble_id')->references('id')->on('immeubles');
+            $table->softDeletes();
+            $table->foreignId('type_id')->constrained('type_biens');        
+            $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
+            $table->foreignId('tranche_id')->constrained('tranches')->onDelete('cascade')->nullable();
+            $table->foreignId('bloc_id')->constrained('blocs')->onDelete('cascade')->nullable();
+            $table->foreignId('immeuble_id')->constrained('immeubles')->onDelete('cascade')->nullable();
+
         });
     }
     /**

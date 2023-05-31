@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('prenom');
             $table->string('email')->unique();
-            $table->tinyInteger('is_admin')->default(0);
+            $table->tinyInteger('type')->default(0);
             $table->string('gender')->nullable();
             $table->string('phone')->nullable();
             $table->string('photo')->nullable();
@@ -29,12 +29,11 @@ return new class extends Migration
             $table->string('niveau_etude');
             $table->string('adresse')->nullable();
             $table->integer('cnss')->nullable();
-            $table->integer('enable')->default(1);
+            $table->integer('is_actif')->default(1);
             $table->string('fonction')->nullable();
             $table->integer('solde_conge')->default(0);
-            $table->integer('nb_dossier_notaire')->default(0);
-            $table->tinyInteger('etat')->default(1);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
