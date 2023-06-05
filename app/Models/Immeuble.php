@@ -9,21 +9,21 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Immeuble extends Model
 {
     use HasFactory, SoftDeletes;
-     protected $table = 'immeubles';
-    protected $dates = ['deleted_at'];
-    
-    public function projet()
-    {
-        return $this->belongsTo(Projet::class,  'projet_id');
-    }
+    protected $table = 'immeubles';
+   protected $dates = ['deleted_at'];
+   
+   public function projet()
+   {
+       return $this->belongsTo(Projet::class,  'projet_id');
+   }
 
-    public function tranche()
-    {
-        return $this->belongsTo(Tranche::class, 'tranche_id');
-    }
+   public function tranche()
+   {
+       return $this->belongsTo(Tranche::class, 'tranche_id');
+   }
 
-    public function bloc()
-    {
-        return $this->belongsTo(Bloc::class, 'bloc_id');
-    }
+   public function bloc()
+   {
+       return $this->belongsTo(Bloc::class, 'bloc_id');
+   }
 }
