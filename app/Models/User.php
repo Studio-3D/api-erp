@@ -44,4 +44,8 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
     protected $dates = ['deleted_at'];
+    public function societe()
+   {
+       return $this->belongsTo(Societe::class, 'societe_id');
+   }
 }
