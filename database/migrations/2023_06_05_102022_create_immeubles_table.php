@@ -21,7 +21,6 @@ return new class extends Migration
             $table->integer('nbre_biens')->default(0);
             $table->timestamps();
             $table->softDeletes();
-            
         });
     }
 

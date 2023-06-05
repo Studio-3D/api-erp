@@ -18,3 +18,6 @@ class Projet extends Model
         return $this->belongsTo(TypeProjet::class,'type_id');
     }
 }
+
+
+
