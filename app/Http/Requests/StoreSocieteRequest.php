@@ -11,7 +11,7 @@ class StoreSocieteRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,13 @@ class StoreSocieteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+           
+                'raison_sociale' => 'required',
+                'nom_contact' => 'required',
+                'tel' => 'string|size:10',
+                'email' => 'email',
+                'logo' => 'image',
+            
         ];
     }
 }

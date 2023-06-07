@@ -16,3 +16,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+/* Route::get('/test',function(\Illuminate\Support\Facades\Request $request){
+    return 'aaa';
+}); */
+//pour le tester en postman http://127.0.0.1:8000/test
+
