@@ -27,7 +27,7 @@ class StoreUserRequest extends FormRequest
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
             'type' => 'required|string',
-            'phone' => 'size:10',
+            'phone' => 'size:14',
             'photo' => 'image',
             'cin' => 'string|unique:users',
             'date_embauche' => 'date',

@@ -23,11 +23,10 @@ class StoreSocieteRequest extends FormRequest
     {
         return [
            
-                'raison_sociale' => 'required',
+                'raison_sociale' => 'required|unique:societes',
                 'nom_contact' => 'required',
-                'tel' => 'string|size:10',
+                'tel' => 'string|size:14',
                 'email' => 'email',
-                'logo' => 'image',
             
         ];
     }

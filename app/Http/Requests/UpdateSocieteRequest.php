@@ -11,7 +11,7 @@ class UpdateSocieteRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,15 @@ class UpdateSocieteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'raison_sociale' => 'required',
+           /*  'raison_sociale' => [
+                'required',
+                Rule::unique('societes')->ignore($this->id)], */
+            'nom_contact' => 'required',
+            'tel' => 'string|size:14',
+            'email' => 'email',
+            'logo' => 'image',
+        
         ];
     }
 }
