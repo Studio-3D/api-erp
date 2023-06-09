@@ -7,10 +7,11 @@ use Illuminate\Support\Facades\DB;
 
 class DatabaseHelper
 {
-
-    public function createNewClientDatabase($database)
+    public function createNewClientDatabase($raison_sociale, $societe_id)
     {
-        $databaseName = 'Erp_' . $database;
+        
+        $databaseName='Erp_'.$raison_sociale.'_'.$societe_id;
+        
         if ($this->databaseExists($databaseName)) {
             return response()->json(['message' => 'Database already exists.']);
         }

@@ -11,6 +11,7 @@ class Societe extends Model
 {
     use HasFactory, SoftDeletes;
     protected $table = 'societes';
+   
     protected $dates = ['deleted_at'];
 
     public function user()

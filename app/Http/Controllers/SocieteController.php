@@ -36,31 +36,21 @@ class SocieteController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(StoreSocieteRequest $request)
-    {
+    { 
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
            
 
-            //  if we have  fillable  in  model  must  be  use  that method is fast  and  easy sometimes
-            //$sociate=Societe::create($validateData);
+           
 
             if ($request->hasFile('logo')) {
                 $logo = $request->file('logo');
-                $logoPath = $logo->store('logos', 'public');
+                $logoPath = $logo->store('logo_societes', 'public');
                 $request['logo'] = $logoPath;
             }
             $societe = new Societe();
-            if (Societe::where('raison_sociale', $request['raison_sociale'])->exists()) {
-                return response()->json(['message' => 'Raison sociale already exists'], 400);
-            } else {
-                $societe->raison_sociale = $request['raison_sociale'];
-                $societe->adresse = $request['adresse'];
-                $societe->nom_contact = $request['nom_contact'];
-                $societe->prenom_contact = $request['prenom_contact'];
-                $societe->tel = $request['tel'];
-                $societe->email = $request['email'];
-                $societe->logo = $request['logo'];
-                $societe->save();
-            }
+
+             
+            
             $societe->raison_sociale = $request['raison_sociale'];
             $societe->adresse = $request['adresse'];
             $societe->nom_contact = $request['nom_contact'];
@@ -69,16 +59,19 @@ class SocieteController extends Controller
             $societe->email = $request['email'];
             $societe->logo = $request['logo'];
             $societe->save();
+            $raison_sociale_concatene = str_replace(' ', '', $request['raison_sociale']);
 
-            $projectdata = new DatabaseHelper();
-            $response = $projectdata->createNewClientDatabase($societe->raison_sociale);
+            $databaseSociete = new DatabaseHelper();
+            $response = $databaseSociete->createNewClientDatabase($raison_sociale_concatene,$societe->id);
             if ($response->getStatusCode() == 200) {
                 return response()->json(['message' => $response->getOriginalContent()['message']]);
             } else {
                 return response()->json(['message' => $response->getOriginalContent()['message']]);
             }
         }
-        return response()->json(['error' => 'Unauthorized'], 401);
+        else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     /**
@@ -86,7 +79,11 @@ class SocieteController extends Controller
      */
     public function show(Societe $societe)
     {
-        return $societe;
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+            return response()->json(['message' => $societe],200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     /**
@@ -97,19 +94,55 @@ class SocieteController extends Controller
         //
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateSocieteRequest $request, Societe $societe)
-    {
-        //
+    
+    public function update(UpdateSocieteRequest $request,$id)
+    {   
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        $societe = Societe::where('id', $id)->first(); 
+    
+            if ($request->hasFile('logo')) {
+                $logo = $request->file('logo');
+                $logoPath = $logo->store('logos', 'public');
+                $request['logo'] = $logoPath;
+            }
+    
+       
+        $societe->raison_sociale = $request['raison_sociale'];
+        $societe->adresse = $request['adresse'];
+        $societe->nom_contact = $request['nom_contact'];
+        $societe->prenom_contact = $request['prenom_contact'];
+        $societe->tel = $request['tel'];
+        $societe->email = $request['email'];
+        $societe->logo = $request['logo'];
+        $societe->save();
+    
+            return response()->json(['message' => 'societe updated succesfully'],200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+   
     }
-
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(Societe $societe)
-    {
-        //
+    {  
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1){
+
+            if($societe->delete()){
+            return response()->json(['message' => 'Societe deleted succesfully'],200);
+            } else {
+                return response()->json(['message' => 'Societe non deleted'],404);
+            }
+        }
+            
+        else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
     }
+
 }
+
+
+
