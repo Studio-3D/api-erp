@@ -6,7 +6,6 @@ use App\Http\Helpers\DatabaseHelper;
 use App\Http\Requests\StoreSocieteRequest;
 use App\Http\Requests\UpdateSocieteRequest;
 use App\Models\Societe;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class SocieteController extends Controller
@@ -29,18 +28,15 @@ class SocieteController extends Controller
      */
     public function create()
     {
-        return view('societe');
+        //
     }
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(StoreSocieteRequest $request)
-    { 
+    {
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-           
-
-           
 
             if ($request->hasFile('logo')) {
                 $logo = $request->file('logo');
@@ -49,8 +45,6 @@ class SocieteController extends Controller
             }
             $societe = new Societe();
 
-             
-            
             $societe->raison_sociale = $request['raison_sociale'];
             $societe->adresse = $request['adresse'];
             $societe->nom_contact = $request['nom_contact'];
@@ -62,14 +56,13 @@ class SocieteController extends Controller
             $raison_sociale_concatene = str_replace(' ', '', $request['raison_sociale']);
 
             $databaseSociete = new DatabaseHelper();
-            $response = $databaseSociete->createNewClientDatabase($raison_sociale_concatene,$societe->id);
+            $response = $databaseSociete->createNewClientDatabase($raison_sociale_concatene, $societe->id);
             if ($response->getStatusCode() == 200) {
                 return response()->json(['message' => $response->getOriginalContent()['message']]);
             } else {
                 return response()->json(['message' => $response->getOriginalContent()['message']]);
             }
-        }
-        else {
+        } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
@@ -80,7 +73,7 @@ class SocieteController extends Controller
     public function show(Societe $societe)
     {
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-            return response()->json(['message' => $societe],200);
+            return response()->json(['message' => $societe], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -94,55 +87,42 @@ class SocieteController extends Controller
         //
     }
 
-    
-    public function update(UpdateSocieteRequest $request,$id)
-    {   
+    public function update(UpdateSocieteRequest $request, Societe $societe)
+    {
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-        $societe = Societe::where('id', $id)->first(); 
-    
-            if ($request->hasFile('logo')) {
-                $logo = $request->file('logo');
-                $logoPath = $logo->store('logos', 'public');
-                $request['logo'] = $logoPath;
+
+            $societe->update($request->all());
+            /*   if ($request->has("logo")) {
+            $file = $request->logo;
+            $imageName = "images/reclamationns/" . time() . "_" . $file->getClientOriginalName();
+            $file->move(public_path("images/societe"), $imageName);
+            $societe->logo = $imageName;
+            $societe->save();
             }
-    
-       
-        $societe->raison_sociale = $request['raison_sociale'];
-        $societe->adresse = $request['adresse'];
-        $societe->nom_contact = $request['nom_contact'];
-        $societe->prenom_contact = $request['prenom_contact'];
-        $societe->tel = $request['tel'];
-        $societe->email = $request['email'];
-        $societe->logo = $request['logo'];
-        $societe->save();
-    
-            return response()->json(['message' => 'societe updated succesfully'],200);
+             */
+
+            return response()->json(['message' => 'societe updated succesfully'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-   
+
     }
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(Societe $societe)
-    {  
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1){
+    {
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
 
-            if($societe->delete()){
-            return response()->json(['message' => 'Societe deleted succesfully'],200);
+            if ($societe->delete()) {
+                return response()->json(['message' => 'Societe deleted succesfully'], 200);
             } else {
-                return response()->json(['message' => 'Societe non deleted'],404);
+                return response()->json(['message' => 'Societe non deleted'], 404);
             }
-        }
-            
-        else {
+        } else {
             return response()->json(['error' => 'Unauthorized'], 401);
 
         }
     }
 
 }
-
-
-
