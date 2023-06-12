@@ -15,9 +15,7 @@ class UserController extends Controller
     {
 
         if ($request->hasFile('photo')) {
-            $logo = $request->file('photo');
-            $logoPath = $logo->store('photos', 'public');
-            $request['photo'] = $logoPath;
+            $photo= $request->file('photo')->store($request->photos_users.'/photos', 'public');
         }
         $user = User::create([
             'name' => $request['name'],
@@ -27,7 +25,7 @@ class UserController extends Controller
             'gender' => $request['gender'],
             'type' => $request['type'],
             'phone' => $request['phone'],
-            'photo' => $request['photo'],
+            'photo' => $photo,
             'cin' => $request['cin'],
             'fonction' => $request['fonction'],
             'date_embauche' => $request['date_embauche'],

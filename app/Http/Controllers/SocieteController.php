@@ -39,9 +39,7 @@ class SocieteController extends Controller
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
 
             if ($request->hasFile('logo')) {
-                $logo = $request->file('logo');
-                $logoPath = $logo->store('logo_societes', 'public');
-                $request['logo'] = $logoPath;
+                $logo= $request->file('logo')->store($request->raison_sociale.'/logos', 'public');
             }
             $societe = new Societe();
 
@@ -51,7 +49,7 @@ class SocieteController extends Controller
             $societe->prenom_contact = $request['prenom_contact'];
             $societe->tel = $request['tel'];
             $societe->email = $request['email'];
-            $societe->logo = $request['logo'];
+            $societe->logo = $logo;
             $societe->save();
             $raison_sociale_concatene = str_replace(' ', '', $request['raison_sociale']);
 
@@ -90,11 +88,12 @@ class SocieteController extends Controller
     public function update(UpdateSocieteRequest $request, Societe $societe)
     {
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+            
 
             $societe->update($request->all());
             /*   if ($request->has("logo")) {
             $file = $request->logo;
-            $imageName = "images/reclamationns/" . time() . "_" . $file->getClientOriginalName();
+            $imageName = "images/societe/" . time() . "_" . $file->getClientOriginalName();
             $file->move(public_path("images/societe"), $imageName);
             $societe->logo = $imageName;
             $societe->save();
