@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Bien;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBienRequest;
 use App\Http\Requests\UpdateBienRequest;
+use App\Models\Bien;
+use Illuminate\Support\Facades\Auth;
 
 class BienController extends Controller
 {
@@ -63,5 +64,29 @@ class BienController extends Controller
     public function destroy(Bien $bien)
     {
         //
+    }
+    public function restoreBien($bien_id)
+    {
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+
+            Bien::where('id', $bien_id)->withTrashed()->restore();
+
+            return response()->json(['message' => 'Bien est bien restaurer'], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+    public function getTrashedBiens()
+    {
+
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+            $biens = Bien::onlyTrashed()->get();
+
+            return response()->json(['message' => $biens], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 }

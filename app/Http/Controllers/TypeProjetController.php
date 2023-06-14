@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTypeProjetRequest;
 use App\Http\Requests\UpdateTypeProjetRequest;
 
+
 class TypeProjetController extends Controller
 {
     /**

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTypeBienRequest;
 use App\Http\Requests\UpdateTypeBienRequest;
 
+
 class TypeBienController extends Controller
 {
     /**
