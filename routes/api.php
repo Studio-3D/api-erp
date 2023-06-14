@@ -60,6 +60,11 @@ Route::middleware('auth:api')->group(function () {
             ->name('restoreImmeuble');
     Route::get('getTrashedImmeubles', 'App\Http\Controllers\ImmeubleController@getTrashedImmeubles')
             ->name('getTrashedImmeubles');
+            //
+    Route::get('restoreProjet/{id}', 'App\Http\Controllers\ProjetController@restoreProjet')
+            ->name('restoreProjet');
+    Route::get('getTrashedProjets', 'App\Http\Controllers\ProjetController@getTrashedProjets')
+            ->name('getTrashedProjets');
             
 
     
