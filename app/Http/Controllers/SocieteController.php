@@ -131,6 +131,28 @@ class SocieteController extends Controller
 
         }
     }
-    
+    public function restoreSociete($societe_id){  
+        if(Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+           
+            Societe::where('id', $societe_id)->withTrashed()->restore();
+
+            return response()->json(['message' => 'User est bien restaurer'], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+    public function getTrashedSocietes(){  
+        
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+            $societes = Societe::onlyTrashed()->get();
+            
+
+            return response()->json(['message' => $societes], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
 
 }
