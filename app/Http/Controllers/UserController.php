@@ -6,9 +6,11 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Societe;
 use App\Models\User;
+use \Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use \Illuminate\Support\Facades\Storage;
+
 
 class UserController extends Controller
 {
@@ -166,5 +168,67 @@ class UserController extends Controller
 
         }
     }
+    public function activateUser($user_id)
+    {  
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+            $user = User::find($user_id);
+
+            $user->update(['is_actif' => 1]);
+            $user->save();
+            return response()->json(['message' => 'User est bien activer'], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+    public function desactivateUser($user_id){  
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+            $user = User::find($user_id);
+
+            $user->update(['is_actif' => 0]);
+            $user->save();
+            return response()->json(['message' => 'User est bien desactiver'], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+    public function restoreUser($user_id){  
+        if(Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+           
+            User::where('id', $user_id)->withTrashed()->restore();
+
+            return response()->json(['message' => 'User est bien restaurer'], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+    public function getTrashedUsers(){  
+        
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+            $users = User::onlyTrashed()->get();
+            
+
+            return response()->json(['message' => $users], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+    public function getTrashedUsersBySociete($societe_id){  
+
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+           
+            $users = User::onlyTrashed()->where('societe_id',$societe_id)->get();
+
+            return response()->json(['message' => $users], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    
 }
 

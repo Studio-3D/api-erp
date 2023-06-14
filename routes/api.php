@@ -28,7 +28,19 @@ Route::post('register', [UserController::class, 'register'])->name('register');
 Route::middleware('auth:api')->group(function () {
     Route::resource('societe', SocieteController::class);
     Route::resource('user', UserController::class);
-    Route::get('usersBySociete/{id}', 'App\Http\Controllers\UserController@getUsersBySocieteId')
+    Route::get('getUsersBySocieteId/{id}', 'App\Http\Controllers\UserController@getUsersBySocieteId')
             ->name('getUsersBySocieteId');
+    Route::put('activateUser/{id}', 'App\Http\Controllers\UserController@activateUser')
+            ->name('activateUser');
+    Route::put('desactivateUser/{id}', 'App\Http\Controllers\UserController@desactivateUser')
+            ->name('desactivateUser');
+    Route::get('restoreUser/{id}', 'App\Http\Controllers\UserController@restoreUser')
+            ->name('restoreUser');
+    Route::get('getTrashedUsers', 'App\Http\Controllers\UserController@getTrashedUsers')
+            ->name('getTrashedUsers');
+    Route::get('getTrashedUsersBySociete/{id}', 'App\Http\Controllers\UserController@getTrashedUsersBySociete')
+            ->name('getTrashedUsersBySociete');
+    
+    
     });
     
