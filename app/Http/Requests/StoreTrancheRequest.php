@@ -11,7 +11,7 @@ class StoreTrancheRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,14 @@ class StoreTrancheRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'nom' => 'required|unique:tranches',
+            'projet_id' => 'required|integer',
+            'date_lancement' => 'required|date',
+            'date_livraison' => 'required|date',
+            'niveau_etages' => 'integer',
+            'nbre_blocs' => 'integer ',
+            'nbre_immeubles' => 'integer',
+            'nbre_biens' => 'integer',
         ];
     }
 }

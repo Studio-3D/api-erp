@@ -10,7 +10,15 @@ class Tranche extends Model
 {
     use HasFactory, SoftDeletes;
     protected $table = 'tranches';
+    protected $fillable = [
+        'nom',
+        'projet_id', 'date_lancement',
+        'date_livraison',
+        'niveau_etages', 'nbre_blocs','nbre_immeubles',
+        'nbre_biens'
+    ];
     protected $dates = ['deleted_at'];
+
 
     public function projet()
     {
