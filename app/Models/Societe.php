@@ -23,4 +23,9 @@ class Societe extends Model
     {
         return $this->hasMany(User::class, 'user_id');
     }
+
+    public function projet()
+    {
+        return $this->hasMany(Projet::class);
+    }
 }
