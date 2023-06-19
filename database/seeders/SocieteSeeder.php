@@ -14,10 +14,10 @@ class SocieteSeeder extends Seeder
     {
         \App\Models\Societe::factory()->create([
 
-            'raison_sociale' => 'societ',
-            'nom_contact' => 'ahmed',
-            'prenom_contact' => 'slimani',
-            'email' => 'ahmed@email.com',
+            'raison_sociale' => 'studio3d',
+            'nom_contact' => 'Mohamed',
+            'prenom_contact' => 'Abid',
+            'email' => 'a.airout@gmail.com',
 
         ]);
     }

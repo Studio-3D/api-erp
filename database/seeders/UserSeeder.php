@@ -16,16 +16,17 @@ class UserSeeder extends Seeder
        
         \App\Models\User::factory()->create([
 
+            'societe_id' => 1,
             'name' => 'super_admin',
             'prenom' => 'super_admin',
             'type' => '1',
-            'nb_appel_recu' => '11',
-            'nb_appel_traite' => '11',
+            'nb_appel_recu' => '0',
+            'nb_appel_traite' => '0',
             'cin' => 'BH111',
             'date_embauche' => now(),
             'niveau_etude' => 'bac',
             'is_actif' => '1',
-            'solde_conge' => '1000',
+            'solde_conge' => '0',
             'email' => 'superadmin@email.com',
             'password' => Hash::make('superadmin'), // password
 
