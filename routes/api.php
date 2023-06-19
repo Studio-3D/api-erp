@@ -26,6 +26,10 @@ Route::post('login', [UserController::class, 'login'])->name('login');
 Route::middleware('auth:api')->group(function () {
     Route::resource('societe', SocieteController::class);
     Route::resource('user', UserController::class);
-
+    Route::get('usersBySociete/{id}', 'App\Http\Controllers\UserController@getUsersBySocieteId')
+            ->name('getUsersBySocieteId');
+    });
+    
 
 });
+
