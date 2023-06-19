@@ -11,7 +11,7 @@ class UpdateProjetRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,16 @@ class UpdateProjetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'date_autorisation_construction' => 'date',
+            'date_permis_habiter' => 'date',
+            'surface_terrain' => 'numeric',
+            'prix_acquisition' => 'numeric',
+            'limite_annulation_reservation' => 'integer',
+            'nbr_tranches' => 'integer',
+            'nbr_blocs' => 'integer',
+            'nbr_immeubles' => 'integer',
+            'nbr_biens' => 'integer'
+            
         ];
     }
 }

@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\ProjetController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SocieteController;
 use App\Http\Controllers\UserController;
+use App\Models\Projet;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,6 +28,7 @@ Route::post('login', [UserController::class, 'login'])->name('login');
 Route::middleware('auth:api')->group(function () {
         Route::resource('societe', SocieteController::class);
         Route::resource('user', UserController::class);
+        Route::resource('projet', ProjetController::class);
         Route::get('getUsersBySocieteId/{id}', 'App\Http\Controllers\UserController@getUsersBySocieteId')
                 ->name('getUsersBySocieteId');
         Route::put('activateUser/{id}', 'App\Http\Controllers\UserController@activateUser')
