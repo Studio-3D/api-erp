@@ -11,7 +11,7 @@ class UpdateTrancheRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,13 @@ class UpdateTrancheRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'projet_id' => 'integer',
+            'date_lancement' => 'date',
+            'date_livraison' => 'date',
+            'niveau_etages' => 'integer',
+            'nbre_blocs' => 'integer ',
+            'nbre_immeubles' => 'integer',
+            'nbre_biens' => 'integer',
         ];
     }
 }
