@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreImmeubleRequest extends FormRequest
 {
@@ -11,7 +12,7 @@ class StoreImmeubleRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +23,21 @@ class StoreImmeubleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'nom' => ['required', Rule::unique('immeubles')->where(function ($query) {
+                $query->where('nom', $this->nom)
+                    ->where('bloc_id', $this->bloc_id);})],
+            'tranche_id' => 'integer',
+            'projet_id' => 'required|integer',
+            'nbre_biens' => 'integer',
+            'bloc_id'=>'integer'
+            
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'nom.unique' => 'Cet immeuble est deje exist dans ce bloc',
         ];
     }
 }
