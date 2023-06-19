@@ -23,7 +23,6 @@ class StoreProjetRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nom' => 'required',
             'code' => 'required|string',
             'adresse' => 'required|string',
             'date_autorisation_construction' => 'required|date',
@@ -32,14 +31,23 @@ class StoreProjetRequest extends FormRequest
             'surface_terrain' => 'required|numeric',
             'prix_acquisition' => 'required|numeric',
             'limite_annulation_reservation' => 'required|integer',
+            'type_id' => 'required|integer',
             'nbr_tranches' => 'integer',
             'nbr_blocs' => 'integer',
             'nbr_immeubles' => 'integer',
             'nbr_biens' => 'integer',
-            'societe_id' => 'required',
-           /*  'nom' => ["required",Rule::unique('projets','nom')->where('societe_id', $this->input('societe_id'))
-            ],  */
-            
+            'societe_id' => 'required|integer',
+            'nom' => ['required', Rule::unique('projets')->where(function ($query) {
+                $query->where('nom', $this->nom)
+                    ->where('societe_id', $this->societe_id);})],
+
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'nom.unique' => 'Ce projet est deje exist dans cette societe',
         ];
     }
 }

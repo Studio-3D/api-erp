@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateBlocRequest extends FormRequest
 {
@@ -26,7 +27,17 @@ class UpdateBlocRequest extends FormRequest
             'tranche_id' => 'integer',
             'nbre_immeubles' => 'integer',
             'nbre_biens' => 'integer',
+            'nom' => [ Rule::unique('blocs')->where(function ($query) {
+                $query->where('nom', $this->nom)
+                    ->where('tranche_id', $this->tranche_id);})->ignore($this->bloc)],
             
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'nom.unique' => 'Ce bloc est deje exist dans ce tranche',
         ];
     }
 }
