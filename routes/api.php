@@ -38,6 +38,11 @@ Route::middleware('auth:api')->group(function () {
             ->name('getTrashedUsers');
     Route::get('getTrashedUsersBySociete/{id}', 'App\Http\Controllers\UserController@getTrashedUsersBySociete')
             ->name('getTrashedUsersBySociete');
+            //
+    Route::get('restoreSociete/{id}', 'App\Http\Controllers\SocieteController@restoreSociete')
+            ->name('restoreSociete');
+    Route::get('getTrashedSocietes', 'App\Http\Controllers\SocieteController@getTrashedSocietes')
+            ->name('getTrashedSocietes');
     
     
     });

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreImmeubleRequest;
 use App\Http\Requests\UpdateImmeubleRequest;
 
+
 class ImmeubleController extends Controller
 {
     /**

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBlocRequest;
 use App\Http\Requests\UpdateBlocRequest;
 
+
 class BlocController extends Controller
 {
     /**

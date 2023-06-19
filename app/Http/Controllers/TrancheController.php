@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTrancheRequest;
 use App\Http\Requests\UpdateTrancheRequest;
 
+
 class TrancheController extends Controller
 {
     /**
