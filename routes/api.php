@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BienController;
 use App\Http\Controllers\BlocController;
 use App\Http\Controllers\ImmeubleController;
 use App\Http\Controllers\ProjetController;
@@ -39,6 +40,7 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('bloc', BlocController::class);
         Route::resource('immeuble', ImmeubleController::class);
         Route::resource('typeBien', TypeBienController::class);
+        Route::resource('bien', BienController::class);
         Route::get('getUsersBySocieteId/{id}', 'App\Http\Controllers\UserController@getUsersBySocieteId')
                 ->name('getUsersBySocieteId');
         Route::put('activateUser/{id}', 'App\Http\Controllers\UserController@activateUser')

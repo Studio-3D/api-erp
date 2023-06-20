@@ -28,16 +28,35 @@ class UpdateBlocRequest extends FormRequest
             'nbre_immeubles' => 'integer',
             'nbre_biens' => 'integer',
             'nom' => [ Rule::unique('blocs')->where(function ($query) {
-                $query->where('nom', $this->nom)
-                    ->where('tranche_id', $this->tranche_id);})->ignore($this->bloc)],
+                if ($this->tranche_id==null){
+                    $query->where('nom', $this->nom)
+                    ->where('projet_id', $this->projet_id);
+                }
+                else {
+                    $query->where('nom', $this->nom)
+                    ->where('tranche_id', $this->tranche_id);
+                }
+
+                
+                
+            })->ignore($this->bloc)],
             
         ];
     }
 
     public function messages(): array
-    {
-        return [
-            'nom.unique' => 'Ce bloc est deje exist dans ce tranche',
-        ];
+    {   if ($this->tranche_id==null){
+            return [
+            
+            'nom.unique' =>  'Ce bloc est deja exist dans ce projet',
+            ];
+        }
+
+        else {
+            return [
+                
+                'nom.unique' =>  'Ce bloc est deja exist dans ce tranche',
+            ];
+        }
     }
 }
