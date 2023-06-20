@@ -64,6 +64,7 @@ class ProjetController extends Controller
             $projet->surface_terrain = $request['surface_terrain'];
             $projet->prix_acquisition = $request['prix_acquisition'];
             $projet->limite_annulation_reservation = $request['limite_annulation_reservation'];
+            $projet->type_id = $request['type_id'];
             $projet->nbr_tranches = $request['nbr_tranches'];
             $projet->nbr_blocs = $request['nbr_blocs'];
             $projet->nbr_immeubles = $request['nbr_immeubles'];

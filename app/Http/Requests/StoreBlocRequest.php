@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreBlocRequest extends FormRequest
 {
@@ -22,12 +23,21 @@ class StoreBlocRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'nom' => 'required',
             'titre_foncier' => 'required',
             'projet_id' => 'required|integer',
             'tranche_id' => 'integer',
             'nbre_immeubles' => 'integer',
             'nbre_biens' => 'integer',
+            'nom' => ['required', Rule::unique('blocs')->where(function ($query) {
+                $query->where('nom', $this->nom)
+                    ->where('tranche_id', $this->tranche_id);})],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'nom.unique' => 'Ce bloc est deje exist dans ce tranche',
         ];
     }
 }
