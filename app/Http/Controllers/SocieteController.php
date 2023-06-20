@@ -40,9 +40,7 @@ class SocieteController extends Controller
     {
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
 
-            
             $societe = new Societe();
-
             $societe->raison_sociale = $request['raison_sociale'];
             $societe->adresse = $request['adresse'];
             $societe->nom_contact = $request['nom_contact'];
@@ -86,7 +84,11 @@ class SocieteController extends Controller
      */
     public function edit(Societe $societe)
     {
-        //
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+            return response()->json(['message' => $societe], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     public function update(UpdateSocieteRequest $request, Societe $societe)
@@ -95,14 +97,14 @@ class SocieteController extends Controller
             
             if ($request->hasFile('logo')) {
                 if ($societe->logo) {
-                    $exist = Storage::disk('public')->exists("{$societe->raison_sociale}/logos/{$societe->logo}");
-                    if ($exist) {
+                    //$exist = Storage::disk('public')->exists("{$societe->raison_sociale}/logos/{$societe->logo}");
+                    //if ($exist) {
                         Storage::disk('public')->delete("{$societe->raison_sociale}/logos/{$societe->logo}");
-                    }
+                    //}
                 }
                 $logo= $request->file('logo')->store($request->raison_sociale.'/logos', 'public'); 
                 $request['logo'] = $logo;
-                $societe->save();
+                
             }
 
             $societe->update($request->all());

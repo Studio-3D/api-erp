@@ -56,42 +56,34 @@ class UserController extends Controller
     {
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
 
-            if ($request['solde_conge'] == "") {
-                $request['solde_conge'] = '0';
-            }
-            if ($request['is_actif'] == "") {
-                $request['is_actif'] = '1';
-            }
-            
             $user = new User();
 
-            $user->name = $request['name'];
-            $user->prenom = $request['prenom'];
-            $user->email = $request['email'];
-            $user->password = $request['password'];
-            $user->gender = $request['gender'];
-            $user->type = $request['type'];
-            $user->phone = $request['phone'];
-            $user->cin = $request['cin'];
-            $user->fonction = $request['fonction'];
-            $user->date_embauche = $request['date_embauche'];
-            $user->niveau_etude = $request['niveau_etude'];
-            $user->adresse = $request['adresse'];
-            $user->cnss = $request['cnss'];
-            $user->is_actif = $request['is_actif'];
-            $user->nb_appel_recu = $request['nb_appel_recu'];
-            $user->nb_appel_traite = $request['nb_appel_traite'];
-            $user->solde_conge = $request['solde_conge'];
+            $user->name = $request->name;
+            $user->societe_id = $request->societe_id;
+            $user->prenom = $request->prenom;
+            $user->email = $request->email;
+            $user->password = $request->password;
+            $user->gender = $request->gender;
+            $user->type = $request->type;
+            $user->phone = $request->phone;
+            $user->cin = $request->cin;
+            $user->fonction = $request->fonction;
+            $user->date_embauche = $request->date_embauche;
+            $user->niveau_etude = $request->niveau_etude;
+            $user->adresse = $request->adresse;
+            $user->cnss = $request->cnss;
+            $user->is_actif = $request->is_actif?$request->is_actif:1;
+            $user->nb_appel_recu = $request->nb_appel_recu;
+            $user->nb_appel_traite = $request->nb_appel_traite;
+            $user->solde_conge = $request->solde_conge;
             if ($request->has('photo')) {
-                $societe=Societe::where('id', $request->id)->first();
+                $societe=Societe::findOrFail($request->societe_id);
                 $photo= $request->file('photo')->store($societe->raison_sociale.'/photos_users', 'public');
                 $user->photo = $photo;
             }
             $user->save();
 
-                
-           
-            return response()->json(['message' => 'User creer avec succes'], 200);
+            return response()->json(['message' => 'User created  succesfully'], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -115,7 +107,11 @@ class UserController extends Controller
      */
     public function edit(user $user)
     {
-        //
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+            return response()->json(['message' => $user], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     public function update(UpdateUserRequest $request, User $user)
@@ -130,7 +126,7 @@ class UserController extends Controller
                 }
                 $photo= $request->file('photo')->store($request->raison_sociale.'/photos_users', 'public');
                 $request['photo'] = $photo;
-                $user->save();
+               
             }
 
             $user->update($request->all());
@@ -170,12 +166,12 @@ class UserController extends Controller
     }
     public function activateUser($user_id)
     {  
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            $user = User::find($user_id);
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1 ) {
+            $user = User::findOrFail($user_id);
 
             $user->update(['is_actif' => 1]);
             $user->save();
-            return response()->json(['message' => 'User est bien activer'], 200);
+            return response()->json(['message' => 'User activated succesfully'], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -183,11 +179,11 @@ class UserController extends Controller
     }
     public function desactivateUser($user_id){  
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            $user = User::find($user_id);
+            $user = User::findOrFail($user_id);
 
             $user->update(['is_actif' => 0]);
             $user->save();
-            return response()->json(['message' => 'User est bien desactiver'], 200);
+            return response()->json(['message' => 'User desactivated succesfully'], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
