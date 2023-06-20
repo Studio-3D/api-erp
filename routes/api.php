@@ -9,8 +9,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SocieteController;
 use App\Http\Controllers\TrancheController;
 use App\Http\Controllers\TypeBienController;
+use App\Http\Controllers\TypeProjetController;
 use App\Http\Controllers\UserController;
-use App\Models\Projet;
+use Nette\Schema\Elements\Type;
 
 /*
 |--------------------------------------------------------------------------
@@ -41,58 +42,60 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('immeuble', ImmeubleController::class);
         Route::resource('typeBien', TypeBienController::class);
         Route::resource('bien', BienController::class);
-        Route::get('getUsersBySocieteId/{id}', 'App\Http\Controllers\UserController@getUsersBySocieteId')
+        Route::resource('typeProjet', TypeProjetController::class);
+        Route::get('getUsersBySocieteId/{id}', [UserController::class,'getUsersBySocieteId'])
                 ->name('getUsersBySocieteId');
-        Route::put('activateUser/{id}', 'App\Http\Controllers\UserController@activateUser')
+        Route::put('activateUser/{id}', [UserController::class,'activateUser'])
                 ->name('activateUser');
-        Route::put('desactivateUser/{id}', 'App\Http\Controllers\UserController@desactivateUser')
+        Route::put('desactivateUser/{id}', [UserController::class,'desactivateUser'])
                 ->name('desactivateUser');
-        Route::get('restoreUser/{id}', 'App\Http\Controllers\UserController@restoreUser')
+        Route::get('restoreUser/{id}', [UserController::class,'restoreUser'])
                 ->name('restoreUser');
-        Route::get('getTrashedUsers', 'App\Http\Controllers\UserController@getTrashedUsers')
+        Route::get('getTrashedUsers', [UserController::class,'getTrashedUsers'])
                 ->name('getTrashedUsers');
-        Route::get('getTrashedUsersBySociete/{id}', 'App\Http\Controllers\UserController@getTrashedUsersBySociete')
+        Route::get('getTrashedUsersBySociete/{id}', [SocieteController::class,'getTrashedUsersBySociete'])
                 ->name('getTrashedUsersBySociete');
             //
-        Route::get('restoreSociete/{id}', 'App\Http\Controllers\SocieteController@restoreSociete')
+        Route::get('restoreSociete/{id}', [SocieteController::class,'restoreSociete'])
                 ->name('restoreSociete');
-        Route::get('getTrashedSocietes', 'App\Http\Controllers\SocieteController@getTrashedSocietes')
+        Route::get('getTrashedSocietes', [SocieteController::class,'getTrashedSocietes'])
                 ->name('getTrashedSocietes');
             //
-        Route::get('restoreBien/{id}', 'App\Http\Controllers\BienController@restoreBien')
+        Route::get('restoreBien/{id}', [BienController::class,'restoreBien'])
                 ->name('restoreBien');
-        Route::get('getTrashedBiens', 'App\Http\Controllers\BienController@getTrashedBiens')
+        Route::get('getTrashedBiens', [BienController::class,'getTrashedBiens'])
                 ->name('getTrashedBiens');
             //
-        Route::get('restoreBloc/{id}', 'App\Http\Controllers\BlocController@restoreBloc')
+        Route::get('restoreBloc/{id}', [BlocController::class,'restoreBloc'])
                 ->name('restoreBloc');
-        Route::get('getTrashedBlocs', 'App\Http\Controllers\BlocController@getTrashedBlocs')
+        Route::get('getTrashedBlocs', [BlocController::class,'getTrashedBlocs'])
                 ->name('getTrashedBlocs');
             //
-        Route::get('restoreImmeuble/{id}', 'App\Http\Controllers\ImmeubleController@restoreImmeuble')
+        Route::get('restoreImmeuble/{id}', [ImmeubleController::class,'restoreImmeuble'])
                 ->name('restoreImmeuble');
-        Route::get('getTrashedImmeubles', 'App\Http\Controllers\ImmeubleController@getTrashedImmeubles')
+        Route::get('getTrashedImmeubles', [ImmeubleController::class,'getTrashedImmeubles'])
                 ->name('getTrashedImmeubles');
             //
-        Route::get('restoreProjet/{id}', 'App\Http\Controllers\ProjetController@restoreProjet')
+        Route::get('restoreProjet/{id}', [ProjetController::class,'restoreProjet'])
                 ->name('restoreProjet');
-        Route::get('getTrashedProjets', 'App\Http\Controllers\ProjetController@getTrashedProjets')
+        Route::get('getTrashedProjets', [ProjetController::class,'getTrashedProjets'])
                 ->name('getTrashedProjets');
-            //
-        Route::get('restoreTranche/{id}', 'App\Http\Controllers\TrancheController@restoreTranche')
+            
+        Route::get('restoreTranche/{id}', [TrancheController::class,'restoreTranche'])
                 ->name('restoreTranche');
-        Route::get('getTrashedTranches', 'App\Http\Controllers\TrancheController@getTrashedTranches')
-                ->name('getTrashedTranches');
-           //
-        Route::get('restoreTranche/{id}', 'App\Http\Controllers\TrancheController@restoreTranche')
-                ->name('restoreTranche');
-        Route::get('getTrashedTranches', 'App\Http\Controllers\TrancheController@getTrashedTranches')
+        Route::get('getTrashedTranches', [TrancheController::class,'getTrashedTranches'])
                  ->name('getTrashedTranches');
-        //
-        Route::get('restoreTypeBien/{id}', 'App\Http\Controllers\TypeBienController@restoreTypeBien')
+
+        Route::get('restoreTypeBien/{id}', [TypeBienController::class,'restoreTypeBien'])
                 ->name('restoreTypeBien');
-        Route::get('getTrashedTypesBien', 'App\Http\Controllers\TypeBienController@getTrashedTypesBien')
+        Route::get('getTrashedTypesBien', [TypeBienController::class,'getTrashedTypesBien'])
                 ->name('getTrashedTypesBien');
+        
+        Route::get('restoreTypeProjet/{id}', [TypeProjetController::class,'restoreTypeProjet'])
+                ->name('restoreTypeBien');
+        Route::get('getTrashedTypesProjet', [TypeProjetController::class,'getTrashedTypesProjet'])
+                ->name('getTrashedTypesProjet');
+        
     
     });
     

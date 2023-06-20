@@ -47,7 +47,7 @@ class StoreProjetRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'nom.unique' => 'Ce projet est deje exist dans cette societe',
+            'nom.unique' => 'Ce projet est deja exist dans cette societe',
         ];
     }
 }

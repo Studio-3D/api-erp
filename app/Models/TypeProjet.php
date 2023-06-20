@@ -11,5 +11,8 @@ class TypeProjet extends Model
     use HasFactory, SoftDeletes;
     protected $table = 'type_projets';
     protected $dates = ['deleted_at'];
+    protected $fillable = [
+        'type'
+    ];
     
 }
