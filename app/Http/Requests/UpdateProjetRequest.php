@@ -30,6 +30,7 @@ class UpdateProjetRequest extends FormRequest
             'prix_acquisition' => 'numeric',
             'limite_annulation_reservation' => 'integer',
             'nbr_tranches' => 'integer',
+            'type_id' => 'integer',
             'nbr_blocs' => 'integer',
             'nbr_immeubles' => 'integer',
             'nbr_biens' => 'integer',
@@ -43,7 +44,7 @@ class UpdateProjetRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'nom.unique' => 'Ce projet est deje exist dans cette societe',
+            'nom.unique' => 'Ce projet est deja exist dans cette societe',
         ];
     }
 }

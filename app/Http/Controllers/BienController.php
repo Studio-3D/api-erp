@@ -15,7 +15,13 @@ class BienController extends Controller
      */
     public function index()
     {
-        //
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+            $biens = Bien::all();
+            return response()->json(['message' => $biens]);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+
     }
 
     /**
@@ -31,7 +37,40 @@ class BienController extends Controller
      */
     public function store(StoreBienRequest $request)
     {
-        //
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+            
+
+            $bien = new bien();
+
+            $bien->propriete_dite_bien = $request['propriete_dite_bien'];
+            $bien->numero = $request['numero'];
+            $bien->niveau = $request['niveau'];
+            $bien->orientation = $request['orientation'];
+            $bien->conventionne = $request['conventionne'];
+            $bien->prix_unitaire = $request['prix_unitaire'];
+            $bien->prix = $request['prix'];
+            $bien->superficie_architecte = $request['superficie_architecte'];
+            $bien->superficie_habitable = $request['superficie_habitable'];
+            $bien->nbre_facades = $request['nbre_facades'];
+            $bien->superficie_parking = $request['superficie_parking'];
+            $bien->superficie_box = $request['superficie_box'];
+            $bien->superficie_terrasse = $request['superficie_terrasse'];
+            $bien->superficie_jardin = $request['superficie_jardin'];
+            $bien->titre_foncier = $request['titre_foncier'];
+            $bien->etat = $request['etat'];
+            $bien->type_id = $request['type_id'];
+            $bien->projet_id = $request['projet_id'];
+            $bien->tranche_id = $request['tranche_id'];
+            $bien->bloc_id = $request['bloc_id'];
+            $bien->immeuble_id = $request['immeuble_id'];
+
+            $bien->save();
+
+            return response()->json(['message' => 'bien creer avec succes'], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     /**
@@ -39,7 +78,11 @@ class BienController extends Controller
      */
     public function show(Bien $bien)
     {
-        //
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+            return response()->json(['message' => $bien], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     /**
@@ -55,7 +98,14 @@ class BienController extends Controller
      */
     public function update(UpdateBienRequest $request, Bien $bien)
     {
-        //
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+
+            $bien->update($request->all());
+
+            return response()->json(['message' => 'bien updated succesfully'], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     /**
@@ -63,7 +113,17 @@ class BienController extends Controller
      */
     public function destroy(Bien $bien)
     {
-        //
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+
+            if ($bien->delete()) {
+                return response()->json(['message' => 'bien deleted succesfully'], 200);
+            } else {
+                return response()->json(['message' => 'bien non deleted'], 404);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
     }
     public function restoreBien($bien_id)
     {

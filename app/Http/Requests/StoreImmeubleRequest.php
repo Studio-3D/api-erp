@@ -24,8 +24,24 @@ class StoreImmeubleRequest extends FormRequest
     {
         return [
             'nom' => ['required', Rule::unique('immeubles')->where(function ($query) {
-                $query->where('nom', $this->nom)
-                    ->where('bloc_id', $this->bloc_id);})],
+                if ($this->bloc_id==null){
+                    if ($this->tranche_id==null)
+                    {$query->where('nom', $this->nom)
+                    ->where('projet_id', $this->projet_id);
+                    }
+                    else {$query->where('nom', $this->nom)
+                        ->where('tranche_id', $this->tranche_id);   
+                    }
+                }
+                
+                else{
+                    $query->where('nom', $this->nom)
+                    ->where('bloc_id', $this->bloc_id);
+                }
+                  
+                
+                
+                })],
             'tranche_id' => 'integer',
             'projet_id' => 'required|integer',
             'nbre_biens' => 'integer',
@@ -34,10 +50,25 @@ class StoreImmeubleRequest extends FormRequest
         ];
     }
 
-    public function messages(): array
-    {
-        return [
-            'nom.unique' => 'Cet immeuble est deje exist dans ce bloc',
-        ];
-    }
+    
+        public function messages(): array
+
+        {   if ($this->tranche_id==null && $this->bloc_id==null){
+            return [
+            
+                'nom.unique' =>  'Cet immeuble est deja exist dans ce projet',
+            ];}
+
+        elseif ($this->bloc_id==null) {
+            return [
+                
+                'nom.unique' =>  'Cet immeuble est deja exist dans ce tranche',
+            ];}
+        else {
+            return [
+                
+                'nom.unique' =>  'Cet immeuble est deja exist dans ce bloc',
+            ];}
+        }
+    
 }
