@@ -41,28 +41,28 @@ class TrancheController extends Controller
     public function store(StoreTrancheRequest $request)
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            if ($request['nbre_blocs'] == "") {
+            if ($request->nbre_blocs == "") {
                 $request['nbre_blocs'] = '0';
             }
             
-            if ($request['nbre_immeubles'] == "") {
+            if ($request->nbre_immeubles == "") {
                 $request['nbre_immeubles'] = '0';
             }
-            if ($request['nbre_biens'] == "") {
+            if ($request->nbre_biens == "") {
                 $request['nbre_biens'] = '0';
             }
 
             
             $tranche = new Tranche();
 
-            $tranche->nom = $request['nom'];
-            $tranche->projet_id = $request['projet_id'];
-            $tranche->date_lancement = $request['date_lancement'];
-            $tranche->date_livraison = $request['date_livraison'];
-            $tranche->niveau_etages = $request['niveau_etages'];
-            $tranche->nbre_blocs = $request['nbre_blocs'];
-            $tranche->nbre_immeubles = $request['nbre_immeubles'];
-            $tranche->nbre_biens = $request['nbre_biens'];
+            $tranche->nom = $request->nom;
+            $tranche->projet_id = $request->projet_id;
+            $tranche->date_lancement = $request->date_lancement;
+            $tranche->date_livraison = $request->date_livraison;
+            $tranche->niveau_etages = $request->niveau_etages;
+            $tranche->nbre_blocs = $request->nbre_blocs;
+            $tranche->nbre_immeubles = $request->nbre_immeubles;
+            $tranche->nbre_biens = $request->nbre_biens;
             $tranche->save();
 
             return response()->json(['message' => 'tranche creer avec succes'], 200);

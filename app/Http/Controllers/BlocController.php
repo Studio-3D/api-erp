@@ -40,21 +40,21 @@ class BlocController extends Controller
     public function store(StoreBlocRequest $request)
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            if ($request['nbre_immeubles'] == "") {
+            if ($request->nbre_immeubles == "") {
                 $request['nbre_immeubles'] = '0';
             }
-            if ($request['nbre_biens'] == "") {
+            if ($request->nbre_biens == "") {
                 $request['nbre_biens'] = '0';
             }
 
             $bloc = new Bloc();
 
-            $bloc->nom = $request['nom'];
-            $bloc->titre_foncier = $request['titre_foncier'];
-            $bloc->projet_id = $request['projet_id'];
-            $bloc->tranche_id = $request['tranche_id'];
-            $bloc->nbre_immeubles = $request['nbre_immeubles'];
-            $bloc->nbre_biens = $request['nbre_biens'];
+            $bloc->nom = $request->nom;
+            $bloc->titre_foncier = $request->titre_foncier;
+            $bloc->projet_id = $request->projet_id;
+            $bloc->tranche_id = $request->tranche_id;
+            $bloc->nbre_immeubles = $request->nbre_immeubles;
+            $bloc->nbre_biens = $request->nbre_biens;
             $bloc->save();
 
             return response()->json(['message' => 'bloc creer avec succes'], 200);

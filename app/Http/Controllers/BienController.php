@@ -42,27 +42,27 @@ class BienController extends Controller
 
             $bien = new bien();
 
-            $bien->propriete_dite_bien = $request['propriete_dite_bien'];
-            $bien->numero = $request['numero'];
-            $bien->niveau = $request['niveau'];
-            $bien->orientation = $request['orientation'];
-            $bien->conventionne = $request['conventionne'];
-            $bien->prix_unitaire = $request['prix_unitaire'];
-            $bien->prix = $request['prix'];
-            $bien->superficie_architecte = $request['superficie_architecte'];
-            $bien->superficie_habitable = $request['superficie_habitable'];
-            $bien->nbre_facades = $request['nbre_facades'];
-            $bien->superficie_parking = $request['superficie_parking'];
-            $bien->superficie_box = $request['superficie_box'];
-            $bien->superficie_terrasse = $request['superficie_terrasse'];
-            $bien->superficie_jardin = $request['superficie_jardin'];
-            $bien->titre_foncier = $request['titre_foncier'];
-            $bien->etat = $request['etat'];
-            $bien->type_id = $request['type_id'];
-            $bien->projet_id = $request['projet_id'];
-            $bien->tranche_id = $request['tranche_id'];
-            $bien->bloc_id = $request['bloc_id'];
-            $bien->immeuble_id = $request['immeuble_id'];
+            $bien->propriete_dite_bien = $request->propriete_dite_bien;
+            $bien->numero = $request->numero;
+            $bien->niveau = $request->niveau;
+            $bien->orientation = $request->orientation;
+            $bien->conventionne = $request->conventionne;
+            $bien->prix_unitaire = $request->prix_unitaire;
+            $bien->prix = $request->prix;
+            $bien->superficie_architecte = $request->superficie_architecte;
+            $bien->superficie_habitable = $request->superficie_habitable;
+            $bien->nbre_facades = $request->nbre_facades;
+            $bien->superficie_parking = $request->superficie_parking;
+            $bien->superficie_box = $request->superficie_box;
+            $bien->superficie_terrasse = $request->superficie_terrasse;
+            $bien->superficie_jardin = $request->superficie_jardin;
+            $bien->titre_foncier = $request->titre_foncier;
+            $bien->etat = $request->etat;
+            $bien->type_id = $request->type_id;
+            $bien->projet_id = $request->projet_id;
+            $bien->tranche_id = $request->tranche_id;
+            $bien->bloc_id = $request->bloc_id;
+            $bien->immeuble_id = $request->immeuble_id;
 
             $bien->save();
 
