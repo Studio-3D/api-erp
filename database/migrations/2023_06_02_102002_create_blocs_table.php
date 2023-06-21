@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('blocs', function (Blueprint $table) {
             $table->id();
             $table->string('nom');
-            $table->string('titre_foncier');
+            $table->string('titre_foncier')->nullable();
             $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
             $table->foreignId('tranche_id')->constrained('tranches')->onDelete('cascade')->nullable();
             $table->integer('nbre_immeubles')->default(0);

@@ -58,7 +58,7 @@ class SocieteController extends Controller
             $databaseSociete = new DatabaseHelper();
             $response = $databaseSociete->createNewClientDatabase($raison_sociale_concatene, $societe->id);
             if ($response->getStatusCode() == 200) {
-                return response()->json(['message' => $response->getOriginalContent()['message']]);
+                return response()->json(['message' => $response->getOriginalContent()['message'].$societe]);
             } else {
                 return response()->json(['message' => $response->getOriginalContent()['message']]);
             }
@@ -110,7 +110,7 @@ class SocieteController extends Controller
             $societe->update($request->all());
             
 
-            return response()->json(['message' => 'societe updated succesfully'], 200);
+            return response()->json(['message' => 'societe updated succesfully'.$societe], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

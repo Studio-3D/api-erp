@@ -50,7 +50,7 @@ class TrancheController extends Controller
             $tranche->nbre_biens = $request->nbre_biens? $request->nbre_biens:0;
             $tranche->save();
 
-            return response()->json(['message' => 'tranche created succesfully'], 200);
+            return response()->json(['message' => 'tranche created succesfully'.$tranche], 200);
            
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -90,7 +90,7 @@ class TrancheController extends Controller
       
             $tranche->update($request->all());
             
-            return response()->json(['message' => 'tranche updated succesfully'], 200);
+            return response()->json(['message' => 'tranche updated succesfully'.$tranche], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
