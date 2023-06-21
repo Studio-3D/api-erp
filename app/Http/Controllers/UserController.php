@@ -33,11 +33,15 @@ class UserController extends Controller
 
     public function index()
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-            $users = User::all();
-            return response()->json(['user' => $users]);
+        if (Auth::guard('api')->check()){
+            if(Auth::guard('api')->user()->type == 1) {
+                $users = User::all();
+                return response()->json(['user' => $users]);
+            }else if(Auth::guard('api')->user()->type == 2){
+                $users = User::where('societe_id', Auth::guard('api')->user()->societe_id)->get();
+                return response()->json(['message' => $users], 200);
+            }
         }
-
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
@@ -96,7 +100,13 @@ class UserController extends Controller
     public function show(user $user)
     {
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+           if($user){
             return response()->json(['message' => $user], 200);
+           }
+           else{
+            return response()->json(['message' => 'User not found'], 200);
+           }
+            
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -156,9 +166,10 @@ class UserController extends Controller
         }
     }
     public function getUsersBySocieteId($societe_id){
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1){
             $users = User::where('societe_id', $societe_id)->get();
             return response()->json(['message' => $users], 200);
+            
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
 
