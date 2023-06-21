@@ -48,7 +48,7 @@ class BlocController extends Controller
             $bloc->nbre_biens = $request->nbre_biens? $request->nbre_biens:0;
             $bloc->save();
 
-            return response()->json(['message' => 'bloc creer avec succes'], 200);
+            return response()->json(['message' => 'bloc created succesfully'], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -62,12 +62,11 @@ class BlocController extends Controller
      */
     public function show(Bloc $bloc)
     {
-         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+        if (Auth::guard('api')->check()) {
             return response()->json(['message' => $bloc], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-        //
     }
 
     /**
@@ -75,7 +74,11 @@ class BlocController extends Controller
      */
     public function edit(Bloc $bloc)
     {
-        //
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+             return response()->json(['message' => $bloc], 200);
+        }else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     /**
@@ -89,8 +92,6 @@ class BlocController extends Controller
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-
-        //
     }
 
     /**
@@ -99,11 +100,10 @@ class BlocController extends Controller
     public function destroy(Bloc $bloc)
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-
             if ($bloc->delete()) {
                 return response()->json(['message' => 'bloc deleted succesfully'], 200);
             } else {
-                return response()->json(['message' => 'bloc non deleted'], 404);
+                return response()->json(['message' => 'bloc not deleted'], 404);
             }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -114,11 +114,8 @@ class BlocController extends Controller
     public function restoreBloc($bloc_id)
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-
             Bloc::where('id', $bloc_id)->withTrashed()->restore();
-
-            return response()->json(['message' => 'Bloc est bien restaurer'], 200);
-
+            return response()->json(['message' => 'Bloc restored'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -128,9 +125,7 @@ class BlocController extends Controller
 
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
             $blocs = Bloc::onlyTrashed()->get();
-
             return response()->json(['message' => $blocs], 200);
-
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
