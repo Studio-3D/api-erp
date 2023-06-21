@@ -17,14 +17,11 @@ class TrancheController extends Controller
      */
     public function index()
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+        if (Auth::guard('api')->check()) {
             $tranches = Tranche::all();
             return response()->json(['message' => $tranches]);
         }
-
         return response()->json(['error' => 'Unauthorized'], 401);
-    
-        //
     }
 
     /**
@@ -41,18 +38,6 @@ class TrancheController extends Controller
     public function store(StoreTrancheRequest $request)
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            if ($request->nbre_blocs == "") {
-                $request['nbre_blocs'] = '0';
-            }
-            
-            if ($request->nbre_immeubles == "") {
-                $request['nbre_immeubles'] = '0';
-            }
-            if ($request->nbre_biens == "") {
-                $request['nbre_biens'] = '0';
-            }
-
-            
             $tranche = new Tranche();
 
             $tranche->nom = $request->nom;
@@ -60,12 +45,12 @@ class TrancheController extends Controller
             $tranche->date_lancement = $request->date_lancement;
             $tranche->date_livraison = $request->date_livraison;
             $tranche->niveau_etages = $request->niveau_etages;
-            $tranche->nbre_blocs = $request->nbre_blocs;
-            $tranche->nbre_immeubles = $request->nbre_immeubles;
-            $tranche->nbre_biens = $request->nbre_biens;
+            $tranche->nbre_blocs = $request->nbre_blocs? $request->nbre_blocs:0;
+            $tranche->nbre_immeubles = $request->nbre_immeubles? $request->nbre_immeubles:0;
+            $tranche->nbre_biens = $request->nbre_biens? $request->nbre_biens:0;
             $tranche->save();
 
-            return response()->json(['message' => 'tranche creer avec succes'], 200);
+            return response()->json(['message' => 'tranche created succesfully'], 200);
            
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -77,12 +62,11 @@ class TrancheController extends Controller
      */
     public function show(Tranche $tranche)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+        if (Auth::guard('api')->check()) {
             return response()->json(['message' => $tranche], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
-        }
-        
+        }       
     }
 
     /**
@@ -90,7 +74,11 @@ class TrancheController extends Controller
      */
     public function edit(Tranche $tranche)
     {
-        //
+        if (Auth::guard('api')->check()) {
+            return response()->json(['message' => $tranche], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }  
     }
 
     /**
@@ -119,7 +107,7 @@ class TrancheController extends Controller
             if ($tranche->delete()) {
                 return response()->json(['message' => 'tranche deleted succesfully'], 200);
             } else {
-                return response()->json(['message' => 'tranche non deleted'], 404);
+                return response()->json(['message' => 'tranche not deleted'], 404);
             }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -131,23 +119,17 @@ class TrancheController extends Controller
     public function restoreTranche($tranche_id)
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-
             Tranche::where('id', $tranche_id)->withTrashed()->restore();
-
-            return response()->json(['message' => 'Tranche est bien restaurer'], 200);
-
+            return response()->json(['message' => 'Tranche restored succesfully'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
     public function getTrashedTranches()
     {
-
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
             $tranches = Tranche::onlyTrashed()->get();
-
             return response()->json(['message' => $tranches], 200);
-
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

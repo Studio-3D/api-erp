@@ -41,14 +41,9 @@ class TypeProjetController extends Controller
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
             
-           
-            
-            
             $typeprojet = new typeprojet();
-
             $typeprojet->type = $request->type;
-            
-           $typeprojet->save();
+            $typeprojet->save();
 
             return response()->json(['message' => 'ce type de projet creer avec succes'], 200);
            

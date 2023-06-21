@@ -17,7 +17,7 @@ class ProjetController extends Controller
      */
     public function index()
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+        if (Auth::guard('api')->check()) {
             $projets = Projet::all();
             return response()->json(['message' => $projets]);
         }
@@ -39,22 +39,10 @@ class ProjetController extends Controller
     public function store(StoreProjetRequest $request)
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            if ($request->nbr_tranches== "") {
-                $request['nbr_tranches'] = '0';
-            }
-            if ($request->nbr_blocs== "") {
-                $request['nbr_blocs'] = '0';
-            }
-            if ($request->nbr_immeubles== "") {
-                $request['nbr_immeubles'] = '0';
-            }
-            if ($request->nbr_biens== "") {
-                $request['nbr_biens'] = '0';
-            }
-
-            
+                       
             $projet = new projet();
 
+            $projet->societe_id = $request->societe_id;
             $projet->nom = $request->nom;
             $projet->code = $request->code;
             $projet->adresse = $request->adresse;
@@ -65,14 +53,13 @@ class ProjetController extends Controller
             $projet->prix_acquisition = $request->prix_acquisition;
             $projet->limite_annulation_reservation = $request->limite_annulation_reservation;
             $projet->type_id = $request->type_id;
-            $projet->nbr_tranches = $request->nbr_tranches;
-            $projet->nbr_blocs = $request->nbr_blocs;
-            $projet->nbr_immeubles = $request->nbr_immeubles;
-            $projet->nbr_biens = $request->nbr_biens;
-            $projet->societe_id = $request->societe_id;
+            $projet->nbre_tranches = $request->nbre_tranches?$request->nbre_tranches:0;
+            $projet->nbre_blocs = $request->nbre_blocs?$request->nbre_blocs:0;
+            $projet->nbre_immeubles = $request->nbre_immeubles?$request->nbre_immeubles:0;
+            $projet->nbre_biens = $request->nbre_biens?$request->nbre_biens:0;
             $projet->save();
 
-            return response()->json(['message' => 'Projet creer avec succes'], 200);
+            return response()->json(['message' => 'Projet created succesfully'], 200);
            
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -84,12 +71,11 @@ class ProjetController extends Controller
      */
     public function show(Projet $projet)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+        if (Auth::guard('api')->check()) {
             return response()->json(['message' => $projet], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-        //
     }
 
     /**
@@ -97,7 +83,11 @@ class ProjetController extends Controller
      */
     public function edit(Projet $projet)
     {
-        //
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+            return response()->json(['message' => $projet], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     /**
@@ -127,30 +117,25 @@ class ProjetController extends Controller
             if ($projet->delete()) {
                 return response()->json(['message' => 'Projet deleted succesfully'], 200);
             } else {
-                return response()->json(['message' => 'Projet non deleted'], 404);
+                return response()->json(['message' => 'Projet not deleted'], 404);
             }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-        
+        }     
     }
 
     public function restoreProjet($projet_id)
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-
+            
             Projet::where('id', $projet_id)->withTrashed()->restore();
-
-            return response()->json(['message' => 'Projet est bien restaurer'], 200);
-
+            return response()->json(['message' => 'Projet restored succesfully'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
     public function getTrashedProjets()
     {
-
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
             $projets = Projet::onlyTrashed()->get();
 

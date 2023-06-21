@@ -17,13 +17,11 @@ class BlocController extends Controller
      */
     public function index()
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+        if (Auth::guard('api')->check()) {
             $blocs = Bloc::all();
             return response()->json(['message' => $blocs]);
         }
-
         return response()->json(['error' => 'Unauthorized'], 401);
-
     }
 
     /**
@@ -40,21 +38,14 @@ class BlocController extends Controller
     public function store(StoreBlocRequest $request)
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            if ($request->nbre_immeubles == "") {
-                $request['nbre_immeubles'] = '0';
-            }
-            if ($request->nbre_biens == "") {
-                $request['nbre_biens'] = '0';
-            }
-
+            
             $bloc = new Bloc();
-
             $bloc->nom = $request->nom;
             $bloc->titre_foncier = $request->titre_foncier;
             $bloc->projet_id = $request->projet_id;
             $bloc->tranche_id = $request->tranche_id;
-            $bloc->nbre_immeubles = $request->nbre_immeubles;
-            $bloc->nbre_biens = $request->nbre_biens;
+            $bloc->nbre_immeubles = $request->nbre_immeubles? $request->nbre_immeubles:0;
+            $bloc->nbre_biens = $request->nbre_biens? $request->nbre_biens:0;
             $bloc->save();
 
             return response()->json(['message' => 'bloc creer avec succes'], 200);
@@ -93,9 +84,7 @@ class BlocController extends Controller
     public function update(UpdateBlocRequest $request, Bloc $bloc)
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-
             $bloc->update($request->all());
-
             return response()->json(['message' => 'bloc updated succesfully'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
