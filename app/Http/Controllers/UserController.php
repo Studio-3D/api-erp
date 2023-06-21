@@ -87,7 +87,7 @@ class UserController extends Controller
             }
             $user->save();
 
-            return response()->json(['message' => 'User created  succesfully'.$user], 200);
+            return response()->json(['message' => $user], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -142,7 +142,7 @@ class UserController extends Controller
             $user->update($request->all());
 
 
-            return response()->json(['message' => 'user updated succesfully'.$user], 200);
+            return response()->json(['message' => $user], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

@@ -57,7 +57,7 @@ class ImmeubleController extends Controller
             $immeuble->nbre_biens = $request->nbre_biens;
             $immeuble->save();
 
-            return response()->json(['message' => 'immeuble creer avec succes'.$immeuble], 200);
+            return response()->json(['message' => $immeuble], 200);
            
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -93,7 +93,7 @@ class ImmeubleController extends Controller
       
             $immeuble->update($request->all());
             
-            return response()->json(['message' => 'immeuble updated succesfully'.$immeuble], 200);
+            return response()->json(['message' => $immeuble], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

@@ -59,7 +59,7 @@ class ProjetController extends Controller
             $projet->nbre_biens = $request->nbre_biens?$request->nbre_biens:0;
             $projet->save();
 
-            return response()->json(['message' => 'Projet created succesfully'.$projet], 200);
+            return response()->json(['message' => $projet], 200);
            
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -99,7 +99,7 @@ class ProjetController extends Controller
       
             $projet->update($request->all());
             
-            return response()->json(['message' => 'projet updated succesfully'.$projet], 200);
+            return response()->json(['message' => $projet], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

@@ -45,7 +45,7 @@ class TypeProjetController extends Controller
             $typeprojet->type = $request->type;
             $typeprojet->save();
 
-            return response()->json(['message' => 'ce type de projet creer avec succes'.$typeprojet], 200);
+            return response()->json(['message' => $typeprojet], 200);
            
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -81,7 +81,7 @@ class TypeProjetController extends Controller
       
             $typeProjet->update($request->all());
             
-            return response()->json(['message' => 'type projet updated succesfully'.$typeProjet], 200);
+            return response()->json(['message' => $typeProjet], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

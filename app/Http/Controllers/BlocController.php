@@ -48,7 +48,7 @@ class BlocController extends Controller
             $bloc->nbre_biens = $request->nbre_biens? $request->nbre_biens:0;
             $bloc->save();
 
-            return response()->json(['message' => 'bloc creer avec succes'.$bloc], 200);
+            return response()->json(['message' => $bloc], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -85,7 +85,7 @@ class BlocController extends Controller
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
             $bloc->update($request->all());
-            return response()->json(['message' => 'bloc updated succesfully'.$bloc], 200);
+            return response()->json(['message' => $bloc], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
