@@ -42,19 +42,19 @@ class ImmeubleController extends Controller
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
             
            
-            if ($request['nbre_biens'] == "") {
+            if ($request->nbre_biens == "") {
                 $request['nbre_biens'] = '0';
             }
             
             
             $immeuble = new immeuble();
 
-            $immeuble->nom = $request['nom'];
-            $immeuble->titre_foncier = $request['titre_foncier'];
-            $immeuble->projet_id = $request['projet_id'];
-            $immeuble->tranche_id = $request['tranche_id'];
-            $immeuble->bloc_id = $request['bloc_id'];
-            $immeuble->nbre_biens = $request['nbre_biens'];
+            $immeuble->nom = $request->nom;
+            $immeuble->titre_foncier = $request->titre_foncier;
+            $immeuble->projet_id = $request->projet_id;
+            $immeuble->tranche_id = $request->tranche_id;
+            $immeuble->bloc_id = $request->bloc_id;
+            $immeuble->nbre_biens = $request->nbre_biens;
            $immeuble->save();
 
             return response()->json(['message' => 'immeuble creer avec succes'], 200);

@@ -46,7 +46,7 @@ class TypeProjetController extends Controller
             
             $typeprojet = new typeprojet();
 
-            $typeprojet->type = $request['type'];
+            $typeprojet->type = $request->type;
             
            $typeprojet->save();
 

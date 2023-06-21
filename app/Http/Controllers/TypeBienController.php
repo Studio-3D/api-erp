@@ -40,18 +40,10 @@ class TypeBienController extends Controller
     public function store(StoreTypeBienRequest $request)
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            
-           
-            
-            
             $typebien = new typebien();
-
-            $typebien->type = $request['type'];
-            
-           $typebien->save();
-
+            $typebien->type = $request->type;
+            $typebien->save();
             return response()->json(['message' => 'ce type de bien creer avec succes'], 200);
-           
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

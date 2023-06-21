@@ -41,19 +41,19 @@ class SocieteController extends Controller
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
 
             $societe = new Societe();
-            $societe->raison_sociale = $request['raison_sociale'];
-            $societe->adresse = $request['adresse'];
-            $societe->nom_contact = $request['nom_contact'];
-            $societe->prenom_contact = $request['prenom_contact'];
-            $societe->tel = $request['tel'];
-            $societe->email = $request['email'];
+            $societe->raison_sociale = $request->raison_sociale;
+            $societe->adresse = $request->adresse;
+            $societe->nom_contact = $request->nom_contact;
+            $societe->prenom_contact = $request->prenom_contact;
+            $societe->tel = $request->tel;
+            $societe->email = $request->email;
             if ($request->hasFile('logo')) {
                 $logo= $request->file('logo')->store($request->raison_sociale.'/logos', 'public');
                 $societe->logo = $logo;
 
             }
             $societe->save();
-            $raison_sociale_concatene = str_replace(' ', '', $request['raison_sociale']);
+            $raison_sociale_concatene = str_replace(' ', '', $request->raison_sociale);
 
             $databaseSociete = new DatabaseHelper();
             $response = $databaseSociete->createNewClientDatabase($raison_sociale_concatene, $societe->id);

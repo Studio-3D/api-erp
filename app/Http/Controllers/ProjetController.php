@@ -39,37 +39,37 @@ class ProjetController extends Controller
     public function store(StoreProjetRequest $request)
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            if ($request['nbr_tranches'] == "") {
+            if ($request->nbr_tranches== "") {
                 $request['nbr_tranches'] = '0';
             }
-            if ($request['nbr_blocs'] == "") {
+            if ($request->nbr_blocs== "") {
                 $request['nbr_blocs'] = '0';
             }
-            if ($request['nbr_immeubles'] == "") {
+            if ($request->nbr_immeubles== "") {
                 $request['nbr_immeubles'] = '0';
             }
-            if ($request['nbr_biens'] == "") {
+            if ($request->nbr_biens== "") {
                 $request['nbr_biens'] = '0';
             }
 
             
             $projet = new projet();
 
-            $projet->nom = $request['nom'];
-            $projet->code = $request['code'];
-            $projet->adresse = $request['adresse'];
-            $projet->date_autorisation_construction = $request['date_autorisation_construction'];
-            $projet->date_permis_habiter = $request['date_permis_habiter'];
-            $projet->titre_foncier = $request['titre_foncier'];
-            $projet->surface_terrain = $request['surface_terrain'];
-            $projet->prix_acquisition = $request['prix_acquisition'];
-            $projet->limite_annulation_reservation = $request['limite_annulation_reservation'];
-            $projet->type_id = $request['type_id'];
-            $projet->nbr_tranches = $request['nbr_tranches'];
-            $projet->nbr_blocs = $request['nbr_blocs'];
-            $projet->nbr_immeubles = $request['nbr_immeubles'];
-            $projet->nbr_biens = $request['nbr_biens'];
-            $projet->societe_id = $request['societe_id'];
+            $projet->nom = $request->nom;
+            $projet->code = $request->code;
+            $projet->adresse = $request->adresse;
+            $projet->date_autorisation_construction = $request->date_autorisation_construction;
+            $projet->date_permis_habiter = $request->date_permis_habiter;
+            $projet->titre_foncier = $request->titre_foncier;
+            $projet->surface_terrain = $request->surface_terrain;
+            $projet->prix_acquisition = $request->prix_acquisition;
+            $projet->limite_annulation_reservation = $request->limite_annulation_reservation;
+            $projet->type_id = $request->type_id;
+            $projet->nbr_tranches = $request->nbr_tranches;
+            $projet->nbr_blocs = $request->nbr_blocs;
+            $projet->nbr_immeubles = $request->nbr_immeubles;
+            $projet->nbr_biens = $request->nbr_biens;
+            $projet->societe_id = $request->societe_id;
             $projet->save();
 
             return response()->json(['message' => 'Projet creer avec succes'], 200);
