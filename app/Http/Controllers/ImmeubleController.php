@@ -47,7 +47,8 @@ class ImmeubleController extends Controller
             $immeuble->bloc_id = $request->bloc_id;
             $immeuble->nbre_biens = $request->nbre_biens? $request->nbre_biens:0;
             $immeuble->save();
-            return response()->json(['message' => 'immeuble created successfully'], 200);
+            return response()->json(['message' => $immeuble], 200);
+
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -84,7 +85,7 @@ class ImmeubleController extends Controller
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
             $immeuble->update($request->all());
-            return response()->json(['message' => 'immeuble updated succesfully'], 200);
+            return response()->json(['message' => $immeuble], 200);  
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

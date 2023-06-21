@@ -43,7 +43,7 @@ class TypeBienController extends Controller
             $typebien = new typebien();
             $typebien->type = $request->type;
             $typebien->save();
-            return response()->json(['message' => 'ce type de bien creer avec succes'], 200);
+            return response()->json(['message' => $typebien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -78,7 +78,7 @@ class TypeBienController extends Controller
       
             $typeBien->update($request->all());
             
-            return response()->json(['message' => 'typebien updated succesfully'], 200);
+            return response()->json(['message' => $typeBien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

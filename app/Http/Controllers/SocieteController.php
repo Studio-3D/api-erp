@@ -110,7 +110,7 @@ class SocieteController extends Controller
             $societe->update($request->all());
             
 
-            return response()->json(['message' => 'societe updated succesfully'], 200);
+            return response()->json(['message' => $societe], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

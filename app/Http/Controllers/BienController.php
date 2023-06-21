@@ -66,7 +66,7 @@ class BienController extends Controller
 
             $bien->save();
 
-            return response()->json(['message' => 'bien creer avec succes'], 200);
+            return response()->json(['message' => $bien], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -102,7 +102,7 @@ class BienController extends Controller
 
             $bien->update($request->all());
 
-            return response()->json(['message' => 'bien updated succesfully'], 200);
+            return response()->json(['message' => $bien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
