@@ -7,9 +7,7 @@ use App\Http\Requests\StoreBienRequest;
 use App\Http\Requests\UpdateBienRequest;
 use App\Models\Bien;
 use App\Models\HistoriqueBien;
-use App\Models\historique_biens;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Http\Request;
 
 
 class BienController extends Controller
@@ -229,6 +227,17 @@ class BienController extends Controller
             $Historique_bien->bien_id = $bien_id;
             $Historique_bien->save();
             return response()->json(['message' => $bien], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function getHistoriqueBien($bien_id)
+    {  
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
+            $Historique_bien = HistoriqueBien::where('bien_id', $bien_id)->get();
+            return response()->json(['message' => $Historique_bien], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

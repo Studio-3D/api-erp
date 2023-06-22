@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('historique_biens', function (Blueprint $table) {
             $table->id();
             $table->string('action');
+            //1=disponible, 2=pré-réservé, 3=réservé, 4=bloqué
             $table->string('description');
             $table->bigInteger('bien_id')->unsigned();
             $table->foreign('bien_id')->references('id')->on('biens');
