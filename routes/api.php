@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BienController;
 use App\Http\Controllers\BlocController;
+use App\Http\Controllers\CompositionBienController;
 use App\Http\Controllers\ImmeubleController;
 use App\Http\Controllers\ProjetController;
 use Illuminate\Http\Request;
@@ -82,6 +83,14 @@ Route::middleware('auth:api')->group(function () {
         Route::put('prereserverBien/{id}', [BienController::class,'prereserverBien'])->name('prereserverBien');
         Route::put('libererBien/{id}', [BienController::class,'libererBien'])->name('libererBien');
         Route::get('getHistoriqueBien/{id}', [BienController::class,'getHistoriqueBien'])->name('getHistoriqueBien');
+        Route::resource('compositionBien', CompositionBienController::class);
+        Route::post('restoreCompositionBien/{id}', [CompositionBienController::class,'restoreCompositionBien'])->name('restoreCompositionBien');
+        Route::get('getTrashedCompositionBiens', [CompositionBienController::class,'getTrashedCompositionBiens'])->name('getTrashedCompositionBiens');
+        Route::get('getComposition/{id}', [CompositionBienController::class,'getComposition'])->name('getComposition');
+
+        
+
+
 
         
     
