@@ -101,6 +101,11 @@ Route::middleware('auth:api')->group(function () {
         Route::get('getBiensByTranche/{id}', [BienController::class,'getBiensByTranche'])->name('getBiensByTranche');
         Route::get('getBiensByBloc/{id}', [BienController::class,'getBiensByBloc'])->name('getBiensByBloc');
         Route::get('getBiensByImmeuble/{id}', [BienController::class,'getBiensByImmeuble'])->name('getBiensByImmeuble');
+        Route::get('getBiensDispoByImmeuble/{id}', [BienController::class,'getBiensDispoByImmeuble'])->name('getBiensDispoByImmeuble');
+        Route::get('getBiensDispoByBloc/{id}', [BienController::class,'getBiensDispoByBloc'])->name('getBiensDispoByBloc');
+        Route::get('getBiensDispoByTranche/{id}', [BienController::class,'getBiensDispoByTranche'])->name('getBiensDispoByTranche');
+        Route::get('getBiensDispoByProjet/{id}', [BienController::class,'getBiensDispoByProjet'])->name('getBiensByDispoProjet');
+
 
         
         
