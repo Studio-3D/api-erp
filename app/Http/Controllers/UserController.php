@@ -10,7 +10,9 @@ use \Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use \Illuminate\Support\Facades\Storage;
-
+use App\Http\Helpers\DatabaseHelper;
+use App\Http\Helpers\RoleHelper;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -85,8 +87,36 @@ class UserController extends Controller
                 $photo= $request->file('photo')->store($societe->raison_sociale.'/photos_users', 'public');
                 $user->photo = $photo;
             }
-            $user->save();
+            
+            if ($user->save()) {
+                DatabaseHelper::Config();  
+                $userData = [
+                    'societe_id' => $request->societe_id,
+                    'user_id_origin' => $user->id,
+                    'name' => $request->name,
+                    'prenom' => $request->prenom,
+                    'email' => $request->email,
+                    'password' => $request->password,
+                    'gender' => $request->gender,
+                    'type' => $request->type,
+                    'phone' => $request->phone,
+                    'cin' => $request->cin,
+                    'fonction' => $request->fonction,
+                    'date_embauche' => $request->date_embauche,
+                    'niveau_etude' => $request->niveau_etude,
+                    'adresse' => $request->adresse,
+                    'cnss' => $request->cnss,
+                    'is_actif' => $request->is_actif ? $request->is_actif : 1,
+                    'nb_appel_recu' => $request->nb_appel_recu,
+                    'nb_appel_traite' => $request->nb_appel_traite,
+                    'solde_conge' => $request->solde_conge,
+                ];
 
+                if ($request->has('photo')) {
+                    $userData->photo = $photo;
+                }
+                $user_societes = User::on('temp')->create($userData);
+            }
             return response()->json(['message' => $user], 200);
 
         } else {
@@ -140,7 +170,12 @@ class UserController extends Controller
             }
 
             $user->update($request->all());
+            if ($user) {
+                DatabaseHelper::Config();
+                $user_societes = User::on('temp')->where('user_id_origin',$user->id);
 
+                $user_societes->update($request->all());
+            }
 
             return response()->json(['message' => $user], 200);
         } else {
@@ -156,6 +191,9 @@ class UserController extends Controller
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
             
             if ($user->delete()) {
+                DatabaseHelper::Config();
+                $user_societes = User::on('temp')->where('user_id_origin',$user->id);
+                $user_societes->delete();
                 return response()->json(['message' => 'user deleted succesfully'], 200);
             } else {
                 return response()->json(['message' => 'user non deleted'], 404);
@@ -179,9 +217,12 @@ class UserController extends Controller
     {  
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1 ) {
             $user = User::findOrFail($user_id);
-
             $user->is_actif=1;
-            $user->save();
+            if($user->save()){
+                DatabaseHelper::Config();
+                $user_societes = User::on('temp')->where('user_id_origin',$user->id);
+                $user_societes->update(['is_actif'=>1]);
+            }
             return response()->json(['message' => 'User activated succesfully'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -192,7 +233,11 @@ class UserController extends Controller
             $user = User::findOrFail($user_id);
             
             $user->is_actif=0;
-            $user->save();
+            if($user->save()){
+                DatabaseHelper::Config();
+                $user_societes = User::on('temp')->where('user_id_origin',$user->id);
+                $user_societes->update(['is_actif'=>0]);
+            }
             return response()->json(['message' => 'User desactivated succesfully'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -202,7 +247,9 @@ class UserController extends Controller
         if(Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
            
             User::where('id', $user_id)->withTrashed()->restore();
-
+            DatabaseHelper::Config();
+            $user_societes = User::on('temp')->where('user_id_origin',$user->id)->withTrashed()->restore();
+            
             return response()->json(['message' => 'User est bien restaurer'], 200);
 
         } else {

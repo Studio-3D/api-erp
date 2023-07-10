@@ -1,0 +1,26 @@
+<?php
+
+namespace  App\Http\Helpers;
+
+use Illuminate\Support\Facades\Auth;
+
+
+class RoleHelper
+{
+    public static function Admin()
+    {
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public  static function AC()
+    {
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
+            return true;
+        }
+        return false;
+    }
+}

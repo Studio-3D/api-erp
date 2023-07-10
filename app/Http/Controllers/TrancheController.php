@@ -7,7 +7,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTrancheRequest;
 use App\Http\Requests\UpdateTrancheRequest;
 use Illuminate\Support\Facades\Auth;
-
+use App\Http\Helpers\DatabaseHelper;
+use App\Http\Helpers\HistoriqueBienHelper;
+use App\Http\Helpers\RoleHelper;
+use App\Models\Societe;
 
 
 class TrancheController extends Controller
@@ -16,12 +19,8 @@ class TrancheController extends Controller
      * Display a listing of the resource.
      */
     public function index()
-    {
-        if (Auth::guard('api')->check()) {
-            $tranches = Tranche::all();
-            return response()->json(['message' => $tranches]);
-        }
-        return response()->json(['error' => 'Unauthorized'], 401);
+    {  
+        //
     }
 
     /**
@@ -37,18 +36,20 @@ class TrancheController extends Controller
      */
     public function store(StoreTrancheRequest $request)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            $tranche = new Tranche();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $trancheData = [
+                'nom' => $request->nom,
+                'projet_id' => $request->projet_id,
+                'date_lancement' => $request->date_lancement,
+                'date_livraison' => $request->date_livraison,
+                'niveau_etages' => $request->niveau_etages,
+                'nbre_blocs' => $request->nbre_blocs ? $request->nbre_blocs : 0,
+                'nbre_immeubles' => $request->nbre_immeubles ? $request->nbre_immeubles : 0,
+                'nbre_biens' => $request->nbre_biens ? $request->nbre_biens : 0,
+            ];
 
-            $tranche->nom = $request->nom;
-            $tranche->projet_id = $request->projet_id;
-            $tranche->date_lancement = $request->date_lancement;
-            $tranche->date_livraison = $request->date_livraison;
-            $tranche->niveau_etages = $request->niveau_etages;
-            $tranche->nbre_blocs = $request->nbre_blocs? $request->nbre_blocs:0;
-            $tranche->nbre_immeubles = $request->nbre_immeubles? $request->nbre_immeubles:0;
-            $tranche->nbre_biens = $request->nbre_biens? $request->nbre_biens:0;
-            $tranche->save();
+            $tranche = Tranche::on('temp')->create($trancheData);
 
             return response()->json(['message' => $tranche], 200);
            
@@ -60,9 +61,11 @@ class TrancheController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Tranche $tranche)
+    public function show($id)
     {
         if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $tranche = Tranche::on('temp')->findOrfail($id);
             return response()->json(['message' => $tranche], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -72,9 +75,11 @@ class TrancheController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Tranche $tranche)
+    public function edit($id)
     {
         if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $tranche = Tranche::on('temp')->findOrfail($id);
             return response()->json(['message' => $tranche], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -84,10 +89,11 @@ class TrancheController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateTrancheRequest $request, Tranche $tranche)
+    public function update(UpdateTrancheRequest $request, $id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-      
+        if (RoleHelper::Admin()){
+            DatabaseHelper::Config();
+            $tranche = Tranche::on('temp')->findOrfail($id);
             $tranche->update($request->all());
             
             return response()->json(['message' => $tranche], 200);
@@ -100,10 +106,11 @@ class TrancheController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Tranche $tranche)
+    public function destroy($id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $tranche = Tranche::on('temp')->findOrfail($id);
             if ($tranche->delete()) {
                 return response()->json(['message' => 'tranche deleted succesfully'], 200);
             } else {
@@ -118,8 +125,10 @@ class TrancheController extends Controller
 
     public function restoreTranche($tranche_id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            Tranche::where('id', $tranche_id)->withTrashed()->restore();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $tranche = Tranche::on('temp')->where('id', $tranche_id)->withTrashed()->restore();
+            
             return response()->json(['message' => 'Tranche restored succesfully'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -127,8 +136,9 @@ class TrancheController extends Controller
     }
     public function getTrashedTranches()
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            $tranches = Tranche::onlyTrashed()->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $tranches = Tranche::on('temp')::onlyTrashed()->get();
             return response()->json(['message' => $tranches], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -136,8 +146,9 @@ class TrancheController extends Controller
     }
 
     public function getTranchesByProjet($projet_id){
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $tranches = Tranche::where('projet_id', $projet_id)->get();
+        if (RoleHelper::AC()) {
+            DatabaseHelper::Config();
+            $tranches = Tranche::on('temp')->where('projet_id', $projet_id)->get();
             return response()->json(['message' => $tranches], 200);
             
         } else {

@@ -4,13 +4,15 @@ namespace App\Http\Helpers;
 
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Societe;
 
 class DatabaseHelper
 {
     public function createNewClientDatabase($raison_sociale, $societe_id)
     {
         
-        $databaseName='Erp_'.$raison_sociale.'_'.$societe_id;
+        $databaseName = 'Erp_' . $raison_sociale . '_' . $societe_id;
         
         if ($this->databaseExists($databaseName)) {
             return response()->json(['message' => 'Database already exists.']);
@@ -55,6 +57,55 @@ class DatabaseHelper
         return $migration === 0;
     }
 
+    public function renameDatabase($oldDatabaseName, $newDatabaseName)
+    {
+
+        DB::statement("CREATE DATABASE $newDatabaseName");
+
+        $tables = DB::select("SHOW TABLES FROM $oldDatabaseName");
+
+        foreach ($tables as $table) {
+            $tableName = reset($table);
+
+            DB::statement("CREATE TABLE $newDatabaseName.$tableName LIKE $oldDatabaseName.$tableName");
+            DB::statement("INSERT INTO $newDatabaseName.$tableName SELECT * FROM $oldDatabaseName.$tableName");
+        }
+
+        DB::statement("DROP DATABASE $oldDatabaseName");
+    }
+    public static function Config()
+    {
+        $societe_id = Auth::guard('api')->user()->societe_id;
+        $societe = Societe::findOrfail($societe_id);
+        $DatabaseName = 'Erp_' . $societe->raison_sociale . '_' . $societe_id;
+        $connection = DatabaseHelper::Connection_database($DatabaseName);
+        config(['database.connections.temp' => $connection]);
+    }
+    public static function Connection_database($databaseName)
+    {
+        return [
+            'driver' => 'mysql',
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' => $databaseName,
+            'username' => env('DB_USERNAME', 'forge'),
+            'password' => env('DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => null,
+        ];
+    }
+
+
+    public static function Deletedatabase($databases)
+    {
+        foreach ($databases as $database) {
+            $databaseName = 'Erp_' . $database->raison_sociale . '_' . $database->id;
+            DB::statement("DROP DATABASE IF EXISTS `$databaseName`");
+        }
+    }
     public function databaseExists($databaseName)
     {
         $query = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$databaseName'";

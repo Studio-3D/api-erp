@@ -26,17 +26,10 @@ class StoreBienRequest extends FormRequest
             'numero' => 'required',
             'niveau' => 'required|integer',
             'orientation' => 'required',
-            'conventionne' => 'required',
             'prix_unitaire' => 'required|numeric',
             'prix' => 'required|numeric',
-            'superficie_habitable' => 'required|numeric',
             'superficie_architecte' => 'required|numeric',
             'nbre_facades' => 'required|integer',
-            'superficie_parking' => 'required|numeric',
-            'superficie_box' => 'required|numeric',
-            'superficie_terrasse' => 'required|numeric',
-            'superficie_jardin' => 'required|numeric',
-            'titre_foncier' => 'required',
             'etat' => 'required',
             'type_id' => 'required|integer',
             'projet_id' => 'required|integer',
@@ -52,7 +45,6 @@ class StoreBienRequest extends FormRequest
                                 }
                                 else {$query->where('propriete_dite_bien', $this->propriete_dite_bien)
                                     ->where('tranche_id', $this->tranche_id);}
-
                                 }
                             else{
                                 $query->where('propriete_dite_bien', $this->propriete_dite_bien)
@@ -73,27 +65,27 @@ class StoreBienRequest extends FormRequest
         {   if ($this->tranche_id==null && $this->bloc_id==null && $this->immeuble_id==null){
                 return [
             
-                'propriete_dite_bien.unique' =>  'Ce bien est deja exist dans ce projet',
+                'propriete_dite_bien.unique' =>  'Ce bien existe déjà dans ce projet',
             ];
             }
 
             elseif ($this->immeuble_id==null && $this->bloc_id==null) {
                 return [
                 
-                'propriete_dite_bien.unique' =>  'Ce bien est deja exist dans ce tranche',
+                'propriete_dite_bien.unique' =>  'Ce bien existe déjà dans cette tranche',
             ];
             }
             elseif ($this->immeuble_id==null ) {
             return [
                 
-                'propriete_dite_bien.unique' =>  'Ce bien est deja exist dans ce bloc',
+                'propriete_dite_bien.unique' =>  'Ce bien existe déjà dans ce bloc',
             ];
             }
 
             else {
                 return [
                     
-                    'propriete_dite_bien.unique' =>  'Ce bien est deja exist dans cet emmeuble',
+                    'propriete_dite_bien.unique' =>  'Ce bien existe déjà dans cet immeuble',
                 ];
                 }
         }
