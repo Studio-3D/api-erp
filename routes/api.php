@@ -81,6 +81,8 @@ Route::middleware('auth:api')->group(function () {
         Route::put('reserverBien/{id}', [BienController::class,'reserverBien'])->name('reserverBien');
         Route::put('prereserverBien/{id}', [BienController::class,'prereserverBien'])->name('prereserverBien');
         Route::put('libererBien/{id}', [BienController::class,'libererBien'])->name('libererBien');
+        Route::get('getHistoriqueBien/{id}', [BienController::class,'getHistoriqueBien'])->name('getHistoriqueBien');
+
         
     
    
