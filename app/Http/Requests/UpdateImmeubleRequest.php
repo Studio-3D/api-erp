@@ -4,6 +4,9 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Http\Helpers\DatabaseHelper;
+use App\Models\Societe;
+use Illuminate\Support\Facades\Auth;
 
 class UpdateImmeubleRequest extends FormRequest
 {
@@ -21,9 +24,12 @@ class UpdateImmeubleRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
     public function rules(): array
-    {
+    {   $societe_id = Auth::guard('api')->user()->societe_id;
+        $societe=Societe::findOrfail( $societe_id);
+        $DatabaseName='Erp_'.$societe->raison_sociale.'_'.$societe_id;
+        DatabaseHelper::Config();
         return [
-            'nom' => [ Rule::unique('immeubles')->where(function ($query) {
+            'nom' => [ Rule::unique('temp.'.$DatabaseName.'.immeubles','nom')->where(function ($query) {
                 if ($this->bloc_id==null){
                     if ($this->tranche_id==null)
                     {$query->where('nom', $this->nom)
@@ -56,7 +62,7 @@ class UpdateImmeubleRequest extends FormRequest
         elseif ($this->bloc_id==null) {
             return [
                 
-                'nom.unique' =>  'Cet immeuble est deja exist dans ce tranche',
+                'nom.unique' =>  'Cet immeuble est deja exist dans cette tranche',
             ];}
         else {
             return [

@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreImmeubleRequest;
 use App\Http\Requests\UpdateImmeubleRequest;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Helpers\DatabaseHelper;
+use App\Http\Helpers\RoleHelper;
 
 
 
@@ -18,7 +20,8 @@ class ImmeubleController extends Controller
     public function index()
     {
         if (Auth::guard('api')->check()) {
-            $immeubles = Immeuble::all();
+            DatabaseHelper::Config();
+            $immeubles = Immeuble::on('temp')->get();
             return response()->json(['message' => $immeubles]);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -37,9 +40,11 @@ class ImmeubleController extends Controller
      */
     public function store(StoreImmeubleRequest $request)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            
+        if (RoleHelper::Admin()) {
+                       
+            DatabaseHelper::Config();                
             $immeuble = new immeuble();
+            $immeuble->setConnection('temp');
             $immeuble->nom = $request->nom;
             $immeuble->titre_foncier = $request->titre_foncier;
             $immeuble->projet_id = $request->projet_id;
@@ -57,9 +62,11 @@ class ImmeubleController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Immeuble $immeuble)
+    public function show($id)
     {
         if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $immeuble = Immeuble::on('temp')->findOrfail($id);
             return response()->json(['message' => $immeuble], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -69,9 +76,11 @@ class ImmeubleController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Immeuble $immeuble)
+    public function edit($id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $immeuble = Immeuble::on('temp')->findOrfail($id);
             return response()->json(['message' => $immeuble], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -81,10 +90,16 @@ class ImmeubleController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateImmeubleRequest $request, Immeuble $immeuble)
+    public function update(UpdateImmeubleRequest $request,$id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            $immeuble->update($request->all());
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $immeuble = immeuble::on('temp')->findOrfail($id);
+            $update = $request->all();
+            foreach($update as $key => $value) {
+                $immeuble->$key = $value;
+            }
+            $immeuble->save();
             return response()->json(['message' => $immeuble], 200);  
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -94,10 +109,11 @@ class ImmeubleController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Immeuble $immeuble)
+    public function destroy( $id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $immeuble = immeuble::on('temp')->findOrfail($id);             
             if ($immeuble->delete()) {
                 return response()->json(['message' => 'immeuble deleted succesfully'], 200);
             } else {
@@ -109,8 +125,9 @@ class ImmeubleController extends Controller
     }
     public function restoreImmeuble($immeuble_id)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-            Immeuble::where('id', $immeuble_id)->withTrashed()->restore();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            Immeuble::on('temp')->where('id', $immeuble_id)->withTrashed()->restore();
             return response()->json(['message' => 'Immeuble restored'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -118,8 +135,9 @@ class ImmeubleController extends Controller
     }
     public function getTrashedImmeubles()
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-            $immeubles = Immeuble::onlyTrashed()->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $immeubles = Immeuble::on('temp')->onlyTrashed()->get();
             return response()->json(['message' => $immeubles], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -127,8 +145,9 @@ class ImmeubleController extends Controller
     }
 
     public function getImmeublesByProjet($projet_id){
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $immeubles = Immeuble::where('projet_id', $projet_id)->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $immeubles = Immeuble::on('temp')->where('projet_id', $projet_id)->get();
             return response()->json(['message' => $immeubles], 200);
             
         } else {
@@ -138,8 +157,9 @@ class ImmeubleController extends Controller
     }
 
     public function getImmeublesByTranche($tranche_id){
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $immeubles = Immeuble::where('tranche_id', $tranche_id)->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $immeubles = Immeuble::on('temp')->where('tranche_id', $tranche_id)->get();
             return response()->json(['message' => $immeubles], 200);
             
         } else {
@@ -149,8 +169,9 @@ class ImmeubleController extends Controller
     }
 
     public function getImmeublesByBloc($bloc_id){
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $immeubles = Immeuble::where('bloc_id', $bloc_id)->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $immeubles = Immeuble::on('temp')->where('bloc_id', $bloc_id)->get();
             return response()->json(['message' => $immeubles], 200);
             
         } else {

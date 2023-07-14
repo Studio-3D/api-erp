@@ -2,21 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Helpers\DatabaseHelper;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Societe;
 use App\Models\User;
-use \Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use \Illuminate\Support\Facades\Storage;
-use App\Http\Helpers\DatabaseHelper;
-use App\Http\Helpers\RoleHelper;
-use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
-   
+
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -35,11 +32,11 @@ class UserController extends Controller
 
     public function index()
     {
-        if (Auth::guard('api')->check()){
-            if(Auth::guard('api')->user()->type == 1) {
+        if (Auth::guard('api')->check()) {
+            if (Auth::guard('api')->user()->type == 1) {
                 $users = User::all();
                 return response()->json(['user' => $users]);
-            }else if(Auth::guard('api')->user()->type == 2){
+            } else if (Auth::guard('api')->user()->type == 2) {
                 $users = User::where('societe_id', Auth::guard('api')->user()->societe_id)->get();
                 return response()->json(['message' => $users], 200);
             }
@@ -63,7 +60,6 @@ class UserController extends Controller
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
 
             $user = new User();
-
             $user->name = $request->name;
             $user->societe_id = $request->societe_id;
             $user->prenom = $request->prenom;
@@ -78,50 +74,55 @@ class UserController extends Controller
             $user->niveau_etude = $request->niveau_etude;
             $user->adresse = $request->adresse;
             $user->cnss = $request->cnss;
-            $user->is_actif = $request->is_actif?$request->is_actif:1;
+            $user->is_actif = $request->is_actif ? $request->is_actif : 1;
             $user->nb_appel_recu = $request->nb_appel_recu;
             $user->nb_appel_traite = $request->nb_appel_traite;
             $user->solde_conge = $request->solde_conge;
             if ($request->has('photo')) {
-                $societe=Societe::findOrFail($request->societe_id);
-                $photo= $request->file('photo')->store($societe->raison_sociale.'/photos_users', 'public');
+                $societe = Societe::findOrFail($request->societe_id);
+                $photo = $request->file('photo')->store($societe->raison_sociale . '/photos_users', 'public');
                 $user->photo = $photo;
             }
-            
             if ($user->save()) {
-                DatabaseHelper::Config();  
-                $userData = [
-                    'societe_id' => $request->societe_id,
-                    'user_id_origin' => $user->id,
-                    'name' => $request->name,
-                    'prenom' => $request->prenom,
-                    'email' => $request->email,
-                    'password' => $request->password,
-                    'gender' => $request->gender,
-                    'type' => $request->type,
-                    'phone' => $request->phone,
-                    'cin' => $request->cin,
-                    'fonction' => $request->fonction,
-                    'date_embauche' => $request->date_embauche,
-                    'niveau_etude' => $request->niveau_etude,
-                    'adresse' => $request->adresse,
-                    'cnss' => $request->cnss,
-                    'is_actif' => $request->is_actif ? $request->is_actif : 1,
-                    'nb_appel_recu' => $request->nb_appel_recu,
-                    'nb_appel_traite' => $request->nb_appel_traite,
-                    'solde_conge' => $request->solde_conge,
-                ];
 
-                if ($request->has('photo')) {
-                    $userData->photo = $photo;
-                }
-                $user_societes = User::on('temp')->create($userData);
+                $this->createSubUser($request, $user->id);
+
             }
             return response()->json(['message' => $user], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
+    }
+    public function createSubUser($request, $user_id)
+    {
+        DatabaseHelper::Config($request->societe_id);
+        $user = new User();
+        $user->setConnection('temp');
+        $user->user_id_origin = $user_id;
+        $user->name = $request->name;
+        $user->prenom = $request->prenom;
+        $user->email = $request->email;
+        $user->password = $request->password;
+        $user->gender = $request->gender;
+        $user->type = $request->type;
+        $user->phone = $request->phone;
+        $user->cin = $request->cin;
+        $user->fonction = $request->fonction;
+        $user->date_embauche = $request->date_embauche;
+        $user->niveau_etude = $request->niveau_etude;
+        $user->adresse = $request->adresse;
+        $user->cnss = $request->cnss;
+        $user->is_actif = $request->is_actif ? $request->is_actif : 1;
+        $user->nb_appel_recu = $request->nb_appel_recu;
+        $user->nb_appel_traite = $request->nb_appel_traite;
+        $user->solde_conge = $request->solde_conge;
+        if ($request->has('photo')) {
+            $societe = Societe::findOrFail($request->societe_id);
+            $photo = $request->file('photo')->store($societe->raison_sociale . '/photos_users', 'public');
+            $user->photo = $photo;
+        }
+        $user->save();  
     }
 
     /**
@@ -130,13 +131,12 @@ class UserController extends Controller
     public function show(user $user)
     {
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-           if($user){
-            return response()->json(['message' => $user], 200);
-           }
-           else{
-            return response()->json(['message' => 'User not found'], 200);
-           }
-            
+            if ($user) {
+                return response()->json(['message' => $user], 200);
+            } else {
+                return response()->json(['message' => 'User not found'], 200);
+            }
+
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -164,17 +164,17 @@ class UserController extends Controller
                         Storage::disk('public')->delete("{$user->societe->raison_sociale}/photo_users/{$user->photo}");
                     }
                 }
-                $photo= $request->file('photo')->store($request->raison_sociale.'/photos_users', 'public');
+                $photo = $request->file('photo')->store($request->raison_sociale . '/photos_users', 'public');
                 $request['photo'] = $photo;
-               
+
             }
 
             $user->update($request->all());
             if ($user) {
                 DatabaseHelper::Config();
-                $user_societes = User::on('temp')->where('user_id_origin',$user->id);
-
+                $user_societes = User::on('temp')->where('user_id_origin', $user->id);
                 $user_societes->update($request->all());
+                
             }
 
             return response()->json(['message' => $user], 200);
@@ -189,10 +189,10 @@ class UserController extends Controller
     public function destroy(user $user)
     {
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-            
+
             if ($user->delete()) {
                 DatabaseHelper::Config();
-                $user_societes = User::on('temp')->where('user_id_origin',$user->id);
+                $user_societes = User::on('temp')->where('user_id_origin', $user->id);
                 $user_societes->delete();
                 return response()->json(['message' => 'user deleted succesfully'], 200);
             } else {
@@ -203,64 +203,67 @@ class UserController extends Controller
 
         }
     }
-    public function getUsersBySocieteId($societe_id){
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1){
+    public function getUsersBySocieteId($societe_id)
+    {
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
             $users = User::where('societe_id', $societe_id)->get();
             return response()->json(['message' => $users], 200);
-            
+
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
 
         }
     }
     public function activateUser($user_id)
-    {  
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1 ) {
+    {
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
             $user = User::findOrFail($user_id);
-            $user->is_actif=1;
-            if($user->save()){
+            $user->is_actif = 1;
+            if ($user->save()) {
                 DatabaseHelper::Config();
-                $user_societes = User::on('temp')->where('user_id_origin',$user->id);
-                $user_societes->update(['is_actif'=>1]);
+                $user_societes = User::on('temp')->where('user_id_origin', $user->id);
+                $user_societes->update(['is_actif' => 1]);
             }
             return response()->json(['message' => 'User activated succesfully'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    public function desactivateUser($user_id){  
+    public function desactivateUser($user_id)
+    {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
             $user = User::findOrFail($user_id);
-            
-            $user->is_actif=0;
-            if($user->save()){
+
+            $user->is_actif = 0;
+            if ($user->save()) {
                 DatabaseHelper::Config();
-                $user_societes = User::on('temp')->where('user_id_origin',$user->id);
-                $user_societes->update(['is_actif'=>0]);
+                $user_societes = User::on('temp')->where('user_id_origin', $user->id);
+                $user_societes->update(['is_actif' => 0]);
             }
             return response()->json(['message' => 'User desactivated succesfully'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    public function restoreUser($user_id){  
-        if(Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-           
+    public function restoreUser($user_id)
+    {
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+
             User::where('id', $user_id)->withTrashed()->restore();
             DatabaseHelper::Config();
-            $user_societes = User::on('temp')->where('user_id_origin',$user->id)->withTrashed()->restore();
-            
+            $user_societes = User::on('temp')->where('user_id_origin', $user->id)->withTrashed()->restore();
+
             return response()->json(['message' => 'User est bien restaurer'], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    public function getTrashedUsers(){  
-        
+    public function getTrashedUsers()
+    {
+
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
             $users = User::onlyTrashed()->get();
-            
 
             return response()->json(['message' => $users], 200);
 
@@ -268,11 +271,12 @@ class UserController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    public function getTrashedUsersBySociete($societe_id){  
+    public function getTrashedUsersBySociete($societe_id)
+    {
 
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-           
-            $users = User::onlyTrashed()->where('societe_id',$societe_id)->get();
+
+            $users = User::onlyTrashed()->where('societe_id', $societe_id)->get();
 
             return response()->json(['message' => $users], 200);
 
@@ -281,6 +285,4 @@ class UserController extends Controller
         }
     }
 
-    
 }
-

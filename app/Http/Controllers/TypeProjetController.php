@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTypeProjetRequest;
 use App\Http\Requests\UpdateTypeProjetRequest;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Helpers\DatabaseHelper;
+use App\Http\Helpers\RoleHelper;
 
 
 
@@ -17,8 +19,9 @@ class TypeProjetController extends Controller
      */
     public function index()
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            $typeprojets = Typeprojet::all();
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $typeprojets = typeprojet::on('temp')->get();
             return response()->json(['message' => $typeprojets]);
         }
 
@@ -39,9 +42,11 @@ class TypeProjetController extends Controller
      */
     public function store(StoreTypeProjetRequest $request)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            
+        if (RoleHelper::Admin()) {
+                       
+            DatabaseHelper::Config();                
             $typeprojet = new typeprojet();
+            $typeprojet->setConnection('temp');
             $typeprojet->type = $request->type;
             $typeprojet->save();
 
@@ -55,10 +60,12 @@ class TypeProjetController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(TypeProjet $typeProjet)
+    public function show( $id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            return response()->json(['message' => $typeProjet], 200);
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $typeprojet = typeprojet::on('temp')->findOrfail($id);
+            return response()->json(['message' => $typeprojet], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -67,21 +74,32 @@ class TypeProjetController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(TypeProjet $typeProjet)
+    public function edit( $id)
     {
-        //
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $typeprojet = typeprojet::on('temp')->findOrfail($id);
+            return response()->json(['message' => $typeprojet], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateTypeProjetRequest $request, TypeProjet $typeProjet)
+    public function update(UpdateTypeProjetRequest $request,  $id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-      
-            $typeProjet->update($request->all());
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $typeprojet = typeprojet::on('temp')->findOrfail($id);
+            $update = $request->all();
+            foreach($update as $key => $value) {
+                $typeprojet->$key = $value;
+            }
+            $typeprojet->save();
             
-            return response()->json(['message' => $typeProjet], 200);
+            return response()->json(['message' => $typeprojet], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -90,11 +108,12 @@ class TypeProjetController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(TypeProjet $typeProjet)
+    public function destroy( $id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            
-            if ($typeProjet->delete()) {
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $typeprojet = typeprojet::on('temp')->findOrfail($id);                         
+            if ($typeprojet->delete()) {
                 return response()->json(['message' => 'ce type de projet deleted succesfully'], 200);
             } else {
                 return response()->json(['message' => 'ce type de projet non deleted'], 404);
@@ -107,9 +126,9 @@ class TypeProjetController extends Controller
 
     public function restoreTypeProjet($typeprojet_id)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-
-            TypeProjet::where('id', $typeprojet_id)->withTrashed()->restore();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            TypeProjet::on('temp')->where('id', $typeprojet_id)->withTrashed()->restore();
 
             return response()->json(['message' => 'Type projet est projet restaurer'], 200);
 
@@ -120,8 +139,9 @@ class TypeProjetController extends Controller
     public function getTrashedTypesProjet()
     {
 
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-            $typeProjets = TypeProjet::onlyTrashed()->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $typeProjets = TypeProjet::on('temp')->onlyTrashed()->get();
 
             return response()->json(['message' => $typeProjets], 200);
 

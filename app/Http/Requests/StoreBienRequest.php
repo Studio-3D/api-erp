@@ -2,7 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Helpers\DatabaseHelper;
+use App\Models\Societe;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class StoreBienRequest extends FormRequest
@@ -21,7 +24,10 @@ class StoreBienRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
     public function rules(): array
-    {
+    {   $societe_id = Auth::guard('api')->user()->societe_id;
+        $societe=Societe::findOrfail( $societe_id);
+        $DatabaseName='Erp_'.$societe->raison_sociale.'_'.$societe_id;
+        DatabaseHelper::Config();
         return [
             'numero' => 'required',
             'niveau' => 'required|integer',
@@ -36,7 +42,7 @@ class StoreBienRequest extends FormRequest
             'tranche_id' => 'integer',
             'bloc_id' => 'integer',
             'immeuble_id' => 'integer',
-            'propriete_dite_bien' => ['required', Rule::unique('biens')->where(function ($query) {
+            'propriete_dite_bien' => ['required', Rule::unique('temp.'.$DatabaseName.'.biens','propriete_dite_bien')->where(function ($query) {
                         if ($this->immeuble_id==null){
                             if ($this->bloc_id==null){
                                 if ($this->tranche_id==null){

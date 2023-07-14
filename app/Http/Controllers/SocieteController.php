@@ -9,7 +9,6 @@ use App\Models\Societe;
 use Illuminate\Support\Facades\Auth;
 use \Illuminate\Support\Facades\Storage;
 
-
 class SocieteController extends Controller
 {
     /**
@@ -48,7 +47,7 @@ class SocieteController extends Controller
             $societe->tel = $request->tel;
             $societe->email = $request->email;
             if ($request->hasFile('logo')) {
-                $logo= $request->file('logo')->store($request->raison_sociale.'/logos', 'public');
+                $logo = $request->file('logo')->store($request->raison_sociale . '/logos', 'public');
                 $societe->logo = $logo;
 
             }
@@ -94,21 +93,20 @@ class SocieteController extends Controller
     public function update(UpdateSocieteRequest $request, Societe $societe)
     {
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-            
+
             if ($request->hasFile('logo')) {
                 if ($societe->logo) {
                     //$exist = Storage::disk('public')->exists("{$societe->raison_sociale}/logos/{$societe->logo}");
                     //if ($exist) {
-                        Storage::disk('public')->delete("{$societe->raison_sociale}/logos/{$societe->logo}");
+                    Storage::disk('public')->delete("{$societe->raison_sociale}/logos/{$societe->logo}");
                     //}
                 }
-                $logo= $request->file('logo')->store($request->raison_sociale.'/logos', 'public'); 
+                $logo = $request->file('logo')->store($request->raison_sociale . '/logos', 'public');
                 $request['logo'] = $logo;
-                
+
             }
 
             $societe->update($request->all());
-            
 
             return response()->json(['message' => $societe], 200);
         } else {
@@ -133,9 +131,10 @@ class SocieteController extends Controller
 
         }
     }
-    public function restoreSociete($societe_id){  
-        if(Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-           
+    public function restoreSociete($societe_id)
+    {
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+
             Societe::where('id', $societe_id)->withTrashed()->restore();
 
             return response()->json(['message' => 'Societe est bien restaurer'], 200);
@@ -144,11 +143,11 @@ class SocieteController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    public function getTrashedSocietes(){  
-        
+    public function getTrashedSocietes()
+    {
+
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
             $societes = Societe::onlyTrashed()->get();
-            
 
             return response()->json(['message' => $societes], 200);
 

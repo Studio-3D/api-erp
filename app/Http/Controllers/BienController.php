@@ -3,11 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Http\Helpers\HistoriqueBienHelper;
 use App\Http\Requests\StoreBienRequest;
 use App\Http\Requests\UpdateBienRequest;
 use App\Models\Bien;
 use App\Models\HistoriqueBien;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use App\Http\Helpers\DatabaseHelper;
+use App\Http\Helpers\RoleHelper;
 
 
 class BienController extends Controller
@@ -17,8 +21,9 @@ class BienController extends Controller
      */
     public function index()
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            $biens = Bien::all();
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $biens = Bien::on('temp')->get();
             return response()->json(['message' => $biens]);
         }
 
@@ -39,11 +44,11 @@ class BienController extends Controller
      */
     public function store(StoreBienRequest $request)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            
-
+        if (RoleHelper::Admin()) {
+                       
+            DatabaseHelper::Config();      
             $bien = new bien();
-
+            $bien->setConnection('temp');
             $bien->propriete_dite_bien = $request->propriete_dite_bien;
             $bien->numero = $request->numero;
             $bien->niveau = $request->niveau;
@@ -78,9 +83,11 @@ class BienController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Bien $bien)
+    public function show( $id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $bien = bien::on('temp')->findOrfail($id);
             return response()->json(['message' => $bien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -90,19 +97,30 @@ class BienController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Bien $bien)
+    public function edit( $id)
     {
-        //
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $bien = bien::on('temp')->findOrfail($id);
+            return response()->json(['message' => $bien], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateBienRequest $request, Bien $bien)
+    public function update(UpdateBienRequest $request,  $id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-
-            $bien->update($request->all());
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $bien = bien::on('temp')->findOrfail($id);
+            $update = $request->all();
+            foreach($update as $key => $value) {
+                $bien->$key = $value;
+            }
+            $bien->save();
 
             return response()->json(['message' => $bien], 200);
         } else {
@@ -113,10 +131,11 @@ class BienController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Bien $bien)
+    public function destroy( $id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $bien = bien::on('temp')->findOrfail($id);             
             if ($bien->delete()) {
                 return response()->json(['message' => 'bien deleted succesfully'], 200);
             } else {
@@ -129,9 +148,9 @@ class BienController extends Controller
     }
     public function restoreBien($bien_id)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-
-            Bien::where('id', $bien_id)->withTrashed()->restore();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            Bien::on('temp')->where('id', $bien_id)->withTrashed()->restore();
 
             return response()->json(['message' => 'Bien est bien restaurer'], 200);
 
@@ -142,8 +161,9 @@ class BienController extends Controller
     public function getTrashedBiens()
     {
 
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-            $biens = Bien::onlyTrashed()->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $biens = Bien::on('temp')->onlyTrashed()->get();
 
             return response()->json(['message' => $biens], 200);
 
@@ -154,17 +174,13 @@ class BienController extends Controller
 
     public function bloquerBien($bien_id)
     {  
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 )) {
-            $bien = Bien::findOrFail($bien_id);
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $bien = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat=4;
             $bien->save();
-
-            $Historique_bien = new HistoriqueBien();
-            $Historique_bien->action =4;
-            $Historique_bien->description = "bloquer";
-            $Historique_bien->user_id = Auth::user()->id;
-            $Historique_bien->bien_id = $bien_id;
-            $Historique_bien->save();
+            
+            HistoriqueBienHelper::createHistoriqueBien(4, "bloquer", $bien_id, Auth::guard('api')->user()->id);
 
             return response()->json(['message' => $bien], 200);
 
@@ -175,17 +191,12 @@ class BienController extends Controller
 
     public function reserverBien($bien_id)
     {  
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $bien = Bien::findOrFail($bien_id);
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $bien = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat=3;
             $bien->save();
-
-            $Historique_bien = new HistoriqueBien();
-            $Historique_bien->action =3;
-            $Historique_bien->description = "reserver";
-            $Historique_bien->user_id = Auth::user()->id;
-            $Historique_bien->bien_id = $bien_id;
-            $Historique_bien->save();
+            HistoriqueBienHelper::createHistoriqueBien(3, "reserver", $bien_id, Auth::guard('api')->user()->id);
             return response()->json(['message' => $bien], 200);
 
         } else {
@@ -195,17 +206,12 @@ class BienController extends Controller
 
     public function prereserverBien($bien_id)
     {  
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $bien = Bien::findOrFail($bien_id);
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $bien = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat=2;
             $bien->save();
-
-            $Historique_bien = new HistoriqueBien();
-            $Historique_bien->action =2;
-            $Historique_bien->description = "pre_reserver";
-            $Historique_bien->user_id = Auth::user()->id;
-            $Historique_bien->bien_id = $bien_id;
-            $Historique_bien->save();
+            HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id);
             return response()->json(['message' => $bien], 200);
 
         } else {
@@ -215,17 +221,13 @@ class BienController extends Controller
 
     public function libererBien($bien_id)
     {  
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $bien = Bien::findOrFail($bien_id);
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $bien = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat=1;
             $bien->save();
+            HistoriqueBienHelper::createHistoriqueBien(1, "liberer", $bien_id, Auth::guard('api')->user()->id);
 
-            $Historique_bien = new HistoriqueBien();
-            $Historique_bien->action =1;
-            $Historique_bien->description = "liberer";
-            $Historique_bien->user_id = Auth::user()->id;
-            $Historique_bien->bien_id = $bien_id;
-            $Historique_bien->save();
             return response()->json(['message' => $bien], 200);
 
         } else {
@@ -235,8 +237,9 @@ class BienController extends Controller
 
     public function getHistoriqueBien($bien_id)
     {  
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $Historique_bien = HistoriqueBien::where('bien_id', $bien_id)->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $Historique_bien = HistoriqueBien::on('temp')->where('bien_id', $bien_id)->get();
             return response()->json(['message' => $Historique_bien], 200);
 
         } else {
@@ -245,8 +248,9 @@ class BienController extends Controller
     }
 
     public function getBiensByProjet($projet_id){
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $biens = Bien::where('projet_id', $projet_id)->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $biens = Bien::on('temp')->where('projet_id', $projet_id)->get();
             return response()->json(['message' => $biens], 200);
             
         } else {
@@ -256,8 +260,9 @@ class BienController extends Controller
     }
 
     public function getBiensByTranche($tranche_id){
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $biens = Bien::where('tranche_id', $tranche_id)->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $biens = Bien::on('temp')->where('tranche_id', $tranche_id)->get();
             return response()->json(['message' => $biens], 200);
             
         } else {
@@ -267,8 +272,9 @@ class BienController extends Controller
     }
 
     public function getBiensByBloc($bloc_id){
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $biens = Bien::where('bloc_id', $bloc_id)->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $biens = Bien::on('temp')->where('bloc_id', $bloc_id)->get();
             return response()->json(['message' => $biens], 200);
             
         } else {
@@ -278,8 +284,9 @@ class BienController extends Controller
     }
 
     public function getBiensByImmeuble($immeuble_id){
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $biens = Bien::where('immeuble_id', $immeuble_id)->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $biens = Bien::on('temp')->where('immeuble_id', $immeuble_id)->get();
             return response()->json(['message' => $biens], 200);
             
         } else {
@@ -289,8 +296,9 @@ class BienController extends Controller
     }
 
     public function getBiensDispoByProjet($projet_id){
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $biens = Bien::where('projet_id', $projet_id)->where('etat', 1)->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $biens = Bien::on('temp')->where('projet_id', $projet_id)->where('etat', 1)->get();
             return response()->json(['message' => $biens], 200);
             
         } else {
@@ -300,8 +308,9 @@ class BienController extends Controller
     }
 
     public function getBiensDispoByTranche($tranche_id){
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $biens = Bien::where('tranche_id', $tranche_id)->where('etat', 1)->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $biens = Bien::on('temp')->where('tranche_id', $tranche_id)->where('etat', 1)->get();
             return response()->json(['message' => $biens], 200);
             
         } else {
@@ -310,8 +319,9 @@ class BienController extends Controller
         }
     }
     public function getBiensDispoByBloc($bloc_id){
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $biens = Bien::where('bloc_id', $bloc_id)->where('etat', 1)->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $biens = Bien::on('temp')->where('bloc_id', $bloc_id)->where('etat', 1)->get();
             return response()->json(['message' => $biens], 200);
             
         } else {
@@ -320,8 +330,9 @@ class BienController extends Controller
         }
     }
     public function getBiensDispoByImmeuble($immeuble_id){
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $biens = Bien::where('immeuble_id', $immeuble_id)->where('etat', 1)->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $biens = Bien::on('temp')->where('immeuble_id', $immeuble_id)->where('etat', 1)->get();
             return response()->json(['message' => $biens], 200);
             
         } else {

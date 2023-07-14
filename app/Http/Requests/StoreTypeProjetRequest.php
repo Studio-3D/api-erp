@@ -3,6 +3,11 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Http\Helpers\DatabaseHelper;
+use App\Models\Societe;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
+
 
 class StoreTypeProjetRequest extends FormRequest
 {
@@ -21,8 +26,13 @@ class StoreTypeProjetRequest extends FormRequest
      */
     public function rules(): array
     {
+        $societe_id = Auth::guard('api')->user()->societe_id;
+        $societe=Societe::findOrfail( $societe_id);
+        $DatabaseName='Erp_'.$societe->raison_sociale.'_'.$societe_id;
+        DatabaseHelper::Config();
         return [
-            'type' => 'required|unique:type_projets',
+            'type' => ['required', Rule::unique('temp.'.$DatabaseName.'.type_projets','type')],
+
 
         ];
     }

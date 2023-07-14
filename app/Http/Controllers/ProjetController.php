@@ -24,7 +24,6 @@ class ProjetController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $projets = Projet::on('temp')->get();
-            
             return response()->json(['message' => $projets]);
         }
 
@@ -47,23 +46,23 @@ class ProjetController extends Controller
         if (RoleHelper::Admin()) {
                        
             DatabaseHelper::Config();
-            $projetData = [
-                'nom' => $request->nom,
-                'code' => $request->code,
-                'adresse' => $request->adresse,
-                'date_autorisation_construction' => $request->date_autorisation_construction,
-                'date_permis_habiter' => $request->date_permis_habiter,
-                'titre_foncier' => $request->titre_foncier,
-                'surface_terrain' => $request->surface_terrain,
-                'prix_acquisition' => $request->prix_acquisition,
-                'limite_annulation_reservation' => $request->limite_annulation_reservation,
-                'type_id' => $request->type_id,
-                'nbre_tranches' => $request->nbre_tranches ?: 0,
-                'nbre_blocs' => $request->nbre_blocs ?: 0,
-                'nbre_immeubles' => $request->nbre_immeubles ?: 0,
-                'nbre_biens' => $request->nbre_biens ?: 0,
-            ];
-            $projet = Projet::on('temp')->create($projetData);
+            $projet = new Projet();
+            $projet->setConnection('temp');
+            $projet->nom = $request->nom;
+            $projet->code = $request->code;
+            $projet->adresse = $request->adresse;
+            $projet->date_autorisation_construction = $request->date_autorisation_construction;
+            $projet->date_permis_habiter = $request->date_permis_habiter;
+            $projet->titre_foncier = $request->titre_foncier;
+            $projet->surface_terrain = $request->surface_terrain;
+            $projet->prix_acquisition = $request->prix_acquisition;
+            $projet->limite_annulation_reservation = $request->limite_annulation_reservation;
+            $projet->type_id = $request->type_id;
+            $projet->nbre_tranches = $request->nbre_tranches ?: 0;
+            $projet->nbre_blocs = $request->nbre_blocs ?: 0;
+            $projet->nbre_immeubles = $request->nbre_immeubles ?: 0;
+            $projet->nbre_biens = $request->nbre_biens ?: 0;
+            $projet->save();
 
             return response()->json(['message' => $projet], 200);
            
@@ -108,7 +107,13 @@ class ProjetController extends Controller
         if (RoleHelper::Admin()) {
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->findOrfail($id);
-            $projet->update($request->all());
+            $update = $request->all();
+            foreach($update as $key => $value) {
+                $projet->$key = $value;
+            }
+            $projet->save();
+        
+            //$projet->update($request->all());
             
             return response()->json(['message' => $projet], 200);
         } else {
@@ -119,7 +124,7 @@ class ProjetController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Projet $projet)
+    public function destroy($id)
     {
         if (RoleHelper::Admin()) {
             DatabaseHelper::Config();
@@ -150,7 +155,7 @@ class ProjetController extends Controller
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->onlyTrashed()->get();
 
-            return response()->json(['message' => $projets], 200);
+            return response()->json(['message' => $projet], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

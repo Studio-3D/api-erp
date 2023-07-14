@@ -2,8 +2,12 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Helpers\DatabaseHelper;
+use App\Models\Societe;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+
 
 class StoreProjetRequest extends FormRequest
 {
@@ -22,6 +26,10 @@ class StoreProjetRequest extends FormRequest
      */
     public function rules(): array
     {
+        $societe_id = Auth::guard('api')->user()->societe_id;
+        $societe=Societe::findOrfail( $societe_id);
+        $DatabaseName='Erp_'.$societe->raison_sociale.'_'.$societe_id;
+        DatabaseHelper::Config();
         return [
             'code' => 'required|string',
             'adresse' => 'required|string',
@@ -36,18 +44,14 @@ class StoreProjetRequest extends FormRequest
             'nbr_blocs' => 'integer',
             'nbr_immeubles' => 'integer',
             'nbr_biens' => 'integer',
-            'societe_id' => 'required|integer',
-            'nom' => ['required', Rule::unique('projets')->where(function ($query) {
-                $query->where('nom', $this->nom)
-                    ->where('societe_id', $this->societe_id);})],
-
+            'nom' => ['required', Rule::unique('temp.'.$DatabaseName.'.projets','nom')],
         ];
     }
-
+   
     public function messages(): array
     {
         return [
-            'nom.unique' => 'Ce projet est deja exist dans cette societe',
+            'nom.unique' => 'Ce projet est deja exist dans la societe',
         ];
     }
 }

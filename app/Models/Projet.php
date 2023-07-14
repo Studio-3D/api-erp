@@ -10,13 +10,13 @@ class Projet extends Model
 {
     use HasFactory, SoftDeletes;
     protected $table = 'projets';
-    protected $fillable = [
+    /* protected $fillable = [
         'nom', 'code', 'adresse',
         'date_autorisation_construction',
-        'date_permis_habiter', 'titre_foncier', 'surface_terrain', 'prix_acquisition',
-        'limite_annulation_reservation', 'nbr_tranches',
-        'nbr_blocs', 'nbr_immeubles', 'nbr_biens', 'type_id',
-    ];
+        'date_permis_habiter', 'surface_terrain', 'prix_acquisition',
+        'limite_annulation_reservation', 'nbre_tranches',
+        'nbre_blocs', 'nbre_immeubles', 'nbre_biens', 'type_id',
+    ]; */
 
     protected $dates = ['deleted_at'];
 

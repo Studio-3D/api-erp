@@ -1,7 +1,9 @@
 <?php
 
 namespace App\Http\Requests;
-
+use App\Http\Helpers\DatabaseHelper;
+use App\Models\Societe;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -21,9 +23,12 @@ class StoreImmeubleRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
     public function rules(): array
-    {
+    {   $societe_id = Auth::guard('api')->user()->societe_id;
+        $societe=Societe::findOrfail( $societe_id);
+        $DatabaseName='Erp_'.$societe->raison_sociale.'_'.$societe_id;
+        DatabaseHelper::Config();
         return [
-            'nom' => ['required', Rule::unique('immeubles')->where(function ($query) {
+            'nom' => ['required', Rule::unique('temp.'.$DatabaseName.'.immeubles','nom')->where(function ($query) {
                 if ($this->bloc_id==null){
                     if ($this->tranche_id==null)
                     {$query->where('nom', $this->nom)
@@ -62,7 +67,7 @@ class StoreImmeubleRequest extends FormRequest
         elseif ($this->bloc_id==null) {
             return [
                 
-                'nom.unique' =>  'Cet immeuble est deja exist dans ce tranche',
+                'nom.unique' =>  'Cet immeuble est deja exist dans cette tranche',
             ];}
         else {
             return [

@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreCompositionBienRequest;
 use App\Http\Requests\UpdateCompositionBienRequest;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Helpers\DatabaseHelper;
+use App\Http\Helpers\RoleHelper;
 
 
 class CompositionBienController extends Controller
@@ -17,7 +19,8 @@ class CompositionBienController extends Controller
     public function index()
     {
         if (Auth::guard('api')->check()) {
-            $CompositionBiens = CompositionBien::all();
+            DatabaseHelper::Config();
+            $CompositionBiens = CompositionBien::on('temp')->get();
             return response()->json(['message' => $CompositionBiens]);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -37,9 +40,11 @@ class CompositionBienController extends Controller
      */
     public function store(StoreCompositionBienRequest $request)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            
+        if (RoleHelper::Admin()) {
+                       
+            DatabaseHelper::Config();               
             $composition_bien = new CompositionBien();
+            $composition_bien->setConnection('temp');
             $composition_bien->bien_id = $request->bien_id;
             $composition_bien->nbre_chambres = $request->nbre_chambres;
             $composition_bien->nbre_salons = $request->nbre_salons;
@@ -63,9 +68,11 @@ class CompositionBienController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(CompositionBien $compositionBien)
+    public function show( $id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $compositionBien = compositionBien::on('temp')->findOrfail($id);            
             return response()->json(['message' => $compositionBien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -75,18 +82,30 @@ class CompositionBienController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(CompositionBien $compositionBien)
+    public function edit( $id)
     {
-        //
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $compositionBien = compositionBien::on('temp')->findOrfail($id);
+            return response()->json(['message' => $compositionBien], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateCompositionBienRequest $request, CompositionBien $compositionBien)
+    public function update(UpdateCompositionBienRequest $request,  $id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            $compositionBien->update($request->all());
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $compositionBien = compositionBien::on('temp')->findOrfail($id);
+            $update = $request->all();
+            foreach($update as $key => $value) {
+                $compositionBien->$key = $value;
+            }
+            $compositionBien->save();
             return response()->json(['message' => $compositionBien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -96,10 +115,11 @@ class CompositionBienController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(CompositionBien $compositionBien)
+    public function destroy( $id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $compositionBien = compositionBien::on('temp')->findOrfail($id);             
             if ($compositionBien->delete()) {
                 return response()->json(['message' => 'composition Bien deleted succesfully'], 200);
             } else {
@@ -113,9 +133,9 @@ class CompositionBienController extends Controller
 
     public function restoreCompositionBien($compositionBien_id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-
-            CompositionBien::where('id', $compositionBien_id)->withTrashed()->restore();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            CompositionBien::on('temp')->where('id', $compositionBien_id)->withTrashed()->restore();
 
             return response()->json(['message' => 'composition Bien est bien restaurer'], 200);
 
@@ -126,8 +146,9 @@ class CompositionBienController extends Controller
     public function getTrashedCompositionBiens()
     {
 
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            $compositionBiens = CompositionBien::onlyTrashed()->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $compositionBiens = CompositionBien::on('temp')->onlyTrashed()->get();
 
             return response()->json(['message' => $compositionBiens], 200);
 
@@ -137,8 +158,9 @@ class CompositionBienController extends Controller
     }
     public function getComposition($bien_id)
     {  
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $CompositionBien = CompositionBien::where('bien_id', $bien_id)->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();            
+            $CompositionBien = CompositionBien::on('temp')->where('bien_id', $bien_id)->get();
             return response()->json(['message' => $CompositionBien], 200);
 
         } else {
