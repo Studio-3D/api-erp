@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('nom');
             $table->string('titre_foncier')->nullable();
             $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
-            $table->foreignId('tranche_id')->constrained('tranches')->onDelete('cascade')->nullable();
+            $table->foreignId('tranche_id')->nullable()->constrained('tranches')->onDelete('cascade');
             $table->integer('nbre_immeubles')->default(0);
             $table->integer('nbre_biens')->default(0);
             $table->timestamps();

@@ -20,7 +20,13 @@ class TrancheController extends Controller
      */
     public function index()
     {  
-        //
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $tranches = tranche::on('temp')->get();
+            return response()->json(['message' => $tranches]);
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
+    
     }
 
     /**
@@ -38,18 +44,17 @@ class TrancheController extends Controller
     {
         if (RoleHelper::Admin()) {
             DatabaseHelper::Config();
-            $trancheData = [
-                'nom' => $request->nom,
-                'projet_id' => $request->projet_id,
-                'date_lancement' => $request->date_lancement,
-                'date_livraison' => $request->date_livraison,
-                'niveau_etages' => $request->niveau_etages,
-                'nbre_blocs' => $request->nbre_blocs ? $request->nbre_blocs : 0,
-                'nbre_immeubles' => $request->nbre_immeubles ? $request->nbre_immeubles : 0,
-                'nbre_biens' => $request->nbre_biens ? $request->nbre_biens : 0,
-            ];
-
-            $tranche = Tranche::on('temp')->create($trancheData);
+            $tranche = new Tranche();
+            $tranche->setConnection('temp');
+            $tranche->nom = $request->nom;
+            $tranche->projet_id = $request->projet_id;
+            $tranche->date_lancement = $request->date_lancement;
+            $tranche->date_livraison = $request->date_livraison;
+            $tranche->niveau_etages = $request->niveau_etages;
+            $tranche->nbre_blocs = $request->nbre_blocs ? $request->nbre_blocs : 0;
+            $tranche->nbre_immeubles = $request->nbre_immeubles ? $request->nbre_immeubles : 0;
+            $tranche->nbre_biens = $request->nbre_biens ? $request->nbre_biens : 0;
+            $tranche->save();
 
             return response()->json(['message' => $tranche], 200);
            
@@ -94,7 +99,11 @@ class TrancheController extends Controller
         if (RoleHelper::Admin()){
             DatabaseHelper::Config();
             $tranche = Tranche::on('temp')->findOrfail($id);
-            $tranche->update($request->all());
+            $update = $request->all();
+            foreach($update as $key => $value) {
+                $tranche->$key = $value;
+            }
+            $tranche->save();
             
             return response()->json(['message' => $tranche], 200);
         } else {

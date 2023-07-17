@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreTypeBienRequest;
 use App\Http\Requests\UpdateTypeBienRequest;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Helpers\DatabaseHelper;
+use App\Http\Helpers\RoleHelper;
 
 
 
@@ -17,8 +19,9 @@ class TypeBienController extends Controller
      */
     public function index()
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            $typebiens = TypeBien::all();
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $typebiens = typebien::on('temp')->get();
             return response()->json(['message' => $typebiens]);
         }
 
@@ -39,8 +42,11 @@ class TypeBienController extends Controller
      */
     public function store(StoreTypeBienRequest $request)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+        if (RoleHelper::Admin()) {
+                       
+            DatabaseHelper::Config();     
             $typebien = new typebien();
+            $typebien->setConnection('temp');
             $typebien->type = $request->type;
             $typebien->save();
             return response()->json(['message' => $typebien], 200);
@@ -52,10 +58,13 @@ class TypeBienController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(TypeBien $typeBien)
+    public function show( $id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            return response()->json(['message' => $typeBien], 200);
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $typebien = typebien::on('temp')->findOrfail($id);
+            
+            return response()->json(['message' => $typebien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -64,21 +73,32 @@ class TypeBienController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(TypeBien $typeBien)
+    public function edit( $id)
     {
-        //
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $typebien = typebien::on('temp')->findOrfail($id);
+            return response()->json(['message' => $typebien], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateTypeBienRequest $request, TypeBien $typeBien)
+    public function update(UpdateTypeBienRequest $request,  $id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-      
-            $typeBien->update($request->all());
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $typebien = typebien::on('temp')->findOrfail($id);
+            $update = $request->all();
+            foreach($update as $key => $value) {
+                $typebien->$key = $value;
+            }
+            $typebien->save();
             
-            return response()->json(['message' => $typeBien], 200);
+            return response()->json(['message' => $typebien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -88,11 +108,13 @@ class TypeBienController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(TypeBien $typeBien)
+    public function destroy($id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            
-            if ($typeBien->delete()) {
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $typebien = typebien::on('temp')->findOrfail($id);             
+                        
+            if ($typebien->delete()) {
                 return response()->json(['message' => 'ce type de bien deleted succesfully'], 200);
             } else {
                 return response()->json(['message' => 'ce type de bien non deleted'], 404);
@@ -105,9 +127,9 @@ class TypeBienController extends Controller
 
     public function restoreTypeBien($typeBien_id)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-
-            TypeBien::where('id', $typeBien_id)->withTrashed()->restore();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            TypeBien::on('temp')->where('id', $typeBien_id)->withTrashed()->restore();
 
             return response()->json(['message' => 'Type Bien est bien restaurer'], 200);
 
@@ -118,8 +140,9 @@ class TypeBienController extends Controller
     public function getTrashedTypesBien()
     {
 
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
-            $typeBiens = TypeBien::onlyTrashed()->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $typeBiens = TypeBien::on('temp')->onlyTrashed()->get();
 
             return response()->json(['message' => $typeBiens], 200);
 

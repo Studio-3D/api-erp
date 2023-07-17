@@ -2,18 +2,18 @@
 
 namespace App\Http\Helpers;
 
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Societe;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class DatabaseHelper
 {
     public function createNewClientDatabase($raison_sociale, $societe_id)
     {
-        
+
         $databaseName = 'Erp_' . $raison_sociale . '_' . $societe_id;
-        
+
         if ($this->databaseExists($databaseName)) {
             return response()->json(['message' => 'Database already exists.']);
         }
@@ -49,14 +49,13 @@ class DatabaseHelper
 
         $migration = Artisan::call('migrate', [
             '--database' => 'temp',
-            '--path' => 'database/migrations_societe',
+            '--path' => 'database/migrations/migrations_societe',
         ]);
 
         config(['database.connections.temp' => null]);
 
         return $migration === 0;
     }
-
     public function renameDatabase($oldDatabaseName, $newDatabaseName)
     {
 
@@ -73,9 +72,11 @@ class DatabaseHelper
 
         DB::statement("DROP DATABASE $oldDatabaseName");
     }
-    public static function Config()
+    public static function Config($societe_id = null)
     {
-        $societe_id = Auth::guard('api')->user()->societe_id;
+        if (!$societe_id) {
+            $societe_id = Auth::guard('api')->user()->societe_id;
+        }
         $societe = Societe::findOrfail($societe_id);
         $DatabaseName = 'Erp_' . $societe->raison_sociale . '_' . $societe_id;
         $connection = DatabaseHelper::Connection_database($DatabaseName);
@@ -88,8 +89,8 @@ class DatabaseHelper
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
             'database' => $databaseName,
-            'username' => env('DB_USERNAME', 'forge'),
-            'password' => env('DB_PASSWORD', ''),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ),
             'charset' => 'utf8mb4',
             'collation' => 'utf8mb4_unicode_ci',
             'prefix' => '',
@@ -98,7 +99,6 @@ class DatabaseHelper
         ];
     }
 
-
     public static function Deletedatabase($databases)
     {
         foreach ($databases as $database) {
@@ -106,6 +106,7 @@ class DatabaseHelper
             DB::statement("DROP DATABASE IF EXISTS `$databaseName`");
         }
     }
+
     public function databaseExists($databaseName)
     {
         $query = "SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '$databaseName'";

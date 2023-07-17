@@ -11,12 +11,12 @@ class Bloc extends Model
 {
     use HasFactory, SoftDeletes;
     protected $table = 'blocs';
-    protected $fillable = [
+    /* protected $fillable = [
         'nom',
         'projet_id', 'titre_foncier',
         'tranche_id','nbre_immeubles',
         'nbre_biens'
-    ];
+    ]; */
     protected $dates = ['deleted_at'];
     
     public function projet()

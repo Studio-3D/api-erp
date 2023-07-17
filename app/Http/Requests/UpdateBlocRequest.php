@@ -4,6 +4,10 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Http\Helpers\DatabaseHelper;
+use App\Models\Societe;
+use Illuminate\Support\Facades\Auth;
+
 
 class UpdateBlocRequest extends FormRequest
 {
@@ -21,13 +25,16 @@ class UpdateBlocRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
     public function rules(): array
-    {
+    {   $societe_id = Auth::guard('api')->user()->societe_id;
+        $societe=Societe::findOrfail( $societe_id);
+        $DatabaseName='Erp_'.$societe->raison_sociale.'_'.$societe_id;
+        DatabaseHelper::Config();
         return [
             'projet_id' => 'integer',
             'tranche_id' => 'integer',
             'nbre_immeubles' => 'integer',
             'nbre_biens' => 'integer',
-            'nom' => [ Rule::unique('blocs')->where(function ($query) {
+            'nom' => [ Rule::unique('temp.'.$DatabaseName.'.blocs','nom')->where(function ($query) {
                 if ($this->tranche_id==null){
                     $query->where('nom', $this->nom)
                     ->where('projet_id', $this->projet_id);
@@ -55,7 +62,7 @@ class UpdateBlocRequest extends FormRequest
         else {
             return [
                 
-                'nom.unique' =>  'Ce bloc est deja exist dans ce tranche',
+                'nom.unique' =>  'Ce bloc est deja exist dans cette tranche',
             ];
         }
     }

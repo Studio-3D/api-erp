@@ -4,6 +4,9 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Http\Helpers\DatabaseHelper;
+use App\Models\Societe;
+use Illuminate\Support\Facades\Auth;
 
 class UpdateProjetRequest extends FormRequest
 {
@@ -21,7 +24,10 @@ class UpdateProjetRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
     public function rules(): array
-    {
+    {   $societe_id = Auth::guard('api')->user()->societe_id;
+        $societe=Societe::findOrfail( $societe_id);
+        $DatabaseName='Erp_'.$societe->raison_sociale.'_'.$societe_id;
+        DatabaseHelper::Config();
         return [
             'date_autorisation_construction' => 'date',
             'date_permis_habiter' => 'date',
@@ -29,15 +35,12 @@ class UpdateProjetRequest extends FormRequest
             'surface_terrain' => 'numeric',
             'prix_acquisition' => 'numeric',
             'limite_annulation_reservation' => 'integer',
-            'nbr_tranches' => 'integer',
+            'nbre_tranches' => 'integer',
             'type_id' => 'integer',
-            'nbr_blocs' => 'integer',
-            'nbr_immeubles' => 'integer',
-            'nbr_biens' => 'integer',
-            'nom' => [ Rule::unique('projets')->where(function ($query) {
-                $query->where('nom', $this->nom)
-                    ->where('societe_id', $this->societe_id);})->ignore($this->projet)],
-            
+            'nbre_blocs' => 'integer',
+            'nbre_immeubles' => 'integer',
+            'nbre_biens' => 'integer',
+            'nom' => ['required', Rule::unique('temp.'.$DatabaseName.'.projets','nom')->ignore($this->projet)],
         ];
     }
 

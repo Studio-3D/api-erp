@@ -12,13 +12,13 @@ class CompositionBien extends Model
     use HasFactory;
     use SoftDeletes;
     protected $table = 'composition_biens';
-    protected $fillable = [
+    /* protected $fillable = [
         'bien_id',
         'nbre_chambres', 'nbre_salons',
         'nbre_sdb','nbre_cuisines',
         'nbre_halls','nbre_terasses','nbre_balcons','nbre_buanderies',
         'nbre_placards','nbre_receptions'
-    ];
+    ]; */
    
     protected $dates = ['deleted_at'];
 

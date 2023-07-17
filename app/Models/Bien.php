@@ -11,7 +11,7 @@ class Bien extends Model
     use HasFactory;
     use SoftDeletes;
     protected $table = 'biens';
-    protected $fillable = [
+    /* protected $fillable = [
         'propriete_dite_bien',
         'numero', 'niveau',
         'orientation',
@@ -20,7 +20,7 @@ class Bien extends Model
         'superficie_parking','superficie_box','superficie_terrasse',
         'superficie_jardin','titre_foncier','etat','type_id',
         'projet_id','tranche_id','bloc_id','immeuble_id'
-    ];
+    ]; */
     protected $dates = ['deleted_at'];
 
     public function typebien()

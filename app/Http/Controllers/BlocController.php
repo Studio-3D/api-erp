@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBlocRequest;
 use App\Http\Requests\UpdateBlocRequest;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Helpers\DatabaseHelper;
+use App\Http\Helpers\RoleHelper;
 
 
 
@@ -18,7 +20,8 @@ class BlocController extends Controller
     public function index()
     {
         if (Auth::guard('api')->check()) {
-            $blocs = Bloc::all();
+            DatabaseHelper::Config();
+            $blocs = Bloc::on('temp')->get();
             return response()->json(['message' => $blocs]);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -37,9 +40,11 @@ class BlocController extends Controller
      */
     public function store(StoreBlocRequest $request)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            
+        if (RoleHelper::Admin()) {
+                       
+            DatabaseHelper::Config();            
             $bloc = new Bloc();
+            $bloc->setConnection('temp');
             $bloc->nom = $request->nom;
             $bloc->titre_foncier = $request->titre_foncier;
             $bloc->projet_id = $request->projet_id;
@@ -58,9 +63,11 @@ class BlocController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Bloc $bloc)
+    public function show($id)
     {
         if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $bloc = Bloc::on('temp')->findOrfail($id);
             return response()->json(['message' => $bloc], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -70,9 +77,11 @@ class BlocController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Bloc $bloc)
+    public function edit($id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $bloc = Bloc::on('temp')->findOrfail($id);
              return response()->json(['message' => $bloc], 200);
         }else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -82,10 +91,17 @@ class BlocController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateBlocRequest $request, Bloc $bloc)
+    public function update(UpdateBlocRequest $request, $id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            $bloc->update($request->all());
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $bloc = Bloc::on('temp')->findOrfail($id);
+            $update = $request->all();
+            foreach($update as $key => $value) {
+                $bloc->$key = $value;
+            }
+            $bloc->save();
+
             return response()->json(['message' => $bloc], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -95,9 +111,11 @@ class BlocController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Bloc $bloc)
+    public function destroy($id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $bloc = Bloc::on('temp')->findOrfail($id);            
             if ($bloc->delete()) {
                 return response()->json(['message' => 'bloc deleted succesfully'], 200);
             } else {
@@ -111,8 +129,9 @@ class BlocController extends Controller
     }
     public function restoreBloc($bloc_id)
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            Bloc::where('id', $bloc_id)->withTrashed()->restore();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            Bloc::on('temp')->where('id', $bloc_id)->withTrashed()->restore();
             return response()->json(['message' => 'Bloc restored'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -121,8 +140,9 @@ class BlocController extends Controller
     public function getTrashedBlocs()
     {
 
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
-            $blocs = Bloc::onlyTrashed()->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();    
+            $blocs = Bloc::on('temp')->onlyTrashed()->get();
             return response()->json(['message' => $blocs], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -130,8 +150,9 @@ class BlocController extends Controller
     }
 
     public function getBlocsByProjet($projet_id){
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $blocs = Bloc::where('projet_id', $projet_id)->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $blocs = Bloc::on('temp')->where('projet_id', $projet_id)->get();
             return response()->json(['message' => $blocs], 200);
             
         } else {
@@ -140,8 +161,9 @@ class BlocController extends Controller
         }
     }
     public function getBlocsByTranche($tranche_id){
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
-            $blocs = Bloc::where('tranche_id', $tranche_id)->get();
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $blocs = Bloc::on('temp')->where('tranche_id', $tranche_id)->get();
             return response()->json(['message' => $blocs], 200);
             
         } else {

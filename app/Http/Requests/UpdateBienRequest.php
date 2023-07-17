@@ -4,6 +4,9 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use App\Http\Helpers\DatabaseHelper;
+use App\Models\Societe;
+use Illuminate\Support\Facades\Auth;
 
 class UpdateBienRequest extends FormRequest
 {
@@ -21,7 +24,10 @@ class UpdateBienRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
     public function rules(): array
-    {
+    {   $societe_id = Auth::guard('api')->user()->societe_id;
+        $societe=Societe::findOrfail( $societe_id);
+        $DatabaseName='Erp_'.$societe->raison_sociale.'_'.$societe_id;
+        DatabaseHelper::Config();
         return [
             'niveau' => 'integer',
             'prix_unitaire' => 'numeric',
@@ -38,7 +44,7 @@ class UpdateBienRequest extends FormRequest
             'tranche_id' => 'integer',
             'bloc_id' => 'integer',
             'immeuble_id' => 'integer',
-            'propriete_dite_bien' => [ Rule::unique('biens')->where(function ($query) {
+            'propriete_dite_bien' => [ Rule::unique('temp.'.$DatabaseName.'.biens','propriete_dite_bien')->where(function ($query) {
                         if ($this->immeuble_id==null){
                             if ($this->bloc_id==null){
                                 if ($this->tranche_id==null){

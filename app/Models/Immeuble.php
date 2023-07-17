@@ -11,13 +11,13 @@ class Immeuble extends Model
     use HasFactory, SoftDeletes;
     protected $table = 'immeubles';
    protected $dates = ['deleted_at'];
-   protected $fillable = [
+   /* protected $fillable = [
     'nom',
     'projet_id', 'bloc_id',
     'tranche_id',
     'titre_foncier',
     'nbre_biens'
-];
+]; */
    
    public function projet()
    {

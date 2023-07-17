@@ -19,7 +19,7 @@ return new class extends Migration
             $table->bigInteger('bien_id')->unsigned();
             $table->foreign('bien_id')->references('id')->on('biens');
             $table->bigInteger('user_id')->unsigned();
-            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('user_id')->references('user_id_origin')->on('users');
             $table->timestamps();
             $table->softDeletes();
         });
