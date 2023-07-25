@@ -27,7 +27,16 @@ class UserController extends Controller
             return response()->json(['access_token' => $accessToken], 200);
         }
 
-        return response()->json(['error' => 'Unauthorized'], 401);
+        return response()->json(['error' => 'email or password incorrect'], 422);
+    }
+
+    public function logout(Request $request)
+    {
+
+        $request->user()->tokens()->delete();
+
+        return response()->json(['message' => 'You are Logout'], 200);
+    
     }
 
     public function index()
@@ -38,9 +47,16 @@ class UserController extends Controller
                 return response()->json(['user' => $users]);
             } else if (Auth::guard('api')->user()->type == 2) {
                 $users = User::where('societe_id', Auth::guard('api')->user()->societe_id)->get();
-                return response()->json(['message' => $users], 200);
+                return response()->json(['user' => $users], 200);
             }
         }
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+    public function dashboard()
+    {if (Auth::guard('api')->check()) {
+        return response()->json(['user' => auth()->user()], 200);
+
+    }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
@@ -122,7 +138,7 @@ class UserController extends Controller
             $photo = $request->file('photo')->store($societe->raison_sociale . '/photos_users', 'public');
             $user->photo = $photo;
         }
-        $user->save();  
+        $user->save();
     }
 
     /**
@@ -132,7 +148,7 @@ class UserController extends Controller
     {
         if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
             if ($user) {
-                return response()->json(['message' => $user], 200);
+                return response()->json(['user' => $user], 200);
             } else {
                 return response()->json(['message' => 'User not found'], 200);
             }
@@ -174,7 +190,7 @@ class UserController extends Controller
                 DatabaseHelper::Config();
                 $user_societes = User::on('temp')->where('user_id_origin', $user->id);
                 $user_societes->update($request->all());
-                
+
             }
 
             return response()->json(['message' => $user], 200);
