@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Helpers\DatabaseHelper;
+use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreSocieteRequest;
 use App\Http\Requests\UpdateSocieteRequest;
 use App\Models\Societe;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use \Illuminate\Support\Facades\Storage;
 
@@ -16,7 +18,7 @@ class SocieteController extends Controller
      */
     public function index()
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::Superadmin()) {
             $societes = Societe::all();
             return response()->json(['societe' => $societes]);
         }
@@ -37,7 +39,7 @@ class SocieteController extends Controller
      */
     public function store(StoreSocieteRequest $request)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::superadmin()) {
 
             $societe = new Societe();
             $societe->raison_sociale = $request->raison_sociale;
@@ -71,7 +73,7 @@ class SocieteController extends Controller
      */
     public function show($id)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::Superadmin()) {
             $societe = Societe::findOrfail($id);
 
             return response()->json(['societe' => $societe], 200);
@@ -83,9 +85,10 @@ class SocieteController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Societe $societe)
+    public function edit($id)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::Superadmin()) {
+            $societe=Societe::findOrfail($id);
             return response()->json(['message' => $societe], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -94,7 +97,7 @@ class SocieteController extends Controller
 
     public function update(UpdateSocieteRequest $request, Societe $societe)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::Superadmin()) {
 
             if ($request->hasFile('logo')) {
                 if ($societe->logo) {
@@ -121,7 +124,7 @@ class SocieteController extends Controller
      */
     public function destroy(Societe $societe)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::Superadmin()) {
 
             if ($societe->delete()) {
                 return response()->json(['message' => 'Societe deleted succesfully'], 200);
@@ -135,7 +138,7 @@ class SocieteController extends Controller
     }
     public function restoreSociete($societe_id)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::Superadmin()) {
 
             Societe::where('id', $societe_id)->withTrashed()->restore();
 
@@ -148,7 +151,7 @@ class SocieteController extends Controller
     public function getTrashedSocietes()
     {
 
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::Superadmin()) {
             $societes = Societe::onlyTrashed()->get();
 
             return response()->json(['message' => $societes], 200);
@@ -157,5 +160,43 @@ class SocieteController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+
+    public function Switch_Societes(Request $request)
+    {
+        $societe_id = $request->input('societe_id');
+        if (RoleHelper::SuperAdmin()) {
+            $user = Auth::guard('api')->user();
+            if (!empty($societe_id)) {
+                $user->societe_id=$societe_id;
+                $user->save();
+                $societe = Societe::findOrfail($societe_id);
+
+                return response()->json(
+                    [
+                        'message' => 'You are in ERP. ' . $societe->raison_sociale . ' (' . $societe_id . ')',
+                        'user' => $user,
+
+                    ],
+                    200
+
+                );
+            }
+            return response()->json(['error' => 'You have Choice a Societe'], 400);
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    public function Exist_Societes()
+    {
+
+        if (RoleHelper::SuperAdmin()) {
+            $user = Auth::guard('api')->user();
+            $user->societe_id=1 ;
+            $user->save();
+            return response()->json(['message' => 'you are exists from  societes'], 200);
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
 
 }

@@ -43,7 +43,7 @@ class BienController extends Controller
      */
     public function store(StoreBienRequest $request)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
                        
             DatabaseHelper::Config();      
             $bien = new bien();
@@ -98,7 +98,7 @@ class BienController extends Controller
      */
     public function edit( $id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $bien = bien::on('temp')->findOrfail($id);
             return response()->json(['message' => $bien], 200);
@@ -112,7 +112,7 @@ class BienController extends Controller
      */
     public function update(UpdateBienRequest $request,  $id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $bien = bien::on('temp')->findOrfail($id);
             $update = $request->all();
@@ -132,7 +132,7 @@ class BienController extends Controller
      */
     public function destroy( $id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $bien = bien::on('temp')->findOrfail($id);             
             if ($bien->delete()) {
@@ -147,7 +147,7 @@ class BienController extends Controller
     }
     public function restoreBien($bien_id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             Bien::on('temp')->where('id', $bien_id)->withTrashed()->restore();
 
@@ -160,7 +160,7 @@ class BienController extends Controller
     public function getTrashedBiens()
     {
 
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $biens = Bien::on('temp')->onlyTrashed()->get();
 
@@ -173,7 +173,7 @@ class BienController extends Controller
 
     public function bloquerBien($bien_id)
     {  
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $bien = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat=4;
@@ -190,7 +190,7 @@ class BienController extends Controller
 
     public function reserverBien($bien_id)
     {  
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $bien = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat=3;
@@ -205,7 +205,7 @@ class BienController extends Controller
 
     public function prereserverBien($bien_id)
     {  
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $bien = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat=2;
@@ -220,7 +220,7 @@ class BienController extends Controller
 
     public function libererBien($bien_id)
     {  
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $bien = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat=1;
@@ -236,7 +236,7 @@ class BienController extends Controller
 
     public function getHistoriqueBien($bien_id)
     {  
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $Historique_bien = HistoriqueBien::on('temp')->where('bien_id', $bien_id)->get();
             return response()->json(['message' => $Historique_bien], 200);
@@ -247,7 +247,7 @@ class BienController extends Controller
     }
 
     public function getBiensByProjet($projet_id){
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $biens = Bien::on('temp')->where('projet_id', $projet_id)->get();
             return response()->json(['message' => $biens], 200);
@@ -259,7 +259,7 @@ class BienController extends Controller
     }
 
     public function getBiensByTranche($tranche_id){
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $biens = Bien::on('temp')->where('tranche_id', $tranche_id)->get();
             return response()->json(['message' => $biens], 200);
@@ -271,7 +271,7 @@ class BienController extends Controller
     }
 
     public function getBiensByBloc($bloc_id){
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $biens = Bien::on('temp')->where('bloc_id', $bloc_id)->get();
             return response()->json(['message' => $biens], 200);
@@ -283,7 +283,7 @@ class BienController extends Controller
     }
 
     public function getBiensByImmeuble($immeuble_id){
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $biens = Bien::on('temp')->where('immeuble_id', $immeuble_id)->get();
             return response()->json(['message' => $biens], 200);
@@ -295,7 +295,7 @@ class BienController extends Controller
     }
 
     public function getBiensDispoByProjet($projet_id){
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $biens = Bien::on('temp')->where('projet_id', $projet_id)->where('etat', 1)->get();
             return response()->json(['message' => $biens], 200);
@@ -307,7 +307,7 @@ class BienController extends Controller
     }
 
     public function getBiensDispoByTranche($tranche_id){
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $biens = Bien::on('temp')->where('tranche_id', $tranche_id)->where('etat', 1)->get();
             return response()->json(['message' => $biens], 200);
@@ -318,7 +318,7 @@ class BienController extends Controller
         }
     }
     public function getBiensDispoByBloc($bloc_id){
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $biens = Bien::on('temp')->where('bloc_id', $bloc_id)->where('etat', 1)->get();
             return response()->json(['message' => $biens], 200);
@@ -329,7 +329,7 @@ class BienController extends Controller
         }
     }
     public function getBiensDispoByImmeuble($immeuble_id){
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $biens = Bien::on('temp')->where('immeuble_id', $immeuble_id)->where('etat', 1)->get();
             return response()->json(['message' => $biens], 200);

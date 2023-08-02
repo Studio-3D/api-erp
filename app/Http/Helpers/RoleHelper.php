@@ -7,7 +7,24 @@ use Illuminate\Support\Facades\Auth;
 
 class RoleHelper
 {
+
+    public static function SuperAdmin()
+    {
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1)) {
+            return true;
+        }
+
+        return false;
+    }
     public static function Admin()
+    {
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 2)) {
+            return true;
+        }
+
+        return false;
+    }
+    public static function  AdminSup()
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2)) {
             return true;
@@ -15,10 +32,17 @@ class RoleHelper
 
         return false;
     }
+    public  static function ACSup()
+    {
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
+            return true;
+        }
+        return false;
+    }
 
     public  static function AC()
     {
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 1 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 2 || Auth::guard('api')->user()->type == 3)) {
             return true;
         }
         return false;

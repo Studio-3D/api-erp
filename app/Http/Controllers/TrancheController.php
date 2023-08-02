@@ -42,7 +42,7 @@ class TrancheController extends Controller
      */
     public function store(StoreTrancheRequest $request)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $tranche = new Tranche();
             $tranche->setConnection('temp');
@@ -96,7 +96,7 @@ class TrancheController extends Controller
      */
     public function update(UpdateTrancheRequest $request, $id)
     {
-        if (RoleHelper::Admin()){
+        if (RoleHelper::AdminSup()){
             DatabaseHelper::Config();
             $tranche = Tranche::on('temp')->findOrfail($id);
             $update = $request->all();
@@ -117,7 +117,7 @@ class TrancheController extends Controller
      */
     public function destroy($id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $tranche = Tranche::on('temp')->findOrfail($id);
             if ($tranche->delete()) {
@@ -134,7 +134,7 @@ class TrancheController extends Controller
 
     public function restoreTranche($tranche_id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $tranche = Tranche::on('temp')->where('id', $tranche_id)->withTrashed()->restore();
             
@@ -145,7 +145,7 @@ class TrancheController extends Controller
     }
     public function getTrashedTranches()
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $tranches = Tranche::on('temp')::onlyTrashed()->get();
             return response()->json(['message' => $tranches], 200);

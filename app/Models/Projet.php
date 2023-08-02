@@ -34,4 +34,9 @@ class Projet extends Model
         return $this->hasManyany(Tranche::class, 'projet_id');
     }
 
+    public function user()
+   {
+       return $this->belongsToMany(User::class);
+   }
+
 }

@@ -22,7 +22,7 @@ class TypeProjetController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $typeprojets = typeprojet::on('temp')->get();
-            return response()->json(['message' => $typeprojets]);
+            return response()->json(['typeProjet' => $typeprojets]);
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -42,7 +42,7 @@ class TypeProjetController extends Controller
      */
     public function store(StoreTypeProjetRequest $request)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
                        
             DatabaseHelper::Config();                
             $typeprojet = new typeprojet();
@@ -50,7 +50,7 @@ class TypeProjetController extends Controller
             $typeprojet->type = $request->type;
             $typeprojet->save();
 
-            return response()->json(['message' => $typeprojet], 200);
+            return response()->json(['typeProjet' => $typeprojet], 200);
            
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -65,7 +65,7 @@ class TypeProjetController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $typeprojet = typeprojet::on('temp')->findOrfail($id);
-            return response()->json(['message' => $typeprojet], 200);
+            return response()->json(['typeProjet' => $typeprojet], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -76,10 +76,10 @@ class TypeProjetController extends Controller
      */
     public function edit( $id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $typeprojet = typeprojet::on('temp')->findOrfail($id);
-            return response()->json(['message' => $typeprojet], 200);
+            return response()->json(['typeProjet' => $typeprojet], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -90,7 +90,7 @@ class TypeProjetController extends Controller
      */
     public function update(UpdateTypeProjetRequest $request,  $id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $typeprojet = typeprojet::on('temp')->findOrfail($id);
             $update = $request->all();
@@ -99,7 +99,7 @@ class TypeProjetController extends Controller
             }
             $typeprojet->save();
             
-            return response()->json(['message' => $typeprojet], 200);
+            return response()->json(['typeProjet' => $typeprojet], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -110,7 +110,7 @@ class TypeProjetController extends Controller
      */
     public function destroy( $id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $typeprojet = typeprojet::on('temp')->findOrfail($id);                         
             if ($typeprojet->delete()) {
@@ -126,7 +126,7 @@ class TypeProjetController extends Controller
 
     public function restoreTypeProjet($typeprojet_id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             TypeProjet::on('temp')->where('id', $typeprojet_id)->withTrashed()->restore();
 
@@ -139,7 +139,7 @@ class TypeProjetController extends Controller
     public function getTrashedTypesProjet()
     {
 
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $typeProjets = TypeProjet::on('temp')->onlyTrashed()->get();
 

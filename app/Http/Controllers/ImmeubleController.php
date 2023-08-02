@@ -40,7 +40,7 @@ class ImmeubleController extends Controller
      */
     public function store(StoreImmeubleRequest $request)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
                        
             DatabaseHelper::Config();                
             $immeuble = new immeuble();
@@ -78,7 +78,7 @@ class ImmeubleController extends Controller
      */
     public function edit($id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $immeuble = Immeuble::on('temp')->findOrfail($id);
             return response()->json(['message' => $immeuble], 200);
@@ -92,7 +92,7 @@ class ImmeubleController extends Controller
      */
     public function update(UpdateImmeubleRequest $request,$id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $immeuble = immeuble::on('temp')->findOrfail($id);
             $update = $request->all();
@@ -111,7 +111,7 @@ class ImmeubleController extends Controller
      */
     public function destroy( $id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $immeuble = immeuble::on('temp')->findOrfail($id);             
             if ($immeuble->delete()) {
@@ -125,7 +125,7 @@ class ImmeubleController extends Controller
     }
     public function restoreImmeuble($immeuble_id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             Immeuble::on('temp')->where('id', $immeuble_id)->withTrashed()->restore();
             return response()->json(['message' => 'Immeuble restored'], 200);
@@ -135,7 +135,7 @@ class ImmeubleController extends Controller
     }
     public function getTrashedImmeubles()
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $immeubles = Immeuble::on('temp')->onlyTrashed()->get();
             return response()->json(['message' => $immeubles], 200);
@@ -145,7 +145,7 @@ class ImmeubleController extends Controller
     }
 
     public function getImmeublesByProjet($projet_id){
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $immeubles = Immeuble::on('temp')->where('projet_id', $projet_id)->get();
             return response()->json(['message' => $immeubles], 200);
@@ -157,7 +157,7 @@ class ImmeubleController extends Controller
     }
 
     public function getImmeublesByTranche($tranche_id){
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $immeubles = Immeuble::on('temp')->where('tranche_id', $tranche_id)->get();
             return response()->json(['message' => $immeubles], 200);
@@ -169,7 +169,7 @@ class ImmeubleController extends Controller
     }
 
     public function getImmeublesByBloc($bloc_id){
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $immeubles = Immeuble::on('temp')->where('bloc_id', $bloc_id)->get();
             return response()->json(['message' => $immeubles], 200);

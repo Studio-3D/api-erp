@@ -22,6 +22,7 @@ return new class extends Migration
             $table->float('surface_terrain');
             $table->float('prix_acquisition');
             $table->integer('limite_annulation_reservation');
+            $table->integer('prolongation_reservation')->default(0);
             $table->foreignId('type_id')->constrained('type_projets')->onDelete('cascade');
             $table->integer('nbre_tranches')->default(0);
             $table->integer('nbre_blocs')->default(0);
