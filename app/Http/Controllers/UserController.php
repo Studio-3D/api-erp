@@ -143,7 +143,7 @@ class UserController extends Controller
         $user->email = $request->email;
         $user->password = $request->password;
         $user->gender = $request->gender;
-        $user->type = $request->type;
+        $user->role = $request->role;
         $user->phone = $request->phone;
         $user->cin = $request->cin;
         $user->fonction = $request->fonction;
