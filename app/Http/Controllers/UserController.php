@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Helpers\DatabaseHelper;
+use App\Http\Helpers\RoleHelper;
+use App\Http\Helpers\UserProjetHelper;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Societe;
@@ -33,32 +35,50 @@ class UserController extends Controller
     public function logout(Request $request)
     {
 
-        $request->user()->tokens()->delete();
+        $user = Auth::guard('api')->user();
 
-        return response()->json(['message' => 'You are Logout'], 200);
-    
+        $request->user()->tokens()->delete(); // Revoke all access tokens for the user
+        if (RoleHelper::SuperAdmin()) {
+            $user->societe_id=1;
+            $user->save();        }
+
+        return response()->json([
+            'message' => 'Logout successful',
+        ]);
     }
+    
+    
 
-    public function dashboard()
+    /* public function dashboard()
     {   if (Auth::guard('api')->check()) {
             return response()->json(['user' => auth()->user()], 200);
 
         }
         return response()->json(['error' => 'Unauthorized'], 401);
-    }
-
-    public function index()
+    } */
+    public function Dashboard()
     {
         if (Auth::guard('api')->check()) {
-            if (Auth::guard('api')->user()->type == 1) {
-                $users = User::all();
-                return response()->json(['user' => $users]);
-            } else if (Auth::guard('api')->user()->type == 2) {
-                $users = User::where('societe_id', Auth::guard('api')->user()->societe_id)->get();
-                return response()->json(['user' => $users], 200);
-            }
+
+            $users = Auth::guard('api')->user();
+
+            return response()->json(['user' => $users]);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
+    }
+    public function index()
+    {
+        if (RoleHelper::Superadmin()) {
+                $users = User::all();
+                return response()->json(['user' => $users]);
+            } else if (RoleHelper::AdminSup()) {
+                DatabaseHelper::Config();
+                $users = User::on('temp')->get();
+                return response()->json(['user' => $users], 200);
+            }
+        
+        return response()->json(['error' => 'Unauthorized'], 401);
+        
     }
     
 
@@ -75,7 +95,7 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::SuperAdmin()) {
 
             $user = new User();
             $user->name = $request->name;
@@ -146,16 +166,23 @@ class UserController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(user $user)
+    public function show($id)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::SuperAdmin()) {
+            $user = User::findOrfail($id);
             if ($user) {
                 return response()->json(['user' => $user], 200);
+            
             } else {
                 return response()->json(['message' => 'User not found'], 200);
             }
 
-        } else {
+        } else if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $user = User::on('temp')->findOrfail($id);
+            return response()->json(['user' => $user], 200);
+        }
+        else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
@@ -165,16 +192,17 @@ class UserController extends Controller
      */
     public function edit(user $user)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::AdminSup()) {
             return response()->json(['message' => $user], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
 
-    public function update(UpdateUserRequest $request, User $user)
+    public function update(UpdateUserRequest $request, $id)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::SuperAdmin()) {
+            $user = User::findOrfail($id);
             if ($request->hasFile('photo')) {
                 if ($user->photo) {
                     $exist = Storage::disk('public')->exists("{$user->societe->raison_sociale}/photo_users/{$user->photo}");
@@ -184,19 +212,47 @@ class UserController extends Controller
                 }
                 $photo = $request->file('photo')->store($request->raison_sociale . '/photos_users', 'public');
                 $request['photo'] = $photo;
-
             }
-
-            $user->update($request->all());
-            if ($user) {
+            $update = $request->all();
+            foreach($update as $key => $value) {
+                $user->$key = $value;
+            }
+            $user->save();                 
+             if ($user) {
                 DatabaseHelper::Config();
+
                 $user_societes = User::on('temp')->where('user_id_origin', $user->id);
+                $update = $request->all();
+                foreach($update as $key => $value) {
+                $user->$key = $value;
+                }
                 $user_societes->update($request->all());
 
             }
-
             return response()->json(['message' => $user], 200);
-        } else {
+        } else if (RoleHelper::AdminSup() && RoleHelper::AC()){
+            DatabaseHelper::Config();
+            $user = User::on('temp')->findOrfail($id);
+            if ($request->hasFile('photo')) {
+                if ($user->photo) {
+                    $exist = Storage::disk('public')->exists("{$user->societe->raison_sociale}/photo_users/{$user->photo}");
+                    if ($exist) {
+                        Storage::disk('public')->delete("{$user->societe->raison_sociale}/photo_users/{$user->photo}");
+                    }
+                }
+                $photo = $request->file('photo')->store($request->raison_sociale . '/photos_users', 'public');
+                $request['photo'] = $photo;
+            }
+            $update = $request->all();
+            foreach($update as $key => $value) {
+                $user->$key = $value;
+            }
+            $user->save();   
+            return response()->json(['message' => $user], 200);
+
+        }
+        
+        else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -206,7 +262,7 @@ class UserController extends Controller
      */
     public function destroy(user $user)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::SuperAdmin()) {
 
             if ($user->delete()) {
                 DatabaseHelper::Config();
@@ -223,7 +279,7 @@ class UserController extends Controller
     }
     public function getUsersBySocieteId($societe_id)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::SuperAdmin()) {
             $users = User::where('societe_id', $societe_id)->get();
             return response()->json(['message' => $users], 200);
 
@@ -234,7 +290,7 @@ class UserController extends Controller
     }
     public function activateUser($user_id)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::SuperAdmin()) {
             $user = User::findOrFail($user_id);
             $user->is_actif = 1;
             if ($user->save()) {
@@ -265,11 +321,11 @@ class UserController extends Controller
     }
     public function restoreUser($user_id)
     {
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::SuperAdmin()) {
 
             User::where('id', $user_id)->withTrashed()->restore();
             DatabaseHelper::Config();
-            $user_societes = User::on('temp')->where('user_id_origin', $user->id)->withTrashed()->restore();
+            $user_societes = User::on('temp')->where('user_id_origin', $user_id)->withTrashed()->restore();
 
             return response()->json(['message' => 'User est bien restaurer'], 200);
 
@@ -280,7 +336,7 @@ class UserController extends Controller
     public function getTrashedUsers()
     {
 
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::SuperAdmin()) {
             $users = User::onlyTrashed()->get();
 
             return response()->json(['message' => $users], 200);
@@ -292,7 +348,7 @@ class UserController extends Controller
     public function getTrashedUsersBySociete($societe_id)
     {
 
-        if (Auth::guard('api')->check() && Auth::guard('api')->user()->type == 1) {
+        if (RoleHelper::SuperAdmin()) {
 
             $users = User::onlyTrashed()->where('societe_id', $societe_id)->get();
 
@@ -303,4 +359,21 @@ class UserController extends Controller
         }
     }
 
+    public function addUserProjet($user_id,Request $request )
+    {
+
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            if($request->selectedProjets){
+                foreach($request->selectedProjets as $valeur){  
+                    UserProjetHelper::createUserProjet($valeur, $user_id);
+                }
+            return response()->json(['message' => 'les lignes bien ajouter'], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+}
 }

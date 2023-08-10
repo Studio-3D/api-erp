@@ -29,6 +29,7 @@ return new class extends Migration
             $table->integer('nbre_biens')->default(0);
             $table->bigInteger('societe_id')->unsigned();
             $table->foreign('societe_id')->references('id')->on('societes');
+            $table->integer('prolongation_reservation')->default(0);
             $table->timestamps();
             $table->softDeletes();
         });

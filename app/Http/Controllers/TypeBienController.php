@@ -22,7 +22,7 @@ class TypeBienController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $typebiens = typebien::on('temp')->get();
-            return response()->json(['message' => $typebiens]);
+            return response()->json(['typeBien' => $typebiens]);
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -42,7 +42,7 @@ class TypeBienController extends Controller
      */
     public function store(StoreTypeBienRequest $request)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
                        
             DatabaseHelper::Config();     
             $typebien = new typebien();
@@ -64,7 +64,7 @@ class TypeBienController extends Controller
             DatabaseHelper::Config();
             $typebien = typebien::on('temp')->findOrfail($id);
             
-            return response()->json(['message' => $typebien], 200);
+            return response()->json(['typeBien' => $typebien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -75,7 +75,7 @@ class TypeBienController extends Controller
      */
     public function edit( $id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $typebien = typebien::on('temp')->findOrfail($id);
             return response()->json(['message' => $typebien], 200);
@@ -89,7 +89,7 @@ class TypeBienController extends Controller
      */
     public function update(UpdateTypeBienRequest $request,  $id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $typebien = typebien::on('temp')->findOrfail($id);
             $update = $request->all();
@@ -110,7 +110,7 @@ class TypeBienController extends Controller
      */
     public function destroy($id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $typebien = typebien::on('temp')->findOrfail($id);             
                         
@@ -127,7 +127,7 @@ class TypeBienController extends Controller
 
     public function restoreTypeBien($typeBien_id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             TypeBien::on('temp')->where('id', $typeBien_id)->withTrashed()->restore();
 
@@ -140,7 +140,7 @@ class TypeBienController extends Controller
     public function getTrashedTypesBien()
     {
 
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $typeBiens = TypeBien::on('temp')->onlyTrashed()->get();
 

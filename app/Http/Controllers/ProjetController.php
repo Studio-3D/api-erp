@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Helpers\UserProjetHelper;
 use App\Models\Projet;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProjetRequest;
@@ -12,7 +13,7 @@ use App\Http\Helpers\RoleHelper;
 use Illuminate\Http\Request;
 use App\Http\Helpers\HistoriqueBienHelper;
 use App\Models\Societe;
-
+use App\Models\UserProjet;
 
 class ProjetController extends Controller
 {
@@ -43,8 +44,7 @@ class ProjetController extends Controller
      */
     public function store(StoreProjetRequest $request)
     {
-        if (RoleHelper::Admin()) {
-                       
+        if (RoleHelper::AdminSup()) {         
             DatabaseHelper::Config();
             $projet = new Projet();
             $projet->setConnection('temp');
@@ -58,14 +58,22 @@ class ProjetController extends Controller
             $projet->prix_acquisition = $request->prix_acquisition;
             $projet->limite_annulation_reservation = $request->limite_annulation_reservation;
             $projet->type_id = $request->type_id;
+            $projet->prolongation_reservation = $request->prolongation_reservation ?: 0;
             $projet->nbre_tranches = $request->nbre_tranches ?: 0;
             $projet->nbre_blocs = $request->nbre_blocs ?: 0;
             $projet->nbre_immeubles = $request->nbre_immeubles ?: 0;
             $projet->nbre_biens = $request->nbre_biens ?: 0;
-            $projet->save();
-
-            return response()->json(['message' => $projet], 200);
-           
+            if ($request->verification)
+           { $projet->save();
+            
+            if($request->selectedUsers){
+                foreach($request->selectedUsers as $valeur){  
+                    UserProjetHelper::createUserProjet($projet->id, $valeur);
+                }
+            }
+            return response()->json(['projet' => $projet], 200);
+           }
+           return response()->json(['error' => 'attention nbre de bien different de nbr de bien par type'], 422);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -90,7 +98,7 @@ class ProjetController extends Controller
      */
     public function edit($id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->findOrfail($id);
             return response()->json(['message' => $projet], 200);
@@ -104,17 +112,14 @@ class ProjetController extends Controller
      */
     public function update(UpdateProjetRequest $request, $id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->findOrfail($id);
             $update = $request->all();
             foreach($update as $key => $value) {
                 $projet->$key = $value;
             }
-            $projet->save();
-        
-            //$projet->update($request->all());
-            
+            $projet->save();            
             return response()->json(['message' => $projet], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -126,7 +131,7 @@ class ProjetController extends Controller
      */
     public function destroy($id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->findOrfail($id);
             if ($projet->delete()) {
@@ -141,7 +146,7 @@ class ProjetController extends Controller
 
     public function restoreProjet($projet_id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->where('id', $projet_id)->withTrashed()->restore();
             return response()->json(['message' => 'Projet restored succesfully'], 200);
@@ -151,7 +156,7 @@ class ProjetController extends Controller
     }
     public function getTrashedProjets()
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->onlyTrashed()->get();
 

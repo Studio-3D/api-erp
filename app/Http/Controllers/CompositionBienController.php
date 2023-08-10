@@ -40,7 +40,7 @@ class CompositionBienController extends Controller
      */
     public function store(StoreCompositionBienRequest $request)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
                        
             DatabaseHelper::Config();               
             $composition_bien = new CompositionBien();
@@ -84,7 +84,7 @@ class CompositionBienController extends Controller
      */
     public function edit( $id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $compositionBien = compositionBien::on('temp')->findOrfail($id);
             return response()->json(['message' => $compositionBien], 200);
@@ -98,7 +98,7 @@ class CompositionBienController extends Controller
      */
     public function update(UpdateCompositionBienRequest $request,  $id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $compositionBien = compositionBien::on('temp')->findOrfail($id);
             $update = $request->all();
@@ -117,7 +117,7 @@ class CompositionBienController extends Controller
      */
     public function destroy( $id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $compositionBien = compositionBien::on('temp')->findOrfail($id);             
             if ($compositionBien->delete()) {
@@ -133,7 +133,7 @@ class CompositionBienController extends Controller
 
     public function restoreCompositionBien($compositionBien_id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             CompositionBien::on('temp')->where('id', $compositionBien_id)->withTrashed()->restore();
 
@@ -146,7 +146,7 @@ class CompositionBienController extends Controller
     public function getTrashedCompositionBiens()
     {
 
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $compositionBiens = CompositionBien::on('temp')->onlyTrashed()->get();
 
@@ -158,7 +158,7 @@ class CompositionBienController extends Controller
     }
     public function getComposition($bien_id)
     {  
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();            
             $CompositionBien = CompositionBien::on('temp')->where('bien_id', $bien_id)->get();
             return response()->json(['message' => $CompositionBien], 200);

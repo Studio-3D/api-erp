@@ -39,6 +39,8 @@ Route::middleware('auth:api')->group(function () {
     Route::resource('societe', SocieteController::class);
     Route::post('restoreSociete/{id}', [SocieteController::class, 'restoreSociete'])->name('restoreSociete');
     Route::get('getTrashedSocietes', [SocieteController::class, 'getTrashedSocietes'])->name('getTrashedSocietes');
+    Route::put('Switch_Societes', [SocieteController::class, 'Switch_Societes'])->name('Switch_Societes');
+    Route::put('Exist_Societes', [SocieteController::class, 'Exist_Societes'])->name('Exist_Societes');
 
     /*************************************User***************************** */
     Route::resource('user', UserController::class);
@@ -50,6 +52,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('dashboard', [UserController::class, 'dashboard'])->name('dashboard');
     Route::get('getTrashedUsersBySociete/{id}', [UserController::class, 'getTrashedUsersBySociete'])->name('getTrashedUsersBySociete');
     Route::post('logout', [UserController::class, 'logout'])->name('logout');
+    Route::post('addUserProjet/{id}', [UserController::class, 'addUserProjet'])->name('addUserProjet');
 
     /*************************************Projet***************************** */
     Route::resource('projet', ProjetController::class);
