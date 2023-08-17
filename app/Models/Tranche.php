@@ -24,7 +24,11 @@ class Tranche extends Model
     {
         return $this->belongsTo(Projet::class, 'projet_id');
     }
-   
+
+    public function  frein(){
+        return $this->belongsToMany(Frein::class,'frein_tranches');
+    }
+
 }
 
 
