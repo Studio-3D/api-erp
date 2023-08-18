@@ -49,10 +49,15 @@ class SocieteController extends Controller
             $societe->tel = $request->tel;
             $societe->email = $request->email;
             if ($request->hasFile('logo')) {
+                $logo = time() . '.' . $request->raison_sociale . '.' . $request->logo->extension();
+                $request->logo->move(public_path('img/societes'), $logo);
+                $societe->logo = $logo;
+            }
+            /* if ($request->hasFile('logo')) {
                 $logo = $request->file('logo')->store($request->raison_sociale . '/logos', 'public');
                 $societe->logo = $logo;
 
-            }
+            } */
             $societe->save();
             $raison_sociale_concatene = str_replace(' ', '', $request->raison_sociale);
 

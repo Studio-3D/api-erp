@@ -87,7 +87,7 @@ class BienController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $bien = bien::on('temp')->findOrfail($id);
-            return response()->json(['message' => $bien], 200);
+            return response()->json(['bien' => $bien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

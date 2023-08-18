@@ -23,15 +23,15 @@ class UpdateSocieteRequest extends FormRequest
     public function rules(): array
     {
         return [
-           // 'raison_sociale' => 'min:3',
+            // 'raison_sociale' => 'min:3',
             'raison_sociale' => [
                 'min:3',
-                Rule::unique('societes')->ignore($this->societe)
-            ],  
+                Rule::unique('societes')->ignore($this->societe),
+            ],
             'nom_contact' => 'min:3',
-            'tel' => 'string|min:10|max:14',
+            'tel' => 'string|min:10|max:14|nullable',
             'email' => 'email',
-            'logo' => 'image|mimes:png,jpg,jpeg|max:2048',      
+            'logo' => 'image|mimes:png,jpg,jpeg|max:2048|nullable',
         ];
     }
 }
