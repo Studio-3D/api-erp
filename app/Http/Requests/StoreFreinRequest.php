@@ -22,7 +22,13 @@ class StoreFreinRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'prix_min'=>'float',
+            'prix_max'=>'float',
+            'superficie_min'=>'float',
+            'superficie_max'=>'float',
+            'liste_attente'=>'boolean',
+            'avance'=>'float',
+            'visite_id'=>'required|integer',
         ];
     }
 }

@@ -28,7 +28,7 @@ class StoreVisiteRequest extends FormRequest
 
         return [
             'commentaire' => 'string|min:6',
-            'source' => 'integer',
+            'source_id' => 'integer',
             'notifie' => 'boolean',
             'type_notification'=>'integer',
             'email'=>'string',
@@ -39,7 +39,6 @@ class StoreVisiteRequest extends FormRequest
             'status' => 'string',
             'prospect_id'=>'required|integer',
             'bien_id'=>'integer',
-            'frein_id'=>'integer',
         ];
     }
 }

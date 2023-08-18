@@ -23,4 +23,9 @@ class Frein extends Model
     public function  vue(){
         return $this->belongsToMany(Vue::class,'frein_vues');
     }
+
+    public function visite(){
+        return $this->belongsTo(Visite::class,'visite_id');
+    }
+
 }

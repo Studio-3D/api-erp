@@ -59,23 +59,23 @@ class VisiteController extends Controller
                 }
             }
             $visite->interet=$request->interet;
-            if($request->interet==1)
+            $visite->bien_id = $request->bien_id;
+            $visite->rdv = $request->rdv;
+            $visite->status = $request->status;
+            $visite->mode_relance=$request->mode_relance;
+            $visite->date_relance=$request->date_relance;
+            if($request->interet==1 && $visite->bien_id!=null || $request->interet==2)
             {
-                $visite->bien_id=$request->bien_id;
-                $visite->rdv=$request->rdv;
-                $visite->status=$request->status;
+                $visite->save();
+                return  response()->json(['message' => $visite], 200);
             }
-            elseif($request->interet==2 || $request->interet==1)
+            elseif ($request->interet==3)
             {
-                $visite->mode_relance=$request->mode_relance;
-                $visite->date_relance=$request->date_relance;
+                $visite->save();
+                return  response()->json(['message' => $visite], 200);
             }
-            elseif($request->interet==3)
-            {
-                $visite->frein_id=$request->frein_id;
-            }
-            $visite->save();
-            return  response()->json(['message' => $visite], 200);
+            else return  response()->json(['erreur' => "Un champs obligatoire manque"], 520);
+
         }
         else  return response()->json(['error' => 'Unauthorized'], 401);
     }

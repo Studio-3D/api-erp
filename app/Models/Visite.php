@@ -31,10 +31,6 @@ class Visite extends Model
         return $this->belongsTo(Bien::class,'bien_id');
     }
 
-    public function frein(){
-        return $this->belongsTo(Frein::class,'frein_id');
-    }
-
     public function source(){
         return $this->belongsTo(Source::class,'source_id');
     }

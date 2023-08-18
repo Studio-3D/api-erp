@@ -19,6 +19,7 @@ return new class extends Migration
             $table->float('superficie_max')->nullable();
             $table->boolean('liste_attente')->default(false);
             $table->float('avance')->nullable();
+            $table->foreignId('visite_id')->nullable()->constrained('visites')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
         });

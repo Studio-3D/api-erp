@@ -12,6 +12,7 @@ use App\Http\Controllers\SourceController;
 use App\Http\Controllers\TrancheController;
 use App\Http\Controllers\TypeBienController;
 use App\Http\Controllers\TypeProjetController;
+use App\Http\Controllers\TypologieController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VisiteController;
 use App\Http\Controllers\VueController;
@@ -127,5 +128,8 @@ Route::middleware('auth:api')->group(function () {
     Route::resource('source',SourceController::class);
 
     /*************************************Vue***************************** */
-    Route::resource('vue',VueController::class);
+    Route::resource('vue', VueController::class);
+
+    /*************************************Typologie***************************** */
+    Route::resource('typologie', TypologieController::class);
 });
