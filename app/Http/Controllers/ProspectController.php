@@ -42,7 +42,7 @@ class ProspectController extends Controller
             $prospect->telephone=$request->telephone;
             $prospect->telephone_num2=$request->telephone_num2;
             $prospect->save();
-            return response()->json(['message' => $prospect], 200);
+            return $prospect->id;
         }
         else return response()->json(['error' => 'Unauthorized'], 401);
     }

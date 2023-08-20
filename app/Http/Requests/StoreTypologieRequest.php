@@ -22,7 +22,8 @@ class StoreTypologieRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'typologie'=>'typologie',
+            'typologie'=>'required|string',
+            'projet_id'=>'required|integer',
         ];
     }
 }

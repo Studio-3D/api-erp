@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('typologies', function (Blueprint $table) {
             $table->id();
             $table->string('typologie')->unique();
+            $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

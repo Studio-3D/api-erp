@@ -2,14 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Enum\InteretEnum;
 use App\Enum\TypeNotificationEnum;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\RoleHelper;
+use App\Http\Requests\StoreFreinRequest;
+use App\Http\Requests\StoreProspectRequest;
 use App\Http\Requests\StoreVisiteRequest;
+use App\Models\Prospect;
 use App\Models\User;
 use App\Models\Visite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use function PHPUnit\Framework\isEmpty;
 
 class VisiteController extends Controller
 {
@@ -38,46 +43,56 @@ class VisiteController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+
     public function store(StoreVisiteRequest $request)
     {
-        $user=Auth::user();
-        if(RoleHelper::ACSup()){
+        $user = Auth::user();
+        if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $userAuth = User::on('temp')->where("user_id_origin",$user->id)->first();
+            $prospectExist = Prospect::on('temp')->where('cin', $request->cin)->get()->value('id');
+            if ($prospectExist ) {
+                $visiteExist = Visite::on('temp')->where('prospect_id', $prospectExist->value('id'))->get();
+                if($visiteExist) {
+                    return response()->json(['message' => 'Ce prospect existe déjà, il possède une visite'], 520);
+                }
+            } else {
+                $validatedData = $request->validated();
+                $prospectController = new ProspectController();
+                $prospectExist = $prospectController->store(new StoreProspectRequest($validatedData));
+            }
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $visite = new Visite();
             $visite->setConnection('temp');
-            $visite->user_id=$userAuth->id;
-            $visite->prospect_id=$request->prospect_id;
-            $visite->commentaire=$request->commentaire;
-            $visite->source_id= $request->source_id;
-            if($request->notifie==true)
-            {
-                $visite->notifie=$request->notifie;
-                $visite->type_notification=$request->type_notification; // 1=sms,2=whatsapp,3=appel,4 = email
-                if($visite->type_notification==TypeNotificationEnum::EMAIL){
-                    $visite->email=$request->email;
-                }
-            }
-            $visite->interet=$request->interet;
+            $visite->user_id = $userAuth->value('id');
+            $visite->prospect_id = $prospectExist;
+            $visite->commentaire = $request->commentaire;
+            $visite->source_id = $request->source_id;
+            $visite->notifie = $request->notifie;
+            $visite->type_notification = $request->type_notification;
+            $visite->interet = $request->interet;
             $visite->bien_id = $request->bien_id;
             $visite->rdv = $request->rdv;
             $visite->status = $request->status;
-            $visite->mode_relance=$request->mode_relance;
-            $visite->date_relance=$request->date_relance;
-            if($request->interet==1 && $visite->bien_id!=null || $request->interet==2)
-            {
-                $visite->save();
-                return  response()->json(['message' => $visite], 200);
+            $visite->mode_relance = $request->mode_relance;
+            $visite->date_relance = $request->date_relance;
+            $visite->save();
+            if ($visite->interet == InteretEnum::PERDU->value) {
+                $freinRequest=$request->validated();
+                $freinRequest['visite_id']=$visite->getAttribute('id');
+                $freinRequest['selectedTranches']=$request->selectedTranches;
+                $freinRequest['selectedEtages']=$request->selectedEtages;
+                $freinRequest['selectedOrientations']=$request->selectedOrientations;
+                $freinRequest['selectedTypologies']=$request->selectedTypologies;
+                $freinRequest['selectedVues']=$request->selectedVues;
+                $freinController = new FreinController();
+                $freinController->store(new StoreFreinRequest($freinRequest));
             }
-            elseif ($request->interet==3)
-            {
-                $visite->save();
-                return  response()->json(['message' => $visite], 200);
-            }
-            else return  response()->json(['erreur' => "Un champs obligatoire manque"], 520);
-
+            return response()->json(['message' => $visite], 200);
         }
-        else  return response()->json(['error' => 'Unauthorized'], 401);
+        else
+        {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     /**

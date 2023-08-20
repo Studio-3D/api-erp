@@ -36,8 +36,9 @@ class TypologieController extends Controller
             $typologie=new Typologie();
             $typologie->setConnection('temp');
             $typologie->typologie=$request->typologie;
+            $typologie->projet_id=$session->get('projet_id');
             $typologie->save();
-            return  response()->json(['message'=>$typologie],200);
+            return  response()->json(['typologie'=>$typologie],200);
         }
         else return response()->json(['error' => 'Unauthorized'], 401);
     }

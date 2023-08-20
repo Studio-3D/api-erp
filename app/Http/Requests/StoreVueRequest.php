@@ -23,6 +23,7 @@ class StoreVueRequest extends FormRequest
     {
         return [
             'vue'=>'required|string',
+            'projet_id'=>'required|integer',
         ];
     }
 }

@@ -20,7 +20,6 @@ return new class extends Migration
             $table->string('commentaire')->nullable(); // car en peut recoit des vistes sans commentaire.
             $table->boolean('notifie')->default(false);
             $table->enum('type_notification',[TypeNotificationEnum::SMS->name,TypeNotificationEnum::WHATSAPP->name,TypeNotificationEnum::APPEL->name,TypeNotificationEnum::EMAIL->name])->nullable();
-            $table->string('email')->nullable();
             $table->enum('interet',[InteretEnum::INTERESSE->name,InteretEnum::RECEPCTIF->name,InteretEnum::PERDU->name]);
             $table->enum('mode_relance',[TypeNotificationEnum::SMS->name,TypeNotificationEnum::APPEL->name,TypeNotificationEnum::EMAIL->name])->nullable();
             $table->date('date_relance')->nullable();

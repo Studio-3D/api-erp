@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('vues', function (Blueprint $table) {
             $table->id();
             $table->string('vue')->nullable();
+            $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
         });

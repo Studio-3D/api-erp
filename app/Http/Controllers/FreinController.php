@@ -49,6 +49,11 @@ class FreinController extends Controller
             $frein->liste_attente=$request->liste_attente;
             $frein->avance=$request->avance;
             $frein->visite_id=$request->visite_id;
+            $frein->tranche=$request->selectedTranches?true:false;
+            $frein->etage=$request->selectedEtages?true:false;
+            $frein->orientation=$request->selectedOrientations?true:false;
+            $frein->vue=$request->selectedVues?true:false;
+            $frein->typologie=$request->selectedTypologies?true:false;
             $visite=Visite::on('temp')->where('id',$frein->visite_id)->get()->value('interet');
             if($visite== InteretEnum::PERDU->name){
                 $frein->save();

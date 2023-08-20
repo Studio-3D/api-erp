@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('prenom');
             $table->string('telephone');
             $table->string('telephone_num2')->nullable();
+            $table->string('email')->nullable()->unique();
             $table->timestamps();
             $table->softDeletes();
         });

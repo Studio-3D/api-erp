@@ -19,6 +19,11 @@ return new class extends Migration
             $table->float('superficie_max')->nullable();
             $table->boolean('liste_attente')->default(false);
             $table->float('avance')->nullable();
+            $table->boolean('tranche')->default(false);
+            $table->boolean('orientation' )->default(false);
+            $table->boolean('etage')->default(false);
+            $table->boolean('vue')->default(false);
+            $table->boolean('typologie')->default(false);
             $table->foreignId('visite_id')->nullable()->constrained('visites')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();

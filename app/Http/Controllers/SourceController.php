@@ -16,7 +16,12 @@ class SourceController extends Controller
      */
     public function index()
     {
-
+        if(RoleHelper::ACSup()){
+            DatabaseHelper::Config();
+            $source=Source::on('temp')->get();
+            return response()->json(['source',$source],200);
+        }
+       else  return response()->json(['error'=>'Unauthorized'], 401);
     }
 
     /**
@@ -38,7 +43,7 @@ class SourceController extends Controller
             $source->setConnection('temp');
             $source->source=$request->source;
             $source->save();
-            return response()->json(['message'=>$source],200);
+            return response()->json(['$source'=>$source],200);
         }
         else return response()->json(['error' => 'Unauthorized'], 401);
     }

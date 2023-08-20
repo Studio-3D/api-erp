@@ -2,12 +2,13 @@
 
 namespace App\Http\Requests;
 
+
 use App\Http\Helpers\DatabaseHelper;
 use App\Models\Societe;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 
-class StoreVisiteRequest extends FormRequest
+#[AllowDynamicProperties] class StoreVisiteRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -31,14 +32,24 @@ class StoreVisiteRequest extends FormRequest
             'source_id' => 'integer',
             'notifie' => 'boolean',
             'type_notification'=>'integer',
-            'email'=>'string',
             'interet' => 'required|integer',
             'mode_relance' => 'integer',
             'date_relance' => 'date',
             'rdv' => 'datetime',
             'status' => 'string',
-            'prospect_id'=>'required|integer',
             'bien_id'=>'integer',
+            'cin' => 'string',
+            'nom' => 'required|string',
+            'prenom' => 'required|string',
+            'telephone' => 'required|string',
+            'telephone_num2' => 'string',
+            'email'=>'string',
+            'prix_min'=>'float',
+            'prix_max'=>'float',
+            'superficie_min'=>'float',
+            'superficie_max'=>'float',
+            'liste_attente'=>'boolean',
+            'avance'=>'float'
         ];
     }
 }

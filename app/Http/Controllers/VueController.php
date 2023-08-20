@@ -32,13 +32,14 @@ class VueController extends Controller
     public function store(StoreVueRequest $request)
     {
 
-        if(RoleHelper::ACSup()){
+        if(RoleHelper::Admin()||RoleHelper::AdminSup()){
             DatabaseHelper::Config();
             $vue=new Vue();
             $vue->setConnection('temp');
             $vue->vue=$request->vue;
+            $vue->projet_id=$session->get('projet_id');
             $vue->save();
-            return response()->json(['message'=>$vue],200);
+            return response()->json(['visite'=>$vue],200);
         }
         else  return response()->json(['error' => 'Unauthorized'], 401);
 

@@ -17,4 +17,8 @@ class Vue extends Model
     public function  frien(){
         return $this->belongsToMany(Frein::class,'frein_vues');
     }
+
+    public function  projet(){
+        return $this->belongsTo(Projet::class,'projet_id');
+    }
 }

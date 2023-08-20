@@ -16,4 +16,8 @@ class Typologie extends Model
     public function  frein(){
         return $this->belongsToMany(Frein::class,'frein_typologies');
     }
+
+    public function projet(){
+        return $this->belongsTo(Projet::class,'projet_id');
+    }
 }
