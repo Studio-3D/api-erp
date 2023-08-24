@@ -50,7 +50,7 @@ class ProspectController extends Controller
             $prospect->email=$request->email;
             $prospect->source=$request->source;
             $prospect->save();
-            return $prospect->id;
+            return $prospect;
         }
         else return response()->json(['error' => 'Unauthorized'], 401);
     }
@@ -107,10 +107,10 @@ class ProspectController extends Controller
             $prospect=Prospect::on('temp')->findOrFail($id);
             if($prospect->delete())
             {
-                return response()->json(['message'=>'Prospect supprimé avec succès'],200);
+                return response()->json(['message'=>'Prospect supprimé avec succès.'],200);
             }
             else{
-                return response()->json(['error'=>"Prospect n'est pas supprimé"],404);
+                return response()->json(['error'=>"Le prospect n'a pas été supprimé."],404);
             }
         }
         else{

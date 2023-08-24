@@ -39,7 +39,7 @@ class UpdateVueRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'vue.unique' => 'Cette vue est deja exist dans ce projet',
+            'vue.unique' => 'Cette vue existe déjà dans ce projet.',
         ];
     }
 }

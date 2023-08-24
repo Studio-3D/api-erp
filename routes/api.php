@@ -118,6 +118,7 @@ Route::middleware('auth:api')->group(function () {
     /*************************************Visite***************************** */
     Route::resource('visite',VisiteController::class);
     Route::post('addLinkedVisite/{id}',[VisiteController::class,'addLinkedVisite'])->name('addLinkedVisite');
+    Route::get('getAllAttributes',[VisiteController::class,'getAllAttributes'])->name('getAllAttributes');
     /*************************************Frein***************************** */
     Route::resource('frein', FreinController::class);
 

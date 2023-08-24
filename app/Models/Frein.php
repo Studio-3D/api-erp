@@ -14,11 +14,12 @@ class Frein extends Model
     protected $table='freins';
     protected $dates=['deleted_at'];
 
-    public function  tranche(){
+    public function  tranche()
+    {
         return $this->belongsToMany(Tranche::class,'frein_tranches');
     }
     public function  typologie(){
-        return $this->belongsToMany(Tranche::class,'frein_typologies');
+        return $this->belongsToMany(Typologie::class,'frein_typologies');
     }
     public function  vue(){
         return $this->belongsToMany(Vue::class,'frein_vues');

@@ -11,9 +11,16 @@ use App\Http\Helpers\FreinTypologieHelper;
 use App\Http\Helpers\FreinVueHelper;
 use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreFreinRequest;
+use App\Http\Requests\UpdateFreinRequest;
 use App\Models\Frein;
+use App\Models\FreinEtage;
+use App\Models\FreinOrientation;
+use App\Models\FreinTranche;
+use App\Models\FreinTypologie;
+use App\Models\FreinVue;
 use App\Models\Visite;
-use Illuminate\Http\Request;
+
+use Illuminate\Support\Facades\Auth;
 
 class FreinController extends Controller
 {
@@ -22,7 +29,13 @@ class FreinController extends Controller
      */
     public function index()
     {
-        //
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $freins= Frein::on('temp')->get();
+            return response()->json(['freins' => $freins]);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
 
     /**
@@ -54,8 +67,8 @@ class FreinController extends Controller
             $frein->orientation=$request->selectedOrientations?true:false;
             $frein->vue=$request->selectedVues?true:false;
             $frein->typologie=$request->selectedTypologies?true:false;
-            $visite=Visite::on('temp')->where('id',$frein->visite_id)->get()->value('interet');
-            if($visite== InteretEnum::PERDU->name){
+            $visite=Visite::on('temp')->where('id',$request->visite_id)->get()->value('interet');
+            if($visite == InteretEnum::PERDU->name){
                 $frein->save();
                 if($request->selectedTranches){
                     foreach($request->selectedTranches as $valeur){
@@ -84,7 +97,7 @@ class FreinController extends Controller
                 }
                 return response()->json(['frein' => $frein], 200);
             }
-            return response()->json(['error' => "cette visite n'est pas de type perdu"], 520);
+            return response()->json(['error' => "Cette visite n'est pas du type perdu."], 520);
         }
         else return response()->json(['error' => 'Unauthorized'], 401);
     }
@@ -92,9 +105,37 @@ class FreinController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show($id)
     {
-        //
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $frein= Frein::on('temp')->findOrfail($id);
+            if($frein->exists()) {
+                if ($frein->value('tranche') == true) {
+                    $frein_tranches = FreinTranche::on('temp')->where('frein_id', $frein->id)->get();
+                    $frein['frein_tranches'] = $frein_tranches;
+                }
+                if ($frein->value('etage') == true) {
+                    $frein_etages = FreinEtage::on('temp')->where('frein_id', $frein->id)->get();
+                    $frein['frein_etages'] = $frein_etages;
+                }
+                if ($frein->value('vue') == true) {
+                    $frein_vues = FreinVue::on('temp')->where('frein_id', $frein->id)->get();
+                    $frein['frein_vues'] = $frein_vues;
+                }
+                if ($frein->value('typologie') == true) {
+                    $frein_typologies = FreinVue::on('temp')->where('frein_id', $frein->id)->get();
+                    $frein['frein_typologies'] = $frein_typologies;
+                }
+                if ($frein->value('orientation') == true) {
+                    $frein_orientations = FreinOrientation::on('temp')->where('frein_id', $frein->id)->get();
+                    $frein['frein_orientations'] = $frein_orientations;
+                }
+            }
+            return response()->json(['frein'=>$frein], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     /**
@@ -108,16 +149,97 @@ class FreinController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UpdateFreinRequest $request, $id)
     {
-        //
+        if(RoleHelper::ACSup()){
+            DatabaseHelper::Config();
+            $frein=Frein::on('temp')->findOrFail($id);
+            $frein->prix_min=$request->prix_min;
+            $frein->prix_max=$request->prix_max;
+            $frein->superficie_min=$request->superficie_min;
+            $frein->superficie_max=$request->superficie_max;
+            $frein->liste_attente=$request->liste_attente;
+            $frein->avance=$request->avance;
+            $frein->tranche=$request->selectedTranches?true:false;
+            $frein->etage=$request->selectedEtages?true:false;
+            $frein->orientation=$request->selectedOrientations?true:false;
+            $frein->vue=$request->selectedVues?true:false;
+            $frein->typologie=$request->selectedTypologies?true:false;
+            $frein->save();
+            $this->syncRelationship($frein, $request->selectedTranches, 'tranche', FreinTranche::class,'tranche_id');
+            $this->syncRelationship($frein, $request->selectedEtages, 'etage', FreinEtage::class,'etage');
+            $this->syncRelationship($frein, $request->selectedOrientations, 'orientation', FreinOrientation::class,'orientation');
+            $this->syncRelationship($frein, $request->selectedTypologies, 'typologie', FreinTypologie::class,'typologie_id');
+            $this->syncRelationship($frein, $request->selectedVues, 'vue', FreinVue::class,'vue_id');
+            return response()->json(['frein'=>$frein],200);
+        }
+        else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        //
+        if(RoleHelper::AdminSup()){
+            DatabaseHelper::Config();
+            $frein=Frein::on('temp')->findOrFail($id);
+            if($frein->delete()){
+                return response()->json(['messqge'=>'Frein supprimé avec succès.'],200);
+            }
+            else return response()->json(['error'=>"Le frein n'a pas été supprimé."],404);
+        }
+        else return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    private function syncRelationship($frein, $request, $relation, $modelClass,$pluckAtt)
+    {
+        if ($frein->$relation) {
+              $frein->$relation()->sync($request);
+        } else {
+            $existingItems = $modelClass::on('temp')->where('frein_id', $frein->id)->pluck($pluckAtt)->toArray();
+            if (!empty($existingItems)) {
+                $frein->$relation()->detach($existingItems);
+            }
+        }
+    }
+
+    public function searchFreinByVisiteId($id){
+        $frein=Frein::on('temp')->where('visite_id',$id)->first();
+        if($frein){
+            if($frein->value('tranche')==true)
+            {
+                $frein_tranches=FreinTranche::on('temp')->where('frein_id',$frein->id)->get();
+                $frein['frein_tranches']=$frein_tranches;
+            }
+            if($frein->value('etage')==true)
+            {
+                $frein_etages=FreinEtage::on('temp')->where('frein_id',$frein->id)->get();
+                $frein['frein_etages']=$frein_etages;
+            }
+            if($frein->value('vue')==true)
+            {
+                $frein_vues=FreinVue::on('temp')->where('frein_id',$frein->id)->get();
+                $frein['frein_vues']=$frein_vues;
+            }
+            if($frein->value('typologie')==true)
+            {
+                $frein_typologies=FreinVue::on('temp')->where('frein_id',$frein->id)->get();
+                $frein['frein_typologies']=$frein_typologies;
+            }
+            if($frein->value('orientation')==true)
+            {
+                $frein_orientations=FreinOrientation::on('temp')->where('frein_id',$frein->id)->get();
+                $frein['frein_orientations']=$frein_orientations;
+            }
+            return $frein;
+        }
+        else
+        {
+            return null;
+        }
+
     }
 }

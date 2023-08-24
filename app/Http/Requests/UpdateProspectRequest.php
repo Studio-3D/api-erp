@@ -43,7 +43,7 @@ class UpdateProspectRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'cin.unique' => 'Ce prospect est deja exist dans cette societe',
+            'cin.unique' => 'Ce prospect existe déjà dans cette société.',
         ];
     }
 }

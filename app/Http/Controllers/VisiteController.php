@@ -8,11 +8,20 @@ use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreFreinRequest;
 use App\Http\Requests\StoreProspectRequest;
 use App\Http\Requests\StoreVisiteRequest;
+use App\Http\Requests\UpdateFreinRequest;
+use App\Http\Requests\UpdateVisiteRequest;
+use App\Models\Bien;
+use App\Models\Bloc;
+use App\Models\Frein;
+use App\Models\Immeuble;
 use App\Models\Prospect;
+use App\Models\Tranche;
+use App\Models\Typologie;
 use App\Models\User;
 use App\Models\Visite;
-use Illuminate\Http\Request;
+use App\Models\Vue;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class VisiteController extends Controller
 {
@@ -24,7 +33,7 @@ class VisiteController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $visites = Visite::on('temp')->where('origin_id',null)->get();
-            return response()->json(['visite' => $visites]);
+            return response()->json(['visites' => $visites]);
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -47,13 +56,8 @@ class VisiteController extends Controller
         $user = Auth::user();
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $prospectExist = Prospect::on('temp')->where('cin', $request->cin)->get()->value('id');
-            if ($prospectExist ) {
-                $visiteExist = Visite::on('temp')->where('prospect_id', $prospectExist->value('id'))->get();
-                if($visiteExist) {
-                    return response()->json(['message' => 'Ce prospect existe déjà, il possède une visite'], 520);
-                }
-            } else {
+            $prospectExist = Prospect::on('temp')->where('cin', $request->cin)->orWhere([['nom',$request->nom],['prenom',$request->prenom],['telephone',$request->telephone]])->get();
+            if (!$prospectExist->isEmpty()) {
                 $validatedData = $request->validated();
                 $validatedData['source']='visite';
                 $prospectController = new ProspectController();
@@ -63,7 +67,7 @@ class VisiteController extends Controller
             $visite = new Visite();
             $visite->setConnection('temp');
             $visite->user_id = $userAuth->value('id');
-            $visite->prospect_id = $prospectExist;
+            $visite->prospect_id = $prospectExist->id;
             $visite->commentaire = $request->commentaire;
             $visite->source_id = $request->source_id;
             $visite->notifie = $request->notifie;
@@ -101,8 +105,18 @@ class VisiteController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
+            $frein=new FreinController();
             $visite = Visite::on('temp')->findOrfail($id);
-            $relatedVisites=Visite::on('temp')->where('origin_id',$visite->value('id'))->get();
+            if($visite->interet==InteretEnum::PERDU->name) {
+                $visite['frein']=$frein->searchFreinByVisiteId($visite->id);
+            }
+            $relatedVisites=Visite::on('temp')->where('origin_id',$visite->id)->get();
+            foreach ($relatedVisites as $relatedVisite) {
+                if ($relatedVisite->interet == InteretEnum::PERDU->name) {
+                    $frein = $frein->searchFreinByVisiteId($relatedVisite->id);
+                    $relatedVisite['frein'] = $frein;
+                }
+            }
             $prospect=Prospect::on('temp')->find($visite->value('prospect_id'));
             return response()->json(['prospect'=>$prospect,'visite' => $visite,'realtedViste'=>$relatedVisites], 200);
         } else {
@@ -121,9 +135,51 @@ class VisiteController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Visite $visite)
+    public function update(UpdateVisiteRequest $request,$id)
     {
-        //
+        $user = Auth::user();
+        if(RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $visite = Visite::on('temp')->findOrFail($id);
+            $visite->user_id = $userAuth->value('id');
+            $visite->commentaire = $request->commentaire;
+            $visite->source_id = $request->source_id;
+            $visite->notifie = $request->notifie;
+            $visite->type_notification = $request->type_notification;
+            $visite->interet = $request->interet;
+            $visite->bien_id = $request->bien_id;
+            $visite->rdv = $request->rdv;
+            $visite->status = $request->status;
+            $visite->mode_relance = $request->mode_relance;
+            $visite->date_relance = $request->date_relance;
+            $visite->save();
+            if ($visite->interet == InteretEnum::PERDU->value) {
+                $frein_id=Frein::on('temp')->where('visite_id', $visite->id)->get();
+                $freinRequest=$request->validated();
+                $freinRequest['selectedTranches']=$request->selectedTranches;
+                $freinRequest['selectedEtages']=$request->selectedEtages;
+                $freinRequest['selectedOrientations']=$request->selectedOrientations;
+                $freinRequest['selectedTypologies']=$request->selectedTypologies;
+                $freinRequest['selectedVues']=$request->selectedVues;
+                $freinController = new FreinController();
+                echo $frein_id->isEmpty();
+                if(!$frein_id->isEmpty()){
+                    $freinController->update(new UpdateFreinRequest($freinRequest),$frein_id->value('id'));
+                }
+                else{
+                    $freinRequest['visite_id']=$visite->id;
+                    $freinController->store(new StoreFreinRequest($freinRequest));
+                }
+            }
+            else{
+                $frein=Frein::on('temp')->where('visite_id', $visite->id)->get();
+                if($frein){
+                    $freinController=new FreinController();
+                    $freinController->destroy($frein->id);
+                }
+            }
+        }
     }
 
     /**
@@ -135,9 +191,9 @@ class VisiteController extends Controller
             DatabaseHelper::Config();
             $visite=Visite::on('temp')->findOrFail($id);
             if($visite->delete()){
-                return response()->json(['messqge'=>'visite supprimé avec succès'],200);
+                return response()->json(['messqge'=>'Visite supprimée avec succès.'],200);
             }
-            else return response()->json(['error'=>"visite n'est pas supprimé"],404);
+            else return response()->json(['error'=>"La visite n'a pas été supprimée."],404);
         }
         else return response()->json(['error' => 'Unauthorized'], 401);
     }
@@ -145,7 +201,7 @@ class VisiteController extends Controller
     public function addLinkedVisite($id, StoreVisiteRequest $request){
         DatabaseHelper::Config();
         $originalVisite=Visite::on('temp')->find($id);
-        if (!$originalVisite) return response()->json(['error'=>"orginal viste n'est pas trouve"]);
+        if (!$originalVisite) return response()->json(['error'=>"L'original de la visite n'a pas été trouvé."]);
         $user = Auth::user();
         if(RoleHelper::ACSup()){
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -181,5 +237,24 @@ class VisiteController extends Controller
         {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
+    }
+
+    public  function getAllAttributes(){
+        $tranches = Tranche::where('projet_id', Session::get('projet_id'))->get();
+        $blocs = Bloc::where('projet_id', Session::get('projet_id'))->get();
+        $immeubles = Immeuble::where('projet_id', Session::get('projet_id'))->get();
+        $biens = Bien::where('projet_id', Session::get('projet_id'))->get();
+        $typologies=Typologie::where('projet_id', Session::get('projet_id'))->get();
+        $vues=Vue::where('projet_id', Session::get('projet_id'))->get();
+        $formData = [
+            'tranches' => $tranches,
+            'blocs' => $blocs,
+            'immeubles' => $immeubles,
+            'biens' => $biens,
+            'typologies' => $typologies,
+            'vues' => $vues
+        ];
+
+        return response()->json($formData);
     }
 }

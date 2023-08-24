@@ -7,8 +7,8 @@ use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreVueRequest;
 use App\Http\Requests\UpdateVueRequest;
 use App\Models\Vue;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class VueController extends Controller
 {
@@ -40,12 +40,12 @@ class VueController extends Controller
     public function store(StoreVueRequest $request)
     {
 
-        if(RoleHelper::Admin()||RoleHelper::AdminSup()){
+        if(RoleHelper::AdminSup()){
             DatabaseHelper::Config();
             $vue=new Vue();
             $vue->setConnection('temp');
             $vue->vue=$request->vue;
-            $vue->projet_id=$session->get('projet_id');
+            $vue->projet_id=Session::get('projet_id');
             $vue->save();
             return response()->json(['vue'=>$vue],200);
         }
@@ -105,10 +105,10 @@ class VueController extends Controller
             $vue=Vue::on('temp')->findOrFail($id);
             if($vue->delete())
             {
-                return response()->json(['message'=>'Vue supprimé avec succès'],200);
+                return response()->json(['message'=>'Vue supprimée avec succès.'],200);
             }
             else{
-                return response()->json(['error'=>"Vue n'est pas supprimé"],404);
+                return response()->json(['error'=>"La vue n'a pas été supprimée."],404);
             }
         }
         else{

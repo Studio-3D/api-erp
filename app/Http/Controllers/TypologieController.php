@@ -8,6 +8,7 @@ use App\Http\Requests\StoreTypologieRequest;
 use App\Models\Typologie;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class TypologieController extends Controller
 {
@@ -44,7 +45,7 @@ class TypologieController extends Controller
             $typologie=new Typologie();
             $typologie->setConnection('temp');
             $typologie->typologie=$request->typologie;
-            $typologie->projet_id=$session->get('projet_id');
+            $typologie->projet_id=Session::get('projet_id');
             $typologie->save();
             return  response()->json(['typologie'=>$typologie],200);
         }
@@ -103,10 +104,10 @@ class TypologieController extends Controller
             $typologie=Typologie::on('temp')->findOrFail($id);
             if($typologie->delete())
             {
-                return response()->json(['message'=>'Typologie supprimé avec succès'],200);
+                return response()->json(['message'=>'Typologie supprimée avec succès.'],200);
             }
             else{
-                return response()->json(['error'=>"Typologie n'est pas supprimé"],404);
+                return response()->json(['error'=>"La typologie n'a pas été supprimée."],404);
             }
         }
         else{

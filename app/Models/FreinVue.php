@@ -11,6 +11,6 @@ class FreinVue extends Model
     use HasFactory;
     use SoftDeletes;
 
-    protected $table='frien_vues';
+    protected $table='frein_vues';
     protected $dates=['deleted_at'];
 }
