@@ -2,13 +2,13 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use App\Http\Helpers\DatabaseHelper;
 use App\Models\Societe;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
-class UpdateTypeProjetRequest extends FormRequest
+class UpdateSourceRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,13 +24,20 @@ class UpdateTypeProjetRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
     public function rules(): array
-    {   $societe_id = Auth::guard('api')->user()->societe_id;
+    {
+        $societe_id = Auth::guard('api')->user()->societe_id;
         $societe=Societe::findOrfail( $societe_id);
         $DatabaseName='Erp_'.$societe->raison_sociale.'_'.$societe_id;
         DatabaseHelper::Config();
         return [
-            'type' => ['required', Rule::unique('temp.'.$DatabaseName.'.type_projets','type')->ignore($this->type_projet)],
-
+            'source'=>['required',Rule::unique('temp.'.$DatabaseName.'.sources','source')
+                ->ignore($this->source)],
+        ];
+    }
+    public function messages(): array
+    {
+        return [
+            'source.unique' => 'Cette source existe déjà dans cette société.',
         ];
     }
 }

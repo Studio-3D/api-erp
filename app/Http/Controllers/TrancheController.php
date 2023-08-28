@@ -19,8 +19,10 @@ class TrancheController extends Controller
     /**
      * Display a listing of the resource.
      */
+
     public function index(Request $request)
     {  
+
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $perPage = 20; // Number of items per page
@@ -33,7 +35,7 @@ class TrancheController extends Controller
             return response()->json(['tranche' => $tranches]);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
-    
+
     }
 
     /**
@@ -63,8 +65,8 @@ class TrancheController extends Controller
             $tranche->nbre_biens = $request->nbre_biens ? $request->nbre_biens : 0;
             $tranche->save();
 
-            return response()->json(['message' => $tranche], 200);
-           
+            return response()->json(['tranche' => $tranche], 200);
+
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -81,7 +83,7 @@ class TrancheController extends Controller
             return response()->json(['tranche' => $tranche], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
-        }       
+        }
     }
 
     /**
@@ -95,7 +97,7 @@ class TrancheController extends Controller
             return response()->json(['message' => $tranche], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
-        }  
+        }
     }
 
     /**
@@ -111,12 +113,12 @@ class TrancheController extends Controller
                 $tranche->$key = $value;
             }
             $tranche->save();
-            
+
             return response()->json(['message' => $tranche], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-        
+
     }
 
     /**
@@ -144,7 +146,7 @@ class TrancheController extends Controller
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $tranche = Tranche::on('temp')->where('id', $tranche_id)->withTrashed()->restore();
-            
+
             return response()->json(['message' => 'Tranche restored succesfully'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -166,7 +168,7 @@ class TrancheController extends Controller
             DatabaseHelper::Config();
             $tranches = Tranche::on('temp')->where('projet_id', $projet_id)->get();
             return response()->json(['message' => $tranches], 200);
-            
+
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
 
