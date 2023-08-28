@@ -2,11 +2,11 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use App\Http\Helpers\DatabaseHelper;
 use App\Models\Societe;
+use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class UpdateBienRequest extends FormRequest
 {
@@ -24,76 +24,68 @@ class UpdateBienRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
     public function rules(): array
-    {   $societe_id = Auth::guard('api')->user()->societe_id;
-        $societe=Societe::findOrfail( $societe_id);
-        $DatabaseName='Erp_'.$societe->raison_sociale.'_'.$societe_id;
+    { $societe_id = Auth::guard('api')->user()->societe_id;
+        $societe = Societe::findOrfail($societe_id);
+        $DatabaseName = 'Erp_' . $societe->raison_sociale . '_' . $societe_id;
         DatabaseHelper::Config();
         return [
             'niveau' => 'integer',
             'prix_unitaire' => 'numeric',
             'prix' => 'numeric',
-            'superficie_habitable' => 'numeric',
+            'superficie_habitable' => 'numeric|nullable',
             'nbre_facades' => 'integer',
-            'superficie_parking' => 'numeric',
+            'superficie_parking' => 'numeric|nullable',
             'superficie_architecte' => 'numeric',
-            'superficie_box' => 'numeric',
-            'superficie_terrasse' => 'numeric',
-            'superficie_jardin' => 'numeric',
+            'superficie_box' => 'numeric|nullable',
+            'superficie_terrasse' => 'numeric|nullable',
+            'superficie_jardin' => 'numeric|nullable',
             'type_id' => 'integer',
             'projet_id' => 'integer',
-            'tranche_id' => 'integer',
-            'bloc_id' => 'integer',
-            'immeuble_id' => 'integer',
-            'propriete_dite_bien' => [ Rule::unique('temp.'.$DatabaseName.'.biens','propriete_dite_bien')->where(function ($query) {
-                        if ($this->immeuble_id==null){
-                            if ($this->bloc_id==null){
-                                if ($this->tranche_id==null){
-                                    $query->where('propriete_dite_bien', $this->propriete_dite_bien)
-                                    ->where('projet_id', $this->projet_id);
-                                }
-                                else {$query->where('propriete_dite_bien', $this->propriete_dite_bien)
-                                    ->where('tranche_id', $this->tranche_id);}
+            'tranche_id' => 'integer|nullable',
+            'bloc_id' => 'integer|nullable',
+            'immeuble_id' => 'integer|nullable',
+            'propriete_dite_bien' => [Rule::unique('temp.' . $DatabaseName . '.biens', 'propriete_dite_bien')->where(function ($query) {
+                if ($this->immeuble_id == null) {
+                    if ($this->bloc_id == null) {
+                        if ($this->tranche_id == null) {
+                            $query->where('propriete_dite_bien', $this->propriete_dite_bien)
+                                ->where('projet_id', $this->projet_id);
+                        } else { $query->where('propriete_dite_bien', $this->propriete_dite_bien)
+                                ->where('tranche_id', $this->tranche_id);}
 
-                                }
-                            else{
-                                $query->where('propriete_dite_bien', $this->propriete_dite_bien)
-                                ->where('bloc_id', $this->bloc_id);
-                            }
-                        }
-                        else {$query->where('propriete_dite_bien', $this->propriete_dite_bien)
-                                ->where('immeuble_id', $this->immeuble_id);   
-                        }         
-                        })->ignore($this->bien)],
+                    } else {
+                        $query->where('propriete_dite_bien', $this->propriete_dite_bien)
+                            ->where('bloc_id', $this->bloc_id);
+                    }
+                } else { $query->where('propriete_dite_bien', $this->propriete_dite_bien)
+                        ->where('immeuble_id', $this->immeuble_id);
+                }
+            })->ignore($this->bien)],
         ];
     }
 
     public function messages(): array
 
-        {   if ($this->tranche_id==null && $this->bloc_id==null && $this->immeuble_id==null){
-                return [
-            
-                'propriete_dite_bien.unique' =>  'Ce bien est deja exist dans ce projet',
-            ];
-            }
+    {if ($this->tranche_id == null && $this->bloc_id == null && $this->immeuble_id == null) {
+        return [
 
-            elseif ($this->immeuble_id==null && $this->bloc_id==null) {
-                return [
-                
-                'propriete_dite_bien.unique' =>  'Ce bien est deja exist dans ce tranche',
-            ];
-            }
-            elseif ($this->immeuble_id==null ) {
-            return [
-                
-                'propriete_dite_bien.unique' =>  'Ce bien est deja exist dans ce bloc',
-            ];
-            }
+            'propriete_dite_bien.unique' => 'Ce bien est deja exist dans ce projet',
+        ];
+    } elseif ($this->immeuble_id == null && $this->bloc_id == null) {
+        return [
 
-            else {
-                return [
-                    
-                    'propriete_dite_bien.unique' =>  'Ce bien est deja exist dans cet emmeuble',
-                ];
-                }
-        }
+            'propriete_dite_bien.unique' => 'Ce bien est deja exist dans ce tranche',
+        ];
+    } elseif ($this->immeuble_id == null) {
+        return [
+
+            'propriete_dite_bien.unique' => 'Ce bien est deja exist dans ce bloc',
+        ];
+    } else {
+        return [
+
+            'propriete_dite_bien.unique' => 'Ce bien est deja exist dans cet emmeuble',
+        ];
+    }
+    }
 }

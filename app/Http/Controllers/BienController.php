@@ -11,6 +11,7 @@ use App\Models\HistoriqueBien;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\RoleHelper;
+use Illuminate\Http\Request;
 
 
 class BienController extends Controller
@@ -18,11 +19,17 @@ class BienController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $biens = Bien::on('temp')->get();
+            $perPage = 20; // Number of items per page
+            $page = $request->input('page', 1);
+
+            $biens = Bien::on('temp')->orderBy('created_at', 'desc')
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();            
             return response()->json(['bien' => $biens]);
         }
 
@@ -87,7 +94,7 @@ class BienController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $bien = bien::on('temp')->findOrfail($id);
-            return response()->json(['message' => $bien], 200);
+            return response()->json(['bien' => $bien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
