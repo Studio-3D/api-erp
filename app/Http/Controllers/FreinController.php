@@ -21,6 +21,7 @@ use App\Models\FreinVue;
 use App\Models\Visite;
 
 use Illuminate\Support\Facades\Auth;
+use function PHPUnit\Framework\countOf;
 
 class FreinController extends Controller
 {
@@ -62,35 +63,35 @@ class FreinController extends Controller
             $frein->liste_attente=$request->liste_attente;
             $frein->avance=$request->avance;
             $frein->visite_id=$request->visite_id;
-            $frein->tranche=$request->selectedTranches?true:false;
-            $frein->etage=$request->selectedEtages?true:false;
-            $frein->orientation=$request->selectedOrientations?true:false;
-            $frein->vue=$request->selectedVues?true:false;
-            $frein->typologie=$request->selectedTypologies?true:false;
+            $frein->tranche=empty($request->selectedTranches)?false:true;
+            $frein->etage= empty($request->selectedEtages)?false:true ;
+            $frein->orientation= empty($request->selectedOrientations) ?false:true;
+            $frein->vue= empty($request->selectedVues) ?false:true;
+            $frein->typologie= empty($request->selectedTypologies) ?false:true;
             $visite=Visite::on('temp')->where('id',$request->visite_id)->get()->value('interet');
             if($visite == InteretEnum::PERDU->name){
                 $frein->save();
-                if($request->selectedTranches){
+                if(!empty($request->selectedTranches)){
                     foreach($request->selectedTranches as $valeur){
                       FreinTrancheHelper::createFreinTranche($valeur,$frein->id);
                     }
                 }
-                if($request->selectedEtages){
+                if(!empty($request->selectedEtages)){
                     foreach($request->selectedEtages as $valeur){
                         FreinEtageHelper::createFreinEtage($valeur,$frein->id);
                     }
                 }
-                if($request->selectedOrientations){
+                if(!empty($request->selectedOrientations)){
                     foreach($request->selectedOrientations as $valeur){
                         FreinOrientationHelper::createFreinOrientation($valeur,$frein->id);
                     }
                 }
-                if($request->selectedTypologies){
+                if(!empty($request->selectedTypologies)){
                     foreach($request->selectedTypologies as $valeur){
                         FreinTypologieHelper::createFreinTypologie($valeur,$frein->id);
                     }
                 }
-                if($request->selectedVues){
+                if(!empty($request->selectedVues)){
                     foreach($request->selectedVues as $valeur){
                         FreinVueHelper::createFreinVue($valeur,$frein->id);
                     }
@@ -160,11 +161,11 @@ class FreinController extends Controller
             $frein->superficie_max=$request->superficie_max;
             $frein->liste_attente=$request->liste_attente;
             $frein->avance=$request->avance;
-            $frein->tranche=$request->selectedTranches?true:false;
-            $frein->etage=$request->selectedEtages?true:false;
-            $frein->orientation=$request->selectedOrientations?true:false;
-            $frein->vue=$request->selectedVues?true:false;
-            $frein->typologie=$request->selectedTypologies?true:false;
+            $frein->tranche=!empty($request->selectedTranches)?true:false;
+            $frein->etage=!empty($request->selectedEtages)?true:false;
+            $frein->orientation=!empty($request->selectedOrientations)?true:false;
+            $frein->vue=!empty($request->selectedVues)?true:false;
+            $frein->typologie=!empty($request->selectedTypologies)?true:false;
             $frein->save();
             $this->syncRelationship($frein, $request->selectedTranches, 'tranche', FreinTranche::class,'tranche_id');
             $this->syncRelationship($frein, $request->selectedEtages, 'etage', FreinEtage::class,'etage');
@@ -186,6 +187,26 @@ class FreinController extends Controller
         if(RoleHelper::AdminSup()){
             DatabaseHelper::Config();
             $frein=Frein::on('temp')->findOrFail($id);
+            if($frein->tranche){
+                $frienTranche=FreinTranche::on('temp')->where('frein_id',$id);
+                $frienTranche->delete();
+            }
+            if($frein->etage){
+                $frienEtage=FreinEtage::on('temp')->where('frein_id',$id);
+                $frienEtage->delete();
+            }
+            if($frein->orientation){
+                $frienOrientation=FreinOrientation::on('temp')->where('frein_id',$id);
+                $frienOrientation->delete();
+            }
+            if($frein->typologie){
+                $frienTypologie=FreinTypologie::on('temp')->where('frein_id',$id);
+                $frienTypologie->delete();
+            }
+            if($frein->vue){
+                $frienVue=FreinVue::on('temp')->where('frein_id',$id);
+                $frienVue->delete();
+            }
             if($frein->delete()){
                 return response()->json(['messqge'=>'Frein supprimé avec succès.'],200);
             }
@@ -196,7 +217,7 @@ class FreinController extends Controller
 
     private function syncRelationship($frein, $request, $relation, $modelClass,$pluckAtt)
     {
-        if ($frein->$relation) {
+        if (!empty($frein->$relation)) {
               $frein->$relation()->sync($request);
         } else {
             $existingItems = $modelClass::on('temp')->where('frein_id', $frein->id)->pluck($pluckAtt)->toArray();

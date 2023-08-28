@@ -22,6 +22,7 @@ use App\Models\Visite;
 use App\Models\Vue;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use function PHPUnit\Framework\isFalse;
 
 class VisiteController extends Controller
 {
@@ -57,7 +58,7 @@ class VisiteController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $prospectExist = Prospect::on('temp')->where('cin', $request->cin)->orWhere([['nom',$request->nom],['prenom',$request->prenom],['telephone',$request->telephone]])->get();
-            if (!$prospectExist->isEmpty()) {
+            if ($prospectExist->isEmpty()) {
                 $validatedData = $request->validated();
                 $validatedData['source']='visite';
                 $prospectController = new ProspectController();
@@ -67,7 +68,7 @@ class VisiteController extends Controller
             $visite = new Visite();
             $visite->setConnection('temp');
             $visite->user_id = $userAuth->value('id');
-            $visite->prospect_id = $prospectExist->id;
+            $visite->prospect_id = $prospectExist->value('id');
             $visite->commentaire = $request->commentaire;
             $visite->source_id = $request->source_id;
             $visite->notifie = $request->notifie;
@@ -190,6 +191,11 @@ class VisiteController extends Controller
         if(RoleHelper::AdminSup()){
             DatabaseHelper::Config();
             $visite=Visite::on('temp')->findOrFail($id);
+            if($visite->interet == InteretEnum::PERDU->name){
+                $frein=Frein::on('temp')->where('visite_id',$visite->id)->get();
+                $freinController= new FreinController();
+                $freinController->destroy($frein->value('id'));
+            }
             if($visite->delete()){
                 return response()->json(['messqge'=>'Visite supprimée avec succès.'],200);
             }
@@ -241,6 +247,7 @@ class VisiteController extends Controller
 
     public  function getAllAttributes(){
         $tranches = Tranche::where('projet_id', Session::get('projet_id'))->get();
+        $etages=$tranches->niveau_etages;
         $blocs = Bloc::where('projet_id', Session::get('projet_id'))->get();
         $immeubles = Immeuble::where('projet_id', Session::get('projet_id'))->get();
         $biens = Bien::where('projet_id', Session::get('projet_id'))->get();
@@ -248,6 +255,7 @@ class VisiteController extends Controller
         $vues=Vue::where('projet_id', Session::get('projet_id'))->get();
         $formData = [
             'tranches' => $tranches,
+            'etages' => $etages,
             'blocs' => $blocs,
             'immeubles' => $immeubles,
             'biens' => $biens,
