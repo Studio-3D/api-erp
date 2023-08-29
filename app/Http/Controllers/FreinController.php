@@ -68,8 +68,8 @@ class FreinController extends Controller
             $frein->orientation= empty($request->selectedOrientations) ?false:true;
             $frein->vue= empty($request->selectedVues) ?false:true;
             $frein->typologie= empty($request->selectedTypologies) ?false:true;
-            $visite=Visite::on('temp')->where('id',$request->visite_id)->get()->value('interet');
-            if($visite == InteretEnum::PERDU->name){
+            $interetVisite=Visite::on('temp')->where('id',$request->visite_id)->get()->value('interet');
+            if($interetVisite == InteretEnum::PERDU->name){
                 $frein->save();
                 if(!empty($request->selectedTranches)){
                     foreach($request->selectedTranches as $valeur){
@@ -188,24 +188,35 @@ class FreinController extends Controller
             DatabaseHelper::Config();
             $frein=Frein::on('temp')->findOrFail($id);
             if($frein->tranche){
-                $frienTranche=FreinTranche::on('temp')->where('frein_id',$id);
-                $frienTranche->delete();
+                $freinTranches=FreinTranche::on('temp')->where('frein_id',$id)->get();
+                foreach ($freinTranches as $freinTranche){
+                    $freinTranche->delete();
+                }
             }
             if($frein->etage){
-                $frienEtage=FreinEtage::on('temp')->where('frein_id',$id);
-                $frienEtage->delete();
+                $freinEtages=FreinEtage::on('temp')->where('frein_id',$id)->get();
+                foreach ( $freinEtages as    $freinEtage){
+                    $freinEtage->delete();
+                }
             }
             if($frein->orientation){
-                $frienOrientation=FreinOrientation::on('temp')->where('frein_id',$id);
-                $frienOrientation->delete();
+                $freinOrientations=FreinOrientation::on('temp')->where('frein_id',$id)->get();
+                foreach ( $freinOrientations as    $freinOrientation){
+                    $freinOrientation->delete();
+                }
             }
             if($frein->typologie){
-                $frienTypologie=FreinTypologie::on('temp')->where('frein_id',$id);
-                $frienTypologie->delete();
+                $freinTypologies=FreinTypologie::on('temp')->where('frein_id',$id)->get();
+                foreach ( $freinTypologies as    $freinTypologie){
+                    $freinTypologie->delete();
+                }
             }
             if($frein->vue){
-                $frienVue=FreinVue::on('temp')->where('frein_id',$id);
-                $frienVue->delete();
+                $freinVues=FreinVue::on('temp')->where('frein_id',$id)->get();
+                foreach ( $freinVues as     $freinVue){
+                    $freinVue->delete();
+                }
+
             }
             if($frein->delete()){
                 return response()->json(['messqge'=>'Frein supprimé avec succès.'],200);
