@@ -38,7 +38,8 @@ return new class extends Migration
             $table->foreignId('tranche_id')->nullable()->constrained('tranches')->onDelete('cascade');
             $table->foreignId('bloc_id')->nullable()->constrained('blocs')->onDelete('cascade');
             $table->foreignId('immeuble_id')->nullable()->constrained('immeubles')->onDelete('cascade');
-
+            $table->foreignId('vue_id')->constrained('vues')->onDelete('cascade');
+            $table->foreignId('typologie_id')->constrained('typologies')->onDelete('cascade');
         });
     }
 

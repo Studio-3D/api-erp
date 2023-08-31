@@ -75,7 +75,8 @@ class BienController extends Controller
             $bien->tranche_id = $request->tranche_id;
             $bien->bloc_id = $request->bloc_id;
             $bien->immeuble_id = $request->immeuble_id;
-
+            $bien->vue_id=$request->vue_id;
+            $bien->typologie_id=$request->typologie_id;
             $bien->save();
 
             return response()->json(['message' => $bien], 200);
