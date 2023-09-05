@@ -9,6 +9,8 @@ use App\Http\Helpers\UserProjetHelper;
 use App\Http\Requests\StoreProjetRequest;
 use App\Http\Requests\UpdateProjetRequest;
 use App\Models\Projet;
+use App\Models\User;
+use App\Models\UserProjet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -19,7 +21,7 @@ class ProjetController extends Controller
      */
     public function index(Request $request)
     {
-        if (Auth::guard('api')->check()) {
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $perPage = 20; // Number of items per page
             $page = $request->input('page', 1);
@@ -28,9 +30,20 @@ class ProjetController extends Controller
                 ->take($perPage)
                 ->get();
             return response()->json(['projet' => $projets]);
+        } else if (RoleHelper::Com()) {
+            DatabaseHelper::Config();
+            $id_auth=Auth::guard('api')->user()->id;
+            $user_id=User::on('temp')->where('user_id_origin', $id_auth)->pluck('id');
+            $projets = Projet::on('temp')
+            ->join('user_projets', 'user_projets.projet_id', '=', 'projets.id')
+            ->where('user_projets.user_id',$user_id)
+            ->select('projets.*')
+            ->get();
+            return response()->json(['projet'=>  $projets]);    
+             
+        } else{
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
     }
 
     /**

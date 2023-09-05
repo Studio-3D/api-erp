@@ -46,4 +46,12 @@ class RoleHelper
         }
         return false;
     }
+
+    public static function Com()
+    {
+        if (Auth::guard('api')->check() && Auth::guard('api')->user()->role == 3) {
+            return true;
+        }
+        return false;
+    }
 }

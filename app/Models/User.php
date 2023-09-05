@@ -4,10 +4,10 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Passport\HasApiTokens;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class User extends Authenticatable
 {
@@ -33,13 +33,12 @@ class User extends Authenticatable
         'cin',
         'date_embauche',
         'niveau_etude',
-        'adresse','cnss',
+        'adresse', 'cnss',
         'fonction',
         'solde_conge',
-        'is_actif'
+        'is_actif',
     ];
     protected $table = 'users';
-
 
     /**
      * The attributes that should be hidden for serialization.
@@ -61,15 +60,15 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
     protected $dates = ['deleted_at'];
-    protected $with=['societe'];
+    protected $with = ['societe'];
 
     public function societe()
-   {
-       return $this->belongsTo(Societe::class, 'societe_id','id');
-   }
+    {
+        return $this->belongsTo(Societe::class, 'societe_id');
+    }
 
-   public function projet()
-   {
-       return $this->belongsToMany(Projet::class);
-   }
+    public function projet()
+    {
+        return $this->belongsToMany(Projet::class);
+    }
 }

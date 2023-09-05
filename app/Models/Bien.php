@@ -12,26 +12,25 @@ class Bien extends Model
     use SoftDeletes;
     protected $table = 'biens';
     /* protected $fillable = [
-        'propriete_dite_bien',
-        'numero', 'niveau',
-        'orientation',
-        'conventionne',
-        'prix_unitaire','prix','c','superficie_habitable','nbre_facades','superficie_architecte',
-        'superficie_parking','superficie_box','superficie_terrasse',
-        'superficie_jardin','titre_foncier','etat','type_id',
-        'projet_id','tranche_id','bloc_id','immeuble_id'
+    'propriete_dite_bien',
+    'numero', 'niveau',
+    'orientation',
+    'conventionne',
+    'prix_unitaire','prix','c','superficie_habitable','nbre_facades','superficie_architecte',
+    'superficie_parking','superficie_box','superficie_terrasse',
+    'superficie_jardin','titre_foncier','etat','type_id',
+    'projet_id','tranche_id','bloc_id','immeuble_id'
     ]; */
     protected $dates = ['deleted_at'];
 
-
-    protected $with=['typeBien','projet','tranche','bloc','immeuble'];
+    protected $with = ['typeBien', 'projet', 'tranche', 'bloc', 'immeuble'];
     public function typeBien()
     {
-        return $this->belongsTo(TypeBien::class, 'type_id','id');
+        return $this->belongsTo(TypeBien::class, 'type_id');
     }
     public function projet()
     {
-        return $this->belongsTo(Projet::class, 'projet_id','id');
+        return $this->belongsTo(Projet::class, 'projet_id');
     }
     public function tranche()
     {
@@ -43,7 +42,7 @@ class Bien extends Model
     }
     public function immeuble()
     {
-        return $this->belongsTo(Immeuble::class, 'immeuble_id','id');
+        return $this->belongsTo(Immeuble::class, 'immeuble_id');
     }
-    
+
 }
