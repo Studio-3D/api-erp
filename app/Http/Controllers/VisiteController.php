@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enum\EtatBien;
 use App\Enum\InteretEnum;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\RoleHelper;
@@ -57,7 +58,7 @@ class VisiteController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $prospectExist = Prospect::on('temp')->where('cin', $request->cin)->orWhere([['nom',$request->nom],['prenom',$request->prenom],['telephone',$request->telephone]])->get();
-            if (!$prospectExist->isEmpty()) {
+            if ($prospectExist->isEmpty()) {
                 $validatedData = $request->validated();
                 $validatedData['source']='visite';
                 $prospectController = new ProspectController();
@@ -67,7 +68,7 @@ class VisiteController extends Controller
             $visite = new Visite();
             $visite->setConnection('temp');
             $visite->user_id = $userAuth->value('id');
-            $visite->prospect_id = $prospectExist->id;
+            $visite->prospect_id = $prospectExist->value('id');
             $visite->commentaire = $request->commentaire;
             $visite->source_id = $request->source_id;
             $visite->notifie = $request->notifie;
@@ -79,6 +80,12 @@ class VisiteController extends Controller
             $visite->mode_relance = $request->mode_relance;
             $visite->date_relance = $request->date_relance;
             $visite->save();
+            if($visite->interet == InteretEnum::INTERESSE->value){
+                if($visite->bien_id){
+                    $bienEncoursPropo=new BienController();
+                    $bienEncoursPropo->setPropostionBien($visite->bien_id);
+                }
+            }
             if ($visite->interet == InteretEnum::PERDU->value) {
                 $freinRequest=$request->validated();
                 $freinRequest['visite_id']=$visite->getAttribute('id');
@@ -142,6 +149,10 @@ class VisiteController extends Controller
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $visite = Visite::on('temp')->findOrFail($id);
+            if($visite->get()->value('bien_id') && $request->interet != InteretEnum::INTERESSE->value){
+                $bienEncoursPropo=new BienController();
+                $bienEncoursPropo->libererBien($visite->get()->value('bien_id'));
+            }
             $visite->user_id = $userAuth->value('id');
             $visite->commentaire = $request->commentaire;
             $visite->source_id = $request->source_id;
@@ -154,6 +165,12 @@ class VisiteController extends Controller
             $visite->mode_relance = $request->mode_relance;
             $visite->date_relance = $request->date_relance;
             $visite->save();
+            if($visite->interet == InteretEnum::INTERESSE->value){
+                if($visite->bien_id){
+                    $bienEncoursPropo=new BienController();
+                    $bienEncoursPropo->setPropostionBien($visite->bien_id);
+                }
+            }
             if ($visite->interet == InteretEnum::PERDU->value) {
                 $frein_id=Frein::on('temp')->where('visite_id', $visite->id)->get();
                 $freinRequest=$request->validated();
@@ -163,7 +180,6 @@ class VisiteController extends Controller
                 $freinRequest['selectedTypologies']=$request->selectedTypologies;
                 $freinRequest['selectedVues']=$request->selectedVues;
                 $freinController = new FreinController();
-                echo $frein_id->isEmpty();
                 if(!$frein_id->isEmpty()){
                     $freinController->update(new UpdateFreinRequest($freinRequest),$frein_id->value('id'));
                 }
@@ -172,11 +188,12 @@ class VisiteController extends Controller
                     $freinController->store(new StoreFreinRequest($freinRequest));
                 }
             }
-            else{
-                $frein=Frein::on('temp')->where('visite_id', $visite->id)->get();
-                if($frein){
+            else {
+
+                $frein=Frein::on('temp')->where('visite_id', $id)->get();
+                if(!$frein->isEmpty()){
                     $freinController=new FreinController();
-                    $freinController->destroy($frein->id);
+                    $freinController->destroy($frein->value('id'));
                 }
             }
         }
@@ -190,6 +207,17 @@ class VisiteController extends Controller
         if(RoleHelper::AdminSup()){
             DatabaseHelper::Config();
             $visite=Visite::on('temp')->findOrFail($id);
+            if($visite->interet== InteretEnum::INTERESSE->value){
+                if($visite->bien_id){
+                    $bienEncoursPropo=new BienController();
+                    $bienEncoursPropo->libererBien($visite->bien_id);
+                }
+            }
+            if($visite->interet == InteretEnum::PERDU->name){
+                $frein=Frein::on('temp')->where('visite_id',$visite->id)->get();
+                $freinController= new FreinController();
+                $freinController->destroy($frein->value('id'));
+            }
             if($visite->delete()){
                 return response()->json(['messqge'=>'Visite supprimée avec succès.'],200);
             }
@@ -220,6 +248,12 @@ class VisiteController extends Controller
             $newVisit->mode_relance = $request->mode_relance;
             $newVisit->date_relance = $request->date_relance;
             $newVisit->save();
+            if($newVisit->interet== InteretEnum::INTERESSE->value){
+                if($newVisit->bien_id){
+                    $bienEncoursPropo=new BienController();
+                    $bienEncoursPropo->setPropostionBien($newVisit->bien_id);
+                }
+            }
             if ($newVisit->interet == InteretEnum::PERDU->value) {
                 $freinRequest=$request->validated();
                 $freinRequest['visite_id']=$newVisit->getAttribute('id');
@@ -241,13 +275,15 @@ class VisiteController extends Controller
 
     public  function getAllAttributes(){
         $tranches = Tranche::where('projet_id', Session::get('projet_id'))->get();
+        $etages= Tranche::where('projet_id', Session::get('projet_id'))->max('niveau_etage')->value();;
         $blocs = Bloc::where('projet_id', Session::get('projet_id'))->get();
         $immeubles = Immeuble::where('projet_id', Session::get('projet_id'))->get();
-        $biens = Bien::where('projet_id', Session::get('projet_id'))->get();
+        $biens = Bien::where([['projet_id', Session::get('projet_id')],['etat',EtatBien::DISPONIBLE->name]])->get();
         $typologies=Typologie::where('projet_id', Session::get('projet_id'))->get();
         $vues=Vue::where('projet_id', Session::get('projet_id'))->get();
         $formData = [
             'tranches' => $tranches,
+            'etages' => $etages,
             'blocs' => $blocs,
             'immeubles' => $immeubles,
             'biens' => $biens,
