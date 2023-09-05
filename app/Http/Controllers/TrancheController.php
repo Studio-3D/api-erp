@@ -21,17 +21,17 @@ class TrancheController extends Controller
      */
 
     public function index(Request $request)
-    {  
+    {
 
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $perPage = 20; // Number of items per page
             $page = $request->input('page', 1);
 
-            $tranches = Tranche::on('temp')->orderBy('created_at', 'desc')
+            $tranches = Tranche::on('temp')->with('projet')->orderBy('tranches.created_at', 'desc')
             ->skip(($page - 1) * $perPage)
             ->take($perPage)
-            ->get();            
+            ->get();
             return response()->json(['tranche' => $tranches]);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -79,7 +79,7 @@ class TrancheController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $tranche = Tranche::on('temp')->findOrfail($id);
+            $tranche = Tranche::on('temp')->with('projet')->findOrfail($id);
             return response()->json(['tranche' => $tranche], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

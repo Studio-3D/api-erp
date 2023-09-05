@@ -29,7 +29,7 @@ class ProjetController extends Controller
             $projets = Projet::on('temp')->orderBy('created_at', 'desc')
             ->skip(($page - 1) * $perPage)
             ->take($perPage)
-            ->get();            
+            ->get();
             return response()->json(['projet' => $projets]);
         }
 
@@ -49,7 +49,7 @@ class ProjetController extends Controller
      */
     public function store(StoreProjetRequest $request)
     {
-        if (RoleHelper::AdminSup()) {         
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $projet = new Projet();
             $projet->setConnection('temp');
@@ -73,14 +73,17 @@ class ProjetController extends Controller
                 if($request->selectedUsers){
                     foreach($request->selectedUsers as $valeur) {
                     UserProjetHelper::createUserProjet($projet->id, $valeur);}
-            }                    
-                return response()->json(['projet' => $projet], 200);       
+            }
+                return response()->json(['projet' => $projet], 200);
             }}
-        
-            return response()->json(['error' => 'Attention nombre de bien par type différent de nombre de bien total'], 422);
+            else{
+                return response()->json(['errors' => 'Attention nombre de bien par type différent de nombre de bien total'], 422);
+
+            }
+
 
           } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            return response()->json(['errors' => 'Unauthorized'], 401);
         }
     }
 
@@ -124,7 +127,7 @@ class ProjetController extends Controller
             foreach($update as $key => $value) {
                 $projet->$key = $value;
             }
-            $projet->save();            
+            $projet->save();
             return response()->json(['message' => $projet], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -146,7 +149,7 @@ class ProjetController extends Controller
             }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
-        }     
+        }
     }
 
     public function restoreProjet($projet_id)
