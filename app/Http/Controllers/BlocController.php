@@ -163,11 +163,12 @@ class BlocController extends Controller
     }
 
     public function getBlocsByProjet($projet_id){
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AC()) {
             DatabaseHelper::Config();
             $blocs = Bloc::on('temp')->where('projet_id', $projet_id)->get();
-            return response()->json(['message' => $blocs], 200);
 
+            return response()->json(['blocs' => $blocs], 200);
+            
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
 

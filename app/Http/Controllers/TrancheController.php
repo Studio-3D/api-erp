@@ -2,17 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Tranche;
 use App\Http\Controllers\Controller;
+use App\Http\Helpers\DatabaseHelper;
+use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreTrancheRequest;
 use App\Http\Requests\UpdateTrancheRequest;
-use Illuminate\Support\Facades\Auth;
-use App\Http\Helpers\DatabaseHelper;
-use App\Http\Helpers\HistoriqueBienHelper;
-use App\Http\Helpers\RoleHelper;
-use App\Models\Societe;
+use App\Models\Tranche;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\Auth;
 
 class TrancheController extends Controller
 {
@@ -22,16 +19,16 @@ class TrancheController extends Controller
 
     public function index(Request $request)
     {
-
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $perPage = 20; // Number of items per page
             $page = $request->input('page', 1);
 
-            $tranches = Tranche::on('temp')->with('projet')->orderBy('tranches.created_at', 'desc')
-            ->skip(($page - 1) * $perPage)
-            ->take($perPage)
-            ->get();
+            $tranches = Tranche::on('temp')->orderBy('created_at', 'desc')
+                ->skip(($page - 1) * $perPage)
+                ->take($perPage)
+                ->get();
+
             return response()->json(['tranche' => $tranches]);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -64,7 +61,7 @@ class TrancheController extends Controller
             $tranche->nbre_immeubles = $request->nbre_immeubles ? $request->nbre_immeubles : 0;
             $tranche->nbre_biens = $request->nbre_biens ? $request->nbre_biens : 0;
             $tranche->save();
-
+          
             return response()->json(['tranche' => $tranche], 200);
 
         } else {
@@ -105,11 +102,11 @@ class TrancheController extends Controller
      */
     public function update(UpdateTrancheRequest $request, $id)
     {
-        if (RoleHelper::AdminSup()){
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $tranche = Tranche::on('temp')->findOrfail($id);
             $update = $request->all();
-            foreach($update as $key => $value) {
+            foreach ($update as $key => $value) {
                 $tranche->$key = $value;
             }
             $tranche->save();
@@ -140,7 +137,6 @@ class TrancheController extends Controller
         }
     }
 
-
     public function restoreTranche($tranche_id)
     {
         if (RoleHelper::AdminSup()) {
@@ -163,11 +159,13 @@ class TrancheController extends Controller
         }
     }
 
-    public function getTranchesByProjet($projet_id){
-        if (RoleHelper::AC()) {
+    public function getTranchesByProjet($projet_id)
+    {
+        if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $tranches = Tranche::on('temp')->where('projet_id', $projet_id)->get();
-            return response()->json(['message' => $tranches], 200);
+
+            return response()->json(['tranches' => $tranches], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

@@ -253,10 +253,12 @@ class BienController extends Controller
     }
 
     public function getBiensByProjet($projet_id){
-        if (RoleHelper::AdminSup()) {
-            DatabaseHelper::Config();
+
+        if (RoleHelper::AC()) {
+            DatabaseHelper::Config();            
             $biens = Bien::on('temp')->where('projet_id', $projet_id)->get();
-            return response()->json(['message' => $biens], 200);
+            return response()->json(['biens' => $biens], 200);
+            
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
