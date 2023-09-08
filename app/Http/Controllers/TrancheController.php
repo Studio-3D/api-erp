@@ -29,7 +29,7 @@ class TrancheController extends Controller
                 ->take($perPage)
                 ->get();
 
-            return response()->json(['tranche' => $tranches]);
+            return response()->json(['tranches' => $tranches]);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
 
@@ -61,7 +61,7 @@ class TrancheController extends Controller
             $tranche->nbre_immeubles = $request->nbre_immeubles ? $request->nbre_immeubles : 0;
             $tranche->nbre_biens = $request->nbre_biens ? $request->nbre_biens : 0;
             $tranche->save();
-          
+
             return response()->json(['tranche' => $tranche], 200);
 
         } else {

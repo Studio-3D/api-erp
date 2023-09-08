@@ -44,14 +44,16 @@ class StoreProjetRequest extends FormRequest
             'nbr_blocs' => 'integer',
             'nbr_immeubles' => 'integer',
             'nbr_biens' => 'integer',
+            'selectedUsers' => 'required',
             'nom' => ['required', Rule::unique('temp.'.$DatabaseName.'.projets','nom')],
         ];
     }
-   
+
     public function messages(): array
     {
         return [
             'nom.unique' => 'Ce projet est deja exist dans la societe',
+            'selectedUsers.required' => 'Veuillez choisissez un utilisateur',
         ];
     }
 }

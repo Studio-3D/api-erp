@@ -176,7 +176,7 @@ class UserController extends Controller
      */
     public function show($id)
     {
-        if (RoleHelper::SuperAdmin()) {
+        if (RoleHelper::SuperAdmin() && Auth::guard('api')->user()->societe_id == 1) {
 
             $user = User::with('societe')->findOrfail($id);
 
@@ -202,7 +202,7 @@ class UserController extends Controller
    /* public function edit($id)
     {
         if (RoleHelper::AdminSup()) {
-            dd('hh');
+
             $user=User::firstorfail($id);
             return response()->json(['message' => $user->with('societe')], 200);
         } else {
@@ -212,9 +212,11 @@ class UserController extends Controller
 */
     public function update(UpdateUserRequest $request, $id)
     {
+        dd($request->hasFile('photo'));
         if (RoleHelper::SuperAdmin()) {
             $user = User::findOrfail($id);
             $originalName = $user->name;
+
             if ($request->hasFile('photo')) {
                 $photo = time() . '.' . $originalName . '.' . $request->photo->extension();
                 $request->photo->move(public_path('img/users'), $photo);

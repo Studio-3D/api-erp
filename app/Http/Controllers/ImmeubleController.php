@@ -38,7 +38,7 @@ class ImmeubleController extends Controller
      */
     public function create()
     {
-        
+
     }
 
     /**
@@ -47,8 +47,8 @@ class ImmeubleController extends Controller
     public function store(StoreImmeubleRequest $request)
     {
         if (RoleHelper::AdminSup()) {
-                       
-            DatabaseHelper::Config();                
+
+            DatabaseHelper::Config();
             $immeuble = new immeuble();
             $immeuble->setConnection('temp');
             $immeuble->nom = $request->nom;
@@ -106,7 +106,7 @@ class ImmeubleController extends Controller
                 $immeuble->$key = $value;
             }
             $immeuble->save();
-            return response()->json(['message' => $immeuble], 200);  
+            return response()->json(['message' => $immeuble], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -119,7 +119,7 @@ class ImmeubleController extends Controller
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            $immeuble = immeuble::on('temp')->findOrfail($id);             
+            $immeuble = immeuble::on('temp')->findOrfail($id);
             if ($immeuble->delete()) {
                 return response()->json(['message' => 'immeuble deleted succesfully'], 200);
             } else {
@@ -154,8 +154,7 @@ class ImmeubleController extends Controller
         if (RoleHelper::AC()) {
             DatabaseHelper::Config();
             $immeubles = Immeuble::on('temp')->where('projet_id', $projet_id)->get();
-            return response()->json(['immeuble' => $immeubles], 200);
-            
+            return response()->json(['immeubles' => $immeubles], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
 
@@ -167,7 +166,7 @@ class ImmeubleController extends Controller
             DatabaseHelper::Config();
             $immeubles = Immeuble::on('temp')->where('tranche_id', $tranche_id)->get();
             return response()->json(['message' => $immeubles], 200);
-            
+
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
 
@@ -179,7 +178,7 @@ class ImmeubleController extends Controller
             DatabaseHelper::Config();
             $immeubles = Immeuble::on('temp')->where('bloc_id', $bloc_id)->get();
             return response()->json(['message' => $immeubles], 200);
-            
+
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
 

@@ -39,8 +39,8 @@ class ProjetController extends Controller
             ->where('user_projets.user_id',$user_id)
             ->select('projets.*')
             ->get();
-            return response()->json(['projet'=>  $projets]);    
-             
+            return response()->json(['projet'=>  $projets]);
+
         } else{
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -79,17 +79,39 @@ class ProjetController extends Controller
             $projet->nbre_immeubles = $request->nbre_immeubles ?: 0;
             $projet->nbre_biens = $request->nbre_biens ?: 0;
             if($request->verification==true){
-            if($projet->save()){
-                if($request->selectedUsers){
+                if($projet->save()){
+                    $all=0;
                     foreach($request->selectedUsers as $valeur) {
-                    UserProjetHelper::createUserProjet($projet->id, $valeur);}
-            }
-                return response()->json(['projet' => $projet], 200);
-            }}
-            else{
-                return response()->json(['errors' => 'Attention nombre de bien par type différent de nombre de bien total'], 422);
+                        if($valeur=='tous') {
+                            $all=1;
+                            break;
 
-            }
+                        }
+                    }
+                    if($all==1){
+                            DatabaseHelper::Config();
+                            $users = User::on('temp')->get(['id']);
+                            foreach($users as $us){
+                                UserProjetHelper::createUserProjet($projet->id, $us->id);
+                            }
+                            return response()->json(['projet' => $projet], 200);
+                    }
+
+                    else{
+
+                        foreach($request->selectedUsers as $valeur) {
+                            UserProjetHelper::createUserProjet($projet->id, $valeur);
+                        }
+                            return response()->json(['projet' => $projet], 200);
+
+                    }
+                }
+
+        }
+        else{
+            return response()->json(['errors' => 'Attention nombre de bien par type différent de nombre de bien total'], 422);
+
+        }
 
 
           } else {
@@ -105,7 +127,8 @@ class ProjetController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->findOrfail($id);
-            return response()->json(['projet' => $projet], 200);
+            $users=UserProjet::on('temp')->where('projet_id',$id)->get();
+            return response()->json(['projet' => $projet,'users'=>$users], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -133,12 +156,56 @@ class ProjetController extends Controller
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->findOrfail($id);
-            $update = $request->all();
+           /* $update = $request->all()->except();
             foreach ($update as $key => $value) {
                 $projet->$key = $value;
+            }*/
+            $projet->nom = $request->nom;
+            $projet->code = $request->code;
+            $projet->adresse = $request->adresse;
+            $projet->date_autorisation_construction = $request->date_autorisation_construction;
+            $projet->date_permis_habiter = $request->date_permis_habiter;
+            $projet->titre_foncier = $request->titre_foncier;
+            $projet->surface_terrain = $request->surface_terrain;
+            $projet->prix_acquisition = $request->prix_acquisition;
+            $projet->limite_annulation_reservation = $request->limite_annulation_reservation;
+            $projet->type_id = $request->type_id;
+            $projet->prolongation_reservation = $request->prolongation_reservation ?: 0;
+            $projet->nbre_tranches = $request->nbre_tranches ?: 0;
+            $projet->nbre_blocs = $request->nbre_blocs ?: 0;
+            $projet->nbre_immeubles = $request->nbre_immeubles ?: 0;
+            $projet->nbre_biens = $request->nbre_biens ?: 0;
+
+            if($projet->save()){
+                $user_projets=UserProjet::on('temp')->where('projet_id',$id)->delete();
+                $all=0;
+                foreach($request->selectedUsers as $valeur) {
+                    if($valeur=='tous') {
+                        $all=1;
+                        break;
+
+                    }
+                }
+                if($all==1){
+                        DatabaseHelper::Config();
+                        $users = User::on('temp')->get(['id']);
+                        foreach($users as $us){
+                            UserProjetHelper::createUserProjet($projet->id, $us->id);
+                        }
+                        return response()->json(['projet' => $projet], 200);
+                }
+
+                else{
+
+                    foreach($request->selectedUsers as $valeur) {
+                        UserProjetHelper::createUserProjet($projet->id, $valeur);
+                    }
+                        return response()->json(['projet' => $projet], 200);
+
+                }
+
             }
-            $projet->save();
-            return response()->json(['message' => $projet], 200);
+
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

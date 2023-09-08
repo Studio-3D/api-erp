@@ -35,7 +35,7 @@ class BlocController extends Controller
             ->take($perPage)
             ->get();
 
-            return response()->json(['bloc' => $blocs]);
+            return response()->json(['blocs' => $blocs]);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
@@ -168,7 +168,7 @@ class BlocController extends Controller
             $blocs = Bloc::on('temp')->where('projet_id', $projet_id)->get();
 
             return response()->json(['blocs' => $blocs], 200);
-            
+
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
 
