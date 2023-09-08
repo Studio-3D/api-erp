@@ -190,6 +190,12 @@ class SocieteController extends Controller
     public function destroy(Societe $societe)
     {
         if (RoleHelper::Superadmin()) {
+            $user = Auth::guard('api')->user();
+
+            if ($user->societe_id == $societe->id) {
+                $user->societe_id = 1;
+                $user->save();
+            }
 
             if ($societe->delete()) {
                 return response()->json(['message' => 'Societe deleted succesfully'], 200);
