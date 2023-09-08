@@ -79,39 +79,39 @@ class ProjetController extends Controller
             $projet->nbre_immeubles = $request->nbre_immeubles ?: 0;
             $projet->nbre_biens = $request->nbre_biens ?: 0;
             if($request->verification==true){
-                if($projet->save()){
-                    $all=0;
-                    foreach($request->selectedUsers as $valeur) {
-                        if($valeur=='tous') {
-                            $all=1;
-                            break;
-
-                        }
-                    }
-                    if($all==1){
-                            DatabaseHelper::Config();
-                            $users = User::on('temp')->get(['id']);
-                            foreach($users as $us){
-                                UserProjetHelper::createUserProjet($projet->id, $us->id);
-                            }
-                            return response()->json(['projet' => $projet], 200);
-                    }
-
-                    else{
-
+                    if($projet->save()){
+                        $all=0;
                         foreach($request->selectedUsers as $valeur) {
-                            UserProjetHelper::createUserProjet($projet->id, $valeur);
+                            if($valeur=='tous') {
+                                $all=1;
+                                break;
+
+                            }
                         }
-                            return response()->json(['projet' => $projet], 200);
+                        if($all==1){
+                                DatabaseHelper::Config();
+                                $users = User::on('temp')->get(['id']);
+                                foreach($users as $us){
+                                    UserProjetHelper::createUserProjet($projet->id, $us->id);
+                                }
+                                return response()->json(['projet' => $projet], 200);
+                        }
 
+                        else{
+
+                            foreach($request->selectedUsers as $valeur) {
+                                UserProjetHelper::createUserProjet($projet->id, $valeur);
+                            }
+                                return response()->json(['projet' => $projet], 200);
+
+                        }
                     }
-                }
 
-        }
-        else{
-            return response()->json(['errors' => 'Attention nombre de bien par type différent de nombre de bien total'], 422);
+            }
+            else{
+                return response()->json(['errors' => 'Attention nombre de bien par type différent de nombre de bien total'], 422);
 
-        }
+            }
 
 
           } else {
