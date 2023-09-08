@@ -40,6 +40,7 @@ class UpdateProjetRequest extends FormRequest
             'nbre_blocs' => 'integer',
             'nbre_immeubles' => 'integer',
             'nbre_biens' => 'integer',
+            'selectedUsers' => 'required',
             'nom' => ['required', Rule::unique('temp.'.$DatabaseName.'.projets','nom')->ignore($this->projet)],
         ];
     }
@@ -48,6 +49,7 @@ class UpdateProjetRequest extends FormRequest
     {
         return [
             'nom.unique' => 'Ce projet est deja exist dans cette societe',
+            'selectedUsers.required' => 'Veuillez choisissez un utilisateur',
         ];
     }
 }
