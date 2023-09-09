@@ -172,4 +172,25 @@ class TrancheController extends Controller
 
         }
     }
+
+    public function getTranchesByProjet_paginate(Request $request,$projet_id)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', 5); // Get the number of items per page
+            $page = $request->input('page', 1);
+            $tranches = Tranche::on('temp')
+            ->orderBy('created_at', 'desc')
+            ->where('projet_id', $projet_id)
+            ->paginate($perPage, ['*'], 'page', $page);
+
+            return response()->json(['tranches' => $tranches], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    }
+
+    
 }

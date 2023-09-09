@@ -27,7 +27,7 @@ class SocieteController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-    public function paginate(Request $request)
+    public function paginateSociete(Request $request)
     {
         if (RoleHelper::superadmin()) {
             $perPage = $request->input('pageSize', 5); // Get the number of items per page
