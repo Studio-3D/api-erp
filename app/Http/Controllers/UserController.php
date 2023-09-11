@@ -73,7 +73,7 @@ class UserController extends Controller
             $page = $request->input('page', 1);
             $users = User::orderBy('created_at', 'desc')
                 ->paginate($perPage, ['*'], 'page', $page);
-            return response()->json(['user' => $users]);
+            return response()->json(['users' => $users]);
         } else if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', 5); // Get the number of items per page
@@ -81,7 +81,7 @@ class UserController extends Controller
             $users = User::on('temp')->orderBy('created_at', 'desc')
                 ->paginate($perPage, ['*'], 'page', $page);
 
-            return response()->json(['user' => $users], 200);
+            return response()->json(['users' => $users], 200);
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
