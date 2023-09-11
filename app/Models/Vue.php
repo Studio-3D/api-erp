@@ -14,7 +14,7 @@ class Vue extends Model
     protected $table='vues';
     protected $dates=['deleted_at'];
 
-    public function  frien(){
+    public function  frein(){
         return $this->belongsToMany(Frein::class,'frein_vues');
     }
 
