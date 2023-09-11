@@ -29,7 +29,7 @@ class SocieteController extends Controller
 
     public function paginateSociete(Request $request)
     {
-        if (RoleHelper::superadmin()) {
+        if (RoleHelper::Superadmin()) {
             $perPage = $request->input('pageSize', 5); // Get the number of items per page
             $page = $request->input('page', 1);
 
@@ -55,7 +55,7 @@ class SocieteController extends Controller
      */
     public function store(StoreSocieteRequest $request)
     {
-        if (RoleHelper::superadmin()) {
+        if (RoleHelper::Superadmin()) {
 
             $societe = new Societe();
             $societe->raison_sociale = $request->raison_sociale;
@@ -69,11 +69,7 @@ class SocieteController extends Controller
                 $request->logo->move(public_path('img/societes'), $logo);
                 $societe->logo = $logo;
             }
-            /* if ($request->hasFile('logo')) {
-            $logo = $request->file('logo')->store($request->raison_sociale . '/logos', 'public');
-            $societe->logo = $logo;
-
-            } */
+           
             $societe->save();
             $raison_sociale_concatene = str_replace(' ', '', $request->raison_sociale);
 
@@ -119,10 +115,9 @@ class SocieteController extends Controller
     public function update(UpdateSocieteRequest $request, $id)
     {
 
-        if (RoleHelper::superadmin()) {
+        if (RoleHelper::Superadmin()) {
             $societe = Societe::findOrfail($id);
             $originalRaisonSociale = $societe->raison_sociale;
-
             $societe->raison_sociale = $request->raison_sociale;
             $societe->adresse = $request->adresse;
             $societe->nom_contact = $request->nom_contact;
@@ -212,7 +207,7 @@ class SocieteController extends Controller
 
             Societe::where('id', $societe_id)->withTrashed()->restore();
 
-            return response()->json(['message' => 'Societe est bien restaurer'], 200);
+            return response()->json(['message' => 'Societe est bien restaurée'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -241,7 +236,7 @@ class SocieteController extends Controller
 
                 return response()->json(
                     [
-                        'message' => 'You are in ERP. ' . $societe->raison_sociale . ' (' . $societe_id . ')',
+                        'message' => 'Vous êtes sur ERP. ' . $societe->raison_sociale . ' (' . $societe_id . ')',
                         'user' => $user,
 
                     ],
@@ -249,7 +244,7 @@ class SocieteController extends Controller
 
                 );
             }
-            return response()->json(['error' => 'You have Choice a Societe'], 400);
+            return response()->json(['error' => "Vous n'avez pas choisi une société"], 400);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
@@ -261,7 +256,7 @@ class SocieteController extends Controller
             $user = Auth::guard('api')->user();
             $user->societe_id = 1;
             $user->save();
-            return response()->json(['message' => 'you are exists from  societes'], 200);
+            return response()->json(['message' => "Vous n'êtes pas dans une société"], 200);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
