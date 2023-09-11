@@ -31,21 +31,6 @@ class TypeBienController extends Controller
 
     }
 
-    public function paginate_typeBiens(Request $request)
-    {
-        if (Auth::guard('api')->check()) {
-            DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', 5); // Get the number of items per page
-            $page = $request->input('page', 1);
-            $typebiens = TypeBien::on('temp')->orderBy('created_at', 'desc')
-            ->paginate($perPage, ['*'], 'page', $page);
-            return response()->json(['typeBien' => $typebiens]);
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
-
-    }
-
     /**
      * Show the form for creating a new resource.
      */
@@ -176,7 +161,7 @@ class TypeBienController extends Controller
             $page = $request->input('page', 1);
             $typebiens = TypeBien::on('temp')->orderBy('created_at', 'desc')         
             ->paginate($perPage, ['*'], 'page', $page);
-            return response()->json(['typeBien' => $typebiens]);
+            return response()->json(['typeBiens' => $typebiens]);
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);

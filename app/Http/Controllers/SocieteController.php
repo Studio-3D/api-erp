@@ -36,7 +36,7 @@ class SocieteController extends Controller
             $societes = Societe::orderBy('created_at', 'desc')
                 ->paginate($perPage, ['*'], 'page', $page);
 
-            return response()->json(['societe' => $societes]);
+            return response()->json(['societes' => $societes]);
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
