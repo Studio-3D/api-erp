@@ -19,15 +19,11 @@ class ProjetController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function get_projets(Request $request)
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            $perPage = 20; // Number of items per page
-            $page = $request->input('page', 1);
             $projets = Projet::on('temp')->orderBy('created_at', 'desc')
-                ->skip(($page - 1) * $perPage)
-                ->take($perPage)
                 ->get();
             return response()->json(['projet' => $projets]);
         } else if (RoleHelper::Com()) {
@@ -39,6 +35,36 @@ class ProjetController extends Controller
             ->where('user_projets.user_id',$user_id)
             ->select('projets.*')
             ->get();
+            return response()->json(['projet'=>  $projets]);
+
+
+        } else{
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+    public function paginateProjet(Request $request)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', 5); // Get the number of items per page
+            $page = $request->input('page', 1);
+            $projets = Projet::on('temp')->orderBy('created_at', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+            return response()->json(['projet' => $projets]);
+        } else if (RoleHelper::Com()) {
+            DatabaseHelper::Config();
+
+            $perPage = $request->input('pageSize', 5); // Get the number of items per page
+            $page = $request->input('page', 1);
+
+            $id_auth=Auth::guard('api')->user()->id;
+            $user_id=User::on('temp')->where('user_id_origin', $id_auth)->pluck('id');
+            $projets = Projet::on('temp')
+            ->join('user_projets', 'user_projets.projet_id', '=', 'projets.id')
+            ->where('user_projets.user_id',$user_id)
+            ->select('projets.*')
+           ->paginate($perPage, ['*'], 'page', $page);
             return response()->json(['projet'=>  $projets]);
 
         } else{
@@ -85,7 +111,6 @@ class ProjetController extends Controller
                             if($valeur=='tous') {
                                 $all=1;
                                 break;
-
                             }
                         }
                         if($all==1){
@@ -156,10 +181,6 @@ class ProjetController extends Controller
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->findOrfail($id);
-           /* $update = $request->all()->except();
-            foreach ($update as $key => $value) {
-                $projet->$key = $value;
-            }*/
             $projet->nom = $request->nom;
             $projet->code = $request->code;
             $projet->adresse = $request->adresse;
@@ -183,7 +204,6 @@ class ProjetController extends Controller
                     if($valeur=='tous') {
                         $all=1;
                         break;
-
                     }
                 }
                 if($all==1){
@@ -194,18 +214,13 @@ class ProjetController extends Controller
                         }
                         return response()->json(['projet' => $projet], 200);
                 }
-
                 else{
-
                     foreach($request->selectedUsers as $valeur) {
                         UserProjetHelper::createUserProjet($projet->id, $valeur);
                     }
-                        return response()->json(['projet' => $projet], 200);
-
+                       return response()->json(['projet' => $projet], 200);
                 }
-
             }
-
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -220,9 +235,9 @@ class ProjetController extends Controller
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->findOrfail($id);
             if ($projet->delete()) {
-                return response()->json(['message' => 'Projet deleted succesfully'], 200);
+                return response()->json(['message' => 'Projet supprimé avec succès'], 200);
             } else {
-                return response()->json(['message' => 'Projet not deleted'], 404);
+                return response()->json(['message' => "Projet n'a pas été supprimé"], 404);
             }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -234,7 +249,7 @@ class ProjetController extends Controller
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->where('id', $projet_id)->withTrashed()->restore();
-            return response()->json(['message' => 'Projet restored succesfully'], 200);
+            return response()->json(['message' => 'Projet restauré avec succès'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -251,4 +266,5 @@ class ProjetController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+   
 }

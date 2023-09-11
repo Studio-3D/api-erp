@@ -54,7 +54,6 @@ class StoreProjetRequest extends FormRequest
         return [
             'nom.unique' => 'Ce projet est deja exist dans la societe',
             'selectedUsers.required' => 'Veuillez choisissez un utilisateur',
-            
         ];
     }
 }

@@ -16,16 +16,26 @@ class SocieteController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    // }
+    public function get_societes(Request $request)
     {
         if (RoleHelper::Superadmin()) {
-            $perPage = 20; // Number of items per page
+            $societes = Societe::all();
+            return response()->json(['societe' => $societes]);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    public function paginateSociete(Request $request)
+    {
+        if (RoleHelper::Superadmin()) {
+            $perPage = $request->input('pageSize', 5); // Get the number of items per page
             $page = $request->input('page', 1);
 
             $societes = Societe::orderBy('created_at', 'desc')
-                ->skip(($page - 1) * $perPage)
-                ->take($perPage)
-                ->get();
+                ->paginate($perPage, ['*'], 'page', $page);
+
             return response()->json(['societe' => $societes]);
         }
 
@@ -45,7 +55,7 @@ class SocieteController extends Controller
      */
     public function store(StoreSocieteRequest $request)
     {
-        if (RoleHelper::superadmin()) {
+        if (RoleHelper::Superadmin()) {
 
             $societe = new Societe();
             $societe->raison_sociale = $request->raison_sociale;
@@ -59,11 +69,7 @@ class SocieteController extends Controller
                 $request->logo->move(public_path('img/societes'), $logo);
                 $societe->logo = $logo;
             }
-            /* if ($request->hasFile('logo')) {
-                $logo = $request->file('logo')->store($request->raison_sociale . '/logos', 'public');
-                $societe->logo = $logo;
-
-            } */
+           
             $societe->save();
             $raison_sociale_concatene = str_replace(' ', '', $request->raison_sociale);
 
@@ -99,7 +105,7 @@ class SocieteController extends Controller
     public function edit($id)
     {
         if (RoleHelper::Superadmin()) {
-            $societe=Societe::findOrfail($id);
+            $societe = Societe::findOrfail($id);
             return response()->json(['message' => $societe], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -109,10 +115,9 @@ class SocieteController extends Controller
     public function update(UpdateSocieteRequest $request, $id)
     {
 
-        if (RoleHelper::superadmin()) {
+        if (RoleHelper::Superadmin()) {
             $societe = Societe::findOrfail($id);
             $originalRaisonSociale = $societe->raison_sociale;
-
             $societe->raison_sociale = $request->raison_sociale;
             $societe->adresse = $request->adresse;
             $societe->nom_contact = $request->nom_contact;
@@ -120,9 +125,8 @@ class SocieteController extends Controller
             $societe->tel = $request->tel;
             $societe->email = $request->email;
 
-
             if ($request->hasFile('logo')) {
-                $logo = time() . '.' . $originalRaisonSociale  . '.' . $request->logo->extension();
+                $logo = time() . '.' . $originalRaisonSociale . '.' . $request->logo->extension();
                 $request->logo->move(public_path('img/societes'), $logo);
                 $societe->logo = $logo;
             }
@@ -138,43 +142,41 @@ class SocieteController extends Controller
                 }
             }
 
-
-
             return response()->json(['message' => $societe], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-   /* public function update(UpdateSocieteRequest $request, Societe $societe)
+    /* public function update(UpdateSocieteRequest $request, Societe $societe)
     {
-        if (RoleHelper::Superadmin()) {
-            $societe = Societe::findOrfail($id);
-            $oldDatabaseName = 'Erp_' . $societe->raison_sociale . '_' . $id;
-            $originalRaisonSociale = $societe->raison_sociale;
-            if ($request->hasFile('logo')) {
-                $logo = time() . '.' . $originalRaisonSociale  . '.' . $request->logo->extension();
-                $request->logo->move(public_path('img/societes'), $logo);
-                $societe->logo = $logo;
-            }
+    if (RoleHelper::Superadmin()) {
+    $societe = Societe::findOrfail($id);
+    $oldDatabaseName = 'Erp_' . $societe->raison_sociale . '_' . $id;
+    $originalRaisonSociale = $societe->raison_sociale;
+    if ($request->hasFile('logo')) {
+    $logo = time() . '.' . $originalRaisonSociale  . '.' . $request->logo->extension();
+    $request->logo->move(public_path('img/societes'), $logo);
+    $societe->logo = $logo;
+    }
 
-            $update = $request->all();
-            foreach($update as $key => $value) {
-                $societe->$key = $value;
-            }
-            $societe->save();
-            if ($request->has('raison_sociale')) {
-                $newRaisonSociale = $request->raison_sociale;
-                if ($originalRaisonSociale !== $newRaisonSociale) {
-                    $newDatabaseName ='Erp_' . $newRaisonSociale . '_' . $id;
-                    $databaseHelper = new DatabaseHelper();
-                    $databaseHelper->renameDatabase($oldDatabaseName, $newDatabaseName);
-                }
-            }
+    $update = $request->all();
+    foreach($update as $key => $value) {
+    $societe->$key = $value;
+    }
+    $societe->save();
+    if ($request->has('raison_sociale')) {
+    $newRaisonSociale = $request->raison_sociale;
+    if ($originalRaisonSociale !== $newRaisonSociale) {
+    $newDatabaseName ='Erp_' . $newRaisonSociale . '_' . $id;
+    $databaseHelper = new DatabaseHelper();
+    $databaseHelper->renameDatabase($oldDatabaseName, $newDatabaseName);
+    }
+    }
 
-            return response()->json(['message' => $societe], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+    return response()->json(['message' => $societe], 200);
+    } else {
+    return response()->json(['error' => 'Unauthorized'], 401);
+    }
 
     }*/
     /**
@@ -183,6 +185,12 @@ class SocieteController extends Controller
     public function destroy(Societe $societe)
     {
         if (RoleHelper::Superadmin()) {
+            $user = Auth::guard('api')->user();
+
+            if ($user->societe_id == $societe->id) {
+                $user->societe_id = 1;
+                $user->save();
+            }
 
             if ($societe->delete()) {
                 return response()->json(['message' => 'Societe deleted succesfully'], 200);
@@ -191,7 +199,6 @@ class SocieteController extends Controller
             }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
-
         }
     }
     public function restoreSociete($societe_id)
@@ -200,8 +207,7 @@ class SocieteController extends Controller
 
             Societe::where('id', $societe_id)->withTrashed()->restore();
 
-            return response()->json(['message' => 'Societe est bien restaurer'], 200);
-
+            return response()->json(['message' => 'Societe est bien restaurée'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -213,7 +219,6 @@ class SocieteController extends Controller
             $societes = Societe::onlyTrashed()->get();
 
             return response()->json(['message' => $societes], 200);
-
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -225,13 +230,13 @@ class SocieteController extends Controller
         if (RoleHelper::SuperAdmin()) {
             $user = Auth::guard('api')->user();
             if (!empty($societe_id)) {
-                $user->societe_id=$societe_id;
+                $user->societe_id = $societe_id;
                 $user->save();
                 $societe = Societe::findOrfail($societe_id);
 
                 return response()->json(
                     [
-                        'message' => 'You are in ERP. ' . $societe->raison_sociale . ' (' . $societe_id . ')',
+                        'message' => 'Vous êtes sur ERP. ' . $societe->raison_sociale . ' (' . $societe_id . ')',
                         'user' => $user,
 
                     ],
@@ -239,7 +244,7 @@ class SocieteController extends Controller
 
                 );
             }
-            return response()->json(['error' => 'You have Choice a Societe'], 400);
+            return response()->json(['error' => "Vous n'avez pas choisi une société"], 400);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
@@ -249,12 +254,10 @@ class SocieteController extends Controller
 
         if (RoleHelper::SuperAdmin()) {
             $user = Auth::guard('api')->user();
-            $user->societe_id=1 ;
+            $user->societe_id = 1;
             $user->save();
-            return response()->json(['message' => 'you are exists from  societes'], 200);
+            return response()->json(['message' => "Vous n'êtes pas dans une société"], 200);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
-
-
 }
