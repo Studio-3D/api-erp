@@ -40,19 +40,20 @@ class StoreProjetRequest extends FormRequest
             'prix_acquisition' => 'required|numeric',
             'limite_annulation_reservation' => 'required|integer',
             'type_id' => 'required|integer',
-            'selectedUsers' => 'required',
             'nbr_tranches' => 'integer',
             'nbr_blocs' => 'integer',
             'nbr_immeubles' => 'integer',
             'nbr_biens' => 'integer',
+            'selectedUsers' => 'required',
             'nom' => ['required', Rule::unique('temp.'.$DatabaseName.'.projets','nom')],
         ];
     }
-   
+
     public function messages(): array
     {
         return [
             'nom.unique' => 'Ce projet est deja exist dans la societe',
+            'selectedUsers.required' => 'Veuillez choisissez un utilisateur',
         ];
     }
 }
