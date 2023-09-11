@@ -100,10 +100,7 @@ Route::middleware('auth:api')->group(function () {
 
     /*************************************Bien***************************** */
     Route::resource('typeBien', TypeBienController::class);
-
     Route::get('get_typeBiens', [TypeBienController::class, 'get_typeBiens'])->name('get_typeBiens');
-
-
     Route::resource('bien', BienController::class);
     Route::post('restoreBien/{id}', [BienController::class, 'restoreBien'])->name('restoreBien');
     Route::get('getTrashedBiens', [BienController::class, 'getTrashedBiens'])->name('getTrashedBiens');

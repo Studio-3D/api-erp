@@ -168,5 +168,4 @@ class TypeBienController extends Controller
         }
     }
 
-    
 }
