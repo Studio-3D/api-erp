@@ -65,7 +65,7 @@ class UserController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-    public function index()
+    public function get_users()
     {
         if (RoleHelper::Superadmin() && Auth::guard('api')->user()->societe_id == 1) {
             $users = User::all();

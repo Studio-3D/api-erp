@@ -17,7 +17,7 @@ class SocieteController extends Controller
      * Display a listing of the resource.
      */
     // }
-    public function index(Request $request)
+    public function get_societes(Request $request)
     {
         if (RoleHelper::Superadmin()) {
             $societes = Societe::all();
@@ -190,6 +190,12 @@ class SocieteController extends Controller
     public function destroy(Societe $societe)
     {
         if (RoleHelper::Superadmin()) {
+            $user = Auth::guard('api')->user();
+
+            if ($user->societe_id == $societe->id) {
+                $user->societe_id = 1;
+                $user->save();
+            }
 
             if ($societe->delete()) {
                 return response()->json(['message' => 'Societe deleted succesfully'], 200);

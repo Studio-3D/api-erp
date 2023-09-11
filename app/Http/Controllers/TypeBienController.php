@@ -18,21 +18,32 @@ class TypeBienController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function get_typeBiens(Request $request)
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $perPage = 20; // Number of items per page
-            $page = $request->input('page', 1);
-            $typebiens = TypeBien::on('temp')->orderBy('created_at', 'desc')
-            ->skip(($page - 1) * $perPage)
-            ->take($perPage)
-            ->get();            
+
+            $typebiens = TypeBien::on('temp')->orderBy('created_at', 'desc')->get();
             return response()->json(['typeBien' => $typebiens]);
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
-    
+
+    }
+
+    public function paginate_typeBiens(Request $request)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', 5); // Get the number of items per page
+            $page = $request->input('page', 1);
+            $typebiens = TypeBien::on('temp')->orderBy('created_at', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
+            return response()->json(['typeBien' => $typebiens]);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+
     }
 
     /**
@@ -40,7 +51,7 @@ class TypeBienController extends Controller
      */
     public function create()
     {
-        
+
     }
 
     /**
@@ -49,8 +60,8 @@ class TypeBienController extends Controller
     public function store(StoreTypeBienRequest $request)
     {
         if (RoleHelper::AdminSup()) {
-                       
-            DatabaseHelper::Config();     
+
+            DatabaseHelper::Config();
             $typebien = new typebien();
             $typebien->setConnection('temp');
             $typebien->type = $request->type;
@@ -69,7 +80,7 @@ class TypeBienController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $typebien = typebien::on('temp')->findOrfail($id);
-            
+
             return response()->json(['typeBien' => $typebien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -103,12 +114,12 @@ class TypeBienController extends Controller
                 $typebien->$key = $value;
             }
             $typebien->save();
-            
+
             return response()->json(['message' => $typebien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-        
+
     }
 
     /**
@@ -118,8 +129,8 @@ class TypeBienController extends Controller
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            $typebien = typebien::on('temp')->findOrfail($id);             
-                        
+            $typebien = typebien::on('temp')->findOrfail($id);
+
             if ($typebien->delete()) {
                 return response()->json(['message' => 'ce type de bien deleted succesfully'], 200);
             } else {

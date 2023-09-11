@@ -18,21 +18,31 @@ class TypeProjetController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function get_typeProjets(Request $request)
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $perPage = 20; // Number of items per page
-            $page = $request->input('page', 1);
             $typeprojets = TypeProjet::on('temp')->orderBy('created_at', 'desc')
-            ->skip(($page - 1) * $perPage)
-            ->take($perPage)
-            ->get();            
+            ->get();
             return response()->json(['typeProjet' => $typeprojets]);
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
-    
+
+    }
+    public function paginate_typeProjets(Request $request)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', 5); // Get the number of items per page
+            $page = $request->input('page', 1);
+            $typeprojets = TypeProjet::on('temp')->orderBy('created_at', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
+            return response()->json(['typeProjet' => $typeprojets]);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+
     }
 
     /**
@@ -49,15 +59,15 @@ class TypeProjetController extends Controller
     public function store(StoreTypeProjetRequest $request)
     {
         if (RoleHelper::AdminSup()) {
-                       
-            DatabaseHelper::Config();                
+
+            DatabaseHelper::Config();
             $typeprojet = new typeprojet();
             $typeprojet->setConnection('temp');
             $typeprojet->type = $request->type;
             $typeprojet->save();
 
             return response()->json(['typeProjet' => $typeprojet], 200);
-           
+
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -104,7 +114,7 @@ class TypeProjetController extends Controller
                 $typeprojet->$key = $value;
             }
             $typeprojet->save();
-            
+
             return response()->json(['typeProjet' => $typeprojet], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -118,7 +128,7 @@ class TypeProjetController extends Controller
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            $typeprojet = typeprojet::on('temp')->findOrfail($id);                         
+            $typeprojet = typeprojet::on('temp')->findOrfail($id);
             if ($typeprojet->delete()) {
                 return response()->json(['message' => 'ce type de projet deleted succesfully'], 200);
             } else {
@@ -146,7 +156,7 @@ class TypeProjetController extends Controller
     {
 
         if (RoleHelper::AdminSup()) {
-            DatabaseHelper::Config();            
+            DatabaseHelper::Config();
             $typeProjets = TypeProjet::on('temp')->onlyTrashed()->get();
 
             return response()->json(['typeProjet' => $typeProjets], 200);
