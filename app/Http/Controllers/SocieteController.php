@@ -22,7 +22,7 @@ class SocieteController extends Controller
     {
         if (RoleHelper::Superadmin()) {
             $societes = Societe::all();
-            return response()->json(['societe' => $societes]);
+            return response()->json(['societes' => $societes]);
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
