@@ -195,7 +195,7 @@ class UserController extends Controller
 
             if ($request->hasFile('photo')) {
                 if($user->photo!=null){
-                    $image_path = public_path('img/users/'.$user->photo);
+                    $image_path = public_path('img/users/'.$old_image_name);
                     if(file_exists($image_path)){
                       unlink($image_path);
                     }
@@ -226,6 +226,12 @@ class UserController extends Controller
             $originalName = $user->name;
             $old_image_name=$user->photo;
             if ($request->hasFile('photo')) {
+                if($user->photo!=null){
+                    $image_path = public_path('img/users/'.$old_image_name);
+                    if(file_exists($image_path)){
+                      unlink($image_path);
+                    }
+                }
                 $photo = time() . '.' . $originalName . '.' . $request->photo->extension();
                 $request->photo->move(public_path('img/users'), $photo);
                 $user->photo = $photo;
@@ -235,13 +241,7 @@ class UserController extends Controller
                 $user->$key = $value;
             }
             $user->save();
-            if($old_image_name!=null){
-                if($old_image_name!=$user->photo)
-                $image_path = public_path('img/users/'.$old_image_name);
-                if(file_exists($image_path)){
-                  unlink($image_path);
-                }
-            }
+
             return response()->json(['message' => $user], 200);
 
         } else {
