@@ -39,6 +39,18 @@ class BlocController extends Controller
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
+    public function get_blocs()
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+
+            $blocs = Bloc::on('temp')->orderBy('created_at', 'desc')->get();
+            return response()->json(['blocs' => $blocs]);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+
+    }
 
     /**
      * Show the form for creating a new resource.

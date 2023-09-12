@@ -32,6 +32,15 @@ class ImmeubleController extends Controller
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
+    public function get_immeubles()
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $immeubles = Immeuble::on('temp')->get();
+            return response()->json(['immeubles' => $immeubles]);
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
 
     /**
      * Show the form for creating a new resource.
