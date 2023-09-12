@@ -80,7 +80,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getTrashedTranches', [TrancheController::class, 'getTrashedTranches'])->name('getTrashedTranches');
     Route::get('getTranchesByProjet/{id}', [TrancheController::class, 'getTranchesByProjet'])->name('getTranchesByProjet');
     Route::get('getTranchesByProjet_paginate/{id}', [TrancheController::class, 'getTranchesByProjet_paginate'])->name('getTranchesByProjet_paginate');
-    Route::get('get_tranches', [TrancheController::class, 'get_tranches'])->name('get_tranches');
 
     /*************************************Bloc***************************** */
     Route::resource('bloc', BlocController::class);
@@ -89,7 +88,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getBlocsByProjet/{id}', [BlocController::class, 'getBlocsByProjet'])->name('getBlocsByProjet');
     Route::get('getBlocsByProjet_paginate/{id}', [BlocController::class, 'getBlocsByProjet_paginate'])->name('getBlocsByProjet_paginate');
     Route::get('getBlocsByTranche/{id}', [BlocController::class, 'getBlocsByTranche'])->name('getBlocsByTranche');
-    Route::get('get_blocs', [BlocController::class, 'get_blocs'])->name('get_blocs');
 
     /*************************************Immeuble***************************** */
     Route::resource('immeuble', ImmeubleController::class);
@@ -99,7 +97,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getImmeublesByProjet_paginate/{id}', [ImmeubleController::class, 'getImmeublesByProjet_paginate'])->name('getImmeublesByProjet_paginate');
     Route::get('getImmeublesByTranche/{id}', [ImmeubleController::class, 'getImmeublesByTranche'])->name('getImmeublesByTranche');
     Route::get('getImmeublesByBloc/{id}', [ImmeubleController::class, 'getImmeublesByBloc'])->name('getImmeublesByBloc');
-    Route::get('get_immeubles', [ImmeubleController::class, 'get_immeubles'])->name('get_immeubles');
 
     /*************************************Bien***************************** */
     Route::resource('typeBien', TypeBienController::class);
@@ -128,7 +125,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getBiensDispoByTranche/{id}', [BienController::class, 'getBiensDispoByTranche'])->name('getBiensDispoByTranche');
     Route::get('getBiensDispoByProjet/{id}', [BienController::class, 'getBiensDispoByProjet'])->name('getBiensByDispoProjet');
     Route::put('setPropostionBien/{id}', [BienController::class, 'setPropostionBien'])->name('setPropostionBien');
-    Route::get('get_biens', [BienController::class, 'get_biens'])->name('get_biens');
 
     /*************************************Visite***************************** */
     Route::resource('visite',VisiteController::class);

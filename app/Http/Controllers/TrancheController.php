@@ -34,17 +34,7 @@ class TrancheController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
 
     }
-    public function get_tranches()
-    {  
-        if (Auth::guard('api')->check()) {
-            DatabaseHelper::Config();
-            $tranches = tranche::on('temp')->get();
-            return response()->json(['tranches' => $tranches]);
-        }
-        return response()->json(['error' => 'Unauthorized'], 401);
     
-    }
-
     /**
      * Show the form for creating a new resource.
      */

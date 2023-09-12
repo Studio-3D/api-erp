@@ -35,19 +35,6 @@ class BienController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
 
     }
-
-    public function get_biens()
-    {
-        if (Auth::guard('api')->check()) {
-            DatabaseHelper::Config();
-            $biens = Bien::on('temp')->get();
-            return response()->json(['biens' => $biens]);
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
-
-    }
-
     /**
      * Show the form for creating a new resource.
      */
