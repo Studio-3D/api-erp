@@ -166,19 +166,6 @@ class TypeProjetController extends Controller
         }
     }
 
-    public function paginate_typeProjets(Request $request)
-    {
-        if (Auth::guard('api')->check()) {
-            DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', 5); // Get the number of items per page
-            $page = $request->input('page', 1);
-            $typeprojets = TypeProjet::on('temp')->orderBy('created_at', 'desc')
-            ->paginate($perPage, ['*'], 'page', $page);
-            return response()->json(['typeProjets' => $typeprojets]);
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
 
 
-    }
 }

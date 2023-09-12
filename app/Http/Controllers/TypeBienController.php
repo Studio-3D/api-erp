@@ -167,4 +167,5 @@ class TypeBienController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+
 }
