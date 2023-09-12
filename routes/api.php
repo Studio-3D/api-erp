@@ -46,7 +46,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('restoreSociete/{id}', [SocieteController::class, 'restoreSociete'])->name('restoreSociete');
     Route::get('getTrashedSocietes', [SocieteController::class, 'getTrashedSocietes'])->name('getTrashedSocietes');
     Route::put('Switch_Societes', [SocieteController::class, 'Switch_Societes'])->name('Switch_Societes');
-    Route::put('Exist_Societes', [SocieteController::class, 'Exist_Societes'])->name('Exist_Societes');
+    Route::put('ExitSocietes', [SocieteController::class, 'ExitSocietes'])->name('ExitSocietes');
     Route::get('get_societes', [SocieteController::class, 'get_societes'])->name('get_societes');
 
     /*************************************User***************************** */

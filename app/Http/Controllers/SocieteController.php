@@ -262,7 +262,7 @@ class SocieteController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-    public function Exist_Societes()
+    public function ExitSocietes()
     {
 
         if (RoleHelper::SuperAdmin()) {
