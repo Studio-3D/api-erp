@@ -187,34 +187,89 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, $id)
     {
-
         if (RoleHelper::AdminSup()) {
-            $user = User::findOrfail($id);
-             $originalName = $user->name;
-            if ($request->hasFile('photo')) {
-                if($user->photo!=null){
-                    $image_path = public_path('img/users/'.$user->photo);
-                    if(file_exists($image_path)){
-                      unlink($image_path);
-                    }
+            //studio3d
+            if(Auth::guard('api')->user()->societe_id == 1){
+                $cin_exist=User::where('cin',$request->cin)->where('id','!=',$id)->count();
+                if($cin_exist>0){
+                    return response()->json(['errors' => 'Le Cin que vous avez saisi'.$request->cin.' s\'apprtient à un autre utilisateur'], 422);
                 }
-                $photo = time() . '.' . $originalName . '.' . $request->photo->extension();
-                $request->photo->move(public_path('img/users'), $photo);
-                $user->photo = $photo;
-            }
-            $update = $request->all();
-            foreach ($update as $key => $value) {
-                $user->$key = $value;
-            }
-            if ( $user->save()) {
-                DatabaseHelper::Config($user->societe_id);
-                $user_societes = User::on('temp')->where('user_id_origin', $user->id);
+                $user = User::findOrfail($id);
+                $originalName = $user->name;
+               if ($request->hasFile('photo')) {
+                   if($user->photo!=null){
+                       $image_path = public_path('img/users/'.$user->photo);
+                       if(file_exists($image_path)){
+                         unlink($image_path);
+                       }
+                   }
+                   $photo = time() . '.' . $originalName . '.' . $request->photo->extension();
+                   $request->photo->move(public_path('img/users'), $photo);
+                   $user->photo = $photo;
+               }
+               $update = $request->all();
+               foreach ($update as $key => $value) {
+                   $user->$key = $value;
+               }
+               if ( $user->save()) {
+                   DatabaseHelper::Config($user->societe_id);
+                   $user_societes = User::on('temp')->where('user_id_origin', $user->id);
+                   $update = $request->all();
+                   foreach ($update as $key => $value) {
+                       $user->$key = $value;
+                   }
+                   $user_societes->update($request->all());
+               }
+           }
+            else{
+
+                $cin_exist=User::on('temp')::where('cin',$request->cin)->where('id','!=',$id)->count();
+                if($cin_exist>0){
+                    return response()->json(['errors' => 'Le Cin que vous avez saisi'.$request->cin.' s\'apprtient à un autre utilisateur'], 422);
+                }
+                //db fils
+                DatabaseHelper::Config();
+                $user = User::on('temp')->findOrfail($id);
+                $originalName = $user->name;
+                if ($request->hasFile('photo')) {
+                    if($user->photo!=null){
+                        $image_path = public_path('img/users/'.$user->photo);
+                        if(file_exists($image_path)){
+                          unlink($image_path);
+                        }
+                    }
+                    $photo = time() . '.' . $originalName . '.' . $request->photo->extension();
+                    $request->photo->move(public_path('img/users'), $photo);
+                    $user->photo = $photo;
+                }
                 $update = $request->all();
                 foreach ($update as $key => $value) {
                     $user->$key = $value;
                 }
-                $user_societes->update($request->all());
+               //db mere
+                if($user->save()){
+                    $user = User::findOrfail($user->user_id_origin);
+                    $originalName = $user->name;
+                   if ($request->hasFile('photo')) {
+                       if($user->photo!=null){
+                           $image_path = public_path('img/users/'.$user->photo);
+                           if(file_exists($image_path)){
+                             unlink($image_path);
+                           }
+                       }
+                       $photo = time() . '.' . $originalName . '.' . $request->photo->extension();
+                       $request->photo->move(public_path('img/users'), $photo);
+                       $user->photo = $photo;
+                   }
+                   $update = $request->all();
+                   foreach ($update as $key => $value) {
+                       $user->$key = $value;
+                   }
+                   $user->save();
+                }
+
             }
+
             return response()->json(['message' => $user], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
