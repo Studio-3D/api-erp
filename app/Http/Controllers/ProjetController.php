@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\RoleHelper;
+use App\Http\Helpers\typeBienProjetHelper;
 use App\Http\Helpers\UserProjetHelper;
 use App\Http\Requests\StoreProjetRequest;
 use App\Http\Requests\UpdateProjetRequest;
@@ -73,7 +74,7 @@ class ProjetController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    
+
 
     /**
      * Show the form for creating a new resource.
@@ -109,6 +110,10 @@ class ProjetController extends Controller
             $projet->nbre_biens = $request->nbre_biens ?: 0;
             if($request->verification==true){
                     if($projet->save()){
+                        if ($request->selectedtypeBien){
+                            foreach($request->selectedtypeBien as $valeur){
+                                typeBienProjetHelper::createTypeBienProjet((int)$valeur[0],$projet->id,(int)$valeur[1]);
+                        }   }
                         $all=0;
                         foreach($request->selectedUsers as $valeur) {
                             if($valeur=='tous') {
