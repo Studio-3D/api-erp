@@ -185,7 +185,7 @@ class UserController extends Controller
         }
     }
 
-    public function update(UpdateUserRequest $request, $id)
+   public function update(UpdateUserRequest $request, $id)
     {
 
         if (RoleHelper::AdminSup()) {
@@ -193,7 +193,7 @@ class UserController extends Controller
              $originalName = $user->name;
             if ($request->hasFile('photo')) {
                 if($user->photo!=null){
-                    $image_path = public_path('img/users/'.$user->photo);
+                    $image_path = public_path('img/users/'.$old_image_name);
                     if(file_exists($image_path)){
                       unlink($image_path);
                     }
@@ -216,6 +216,7 @@ class UserController extends Controller
                 $user_societes->update($request->all());
             }
             return response()->json(['message' => $user], 200);
+
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

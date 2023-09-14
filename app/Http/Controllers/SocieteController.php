@@ -130,18 +130,17 @@ class SocieteController extends Controller
             $societe->email = $request->email;
 
             if ($request->hasFile('logo')) {
+                 if($old_image_name!=null){
+                    $image_path = public_path('img/societes/'.$old_image_name);
+                    if(file_exists($image_path)){
+                      unlink($image_path);
+                }
                 $logo = time() . '.' . $originalRaisonSociale . '.' . $request->logo->extension();
                 $request->logo->move(public_path('img/societes'), $logo);
                 $societe->logo = $logo;
             }
             $societe->save();
-            if($old_image_name!=null){
-                if($old_image_name!=$societe->logo)
-                $image_path = public_path('img/societes/'.$old_image_name);
-                if(file_exists($image_path)){
-                  unlink($image_path);
-                }
-            }
+            
 
 
             if ($request->has('raison_sociale')) {
@@ -262,7 +261,7 @@ class SocieteController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-    public function Exist_Societes()
+    public function ExitSocietes()
     {
 
         if (RoleHelper::SuperAdmin()) {
