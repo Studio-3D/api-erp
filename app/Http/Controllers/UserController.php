@@ -63,7 +63,6 @@ class UserController extends Controller
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
-
     }
     public function index(Request $request)
     {
@@ -184,43 +183,59 @@ class UserController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-
-   public function update(UpdateUserRequest $request, $id)
+    public function update(UpdateUserRequest $request, $id)
     {
+        if (RoleHelper::Superadmin()) {
+            $user = User::findOrFail($id);
 
-        if (RoleHelper::AdminSup()) {
-            $user = User::findOrfail($id);
-             $originalName = $user->name;
+            // Update the user's fields based on the request
+            $user->name = $request->input('name');
+            // $user->societe_id = $request->input('societe_id'); // Assuming you don't update societe_id
+            $user->prenom = $request->input('prenom');
+            // $user->email = $request->input('email');
+            // $user->password = $request->input('password');
+            $user->gender = $request->input('gender');
+            $user->role = $request->input('role');
+            $user->phone = $request->input('phone');
+            $user->cin = $request->input('cin');
+            $user->fonction = $request->input('fonction');
+            $user->date_embauche = $request->input('date_embauche');
+            $user->niveau_etude = $request->input('niveau_etude');
+            $user->adresse = $request->input('adresse');
+            $user->cnss = $request->input('cnss');
+            $user->is_actif = $request->input('is_actif', 1); // Default to 1 if not provided
+            $user->nb_appel_recu = $request->input('nb_appel_recu');
+            $user->nb_appel_traite = $request->input('nb_appel_traite');
+            $user->solde_conge = $request->input('solde_conge');
+
             if ($request->hasFile('photo')) {
-                if($user->photo!=null){
-                    $image_path = public_path('img/users/'.$old_image_name);
-                    if(file_exists($image_path)){
-                      unlink($image_path);
+                if ($user->photo != null) {
+                    $image_path = public_path('img/users/' . $user->photo);
+                    if (file_exists($image_path)) {
+                        unlink($image_path);
                     }
                 }
-                $photo = time() . '.' . $originalName . '.' . $request->photo->extension();
+                $photo = time() . '.' . $user->name . '.' . $request->photo->extension();
                 $request->photo->move(public_path('img/users'), $photo);
                 $user->photo = $photo;
             }
-            $update = $request->all();
-            foreach ($update as $key => $value) {
-                $user->$key = $value;
-            }
-            if ( $user->save()) {
-                DatabaseHelper::Config($user->societe_id);
-                $user_societes = User::on('temp')->where('user_id_origin', $user->id);
-                $update = $request->all();
-                foreach ($update as $key => $value) {
-                    $user->$key = $value;
-                }
-                $user_societes->update($request->all());
-            }
-            return response()->json(['message' => $user], 200);
 
+            if ($user->save()) {
+                // Update the user in the 'temp' database connection (assuming this is what you intend to do)
+                DatabaseHelper::Config($user->societe_id);
+                $user_societes = User::on('temp')->where('user_id_origin', $user->id)->first();
+
+                if ($user_societes) {
+                    $user_societes->update($request->all());
+                }
+            }
+
+            return response()->json(['message' => 'User updated successfully'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+
     /**
      * Remove the specified resource from storage.
      */
@@ -245,7 +260,6 @@ class UserController extends Controller
         if (RoleHelper::SuperAdmin()) {
             $users = User::where('societe_id', $societe_id)->get();
             return response()->json(['message' => $users], 200);
-
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
