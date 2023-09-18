@@ -185,15 +185,14 @@ class UserController extends Controller
     }
     public function update(UpdateUserRequest $request, $id)
     {
-        if (RoleHelper::Superadmin()) {
+        if (RoleHelper::AdminSup()) {
+            $cin_exist=User::where('cin',$request->cin)->where('id','!=',$id)->count();
+            if($cin_exist>0){
+               return response()->json(['errors' => 'Le Cin que vous avez saisi'.$request->cin.' apprtient à un autre utilisateur'], 422);
+            }
             $user = User::findOrFail($id);
-
-            // Update the user's fields based on the request
             $user->name = $request->input('name');
-            // $user->societe_id = $request->input('societe_id'); // Assuming you don't update societe_id
             $user->prenom = $request->input('prenom');
-            // $user->email = $request->input('email');
-            // $user->password = $request->input('password');
             $user->gender = $request->input('gender');
             $user->role = $request->input('role');
             $user->phone = $request->input('phone');
@@ -203,9 +202,7 @@ class UserController extends Controller
             $user->niveau_etude = $request->input('niveau_etude');
             $user->adresse = $request->input('adresse');
             $user->cnss = $request->input('cnss');
-            $user->is_actif = $request->input('is_actif', 1); // Default to 1 if not provided
-            $user->nb_appel_recu = $request->input('nb_appel_recu');
-            $user->nb_appel_traite = $request->input('nb_appel_traite');
+            $user->is_actif = $request->input('is_actif'); // Default to 1 if not provided
             $user->solde_conge = $request->input('solde_conge');
 
             if ($request->hasFile('photo')) {
@@ -230,7 +227,7 @@ class UserController extends Controller
                 }
             }
 
-            return response()->json(['message' => 'User updated successfully'], 200);
+            return response()->json(['message' => 'Utilisateur modifié avec succès'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
