@@ -115,13 +115,9 @@ class SocieteController extends Controller
 
     public function update(UpdateSocieteRequest $request, $id)
     {
-
-
-
         if (RoleHelper::Superadmin()) {
             $societe = Societe::findOrfail($id);
             $originalRaisonSociale = $societe->raison_sociale;
-            $old_image_name=$societe->logo;
             $societe->raison_sociale = $request->raison_sociale;
             $societe->adresse = $request->adresse;
             $societe->nom_contact = $request->nom_contact;
@@ -130,10 +126,11 @@ class SocieteController extends Controller
             $societe->email = $request->email;
 
             if ($request->hasFile('logo')) {
-                 if($old_image_name!=null){
+                if($societe->logo!=null){
                     $image_path = public_path('img/societes/'.$old_image_name);
                     if(file_exists($image_path)){
                       unlink($image_path);
+                    }
                 }
                 $logo = time() . '.' . $originalRaisonSociale . '.' . $request->logo->extension();
                 $request->logo->move(public_path('img/societes'), $logo);
@@ -159,38 +156,7 @@ class SocieteController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    /* public function update(UpdateSocieteRequest $request, Societe $societe)
-    {
-    if (RoleHelper::Superadmin()) {
-    $societe = Societe::findOrfail($id);
-    $oldDatabaseName = 'Erp_' . $societe->raison_sociale . '_' . $id;
-    $originalRaisonSociale = $societe->raison_sociale;
-    if ($request->hasFile('logo')) {
-    $logo = time() . '.' . $originalRaisonSociale  . '.' . $request->logo->extension();
-    $request->logo->move(public_path('img/societes'), $logo);
-    $societe->logo = $logo;
-    }
-
-    $update = $request->all();
-    foreach($update as $key => $value) {
-    $societe->$key = $value;
-    }
-    $societe->save();
-    if ($request->has('raison_sociale')) {
-    $newRaisonSociale = $request->raison_sociale;
-    if ($originalRaisonSociale !== $newRaisonSociale) {
-    $newDatabaseName ='Erp_' . $newRaisonSociale . '_' . $id;
-    $databaseHelper = new DatabaseHelper();
-    $databaseHelper->renameDatabase($oldDatabaseName, $newDatabaseName);
-    }
-    }
-
-    return response()->json(['message' => $societe], 200);
-    } else {
-    return response()->json(['error' => 'Unauthorized'], 401);
-    }
-
-    }*/
+    
     /**
      * Remove the specified resource from storage.
      */
