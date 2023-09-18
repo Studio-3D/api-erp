@@ -186,10 +186,11 @@ class UserController extends Controller
     public function update(UpdateUserRequest $request, $id)
     {
         if (RoleHelper::AdminSup()) {
+            if($request->cin!=null){
             $cin_exist=User::where('cin',$request->cin)->where('id','!=',$id)->count();
             if($cin_exist>0){
                return response()->json(['errors' => 'Le Cin que vous avez saisi'.$request->cin.' apprtient à un autre utilisateur'], 422);
-            }
+            }}
             $user = User::findOrFail($id);
             $user->name = $request->input('name');
             $user->prenom = $request->input('prenom');
