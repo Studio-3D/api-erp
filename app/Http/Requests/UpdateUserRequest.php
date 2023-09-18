@@ -32,9 +32,9 @@ class UpdateUserRequest extends FormRequest
             'role' => 'integer',
             'phone' => 'string|min:10|max:14',
             'photo' => 'image|mimes:png,jpg,jpeg|max:2048',
-            'cin' => [
+           /* 'cin' => [
                 Rule::unique('users')->ignore($this->user),
-            ],
+            ],*/
             'date_embauche' => 'date',
             'cnss' => 'integer|nullable',
             'is_actif' => 'integer',
