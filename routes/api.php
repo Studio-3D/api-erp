@@ -11,6 +11,7 @@ use App\Http\Controllers\SocieteController;
 use App\Http\Controllers\SourceController;
 use App\Http\Controllers\TrancheController;
 use App\Http\Controllers\TypeBienController;
+use App\Http\Controllers\TypeFreinController;
 use App\Http\Controllers\TypeProjetController;
 use App\Http\Controllers\TypologieController;
 use App\Http\Controllers\UserController;
@@ -97,14 +98,10 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getImmeublesByBloc/{id}', [ImmeubleController::class, 'getImmeublesByBloc'])->name('getImmeublesByBloc');
 
     /*************************************Bien***************************** */
-    Route::resource('typeBien', TypeBienController::class);
-    Route::get('get_typeBiens', [TypeBienController::class, 'get_typeBiens'])->name('get_typeBiens');
     Route::resource('bien', BienController::class);
     Route::get('biens/{projet_id}', [BienController::class,'index'])->name('biens');
     Route::post('restoreBien/{id}', [BienController::class, 'restoreBien'])->name('restoreBien');
     Route::get('getTrashedBiens', [BienController::class, 'getTrashedBiens'])->name('getTrashedBiens');
-    Route::post('restoreTypeBien/{id}', [TypeBienController::class, 'restoreTypeBien'])->name('restoreTypeBien');
-    Route::get('getTrashedTypesBien', [TypeBienController::class, 'getTrashedTypesBien'])->name('getTrashedTypesBien');
     Route::put('bloquerBien/{id}', [BienController::class, 'bloquerBien'])->name('bloquerBien');
     Route::put('reserverBien/{id}', [BienController::class, 'reserverBien'])->name('reserverBien');
     Route::put('prereserverBien/{id}', [BienController::class, 'prereserverBien'])->name('prereserverBien');
@@ -123,11 +120,20 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getBiensDispoByTranche/{id}', [BienController::class, 'getBiensDispoByTranche'])->name('getBiensDispoByTranche');
     Route::get('getBiensDispoByProjet/{id}', [BienController::class, 'getBiensDispoByProjet'])->name('getBiensByDispoProjet');
     Route::put('setPropostionBien/{id}', [BienController::class, 'setPropostionBien'])->name('setPropostionBien');
-
+    /***********************************Type biens******************************** */
+    Route::resource('typeBien', TypeBienController::class);
+    Route::get('get_typeBiens', [TypeBienController::class, 'get_typeBiens'])->name('get_typeBiens');
+    Route::post('restoreTypeBien/{id}', [TypeBienController::class, 'restoreTypeBien'])->name('restoreTypeBien');
+    Route::get('getTrashedTypesBien', [TypeBienController::class, 'getTrashedTypesBien'])->name('getTrashedTypesBien');
     /*************************************Visite***************************** */
     Route::resource('visite',VisiteController::class);
     Route::post('addLinkedVisite/{id}',[VisiteController::class,'addLinkedVisite'])->name('addLinkedVisite');
     Route::get('getAllAttributes',[VisiteController::class,'getAllAttributes'])->name('getAllAttributes');
+     /*************************************type_Freins***************************** */
+    Route::resource('type_freins', TypeFreinController::class);
+    Route::get('get_typeFreins', [TypeFreinController::class, 'get_typeFreins'])->name('get_typeFreins');
+    Route::post('restoreTypeFrein/{id}', [TypeFreinController::class, 'restoreTypeFrein'])->name('restoreTypeFrein');
+     /*************************************Prospect***************************** */
     /*************************************Frein***************************** */
     Route::resource('frein', FreinController::class);
 
