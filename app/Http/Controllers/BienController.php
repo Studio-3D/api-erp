@@ -19,20 +19,23 @@ class BienController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index(Request $request,$projet_id)
     {
-        if (Auth::guard('api')->check()) {
+        if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $perPage = 20; // Number of items per page
+            $perPage = $request->input('pageSize', 5); // Get the number of items per page
             $page = $request->input('page', 1);
-            $biens = Bien::on('temp')->orderBy('created_at', 'desc')
-            ->skip(($page - 1) * $perPage)
-            ->take($perPage)
-            ->get();
-            return response()->json(['bien' => $biens]);
-        }
+            $biens = Bien::on('temp')
+            ->orderBy('created_at', 'desc')
+            ->where('projet_id', $projet_id)
+            ->paginate($perPage, ['*'], 'page', $page);
+            return response()->json(['biens' => $biens], 200);
 
-        return response()->json(['error' => 'Unauthorized'], 401);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
 
     }
     /**
@@ -157,7 +160,7 @@ class BienController extends Controller
             DatabaseHelper::Config();
             Bien::on('temp')->where('id', $bien_id)->withTrashed()->restore();
 
-            return response()->json(['message' => 'Bien est bien restaurer'], 200);
+            return response()->json(['message' => 'Bien restauré avec succès'], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -256,25 +259,6 @@ class BienController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $biens = Bien::on('temp')->where('projet_id', $projet_id)->get();
-            return response()->json(['biens' => $biens], 200);
-
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-    }
-
-    public function getBiensByProjet_paginate(Request $request,$projet_id){
-
-        if (RoleHelper::ACSup()) {
-            DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', 5); // Get the number of items per page
-            $page = $request->input('page', 1);
-            $biens = Bien::on('temp')
-            ->orderBy('created_at', 'desc')
-            ->where('projet_id', $projet_id)
-            ->paginate($perPage, ['*'], 'page', $page);
             return response()->json(['biens' => $biens], 200);
 
 

@@ -186,6 +186,7 @@ class UserController extends Controller
     public function update(UpdateUserRequest $request, $id)
     {
         if (RoleHelper::AdminSup()) {
+
             if($request->cin!=null){
             $cin_exist=User::where('cin',$request->cin)->where('id','!=',$id)->count();
             if($cin_exist>0){

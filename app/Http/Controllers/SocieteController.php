@@ -126,6 +126,7 @@ class SocieteController extends Controller
             $societe->email = $request->email;
 
             if ($request->hasFile('logo')) {
+
                 if($societe->logo!=null){
                     $image_path = public_path('img/societes/'.$old_image_name);
                     if(file_exists($image_path)){
@@ -137,7 +138,6 @@ class SocieteController extends Controller
                 $societe->logo = $logo;
             }
             $societe->save();
-            
 
 
             if ($request->has('raison_sociale')) {
@@ -151,12 +151,12 @@ class SocieteController extends Controller
                 }
             }
 
+
             return response()->json(['message' => $societe], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    
     /**
      * Remove the specified resource from storage.
      */
@@ -171,9 +171,9 @@ class SocieteController extends Controller
             }
 
             if ($societe->delete()) {
-                return response()->json(['message' => 'Societe deleted succesfully'], 200);
+                return response()->json(['message' => 'Societe supprimée avec succès'], 200);
             } else {
-                return response()->json(['message' => 'Societe non deleted'], 404);
+                return response()->json(['message' => 'Societe non supprimée'], 404);
             }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -185,7 +185,7 @@ class SocieteController extends Controller
 
             Societe::where('id', $societe_id)->withTrashed()->restore();
 
-            return response()->json(['message' => 'Societe est bien restaurée'], 200);
+            return response()->json(['message' => 'Societe est restaurée avec succès'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
