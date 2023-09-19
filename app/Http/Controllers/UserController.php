@@ -63,7 +63,6 @@ class UserController extends Controller
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
-
     }
     public function index(Request $request)
     {
@@ -184,97 +183,58 @@ class UserController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-
     public function update(UpdateUserRequest $request, $id)
     {
         if (RoleHelper::AdminSup()) {
-            //studio3d
-            if(Auth::guard('api')->user()->societe_id == 1){
-                $cin_exist=User::where('cin',$request->cin)->where('id','!=',$id)->count();
-                if($cin_exist>0){
-                    return response()->json(['errors' => 'Le Cin que vous avez saisi'.$request->cin.' s\'apprtient à un autre utilisateur'], 422);
-                }
-                $user = User::findOrfail($id);
-                $originalName = $user->name;
-               if ($request->hasFile('photo')) {
-                   if($user->photo!=null){
-                       $image_path = public_path('img/users/'.$user->photo);
-                       if(file_exists($image_path)){
-                         unlink($image_path);
-                       }
-                   }
-                   $photo = time() . '.' . $originalName . '.' . $request->photo->extension();
-                   $request->photo->move(public_path('img/users'), $photo);
-                   $user->photo = $photo;
-               }
-               $update = $request->all();
-               foreach ($update as $key => $value) {
-                   $user->$key = $value;
-               }
-               if ( $user->save()) {
-                   DatabaseHelper::Config($user->societe_id);
-                   $user_societes = User::on('temp')->where('user_id_origin', $user->id);
-                   $update = $request->all();
-                   foreach ($update as $key => $value) {
-                       $user->$key = $value;
-                   }
-                   $user_societes->update($request->all());
-               }
-           }
-            else{
 
-                $cin_exist=User::on('temp')::where('cin',$request->cin)->where('id','!=',$id)->count();
-                if($cin_exist>0){
-                    return response()->json(['errors' => 'Le Cin que vous avez saisi'.$request->cin.' s\'apprtient à un autre utilisateur'], 422);
-                }
-                //db fils
-                DatabaseHelper::Config();
-                $user = User::on('temp')->findOrfail($id);
-                $originalName = $user->name;
-                if ($request->hasFile('photo')) {
-                    if($user->photo!=null){
-                        $image_path = public_path('img/users/'.$user->photo);
-                        if(file_exists($image_path)){
-                          unlink($image_path);
-                        }
+            if($request->cin!=null){
+            $cin_exist=User::where('cin',$request->cin)->where('id','!=',$id)->count();
+            if($cin_exist>0){
+               return response()->json(['errors' => 'Le Cin que vous avez saisi'.$request->cin.' apprtient à un autre utilisateur'], 422);
+            }}
+            $user = User::findOrFail($id);
+            $user->name = $request->input('name');
+            $user->prenom = $request->input('prenom');
+            $user->gender = $request->input('gender');
+            $user->role = $request->input('role');
+            $user->phone = $request->input('phone');
+            $user->cin = $request->input('cin');
+            $user->fonction = $request->input('fonction');
+            $user->date_embauche = $request->input('date_embauche');
+            $user->niveau_etude = $request->input('niveau_etude');
+            $user->adresse = $request->input('adresse');
+            $user->cnss = $request->input('cnss');
+            $user->is_actif = $request->input('is_actif'); // Default to 1 if not provided
+            $user->solde_conge = $request->input('solde_conge');
+
+            if ($request->hasFile('photo')) {
+                if ($user->photo != null) {
+                    $image_path = public_path('img/users/' . $user->photo);
+                    if (file_exists($image_path)) {
+                        unlink($image_path);
                     }
-                    $photo = time() . '.' . $originalName . '.' . $request->photo->extension();
-                    $request->photo->move(public_path('img/users'), $photo);
-                    $user->photo = $photo;
                 }
-                $update = $request->all();
-                foreach ($update as $key => $value) {
-                    $user->$key = $value;
-                }
-               //db mere
-                if($user->save()){
-                    $user = User::findOrfail($user->user_id_origin);
-                    $originalName = $user->name;
-                   if ($request->hasFile('photo')) {
-                       if($user->photo!=null){
-                           $image_path = public_path('img/users/'.$user->photo);
-                           if(file_exists($image_path)){
-                             unlink($image_path);
-                           }
-                       }
-                       $photo = time() . '.' . $originalName . '.' . $request->photo->extension();
-                       $request->photo->move(public_path('img/users'), $photo);
-                       $user->photo = $photo;
-                   }
-                   $update = $request->all();
-                   foreach ($update as $key => $value) {
-                       $user->$key = $value;
-                   }
-                   $user->save();
-                }
-
+                $photo = time() . '.' . $user->name . '.' . $request->photo->extension();
+                $request->photo->move(public_path('img/users'), $photo);
+                $user->photo = $photo;
             }
 
-            return response()->json(['message' => $user], 200);
+            if ($user->save()) {
+                // Update the user in the 'temp' database connection (assuming this is what you intend to do)
+                DatabaseHelper::Config($user->societe_id);
+                $user_societes = User::on('temp')->where('user_id_origin', $user->id)->first();
+
+                if ($user_societes) {
+                    $user_societes->update($request->all());
+                }
+            }
+
+            return response()->json(['message' => 'Utilisateur modifié avec succès'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+
     /**
      * Remove the specified resource from storage.
      */
@@ -299,7 +259,6 @@ class UserController extends Controller
         if (RoleHelper::SuperAdmin()) {
             $users = User::where('societe_id', $societe_id)->get();
             return response()->json(['message' => $users], 200);
-
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

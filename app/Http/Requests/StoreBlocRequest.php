@@ -53,14 +53,14 @@ class StoreBlocRequest extends FormRequest
     {   if ($this->tranche_id==null){
             return [
             
-            'nom.unique' =>  'Ce bloc est deja exist dans ce projet',
+            'nom.unique' =>  'ce nom de bloc existe déjà dans ce projet',
             ];
         }
 
         else {
             return [
                 
-                'nom.unique' =>  'Ce bloc est deja exist dans cette tranche',
+                'nom.unique' =>  'ce nom de bloc existe déjà dans ce tranche',
             ];
         }
     }

@@ -160,7 +160,7 @@ class BienController extends Controller
             DatabaseHelper::Config();
             Bien::on('temp')->where('id', $bien_id)->withTrashed()->restore();
 
-            return response()->json(['message' => 'Bien est bien restaurer'], 200);
+            return response()->json(['message' => 'Bien restauré avec succès'], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -267,8 +267,6 @@ class BienController extends Controller
 
         }
     }
-
-
 
     public function getBiensByTranche($tranche_id){
         if (RoleHelper::AdminSup()) {

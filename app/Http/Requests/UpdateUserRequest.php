@@ -25,21 +25,15 @@ class UpdateUserRequest extends FormRequest
         return [
             'name' => 'string',
             'prenom' => 'string',
-            /*'email' => [
-                Rule::unique('users')->ignore($this->user),
-            ],
-            'password' => 'min:6|same:password_confirmation',*/
             'role' => 'integer',
             'phone' => 'string|min:10|max:14',
             'photo' => 'image|mimes:png,jpg,jpeg|max:2048',
-            /*'cin' => [
+           /* 'cin' => [
                 Rule::unique('users')->ignore($this->user),
             ],*/
             'date_embauche' => 'date',
             'cnss' => 'integer|nullable',
             'is_actif' => 'integer',
-            //'nb_appel_recu' => 'integer',
-            //'nb_appel_traite' => 'integer',
             'solde_conge' => 'integer|nullable',
 
         ];

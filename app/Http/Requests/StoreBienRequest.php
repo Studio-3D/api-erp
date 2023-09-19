@@ -80,7 +80,7 @@ class StoreBienRequest extends FormRequest
             elseif ($this->immeuble_id==null && $this->bloc_id==null) {
                 return [
 
-                'propriete_dite_bien.unique' =>  'Ce bien existe déjà dans cette tranche',
+                'propriete_dite_bien.unique' =>  'Ce bien existe déjà dans ce tranche',
             ];
             }
             elseif ($this->immeuble_id==null ) {
