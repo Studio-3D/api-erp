@@ -22,13 +22,13 @@ return new class extends Migration
             $table->boolean('conventionne')->nullable();
             $table->double('prix_unitaire', 12, 2);
             $table->double('prix', 12, 2);
-            $table->float('superficie_architecte');
-            $table->float('superficie_habitable')->nullable();
+            $table->double('superficie_architecte',12,2);
+            $table->double('superficie_habitable',12,2)->nullable();
             $table->integer('nbre_facades');
             $table->float('superficie_parking')->nullable();
             $table->float('superficie_box')->nullable();
             $table->float('superficie_terrasse')->nullable();
-            $table->float('superficie_jardin')->nullable();
+            $table->double('superficie_jardin',12,2)->nullable();
             $table->string('titre_foncier')->nullable();
             $table->enum('etat',[EtatBien::DISPONIBLE->name,EtatBien::PRE_RESERVATION->name,EtatBien::RESERVATION->name,EtatBien::BLOQUE->name,EtatBien::VENDU->name,EtatBien::ENCOURS_DE_PROPOSITION->name]); //1=disponible, 2=pré-réservé, 3=réservé, 4=bloqué
             $table->timestamps();

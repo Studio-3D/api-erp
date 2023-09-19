@@ -19,8 +19,8 @@ return new class extends Migration
             $table->date('date_autorisation_construction');
             $table->date('date_permis_habiter');
             $table->string('titre_foncier');
-            $table->float('surface_terrain');
-            $table->float('prix_acquisition');
+            $table->double('surface_terrain', 12,2);
+            $table->double('prix_acquisition',12,2);
             $table->integer('limite_annulation_reservation');
             $table->foreignId('type_id')->constrained('type_projets')->onDelete('cascade');
             $table->integer('nbre_tranches')->default(0);
