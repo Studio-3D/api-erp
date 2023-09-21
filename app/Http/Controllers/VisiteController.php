@@ -36,17 +36,13 @@ class VisiteController extends Controller
             $visites = Visite::on('temp')->where('origin_id',null)->get();
             return response()->json(['visites' => $visites]);
         }
-
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
-    {
-        //
-    }
+  
 
     /**
      * Store a newly created resource in storage.

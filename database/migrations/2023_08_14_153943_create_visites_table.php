@@ -23,7 +23,7 @@ return new class extends Migration
             $table->enum('interet',[InteretEnum::INTERESSE->name,InteretEnum::RECEPCTIF->name,InteretEnum::PERDU->name]);
             $table->enum('mode_relance',[TypeNotificationEnum::SMS->name,TypeNotificationEnum::APPEL->name,TypeNotificationEnum::EMAIL->name])->nullable();
             $table->date('date_relance')->nullable();
-            $table->enum('status',[StatutEnum::PRE_RESERVE->name,StatutEnum::VENDU->name,StatutEnum::PRE_RESERVATION_PERDU->name])->nullable();
+            $table->enum('statut',[StatutEnum::PRE_RESERVE->name,StatutEnum::VENDU->name,StatutEnum::PRE_RESERVATION_PERDU->name])->nullable();
             $table->dateTime('rdv')->nullable();
             $table->foreignId('source_id')->nullable()->constrained('sources')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
