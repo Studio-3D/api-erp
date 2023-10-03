@@ -196,9 +196,6 @@ class UserController extends Controller
             $user = User::findOrFail($id);
             $user->name = $request->input('name');
             $user->prenom = $request->input('prenom');
-            if ($request->password!="" || $request->password!=null) {
-                $user->password = $request->input('password');
-            }
             $user->gender = $request->input('gender');
             $user->role = $request->input('role');
             $user->phone = $request->input('phone');
