@@ -1,12 +1,18 @@
 <?php
 
+use App\Http\Controllers\AquereurController;
+use App\Http\Controllers\AvanceController;
+use App\Http\Controllers\BanqueController;
 use App\Http\Controllers\BienController;
 use App\Http\Controllers\BlocController;
+use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CompositionBienController;
 use App\Http\Controllers\FreinController;
 use App\Http\Controllers\ImmeubleController;
+use App\Http\Controllers\PiecesJointeController;
 use App\Http\Controllers\ProjetController;
 use App\Http\Controllers\ProspectController;
+use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\SocieteController;
 use App\Http\Controllers\SourceController;
 use App\Http\Controllers\TrancheController;
@@ -133,7 +139,6 @@ Route::middleware('auth:api')->group(function () {
     Route::resource('type_freins', TypeFreinController::class);
     Route::get('get_typeFreins', [TypeFreinController::class, 'get_typeFreins'])->name('get_typeFreins');
     Route::post('restoreTypeFrein/{id}', [TypeFreinController::class, 'restoreTypeFrein'])->name('restoreTypeFrein');
-     /*************************************Prospect***************************** */
     /*************************************Frein***************************** */
     Route::resource('frein', FreinController::class);
 
@@ -148,4 +153,30 @@ Route::middleware('auth:api')->group(function () {
 
     /*************************************Typologie***************************** */
     Route::resource('typologie', TypologieController::class);
+
+    /*************************************Banque***************************** */
+    Route::resource('banque',BanqueController::class);
+
+    /*************************************Client***************************** */
+    Route::resource('client',ClientController::class);
+
+    /*************************************Aquereurs***************************** */
+    Route::resource('aquereur',AquereurController::class);
+    Route::delete('destoryAquereurUsingReservationId/{reservation_id}',[AquereurController::class,'destoryAquereurUsingReservationId'])->name('destoryAquereurUsingReservationId');
+    Route::get('getAcquirerOfReservation/{reservation_id}',[AquereurController::class,'getAcquirerOfReservation'])->name('getAcquirerOfReservation');
+    Route::get('nbOfAcquirersInReservation/{reservation_id}',[AquereurController::class,'nbOfAcquirersInReservation'])->name('nbOfAcquirersInReservation');
+    /*************************************Avances***************************** */
+    Route::resource('avance', AvanceController::class);
+    Route::delete('destoryUsingReservationId/{reservation_id}',[AvanceController::class,'destoryUsingReservationId'])->name('destoryUsingReservationId');
+    Route::put('valideAvance/{id}',[AvanceController::class,'valideAvance'])->name('valideAvance');
+    Route::put('refuseAvance/{id}',[AvanceController::class,'refuseAvance'])->name('refuseAvance');
+
+    /*************************************PiecesJointe***************************** */
+    Route::resource('piecesjointe',PiecesJointeController::class);
+    Route::delete('destoryFileUsingReservationId/{reservation_id}',[PiecesJointeController::class,'destoryFileUsingReservationId'])->name('destoryFileUsingReservationId');
+
+    /*************************************Reservation***************************** */
+    Route::resource('reservation',ReservationController::class);
+    Route::get('getAllInformationsReservation/{id}',[ReservationController::class,'getAllInformationsReservation'])->name('getAllInformationsReservation');
+
 });

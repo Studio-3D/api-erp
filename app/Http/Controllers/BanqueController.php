@@ -2,7 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Helpers\DatabaseHelper;
+use App\Http\Helpers\RoleHelper;
+use App\Http\Requests\StoreBanqueRequest;
+use App\Http\Requests\UpdateBanqueRequest;
+use App\Models\Banque;
+use Illuminate\Support\Facades\Auth;
 
 class BanqueController extends Controller
 {
@@ -11,7 +16,13 @@ class BanqueController extends Controller
      */
     public function index()
     {
-        //
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $banques = Banque::on('temp')->get();
+            return response()->json(['banques' => $banques],200);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
 
     /**
@@ -25,17 +36,33 @@ class BanqueController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreBanqueRequest $request)
     {
-        //
+        if( RoleHelper::Comptable() || RoleHelper::AdminComptable()) {
+            DatabaseHelper::Config();
+            $banque = new Banque();
+            $banque->setConnection('temp');
+            $banque->nom = $request->nom;
+            if ($banque->save()) {
+                return response()->json(['banque' => $banque], 200);
+            }
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
+
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show($id)
     {
-        //
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $banque=Banque::on('temp')->where('id',$id)->get();
+
+            return response()->json(['banque'=>$banque]);
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
 
     /**
@@ -49,9 +76,19 @@ class BanqueController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UpdateBanqueRequest $request,$id)
     {
-        //
+        if(RoleHelper::Comptable() || RoleHelper::AdminComptable()){
+            DatabaseHelper::Config();
+            $banque=Banque::on('temp')->findOrFail($id);
+            $update=$request->all();
+            foreach ($update as $key=>$value){
+                $banque->$key=$value;
+            }
+            $banque->save();
+            return response()->json(['banque'=>$banque],200);
+        }
+        return response()->json(['error'=>'Unauthorized'],401);
     }
 
     /**
@@ -59,6 +96,18 @@ class BanqueController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        if(RoleHelper::Comptable() || RoleHelper::AdminComptable()){
+            DatabaseHelper::Config();
+            $banque=Banque::on('temp')->findOrFail($id);
+            if($banque->delete()){
+                return response()->json(['message'=>'Bank deleted successfully'],200);
+            }
+            else{
+                return response()->json(['message'=>'Bank non deleted'],400);
+            }
+        }
+        else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 }
