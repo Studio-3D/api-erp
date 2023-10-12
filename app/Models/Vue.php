@@ -21,4 +21,8 @@ class Vue extends Model
     public function  projet(){
         return $this->belongsTo(Projet::class,'projet_id');
     }
+    public function bien()
+    {
+        return $this->hasMany(Bien::class);
+    }
 }

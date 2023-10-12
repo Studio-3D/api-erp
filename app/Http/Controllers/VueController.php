@@ -9,21 +9,44 @@ use App\Http\Requests\UpdateVueRequest;
 use App\Models\Vue;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Http\Request;
 
 class VueController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request,$projet_id)
     {
-        if (Auth::guard('api')->check())
-        {
+        if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $vues = Vue::on('temp')->get();
-            return response()->json(['vues' =>  $vues]);
+            $perPage = $request->input('pageSize', 5); // Get the number of items per page
+            $page = $request->input('page', 1);
+            $vues = Vue::on('temp')
+            ->orderBy('created_at', 'desc')
+            ->where('projet_id', $projet_id)->paginate($perPage, ['*'], 'page', $page);
+            return response()->json(['vues' => $vues], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
         }
-        else return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    public function get_vuesByProjet($projet_id)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+
+            $vues = Vue::on('temp')
+            ->orderBy('created_at', 'desc')
+            ->where('projet_id', $projet_id)
+            ->get();
+            return response()->json(['vues' => $vues]);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+
     }
 
     /**
@@ -45,7 +68,7 @@ class VueController extends Controller
             $vue=new Vue();
             $vue->setConnection('temp');
             $vue->vue=$request->vue;
-            $vue->projet_id=Session::get('projet_id');
+            $vue->projet_id=$request->projet_id;
             $vue->save();
             return response()->json(['vue'=>$vue],200);
         }

@@ -45,10 +45,10 @@ class UpdateImmeubleRequest extends FormRequest
                 })->ignore($this->immeuble)],
 
            
-            'tranche_id' => 'integer',
-            'projet_id' => 'integer',
+            'tranche_id' => 'integer|nullable',
+            'projet_id' => 'integer|nullable',
             'nbre_biens' => 'integer',
-            'bloc_id'=>'integer'
+            'bloc_id'=>'integer|nullable'
 
         ];
     }
