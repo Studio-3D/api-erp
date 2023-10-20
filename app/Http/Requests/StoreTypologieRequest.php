@@ -3,7 +3,10 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-
+use App\Http\Helpers\DatabaseHelper;
+use App\Models\Societe;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 class StoreTypologieRequest extends FormRequest
 {
     /**
@@ -21,9 +24,26 @@ class StoreTypologieRequest extends FormRequest
      */
     public function rules(): array
     {
+    
+        $societe_id = Auth::guard('api')->user()->societe_id;
+        $societe=Societe::findOrfail( $societe_id);
+        $DatabaseName='Erp_'.$societe->raison_sociale.'_'.$societe_id;
+        DatabaseHelper::Config();
         return [
-            'typologie'=>'required|string',
-            'projet_id'=>'required|integer',
+            'typologie' => ['required', Rule::unique('temp.'.$DatabaseName.'.typologies','typologie')
+            ->where(function ($query) {
+                $query->where('typologie', $this->typologie)
+                    ->where('projet_id', $this->projet_id);})
+        ],
+            'projet_id'=>'required|integer'
+
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'typologie.unique' => 'Cette typologie est deja exist dans ce projet',
         ];
     }
 }

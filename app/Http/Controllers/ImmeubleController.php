@@ -180,7 +180,7 @@ class ImmeubleController extends Controller
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $immeubles = Immeuble::on('temp')->where('bloc_id', $bloc_id)->get();
-            return response()->json(['message' => $immeubles], 200);
+            return response()->json(['immeubles' => $immeubles], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

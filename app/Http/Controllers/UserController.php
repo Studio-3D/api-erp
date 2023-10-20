@@ -11,6 +11,14 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use \Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
+use App\Mail\ResetPasswordMail;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Mail;
+
+
 
 class UserController extends Controller
 {
@@ -46,6 +54,7 @@ class UserController extends Controller
         if (Auth::guard('api')->check()) {
 
             $users = Auth::guard('api')->user();
+
             return response()->json(['user' => $users]);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -185,13 +194,12 @@ class UserController extends Controller
     }
     public function update(UpdateUserRequest $request, $id)
     {
-        if (RoleHelper::AdminSup()) {
-
-            if($request->cin!=null){
-            $cin_exist=User::where('cin',$request->cin)->where('id','!=',$id)->count();
-            if($cin_exist>0){
-               return response()->json(['errors' => 'Le Cin que vous avez saisi'.$request->cin.' apprtient à un autre utilisateur'], 422);
-            }}
+        if($request->is_profil) {
+            if ($request->cin != null) {
+                $cin_exist = User::where('cin', $request->cin)->where('id', '!=', $id)->count();
+                if ($cin_exist > 0) {
+                    return response()->json(['error' => 'Le Cin que vous avez saisi' . $request->cin . ' apprtient à un autre utilisateur'], 422);
+                }}
             $user = User::findOrFail($id);
             $user->name = $request->input('name');
             $user->prenom = $request->input('prenom');
@@ -229,8 +237,104 @@ class UserController extends Controller
                 }
             }
 
+            return response()->json(['message' => 'profil modifié avec succès'], 200);
+ 
+        }
+        else if (RoleHelper::Superadmin() && Auth::guard('api')->user()->societe_id == 1) {
+
+            if ($request->cin != null) {
+                $cin_exist = User::where('cin', $request->cin)->where('id', '!=', $id)->count();
+                if ($cin_exist > 0) {
+                    return response()->json(['error' => 'Le Cin que vous avez saisi' . $request->cin . ' apprtient à un autre utilisateur'], 422);
+                }
+            }
+            $user = User::findOrFail($id);
+            $user->name = $request->input('name');
+            $user->prenom = $request->input('prenom');
+            $user->gender = $request->input('gender');
+            $user->role = $request->input('role');
+            $user->phone = $request->input('phone');
+            $user->cin = $request->input('cin');
+            $user->fonction = $request->input('fonction');
+            $user->date_embauche = $request->input('date_embauche');
+            $user->niveau_etude = $request->input('niveau_etude');
+            $user->adresse = $request->input('adresse');
+            $user->cnss = $request->input('cnss');
+            $user->is_actif = $request->input('is_actif'); // Default to 1 if not provided
+            $user->solde_conge = $request->input('solde_conge');
+
+            if ($request->hasFile('photo')) {
+                if ($user->photo != null) {
+                    $image_path = public_path('img/users/' . $user->photo);
+                    if (file_exists($image_path)) {
+                        unlink($image_path);
+                    }
+                }
+                $photo = time() . '.' . $user->name . '.' . $request->photo->extension();
+                $request->photo->move(public_path('img/users'), $photo);
+                $user->photo = $photo;
+            }
+
+            if ($user->save()) {
+                // Update the user in the 'temp' database connection (assuming this is what you intend to do)
+                DatabaseHelper::Config($user->societe_id);
+                $user_societes = User::on('temp')->where('user_id_origin', $user->id)->first();
+
+                if ($user_societes) {
+                    $user_societes->update($request->all());
+                }
+            }
+
+            return response()->json(['message' => 'Utilisateur bien modifié'], 200);
+            
+        } else if (RoleHelper::AdminSup()) {
+
+            if ($request->cin != null) {
+                $cin_exist = User::where('cin', $request->cin)->where('id', '!=', $id)->count();
+                if ($cin_exist > 0) {
+                    return response()->json(['error' => 'Le Cin que vous avez saisi' . $request->cin . ' apprtient à un autre utilisateur'], 422);
+                }}
+
+            DatabaseHelper::Config();
+            $user = User::on('temp')->findOrfail($id);
+            $user->name = $request->input('name');
+            $user->prenom = $request->input('prenom');
+            $user->gender = $request->input('gender');
+            $user->role = $request->input('role');
+            $user->phone = $request->input('phone');
+            $user->cin = $request->input('cin');
+            $user->fonction = $request->input('fonction');
+            $user->date_embauche = $request->input('date_embauche');
+            $user->niveau_etude = $request->input('niveau_etude');
+            $user->adresse = $request->input('adresse');
+            $user->cnss = $request->input('cnss');
+            $user->is_actif = $request->input('is_actif'); // Default to 1 if not provided
+            $user->solde_conge = $request->input('solde_conge');
+
+            if ($request->hasFile('photo')) {
+                if ($user->photo != null) {
+                    $image_path = public_path('img/users/' . $user->photo);
+                    if (file_exists($image_path)) {
+                        unlink($image_path);
+                    }
+                }
+                $photo = time() . '.' . $user->name . '.' . $request->photo->extension();
+                $request->photo->move(public_path('img/users'), $photo);
+                $user->photo = $photo;
+            }
+
+            if ($user->save()) {
+                $user_societes = User::where('id', $user->user_id_origin)->first();
+
+                if ($user_societes) {
+                    $user_societes->update($request->all());
+                }
+            }
+
             return response()->json(['message' => 'Utilisateur modifié avec succès'], 200);
-        } else {
+        }
+        
+        else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
@@ -346,4 +450,155 @@ class UserController extends Controller
             }
         }
     }
+    public function sendEmail()
+
+    {
+        if (RoleHelper::SuperAdmin()) {
+
+            $user = Auth::guard('api')->user()->email;
+
+            if (!$user) {
+                return response()->json(['message' => 'User not found'], 404);
+            }
+            DB::table('password_reset_tokens')
+                ->where('email', $user)
+                ->delete();
+
+            $token = Str::random(60);
+            $confirmationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            $expirationTime = now()->addMinutes(3); // Expires in 3 minute
+            // Store the token in the 'password_resets' tablee chabge what time wann  to  expire tokkeenn 
+            DB::table('password_reset_tokens')->insert([
+                'email' => $user,
+                'token' => $token,
+                'expires_at' => $expirationTime,
+                'created_at' => now(),
+            ]);
+
+            // Construct the reset URL you can chenbge the url  
+            $resetUrl = 'http://localhost:3000/reset-password/' . $token;
+
+            // Send an email to the user with the reset URL
+            Mail::to($user)->send(new ResetPasswordMail($resetUrl,  $confirmationCode));
+
+            return response()->json(['message' => 'Password reset email sent']);
+        }
+    }
+    public function resendEmail()
+
+    {
+        if (RoleHelper::SuperAdmin()) {
+            // Validate the request and check for user existence
+            $user = Auth::guard('api')->user()->email;
+
+
+            if (!$user) {
+                return response()->json(['message' => 'User not found'], 404);
+            }
+            DB::table('password_reset_tokens')
+                ->where('email', $user)
+                ->delete();
+
+
+
+            $token = Str::random(60);
+            $confirmationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+            $expirationTime = now()->addMinutes(3); // Expires in 1 minute
+            // Store the token in the 'password_resets' table
+            DB::table('password_reset_tokens')->insert([
+                'email' => $user,
+                'token' => $token,
+                'expires_at' => $expirationTime,
+                'created_at' => now(),
+            ]);
+
+            // Construct the reset URL
+            $resetUrl = 'http://localhost:3000/reset-password/' . $token;
+
+            // Send an email to the user with the reset URL
+            Mail::to($user)->send(new ResetPasswordMail($resetUrl,  $confirmationCode));
+
+            return response()->json(['message' => 'Password reset email sent']);
+        }
+    }
+
+
+    public function resetPassword(Request $request, $token)
+    {
+
+
+        if (RoleHelper::ACSup()) {
+            $passwordReset = DB::table('password_reset_tokens')
+                ->where('token', $token)
+                ->first();
+
+            if (!$passwordReset) {
+                return response()->json(['message' => 'Token not found'], 404);
+            }
+
+            if (now() > $passwordReset->expires_at) {
+                return response()->json(['message' => 'Token has expired'], 401);
+            }
+
+
+            $user = User::where('email', $passwordReset->email)->first();
+            $user->update([
+                'password' => Hash::make($request->password),
+            ]);
+
+
+            DB::table('password_reset_tokens')
+                ->where('token', $token)
+                ->delete();
+
+            return response()->json(['message' => 'Password reset successful']);
+        }
+    }
+    public function validateToken($token)
+    {
+
+
+
+        $passwordReset = DB::table('password_reset_tokens')
+            ->where('token', $token)
+            ->first();
+
+        if (!$passwordReset) {
+            return response()->json(['message' => 'Token not found'], 404);
+        }
+
+        if (Carbon::now() > $passwordReset->expires_at) {
+            DB::table('password_reset_tokens')
+                ->where('token', $token)
+                ->delete();
+            return response()->json(['message' => 'Token has expired'], 401);
+        }
+        return response()->json(['message' => 'Token valid'], 200);
+    }
+    public function confirmReset(Request $request, $token)
+    {
+        $confirmationCode = $request->input('confirmationCode');
+
+        $passwordReset = DB::table('password_reset_tokens')
+            ->where('token', $token)
+            ->first();
+
+        if (!$passwordReset) {
+            return response()->json(['message' => 'Token not found'], 404);
+        }
+
+        if (now() > $passwordReset->expires_at) {
+            DB::table('password_reset_tokens')
+                ->where('token', $token)
+                ->delete();
+            return response()->json(['message' => 'Token has expired'], 401);
+        }
+
+        if ($passwordReset->confirmation_code !== $confirmationCode) {
+            return response()->json(['message' => 'Invalid confirmation code'], 400);
+        }
+
+        return response()->json(['message' => 'Code is valid'], 200);
+    }
+
 }

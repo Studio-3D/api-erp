@@ -112,7 +112,12 @@ class ProjetController extends Controller
                     if($projet->save()){
                         if ($request->selectedtypeBien){
                             foreach($request->selectedtypeBien as $valeur){
-                                typeBienProjetHelper::createTypeBienProjet((int)$valeur[0],$projet->id,(int)$valeur[1]);
+                                if($valeur[0])
+                                    {typeBienProjetHelper::createTypeBienProjet((int)$valeur[0],$projet->id,(int)$valeur[1]);
+                                }
+                                else{
+                                    return response()->json(['error' => 'Veuillez choisir le type de bien'], 422);//error not errors pour ne pas donner des prb dans le frontend
+                                }
                         }   }
                         $all=0;
                         foreach($request->selectedUsers as $valeur) {

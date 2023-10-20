@@ -11,12 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('type_biens', function (Blueprint $table) {
-            $table->id();
-            $table->string('type');
-            $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
-            $table->timestamps();
-            $table->softDeletes();
+        Schema::table('password_reset_tokens', function (Blueprint $table) {
+            $table->timestamp('expires_at')->nullable();
         });
     }
 
@@ -25,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('type_biens');
+        Schema::table('password_reset_tokens', function (Blueprint $table) {
+            $table->dropColumn('expires_at');
+        });
     }
 };

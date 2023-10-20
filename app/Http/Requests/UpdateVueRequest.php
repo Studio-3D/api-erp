@@ -31,9 +31,9 @@ class UpdateVueRequest extends FormRequest
         DatabaseHelper::Config();
         return [
             'vue'=>['required',Rule::unique('temp.'.$DatabaseName.'.vues','vue')
-                ->where('projet_id',$this->vue->projet_id)
-                ->ignore($this->vue)],
-            'projet_id'=>'required|integer',
+                ->where('projet_id',$this->projet_id)
+                ],
+            'projet_id'=>'integer',
         ];
     }
     public function messages(): array
