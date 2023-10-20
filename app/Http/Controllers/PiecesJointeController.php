@@ -18,11 +18,19 @@ class PiecesJointeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request,$projet_id)
     {
         if(Auth::guard('api')->check()){
             DatabaseHelper::Config();
-            $pjs=PiecesJointe::on('temp')->get();
+            $perPage =$request->input('pageSize',5);
+            $page=$request->input('page',1);
+            $pjs=PiecesJointe::on('temp')
+                ->join('reservations','reservations.projet_id','=','aqeureurs.reservation_id')
+                ->join('projets','reservations.projet_id','=','projets.id')
+                ->where('projets.id',$projet_id)
+                ->select('pieces_jointes.*')
+                ->orderBy('created_at','desc')
+                ->paginate($perPage,['*'],$page);
             return response()->json(['PJs'=> $pjs],200);
         }
         return response()->json(['error' => 'Unauthorized'],401);
@@ -128,7 +136,19 @@ class PiecesJointeController extends Controller
         return response()->json(['error'=>'Unauthorized'],401);
     }
 
-
+    public function getFileUsingReservationId($reservation_id){
+        if(RoleHelper::ACSup()){
+            DatabaseHelper::Config();
+            $pj=PiecesJointe::on('temp')->where('reservation_id',$reservation_id)->get();
+            if($pj->isEmpty()){
+                return response()->json(['message'=>'Aucune PJ dans cette reservation'],400);
+            }
+            else{
+                return response()->json(['pJ'=>$pj],200);
+            }
+        }
+        return response()->json(['error'=>'Unauthorized'],401);
+    }
     public function destoryFileUsingReservationId($reservation_id){
         if(RoleHelper::ACSup()){
             DatabaseHelper::Config();

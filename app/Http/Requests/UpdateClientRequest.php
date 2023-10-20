@@ -57,7 +57,7 @@ class UpdateClientRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'cin.unique' => 'Ce cin est deja exist dans la table de client',
+            'cin.unique' => 'Ce cin existe déjà dans la table des clients',
         ];
     }
 }

@@ -7,6 +7,7 @@ use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreBanqueRequest;
 use App\Http\Requests\UpdateBanqueRequest;
 use App\Models\Banque;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class BanqueController extends Controller
@@ -14,11 +15,17 @@ class BanqueController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $banques = Banque::on('temp')->get();
+            $perPage=$request->input('pageSizee',5);
+            $page=$request->input('page',1);
+
+            $banques = Banque::on('temp')
+                ->orderBy('created_at','desc')
+                ->paginate($perPage, ['*'], 'page', $page);
+
             return response()->json(['banques' => $banques],200);
         }
 

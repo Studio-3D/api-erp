@@ -7,6 +7,7 @@ use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreAquereurRequest;
 use App\Http\Requests\UpdateAquereurRequest;
 use App\Models\Aquereur;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AquereurController extends Controller
@@ -14,12 +15,21 @@ class AquereurController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request,$projet_id)
     {
         if(Auth::guard('api')->check()){
             DatabaseHelper::Config();
-            $aquereurs=Aquereur::on('temp')->get();
-            return response()->json(['aquereurs',$aquereurs],200);
+            $perPage=$request->input('pageSizee',5);
+            $page=$request->input('page',1);
+
+            $aquereurs=Aquereur::on('temp')->join("reservations","aquereurs.reservation_id","=","reservations.id")
+                ->join("projets","reservations.projet_id","=","projets.id")
+                ->where("projets.id",$projet_id)
+                ->select('aquereurs.*')
+                ->orderBy('created_at','desc')
+                ->paginate($perPage,['*'],'page',$page);
+
+            return response()->json(['Aquereurs',$aquereurs],200);
         }
         return response()->json(['error' => 'Unauthorized'],401);
     }
@@ -37,7 +47,6 @@ class AquereurController extends Controller
      */
     public function store(StoreAquereurRequest $request)
     {
-
         if(RoleHelper::ACSup()){
             DatabaseHelper::Config();
             $aquereur=new Aquereur();
@@ -46,7 +55,7 @@ class AquereurController extends Controller
             $aquereur->client_id=$request->client_id;
             $aquereur->reservation_id=$request->reservation_id;
             if($aquereur->save()){
-                return response()->json(['aquereur',$aquereur],200);
+                return response()->json(['Aquérreur',$aquereur],200);
             }
         }
         return  response()->json(['error','Unauthorized'],401);
@@ -61,7 +70,7 @@ class AquereurController extends Controller
             DatabaseHelper::Config();
             $aquereur=Aquereur::on('temp')->where('id',$id)->get();
 
-            return response()->json(['aquereur'=>$aquereur],200);
+            return response()->json(['Aquérreur'=>$aquereur],200);
         }
         return  response()->json(['error','Unauthorized'],401);
     }
@@ -87,7 +96,7 @@ class AquereurController extends Controller
                 $aquereur->$key = $value;
             }
             $aquereur->save();
-            return response()->json(['aquereur'=>$aquereur],200);
+            return response()->json(['Aquérreur'=>$aquereur],200);
         }
         return  response()->json(['error','Unauthorized'],401);
     }
@@ -102,54 +111,53 @@ class AquereurController extends Controller
             $aquereur=Aquereur::on('temp')->findOrFail($id);
 
             if($aquereur->delete()){
-                return response()->json(['message'=>'Aquereur deleted successfully'],200);
+                return response()->json(['message'=>'Aquérreur supprimé avec succès'],200);
             }
             else{
-                return response()->json(['message'=>'Aquereur non deleted '],400);
+                return response()->json(['message'=>'Aquérreur non supprimé'],400);
             }
         }
         return response()->json(['error'=>'Unauthorized'],401);
     }
 
-    public function destoryAquereurUsingReservationId($reservation_id){
+    public function destroyAquerreursByReservationId($reservation_id){
         if(RoleHelper::ACSup()){
             DatabaseHelper::Config();
             $aquereurs=Aquereur::on('temp')->where('reservation_id',$reservation_id);
-            if($aquereurs->delete()){
-                return response()->json(['message'=>'Aquereurs deleted successfully'],200);
+            foreach ($aquereurs as $aquereur){
+                if($aquereur->delete()){
+                    return response()->json(['message'=>'Aquérreurs supprimés avec succès'],200);
+                }
+                else{
+                    return response()->json(['message'=>'Aquérreurs non supprimés'],400);
+                }
             }
-            else{
-                return response()->json(['message'=>'Aquereur non deleted '],400);
-            }
+
         }
         return response()->json(['error'=>'Unauthorized'],401);
     }
 
 
 
-    public function getAcquirerOfReservation($reservation_id){
+    public function getAquerreursByReservationId($reservation_id){
         if(RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $aquereurs_reservation = Aquereur::on('temp')->where('reservation_id', $reservation_id)->get();
             if ($aquereurs_reservation->isEmpty()){
-                return response()->json(['message'=>'Any Acquirer exists in this reservation'],400);
+                return response()->json(['message'=>'aucun aquérreur existe dans cette réservation'],400);
             }
-            else return response()->json(['equereurs'=>$aquereurs_reservation],200);
+            else return response()->json(['aquérreurs'=>$aquereurs_reservation],200);
         }
         return response()->json(['error','Unauthorized'],401);
     }
 
-    public function  nbOfAcquirersInReservation($reservation_id)
+    public function  nbAquerreursByReservation($reservation_id)
     {
         if(RoleHelper::ACSup()){
             DatabaseHelper::Config();
-            $aquereurs_existe=Aquereur::on('temp')->where('reservation_id',$reservation_id)->get();
-            if($aquereurs_existe->isEmpty()){
-                return response()->json(['message'=>'Is there any acquirer existing in this reservation'],400);
-            }
-            else{
-                $nb_of_aquereurs=$aquereurs_existe->count();
-                return  response()->json(['nb_aquereur'=>$nb_of_aquereurs],200);
+            $nbreaquerreurs=Aquereur::on('temp')->where('reservation_id',$reservation_id)->count();
+            if($nbreaquerreurs!=0){
+                return  response()->json(['nb_aquérreur'=>$nbreaquerreurs],200);
             }
         }
         return  response()->json(['error'=>'Unauthorized'],401);

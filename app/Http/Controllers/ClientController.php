@@ -16,11 +16,17 @@ class ClientController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $clients= Client::on('temp')->get();
+            $perPage=$request->input('pageSizee',5);
+            $page=$request->input('page',1);
+
+            $clients= Client::on('temp')
+                ->orderBy('created_at','desc')
+                ->paginate($perPage, ['*'], 'page', $page);
+
             return response()->json(['clients' => $clients]);
         }
 

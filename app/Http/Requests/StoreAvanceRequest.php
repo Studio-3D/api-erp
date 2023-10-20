@@ -23,9 +23,9 @@ class StoreAvanceRequest extends FormRequest
     {
         return [
             "montant"=>"double",
-            "date_de_reglement"=>"date",
+            "date_reglement"=>"date",
             "mode_paiement"=>"integer",
-            "echance"=>"date",
+            "echeance"=>"date",
             "sr"=>"boolean",
             "banque_id"=>"integer",
             "reservation_id"=>"integer"

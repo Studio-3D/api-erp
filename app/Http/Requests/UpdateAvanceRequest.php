@@ -23,9 +23,9 @@ class UpdateAvanceRequest extends FormRequest
     {
         return [
             "montant"=>"integer",
-            "date_de_regelement"=>"date",
+            "date_reglement"=>"date",
             "mode_paiement"=>"integer",
-            "echance"=>"date",
+            "echeance"=>"date",
             "sr"=>"boolean",
             "banque_id"=>"integer",
             "reservation_id"=>"integer"
