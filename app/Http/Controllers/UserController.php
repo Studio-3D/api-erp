@@ -77,14 +77,14 @@ class UserController extends Controller
     {
         if (RoleHelper::Superadmin() && Auth::guard('api')->user()->societe_id == 1) {
 
-            $perPage = $request->input('pageSize', 5); // Get the number of items per page
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
             $users = User::orderBy('created_at', 'desc')
                 ->paginate($perPage, ['*'], 'page', $page);
             return response()->json(['users' => $users]);
         } else if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', 5); // Get the number of items per page
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
             $users = User::on('temp')->orderBy('created_at', 'desc')
                 ->paginate($perPage, ['*'], 'page', $page);
