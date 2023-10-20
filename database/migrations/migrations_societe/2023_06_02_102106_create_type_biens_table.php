@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('type_biens', function (Blueprint $table) {
             $table->id();
             $table->string('type');
+            $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
         });

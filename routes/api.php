@@ -122,8 +122,11 @@ Route::middleware('auth:api')->group(function () {
     /***********************************Type biens******************************** */
     Route::resource('typeBien', TypeBienController::class);
     Route::get('get_typeBiens', [TypeBienController::class, 'get_typeBiens'])->name('get_typeBiens');
+    Route::get('get_typeBiensByProjet/{id}', [TypeBienController::class, 'get_typeBiensByProjet'])->name('get_typeBiensByProjet');
     Route::post('restoreTypeBien/{id}', [TypeBienController::class, 'restoreTypeBien'])->name('restoreTypeBien');
     Route::get('getTrashedTypesBien', [TypeBienController::class, 'getTrashedTypesBien'])->name('getTrashedTypesBien');
+    Route::get('TypeBiens/{projet_id}', [TypeBienController::class,'index'])->name('TypeBiens');
+
     /*************************************Visite***************************** */
     Route::resource('visite',VisiteController::class);
     Route::post('addLinkedVisite/{id}',[VisiteController::class,'addLinkedVisite'])->name('addLinkedVisite');
@@ -144,7 +147,12 @@ Route::middleware('auth:api')->group(function () {
 
     /*************************************Vue***************************** */
     Route::resource('vue', VueController::class);
+    Route::get('get_vuesByProjet/{id}', [VueController::class, 'get_vuesByProjet'])->name('get_vuesByProjet');
+    Route::get('vues/{projet_id}', [VueController::class,'index'])->name('vues');
 
     /*************************************Typologie***************************** */
     Route::resource('typologie', TypologieController::class);
+    Route::get('get_typologiesByProjet/{id}', [TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');
+    Route::get('typologies/{projet_id}', [TypologieController::class,'index'])->name('typologies');
+
 });
