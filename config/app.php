@@ -30,6 +30,7 @@ return [
     */
 
     'env' => env('APP_ENV', 'production'),
+    'default_item_number_perpage' => '5',
 
     /*
     |--------------------------------------------------------------------------

@@ -31,7 +31,7 @@ class SocieteController extends Controller
     public function index(Request $request)
     {
         if (RoleHelper::Superadmin()) {
-            $perPage = $request->input('pageSize', 5); // Get the number of items per page
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
 
             $societes = Societe::orderBy('created_at', 'desc')

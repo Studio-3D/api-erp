@@ -47,7 +47,7 @@ class ProjetController extends Controller
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', 5); // Get the number of items per page
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
             $projets = Projet::on('temp')->orderBy('created_at', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
@@ -56,7 +56,7 @@ class ProjetController extends Controller
         } else if (RoleHelper::Com()) {
             DatabaseHelper::Config();
 
-            $perPage = $request->input('pageSize', 5); // Get the number of items per page
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
 
             $id_auth=Auth::guard('api')->user()->id;
