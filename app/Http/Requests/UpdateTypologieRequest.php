@@ -6,6 +6,7 @@ use App\Http\Helpers\DatabaseHelper;
 use App\Models\Societe;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class UpdateTypologieRequest extends FormRequest
 {
@@ -25,14 +26,17 @@ class UpdateTypologieRequest extends FormRequest
     public function rules(): array
     {
         $societe_id = Auth::guard('api')->user()->societe_id;
-        $societe=Societe::findOrfail( $societe_id);
-        $DatabaseName='Erp_'.$societe->raison_sociale.'_'.$societe_id;
+        $societe = Societe::findOrfail($societe_id);
+        $DatabaseName = 'Erp_' . $societe->raison_sociale . '_' . $societe_id;
         DatabaseHelper::Config();
         return [
-            'typologie'=>['required',Rule::unique('temp.'.$DatabaseName.'.typologies','typologie')
-                ->where('projet_id',$this->typologie->projet_id)
-                ->ignore($this->typologie)],
-            'projet_id'=>'required|integer',
+            'typologie' => ['required', Rule::unique('temp.' . $DatabaseName . '.typologies', 'typologie')
+                    ->where(function ($query) {
+                        $query->where('typologie', $this->typologie)
+                            ->where('projet_id', $this->projet_id);}),
+            ],
+            'projet_id' => 'integer',
+
         ];
     }
     public function messages(): array

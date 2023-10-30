@@ -23,7 +23,7 @@ class Bien extends Model
     ]; */
     protected $dates = ['deleted_at'];
 
-    protected $with = ['typeBien', 'projet', 'tranche', 'bloc', 'immeuble'];
+    protected $with = ['typeBien', 'projet', 'tranche', 'bloc', 'immeuble','typologie','vue'];
     public function typeBien()
     {
         return $this->belongsTo(TypeBien::class, 'type_id');

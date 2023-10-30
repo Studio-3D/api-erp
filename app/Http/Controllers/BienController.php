@@ -3,35 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Enum\EtatBien;
+use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\HistoriqueBienHelper;
+use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreBienRequest;
 use App\Http\Requests\UpdateBienRequest;
 use App\Models\Bien;
 use App\Models\HistoriqueBien;
-use Illuminate\Support\Facades\Auth;
-use App\Http\Helpers\DatabaseHelper;
-use App\Http\Helpers\RoleHelper;
 use Illuminate\Http\Request;
-use DB;
-
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class BienController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request,$projet_id)
+    public function index(Request $request, $projet_id)
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', 5); // Get the number of items per page
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
             $biens = Bien::on('temp')
-            ->orderBy('created_at', 'desc')
-            ->where('projet_id', $projet_id)
-            ->paginate($perPage, ['*'], 'page', $page);
+                ->orderBy('created_at', 'desc')
+                ->where('projet_id', $projet_id)
+                ->paginate($perPage, ['*'], 'page', $page);
             return response()->json(['biens' => $biens], 200);
-
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -91,8 +89,8 @@ class BienController extends Controller
             $bien->tranche_id = $request->tranche_id;
             $bien->bloc_id = $request->bloc_id;
             $bien->immeuble_id = $request->immeuble_id;
-            /* $bien->vue_id=$request->vue_id;
-            $bien->typologie_id=$request->typologie_id; */
+            $bien->vue_id = $request->vue_id;
+            $bien->typologie_id = $request->typologie_id;
             $bien->save();
 
             return response()->json(['message' => $bien], 200);
@@ -105,7 +103,7 @@ class BienController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show( $id)
+    public function show($id)
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
@@ -119,7 +117,7 @@ class BienController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit( $id)
+    public function edit($id)
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
@@ -133,13 +131,13 @@ class BienController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateBienRequest $request,  $id)
+    public function update(UpdateBienRequest $request, $id)
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $bien = bien::on('temp')->findOrfail($id);
             $update = $request->all();
-            foreach($update as $key => $value) {
+            foreach ($update as $key => $value) {
                 $bien->$key = $value;
             }
             $bien->save();
@@ -153,7 +151,7 @@ class BienController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy( $id)
+    public function destroy($id)
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
@@ -199,7 +197,7 @@ class BienController extends Controller
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $bien = Bien::on('temp')->findOrFail($bien_id);
-            $bien->etat=EtatBien::BLOQUE->value;
+            $bien->etat = EtatBien::BLOQUE->value;
             $bien->save();
             HistoriqueBienHelper::createHistoriqueBien(4, "bloquer", $bien_id, Auth::guard('api')->user()->id,NULL,NULL);
 
@@ -215,7 +213,7 @@ class BienController extends Controller
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $bien = Bien::on('temp')->findOrFail($bien_id);
-            $bien->etat=EtatBien::RESERVATION->value;;
+            $bien->etat = EtatBien::RESERVATION->value;
             $bien->save();
             HistoriqueBienHelper::createHistoriqueBien(3, "reserver", $bien_id, Auth::guard('api')->user()->id,NULL,NULL);
             return response()->json(['message' => $bien], 200);
@@ -230,7 +228,7 @@ class BienController extends Controller
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $bien = Bien::on('temp')->findOrFail($bien_id);
-            $bien->etat=EtatBien::PRE_RESERVATION->value;;
+            $bien->etat = EtatBien::PRE_RESERVATION->value;
             $bien->save();
             HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id,NULL,NULL);
             return response()->json(['message' => $bien], 200);
@@ -245,7 +243,7 @@ class BienController extends Controller
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $bien = Bien::on('temp')->findOrFail($bien_id);
-            $bien->etat=EtatBien::DISPONIBLE->value;;
+            $bien->etat = EtatBien::DISPONIBLE->value;
             $bien->save();
             HistoriqueBienHelper::createHistoriqueBien(1, "liberer", $bien_id, Auth::guard('api')->user()->id,NULL,NULL);
 
@@ -265,6 +263,155 @@ class BienController extends Controller
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function getBiensByProjet($projet_id)
+    {
+
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $biens = Bien::on('temp')->where('projet_id', $projet_id)->get();
+            return response()->json(['biens' => $biens], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    }
+    public function getBiensByTranche($tranche_id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $biens = Bien::on('temp')->where('tranche_id', $tranche_id)->get();
+            return response()->json(['message' => $biens], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    }
+
+    public function getBiensByBloc($bloc_id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $biens = Bien::on('temp')->where('bloc_id', $bloc_id)->get();
+            return response()->json(['message' => $biens], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    }
+
+    public function getBiensByImmeuble($immeuble_id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $biens = Bien::on('temp')->where('immeuble_id', $immeuble_id)->get();
+            return response()->json(['message' => $biens], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    }
+
+    public function getBiensDispoByProjet($projet_id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $biens = Bien::on('temp')->where('projet_id', $projet_id)->where('etat', EtatBien::DISPONIBLE->name)->get();
+            return response()->json(['message' => $biens], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    }
+
+    public function getBiensDispoByTranche($tranche_id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $biens = Bien::on('temp')->where('tranche_id', $tranche_id)->where('etat', EtatBien::DISPONIBLE->name)->get();
+            return response()->json(['message' => $biens], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    }
+    public function getBiensDispoByBloc($bloc_id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $biens = Bien::on('temp')->where('bloc_id', $bloc_id)->where('etat', EtatBien::DISPONIBLE->name)->get();
+            return response()->json(['message' => $biens], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    }
+    public function getBiensDispoByImmeuble($immeuble_id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $biens = Bien::on('temp')->where('immeuble_id', $immeuble_id)->where('etat', EtatBien::DISPONIBLE->name)->get();
+            return response()->json(['message' => $biens], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+
+    }
+    public function setPropostionBien($bien_id,$old_id){
+        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+
+            if($old_id==0){
+                $bien = Bien::on('temp')->findOrFail($bien_id);
+                $bien->etat=EtatBien::ENCOURS_DE_PROPOSITION->value;
+                $bien->save();
+                HistoriqueBienHelper::createHistoriqueBien(6, "encours de proposition", $bien_id, Auth::guard('api')->user()->id,NULL,NULL);
+            }
+            else{
+                $old_bien=Bien::on('temp')->findOrFail($old_id);
+                $old_bien->etat=EtatBien::DISPONIBLE->name;
+                if($old_bien->save()){
+                    $bien = Bien::on('temp')->findOrFail($bien_id);
+                    $bien->etat=EtatBien::ENCOURS_DE_PROPOSITION->value;
+                    $bien->save();
+                    HistoriqueBienHelper::createHistoriqueBien(6, "encours de proposition", $bien_id, Auth::guard('api')->user()->id,NULL,NULL);
+                }
+            }
+         return response()->json(['message' => $bien], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+    }
+
+
+
+
+
+    public function getEtatBien($bien_id){
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+
+            $bien = Bien::on('temp')
+                ->findOrFail($bien_id);
+            return response()->json(['bienEtat' => $bien->etat], 200);
+
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
         }
     }
 
@@ -369,119 +516,4 @@ class BienController extends Controller
         }
     }
 
-    public function getBiensByTranche($tranche_id){
-        if (RoleHelper::AdminSup()) {
-            DatabaseHelper::Config();
-            $biens = Bien::on('temp')->where('tranche_id', $tranche_id)->get();
-            return response()->json(['message' => $biens], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-    }
-
-    public function getBiensByBloc($bloc_id){
-        if (RoleHelper::AdminSup()) {
-            DatabaseHelper::Config();
-            $biens = Bien::on('temp')->where('bloc_id', $bloc_id)->get();
-            return response()->json(['message' => $biens], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-    }
-
-    public function getBiensByImmeuble($immeuble_id){
-        if (RoleHelper::AdminSup()) {
-            DatabaseHelper::Config();
-            $biens = Bien::on('temp')->where('immeuble_id', $immeuble_id)->get();
-            return response()->json(['message' => $biens], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-    }
-
-    public function getBiensDispoByProjet($projet_id){
-        if (RoleHelper::AdminSup()) {
-            DatabaseHelper::Config();
-            $biens = Bien::on('temp')->where('projet_id', $projet_id)->where('etat', EtatBien::DISPONIBLE->name)->get();
-            return response()->json(['message' => $biens], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-    }
-
-    public function getBiensDispoByTranche($tranche_id){
-        if (RoleHelper::AdminSup()) {
-            DatabaseHelper::Config();
-            $biens = Bien::on('temp')->where('tranche_id', $tranche_id)->where('etat', EtatBien::DISPONIBLE->name)->get();
-            return response()->json(['message' => $biens], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-    }
-    public function getBiensDispoByBloc($bloc_id){
-        if (RoleHelper::AdminSup()) {
-            DatabaseHelper::Config();
-            $biens = Bien::on('temp')->where('bloc_id', $bloc_id)->where('etat',  EtatBien::DISPONIBLE->name)->get();
-            return response()->json(['message' => $biens], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-    }
-    public function getBiensDispoByImmeuble($immeuble_id){
-        if (RoleHelper::AdminSup()) {
-            DatabaseHelper::Config();
-            $biens = Bien::on('temp')->where('immeuble_id', $immeuble_id)->where('etat',  EtatBien::DISPONIBLE->name)->get();
-            return response()->json(['message' => $biens], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-
-    }
-    public function setPropostionBien($bien_id,$old_id){
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
-            DatabaseHelper::Config();
-
-            if($old_id==0){
-                $bien = Bien::on('temp')->findOrFail($bien_id);
-                $bien->etat=EtatBien::ENCOURS_DE_PROPOSITION->value;
-                $bien->save();
-                HistoriqueBienHelper::createHistoriqueBien(6, "encours de proposition", $bien_id, Auth::guard('api')->user()->id,NULL,NULL);
-            }
-            else{
-                $old_bien=Bien::on('temp')->findOrFail($old_id);
-                $old_bien->etat=EtatBien::DISPONIBLE->name;
-                if($old_bien->save()){
-                    $bien = Bien::on('temp')->findOrFail($bien_id);
-                    $bien->etat=EtatBien::ENCOURS_DE_PROPOSITION->value;
-                    $bien->save();
-                    HistoriqueBienHelper::createHistoriqueBien(6, "encours de proposition", $bien_id, Auth::guard('api')->user()->id,NULL,NULL);
-                }
-            }
-         return response()->json(['message' => $bien], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
-        }
-
-
-
-    }
-
-
-
+}

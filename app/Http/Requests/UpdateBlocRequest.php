@@ -31,7 +31,7 @@ class UpdateBlocRequest extends FormRequest
         DatabaseHelper::Config();
         return [
             'projet_id' => 'integer',
-            'tranche_id' => 'integer',
+            'tranche_id' => 'integer|nullable',
             'nbre_immeubles' => 'integer',
             'nbre_biens' => 'integer',
             'nom' => [ Rule::unique('temp.'.$DatabaseName.'.blocs','nom')->where(function ($query) {

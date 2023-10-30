@@ -1,7 +1,7 @@
 <?php
 
 use App\Enum\InteretEnum;
-use App\Enum\StatutEnum;
+use App\Enum\StatutVisiteEnum;
 use App\Enum\TypeNotificationEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -22,7 +22,7 @@ return new class extends Migration
             $table->enum('interet',[InteretEnum::INTERESSE->name,InteretEnum::RECEPCTIF->name,InteretEnum::PERDU->name]);
             $table->enum('mode_relance',[TypeNotificationEnum::SMS->name,TypeNotificationEnum::APPEL->name,TypeNotificationEnum::EMAIL->name,TypeNotificationEnum::WHATSAPP->name])->nullable();
             $table->date('date_relance')->nullable();
-            $table->enum('statut',[StatutEnum::PRE_RESERVATION->name,StatutEnum::VENDU->name,StatutEnum::PRE_RESERVATION_PERDU->name])->nullable();
+            $table->enum('statut',[StatutVisiteEnum::PRE_RESERVATION->name,StatutVisiteEnum::VENDU->name,StatutVisiteEnum::PRE_RESERVATION_PERDU->name])->nullable();
             $table->dateTime('rdv')->nullable();
             $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
             $table->foreignId('source_id')->nullable()->constrained('sources')->onDelete('cascade');
@@ -40,6 +40,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('visite');
+        Schema::dropIfExists('visites');
     }
 };

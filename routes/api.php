@@ -1,12 +1,18 @@
 <?php
 
+use App\Http\Controllers\AquereurController;
+use App\Http\Controllers\AvanceController;
+use App\Http\Controllers\BanqueController;
 use App\Http\Controllers\BienController;
 use App\Http\Controllers\BlocController;
+use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CompositionBienController;
 use App\Http\Controllers\FreinController;
 use App\Http\Controllers\ImmeubleController;
+use App\Http\Controllers\PiecesJointeController;
 use App\Http\Controllers\ProjetController;
 use App\Http\Controllers\ProspectController;
+use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\SocieteController;
 use App\Http\Controllers\SourceController;
 use App\Http\Controllers\TrancheController;
@@ -34,10 +40,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
-
 });
 
 Route::post('login', [UserController::class, 'login'])->name('login');
+Route::post('/validateToken/{token}', [UserController::class, 'validateToken']);
 
 //Route::post('register', [UserController::class, 'register'])->name('register');
 
@@ -63,7 +69,10 @@ Route::middleware('auth:api')->group(function () {
     Route::post('logout', [UserController::class, 'logout'])->name('logout');
     Route::post('addUserProjet/{id}', [UserController::class, 'addUserProjet'])->name('addUserProjet');
     Route::get('get_users', [UserController::class, 'get_users'])->name('get_users');
+    Route::post('sendEmail', [UserController::class, 'sendEmail']);
+    Route::post('resendEmail', [UserController::class, 'resendEmail']);
 
+    Route::post('/resetPassword/{token}', [UserController::class, 'resetPassword']);
 
 
     /*************************************Projet***************************** */
@@ -77,14 +86,14 @@ Route::middleware('auth:api')->group(function () {
     Route::get('get_projets', [ProjetController::class, 'get_projets'])->name('get_projets');
     /*************************************Tranche***************************** */
     Route::resource('tranche', TrancheController::class);
-    Route::get('tranches/{projet_id}', [TrancheController::class,'index'])->name('tranches');
+    Route::get('tranches/{projet_id}', [TrancheController::class, 'index'])->name('tranches');
     Route::post('restoreTranche/{id}', [TrancheController::class, 'restoreTranche'])->name('restoreTranche');
     Route::get('getTrashedTranches', [TrancheController::class, 'getTrashedTranches'])->name('getTrashedTranches');
     Route::get('getTranchesByProjet/{id}', [TrancheController::class, 'getTranchesByProjet'])->name('getTranchesByProjet');
 
     /*************************************Bloc***************************** */
     Route::resource('bloc', BlocController::class);
-    Route::get('blocs/{projet_id}', [BlocController::class,'index'])->name('blocs');
+    Route::get('blocs/{projet_id}', [BlocController::class, 'index'])->name('blocs');
     Route::post('restoreBloc/{id}', [BlocController::class, 'restoreBloc'])->name('restoreBloc');
     Route::get('getTrashedBlocs', [BlocController::class, 'getTrashedBlocs'])->name('getTrashedBlocs');
     Route::get('getBlocsByProjet/{id}', [BlocController::class, 'getBlocsByProjet'])->name('getBlocsByProjet');
@@ -92,10 +101,11 @@ Route::middleware('auth:api')->group(function () {
 
     /*************************************Immeuble***************************** */
     Route::resource('immeuble', ImmeubleController::class);
-    Route::get('immeubles/{projet_id}', [ImmeubleController::class,'index'])->name('immeubles');
+    Route::get('immeubles/{projet_id}', [ImmeubleController::class, 'index'])->name('immeubles');
     Route::post('restoreImmeuble/{id}', [ImmeubleController::class, 'restoreImmeuble'])->name('restoreImmeuble');
     Route::get('getTrashedImmeubles', [ImmeubleController::class, 'getTrashedImmeubles'])->name('getTrashedImmeubles');
     Route::get('getImmeublesByBloc/{id}', [ImmeubleController::class, 'getImmeublesByBloc'])->name('getImmeublesByBloc');
+    Route::get('getImmeublesByProjet/{id}', [ImmeubleController::class, 'getImmeublesByProjet'])->name('getImmeublesByProjet');
 
     /*************************************Bien***************************** */
     Route::resource('bien', BienController::class);
@@ -122,21 +132,28 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getBiensDispoByTranche/{id}', [BienController::class, 'getBiensDispoByTranche'])->name('getBiensDispoByTranche');
     Route::get('getBiensDispoByProjet/{id}', [BienController::class, 'getBiensDispoByProjet'])->name('getBiensByDispoProjet');
     Route::put('setPropostionBien/{id}/{old_id}', [BienController::class, 'setPropostionBien'])->name('');
+    Route::get('getEtatBien/{id}', [BienController::class, 'getEtatBien'])->name('getEtatBien');
+    Route::get('getBiensByProjet_Concat/{id}', [BienController::class, 'getBiensByProjet_Concat'])->name('getBiensByProjet_Concat');
     /***********************************Type biens******************************** */
     Route::resource('typeBien', TypeBienController::class);
     Route::get('get_typeBiens', [TypeBienController::class, 'get_typeBiens'])->name('get_typeBiens');
+    Route::get('get_typeBiensByProjet/{id}', [TypeBienController::class, 'get_typeBiensByProjet'])->name('get_typeBiensByProjet');
     Route::post('restoreTypeBien/{id}', [TypeBienController::class, 'restoreTypeBien'])->name('restoreTypeBien');
     Route::get('getTrashedTypesBien', [TypeBienController::class, 'getTrashedTypesBien'])->name('getTrashedTypesBien');
+    Route::get('TypeBiens/{projet_id}', [TypeBienController::class,'index'])->name('TypeBiens');
+
     /*************************************Visite***************************** */
     Route::resource('visite',VisiteController::class);
     Route::get('visites/{projet_id}', [VisiteController::class,'index'])->name('visites');
     Route::post('store_n_visite/{id}',[VisiteController::class,'store_n_visite'])->name('store_n_visite');
     Route::get('getAllAttributes',[VisiteController::class,'getAllAttributes'])->name('getAllAttributes');
-     /*************************************type_Freins***************************** */
+    /*************************************type_Freins***************************** */
     Route::resource('type_freins', TypeFreinController::class);
     Route::get('get_typeFreins', [TypeFreinController::class, 'get_typeFreins'])->name('get_typeFreins');
     Route::post('restoreTypeFrein/{id}', [TypeFreinController::class, 'restoreTypeFrein'])->name('restoreTypeFrein');
-     /*************************************Prospect***************************** */
+
+    /*************************************Prospect***************************** */
+
     /*************************************Frein***************************** */
     Route::resource('frein', FreinController::class);
 
@@ -153,7 +170,8 @@ Route::middleware('auth:api')->group(function () {
 
     /*************************************Vue***************************** */
     Route::resource('vue', VueController::class);
-    Route::get('get_vuesByProjet', [VueController::class, 'get_vuesByProjet'])->name('get_vuesByProjet');
+    Route::get('get_vuesByProjet/{id}', [VueController::class, 'get_vuesByProjet'])->name('get_vuesByProjet');
+    Route::get('vues/{projet_id}', [VueController::class,'index'])->name('vues');
 
    /*************************************Partenaires***************************** */
    Route::resource('partenaire', PartenaireController::class);
@@ -165,4 +183,35 @@ Route::middleware('auth:api')->group(function () {
     Route::resource('typologie', TypologieController::class);
     Route::get('get_typologiesByProjet/{id}', [TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');
     Route::get('typologies/{projet_id}', [TypologieController::class,'index'])->name('typologies');
+    /*************************************Banque***************************** */
+    Route::resource('banque',BanqueController::class);
+
+    /*************************************Client***************************** */
+    Route::resource('client',ClientController::class);
+
+    /*************************************Aquereurs***************************** */
+    Route::resource('aquereur',AquereurController::class);
+    Route::get('aquereurs/{projet_id}', [AquereurController::class,'index'])->name('aquereurs');
+    Route::delete('destoryAquereurUsingReservationId/{reservation_id}',[AquereurController::class, 'destroyAquerreursByReservationId'])->name('destoryAquereurUsingReservationId');
+    Route::get('getAcquirerOfReservation/{reservation_id}',[AquereurController::class, 'getAquerreursByReservationId'])->name('getAcquirerOfReservation');
+    Route::get('nbOfAcquirersInReservation/{reservation_id}',[AquereurController::class, 'nbAquerreursByReservation'])->name('nbOfAcquirersInReservation');
+    /*************************************Avances***************************** */
+    Route::resource('avance', AvanceController::class);
+    Route::get('avances/{projet_id}', [AvanceController::class,'index'])->name('avances');
+    Route::delete('destoryUsingReservationId/{reservation_id}',[AvanceController::class,'destoryUsingReservationId'])->name('destoryUsingReservationId');
+    Route::put('valideAvance/{id}',[AvanceController::class,'valideAvance'])->name('valideAvance');
+    Route::put('refuseAvance/{id}',[AvanceController::class,'refuseAvance'])->name('refuseAvance');
+
+    /*************************************PiecesJointe***************************** */
+    Route::resource('piecesjointe',PiecesJointeController::class);
+    Route::get('piecesjointes/{projet_id}', [PiecesJointeController::class,'index'])->name('piecesjointes');
+    Route::delete('destoryFileUsingReservationId/{reservation_id}',[PiecesJointeController::class,'destoryFileUsingReservationId'])->name('destoryFileUsingReservationId');
+    Route::get('getFileUsingReservationId/{reservation_id}',[PiecesJointeController::class,'getFileUsingReservationId'])->name('getFileUsingReservationId');
+
+    /*************************************Reservation***************************** */
+    Route::resource('reservation',ReservationController::class);
+    Route::get('reservations/{projet_id}', [ReservationController::class,'index'])->name('reservations');
+    Route::get('getAllInformationsReservation/{id}',[ReservationController::class,'getAllInformationsReservation'])->name('getAllInformationsReservation');
+
 });
+Route::get('sendResetPasswordEmail', [UserController::class, 'sendResetPasswordEmail']);

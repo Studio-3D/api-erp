@@ -29,8 +29,20 @@ class UpdateTypeBienRequest extends FormRequest
         $DatabaseName='Erp_'.$societe->raison_sociale.'_'.$societe_id;
         DatabaseHelper::Config();
         return [
-            'type' => ['required', Rule::unique('temp.'.$DatabaseName.'.type_biens','type')->ignore($this->type_bien)],
+            'type' => ['required', Rule::unique('temp.'.$DatabaseName.'.type_biens','type')
+            ->where(function ($query) {
+                $query->where('type', $this->type)
+                    ->where('projet_id', $this->projet_id);})
+                    ],
+            'projet_id'=>'integer'
 
+        ];
+
+    }
+    public function messages(): array
+    {
+        return [
+            'type.unique' => 'Ce type de bien est deja exist dans ce projet',
         ];
     }
 }

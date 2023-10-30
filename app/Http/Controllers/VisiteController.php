@@ -638,7 +638,7 @@ class VisiteController extends Controller
      */
     public function update(UpdateVisiteRequest $request,$id)
     {
-        
+
 
         if ($request->source_txt == 'PARTENAIRE') {
             $errors = $request->validate([

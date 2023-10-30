@@ -2,16 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\TypeBien;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreTypeBienRequest;
-use App\Http\Requests\UpdateTypeBienRequest;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\RoleHelper;
+use App\Http\Requests\StoreTypeBienRequest;
+use App\Http\Requests\UpdateTypeBienRequest;
+use App\Models\TypeBien;
 use Illuminate\Http\Request;
-
-
+use Illuminate\Support\Facades\Auth;
 
 class TypeBienController extends Controller
 {
@@ -31,19 +29,37 @@ class TypeBienController extends Controller
 
     }
 
-    public function index(Request $request)
+    public function get_typeBiensByProjet($projet_id)
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', 5); // Get the number of items per page
-            $page = $request->input('page', 1);
-            $typebiens = TypeBien::on('temp')->orderBy('created_at', 'desc')
-            ->paginate($perPage, ['*'], 'page', $page);
+
+            $typebiens = TypeBien::on('temp')
+            ->orderBy('created_at', 'desc')
+            ->where('projet_id', $projet_id)
+            ->get();
             return response()->json(['typeBiens' => $typebiens]);
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
 
+    }
+
+    public function index(Request $request,$projet_id)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
+            $page = $request->input('page', 1);
+            $typeBiens = TypeBien::on('temp')
+            ->orderBy('created_at', 'desc')
+            ->where('projet_id', $projet_id)->paginate($perPage, ['*'], 'page', $page);
+            return response()->json(['typeBiens' => $typeBiens], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
     }
 
     /**
@@ -65,6 +81,7 @@ class TypeBienController extends Controller
             $typebien = new typebien();
             $typebien->setConnection('temp');
             $typebien->type = $request->type;
+            $typebien->projet_id = $request->projet_id;
             $typebien->save();
             return response()->json(['message' => $typebien], 200);
         } else {
@@ -75,7 +92,7 @@ class TypeBienController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show( $id)
+    public function show($id)
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
@@ -90,7 +107,7 @@ class TypeBienController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit( $id)
+    public function edit($id)
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
@@ -104,13 +121,13 @@ class TypeBienController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateTypeBienRequest $request,  $id)
+    public function update(UpdateTypeBienRequest $request, $id)
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $typebien = typebien::on('temp')->findOrfail($id);
             $update = $request->all();
-            foreach($update as $key => $value) {
+            foreach ($update as $key => $value) {
                 $typebien->$key = $value;
             }
             $typebien->save();
@@ -167,5 +184,7 @@ class TypeBienController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+
+    
 
 }
