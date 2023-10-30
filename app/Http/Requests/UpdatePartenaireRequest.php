@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateVisiteRequest extends FormRequest
+class UpdatePartenaireRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,11 +22,7 @@ class UpdateVisiteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'telephone' => 'required|min:10|max:14',
-            'source_id' => 'required',
-            'nom' => 'required|string',
-            'prenom' => 'required|string',
-            'interet' => 'required',
+            'description' => 'required',
         ];
     }
 }

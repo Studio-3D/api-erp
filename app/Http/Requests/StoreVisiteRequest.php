@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Auth;
     public function rules(): array
     {
         return [
-            'commentaire' => 'string|min:6',
+           /* 'commentaire' => 'string|min:6',
             'source_id' => 'integer',
             'notifie' => 'boolean',
             'type_notification'=>'integer',
@@ -47,7 +47,14 @@ use Illuminate\Support\Facades\Auth;
             'superficie_min'=>'float',
             'superficie_max'=>'float',
             'liste_attente'=>'boolean',
-            'avance'=>'float'
+            'avance'=>'float'*/
+            'telephone' => 'required|min:10|max:14',
+            'source_id' => 'required',
+            'nom' => 'required|string',
+            'prenom' => 'required|string',
+            'interet' => 'required',
+            //'commentaire' => 'string|min:6'
         ];
+
     }
 }

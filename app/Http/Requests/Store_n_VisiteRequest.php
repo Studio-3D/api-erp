@@ -2,9 +2,13 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateVisiteRequest extends FormRequest
+use App\Http\Helpers\DatabaseHelper;
+use App\Models\Societe;
+use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
+
+#[AllowDynamicProperties] class Store_n_VisiteRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,11 +26,8 @@ class UpdateVisiteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'telephone' => 'required|min:10|max:14',
-            'source_id' => 'required',
-            'nom' => 'required|string',
-            'prenom' => 'required|string',
             'interet' => 'required',
         ];
+
     }
 }

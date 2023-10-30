@@ -14,12 +14,14 @@ return new class extends Migration
         Schema::create('prospects', function (Blueprint $table) {
             $table->id();
             $table->string('cin')->unique()->nullable();
+            $table->integer('is_client')->default(0);
             $table->string('nom');
             $table->string('prenom');
             $table->string('telephone');
             $table->string('telephone_num2')->nullable();
             $table->string('email')->nullable()->unique();
-            $table->string('source');
+            $table->integer('source');
+            $table->string('origin');
             $table->timestamps();
             $table->softDeletes();
         });

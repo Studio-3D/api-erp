@@ -11,23 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('historique_biens', function (Blueprint $table) {
+        Schema::create('biens_visite_pre_reserve', function (Blueprint $table) {
             $table->id();
-            $table->string('action');
-            //1=disponible, 2=pré-réservé, 3=réservé, 4=bloqué
-            $table->string('description');
+            $table->bigInteger('code_pre_reserve');
+            $table->dateTime('date_pre_reserve');
             $table->bigInteger('bien_id')->unsigned();
             $table->foreign('bien_id')->references('id')->on('biens');
-            $table->bigInteger('user_id')->unsigned();
-            $table->foreign('user_id')->references('id')->on('users');
             $table->bigInteger('visite_id')->unsigned();
             $table->foreign('visite_id')->references('id')->on('visites');
-            $table->bigInteger('reservation_id')->unsigned();
-            $table->foreign('reservation_id')->references('id')->on('reservations');
             $table->timestamps();
             $table->softDeletes();
-            $table->index(['visite_id','reservation_id']);
         });
+
+
     }
 
     /**
@@ -35,6 +31,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::dropIfExists('biens_visite_pre_reserve');
     }
 };

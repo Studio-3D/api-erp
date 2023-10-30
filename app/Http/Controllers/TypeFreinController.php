@@ -55,6 +55,7 @@ class TypeFreinController extends Controller
      */
     public function store(StoreTypeFreinRequest $request)
     {
+
         if (RoleHelper::AdminSup()) {
 
             DatabaseHelper::Config();

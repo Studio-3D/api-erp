@@ -48,6 +48,7 @@ class ProspectController extends Controller
             $prospect->telephone=$request->telephone;
             $prospect->telephone_num2=$request->telephone_num2;
             $prospect->email=$request->email;
+            $prospect->origin=$request->origin;
             $prospect->source=$request->source;
             $prospect->save();
             return $prospect;
@@ -84,6 +85,11 @@ class ProspectController extends Controller
     {
       if(RoleHelper::ACSup()){
           DatabaseHelper::Config();
+          if($request->cin!=null){
+            $cin_exist=Prospect::on('temp')->where('cin',$request->cin)->where('id','!=',$id)->count();
+            if($cin_exist>0){
+               return response()->json(['errors' => 'Le Cin que vous avez saisi'.$request->cin.' apprtient à un autre utilisateur'], 422);
+            }}
           $prospect=Prospect::on('temp')->findOrFail($id);
           $update=$request->all();
           foreach($update as $key => $value){
@@ -117,4 +123,26 @@ class ProspectController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+    public function search_prospect_by_cin($cin)
+    {
+        if(RoleHelper::AdminSup()){
+             DatabaseHelper::Config();
+             $prospect = Prospect::on('temp')->where('cin',$cin)
+                ->firstorfail();
+            return response()->json(['prospect' => $prospect]);
+         }
+     }
+     public function search_prospect_by_phone($phone)
+    {
+        if(RoleHelper::AdminSup()){
+             DatabaseHelper::Config();
+             $prospect = Prospect::on('temp')
+             ->where(function($query) use ($phone) {
+                $query->where('telephone',$phone)
+                    ->orwhere('telephone_num2',$phone)
+                    ;})
+                ->firstorfail();
+            return response()->json(['prospect' => $prospect]);
+         }
+     }
 }

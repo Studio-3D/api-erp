@@ -58,9 +58,9 @@ class FreinController extends Controller
             $frein->setConnection('temp');
             $frein->prix_min=$request->prix_min;
             $frein->prix_max=$request->prix_max;
-            $frein->superficie_min=$request->superficie_min;
-            $frein->superficie_max=$request->superficie_max;
-            $frein->liste_attente=$request->liste_attente;
+            $frein->superficie_min=$request->sup_min;
+            $frein->superficie_max=$request->sup_max;
+            $frein->liste_attente=$request->list_att;
             $frein->avance=$request->avance;
             $frein->visite_id=$request->visite_id;
             $frein->tranche=empty($request->selectedTranches)?false:true;
@@ -73,7 +73,7 @@ class FreinController extends Controller
                 $frein->save();
                 if(!empty($request->selectedTranches)){
                     foreach($request->selectedTranches as $valeur){
-                      FreinTrancheHelper::createFreinTranche($valeur,$frein->id);
+                            FreinTrancheHelper::createFreinTranche($valeur['id'],$frein->id);
                     }
                 }
                 if(!empty($request->selectedEtages)){
@@ -88,12 +88,12 @@ class FreinController extends Controller
                 }
                 if(!empty($request->selectedTypologies)){
                     foreach($request->selectedTypologies as $valeur){
-                        FreinTypologieHelper::createFreinTypologie($valeur,$frein->id);
+                        FreinTypologieHelper::createFreinTypologie($valeur['id'],$frein->id);
                     }
                 }
                 if(!empty($request->selectedVues)){
                     foreach($request->selectedVues as $valeur){
-                        FreinVueHelper::createFreinVue($valeur,$frein->id);
+                        FreinVueHelper::createFreinVue($valeur['id'],$frein->id);
                     }
                 }
                 return response()->json(['frein' => $frein], 200);
@@ -157,21 +157,53 @@ class FreinController extends Controller
             $frein=Frein::on('temp')->findOrFail($id);
             $frein->prix_min=$request->prix_min;
             $frein->prix_max=$request->prix_max;
-            $frein->superficie_min=$request->superficie_min;
-            $frein->superficie_max=$request->superficie_max;
-            $frein->liste_attente=$request->liste_attente;
+            $frein->superficie_min=$request->sup_min;
+            $frein->superficie_max=$request->sup_max;
+            $frein->liste_attente=$request->list_att;
             $frein->avance=$request->avance;
-            $frein->tranche=!empty($request->selectedTranches)?true:false;
-            $frein->etage=!empty($request->selectedEtages)?true:false;
-            $frein->orientation=!empty($request->selectedOrientations)?true:false;
-            $frein->vue=!empty($request->selectedVues)?true:false;
-            $frein->typologie=!empty($request->selectedTypologies)?true:false;
+            //not working exactly
+
+            $frein->tranche=in_array("TRANCHE", $request->frein)?false:true;
+            $frein->etage=in_array("ETAGE", $request->frein)?false:true ;
+            $frein->orientation= in_array("ORIENTATION", $request->frein)?false:true;
+            $frein->vue=in_array("VUE", $request->frein)?false:true;
+            $frein->typologie= in_array("TYPOLOGIE", $request->frein) ?false:true;
             $frein->save();
-            $this->syncRelationship($frein, $request->selectedTranches, 'tranche', FreinTranche::class,'tranche_id');
+            FreinTrancheHelper::destroyFreinTranche($frein->id);
+            if(!empty($request->selectedTranches) && in_array("TRANCHE", $request->frein) ){
+                foreach($request->selectedTranches as $valeur){
+                        FreinTrancheHelper::createFreinTranche($valeur['id'],$frein->id);
+                }
+            }
+            FreinEtageHelper::destroyFreinEtage($frein->id);
+            if(!empty($request->selectedEtages) && in_array("ETAGE", $request->frein)){
+                foreach($request->selectedEtages as $valeur){
+                    FreinEtageHelper::createFreinEtage($valeur,$frein->id);
+                }
+            }
+            FreinOrientationHelper::destroyFreinOrientation($frein->id);
+            if(!empty($request->selectedOrientations) && in_array("ORIENTATION", $request->frein)){
+                foreach($request->selectedOrientations as $valeur){
+                    FreinOrientationHelper::createFreinOrientation($valeur,$frein->id);
+                }
+            }
+            FreinTypologieHelper::destroyFreinTypologie($frein->id);
+            if(!empty($request->selectedTypologies) && in_array("TYPOLOGIE", $request->frein)){
+                foreach($request->selectedTypologies as $valeur){
+                    FreinTypologieHelper::createFreinTypologie($valeur['id'],$frein->id);
+                }
+            }
+            FreinVueHelper::destroyFreinVue($frein->id);
+            if(!empty($request->selectedVues) && in_array("VUE", $request->frein)){
+                foreach($request->selectedVues as $valeur){
+                    FreinVueHelper::createFreinVue($valeur['id'],$frein->id);
+                }
+            }
+          /*  $this->syncRelationship($frein, $request->selectedTranches, 'tranche', FreinTranche::class,'tranche_id');
             $this->syncRelationship($frein, $request->selectedEtages, 'etage', FreinEtage::class,'etage');
             $this->syncRelationship($frein, $request->selectedOrientations, 'orientation', FreinOrientation::class,'orientation');
             $this->syncRelationship($frein, $request->selectedTypologies, 'typologie', FreinTypologie::class,'typologie_id');
-            $this->syncRelationship($frein, $request->selectedVues, 'vue', FreinVue::class,'vue_id');
+            $this->syncRelationship($frein, $request->selectedVues, 'vue', FreinVue::class,'vue_id');*/
             return response()->json(['frein'=>$frein],200);
         }
         else {
@@ -240,32 +272,37 @@ class FreinController extends Controller
 
     public function searchFreinByVisiteId($id){
         $frein=Frein::on('temp')->where('visite_id',$id)->first();
-        if($frein){
-            if($frein->value('tranche')==true)
-            {
+         if($frein){
+
                 $frein_tranches=FreinTranche::on('temp')->where('frein_id',$frein->id)->get();
-                $frein['frein_tranches']=$frein_tranches;
-            }
-            if($frein->value('etage')==true)
-            {
+                if(count($frein_tranches)>0){
+                    $frein['frein_tranches']=$frein_tranches;
+                }
+
                 $frein_etages=FreinEtage::on('temp')->where('frein_id',$frein->id)->get();
-                $frein['frein_etages']=$frein_etages;
-            }
-            if($frein->value('vue')==true)
-            {
+                if(count($frein_etages)){
+                    $frein['frein_etages']=$frein_etages;
+                }
+
+
                 $frein_vues=FreinVue::on('temp')->where('frein_id',$frein->id)->get();
-                $frein['frein_vues']=$frein_vues;
-            }
-            if($frein->value('typologie')==true)
-            {
-                $frein_typologies=FreinVue::on('temp')->where('frein_id',$frein->id)->get();
-                $frein['frein_typologies']=$frein_typologies;
-            }
-            if($frein->value('orientation')==true)
-            {
+                if(count($frein_vues)){
+                    $frein['frein_vues']=$frein_vues;
+                }
+
+
+
+                $frein_typologies=FreinTypologie::on('temp')->where('frein_id',$frein->id)->get();
+                if(count($frein_typologies)){
+                    $frein['frein_typologies']=$frein_typologies;
+                }
+
                 $frein_orientations=FreinOrientation::on('temp')->where('frein_id',$frein->id)->get();
-                $frein['frein_orientations']=$frein_orientations;
-            }
+                if(count($frein_orientations)){
+                    $frein['frein_orientations']=$frein_orientations;
+                }
+
+
             return $frein;
         }
         else
