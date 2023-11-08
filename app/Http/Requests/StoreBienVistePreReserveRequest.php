@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateFreinRequest extends FormRequest
+class StoreBienVistePreReserveRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,12 +22,10 @@ class UpdateFreinRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'prix_min'=>'float',
-            'prix_max'=>'float',
-            'superficie_min'=>'float',
-            'superficie_max'=>'float',
-            'avance'=>'float',
-            'visite_id'=>'required|integer',
+            'visite_id'=>'required',
+            'bien_id'=>'required',
+            'code_pre_reserve'=>'required',
+            'date_pre_reserve'=>'required',
         ];
     }
 }

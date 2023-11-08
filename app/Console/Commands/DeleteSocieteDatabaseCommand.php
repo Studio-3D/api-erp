@@ -17,7 +17,7 @@ class DeleteSocieteDatabaseCommand extends Command
     protected $signature = 'app:delete-societe-database-command';
 
     /**
-     * The console command description.
+     *% The console command description.
      *
      * @var string
      */
