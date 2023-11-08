@@ -170,9 +170,12 @@ Route::middleware('auth:api')->group(function () {
 
     /*************************************Banque***************************** */
     Route::resource('banque',BanqueController::class);
+    Route::get('get_banques', [BanqueController::class, 'get_banques'])->name('get_banques');
 
     /*************************************Client***************************** */
     Route::resource('client',ClientController::class);
+    Route::get('get_clients', [ClientController::class, 'get_clients'])->name('get_clients');
+
 
     /*************************************Aquereurs***************************** */
     Route::resource('aquereur',AquereurController::class);
@@ -197,7 +200,7 @@ Route::middleware('auth:api')->group(function () {
     Route::resource('reservation',ReservationController::class);
     Route::get('reservations/{projet_id}', [ReservationController::class,'index'])->name('reservations');
     Route::get('getAllInformationsReservation/{id}',[ReservationController::class,'getAllInformationsReservation'])->name('getAllInformationsReservation');
-
+    Route::get('getReservationssByProjet/{id}',[ReservationController::class,'getReservationssByProjet'])->name('getReservationssByProjet');
     Route::get('get_typologiesByProjet/{id}', [TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');
     Route::get('typologies/{projet_id}', [TypologieController::class,'index'])->name('typologies');
 });
