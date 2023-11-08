@@ -8,18 +8,32 @@ use App\Http\Requests\StoreSourceRequest;
 use App\Http\Requests\UpdateSourceRequest;
 use App\Models\Source;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 
 class SourceController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         if(RoleHelper::ACSup()){
             DatabaseHelper::Config();
-            $sources=Source::on('temp')->get();
-            return response()->json(['sources',$sources],200);
+            $perPage = $request->input('pageSize', 5); // Get the number of items per page
+            $page = $request->input('page', 1);
+            $sources = Source::on('temp')->orderBy('created_at', 'desc')
+                ->paginate($perPage, ['*'], 'page', $page);
+            return response()->json(['sources' => $sources],200);
+        }
+       else  return response()->json(['error'=>'Unauthorized'], 401);
+    }
+    public function get_sources()
+    {
+        if(RoleHelper::ACSup()){
+            DatabaseHelper::Config();
+            $sources = Source::on('temp')->orderBy('created_at', 'desc')
+                ->get();
+            return response()->json(['sources' => $sources],200);
         }
        else  return response()->json(['error'=>'Unauthorized'], 401);
     }

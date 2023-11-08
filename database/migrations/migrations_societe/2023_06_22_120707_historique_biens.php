@@ -20,6 +20,10 @@ return new class extends Migration
             $table->foreign('bien_id')->references('id')->on('biens');
             $table->bigInteger('user_id')->unsigned();
             $table->foreign('user_id')->references('user_id_origin')->on('users');
+            $table->bigInteger('visite_id')->unsigned();
+            $table->foreign('visite_id')->references('id')->on('visites');
+            $table->bigInteger('reservation_id')->unsigned();
+            $table->foreign('reservation_id')->references('id')->on('reservations');
             $table->timestamps();
             $table->softDeletes();
         });

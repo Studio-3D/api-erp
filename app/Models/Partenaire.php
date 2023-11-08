@@ -6,16 +6,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class FreinTranche extends Model
+class Partenaire extends Model
 {
     use HasFactory;
     use SoftDeletes;
 
-    protected $table='frein_tranches';
+    protected $table='partenaires';
     protected $dates=['deleted_at'];
-    protected $with = ['tranche'];
-    public function tranche()
-    {
-        return $this->belongsTo(Tranche::class,  'tranche_id');
+
+    public function projet(){
+        return $this->belongsTo(Projet::class,'projet_id');
     }
+
 }
