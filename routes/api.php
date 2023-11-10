@@ -134,7 +134,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getBiensDispoByProjet/{id}', [BienController::class, 'getBiensDispoByProjet'])->name('getBiensByDispoProjet');
     Route::put('setPropostionBien/{id}/{old_id}', [BienController::class, 'setPropostionBien'])->name('');
     Route::get('getEtatBien/{id}', [BienController::class, 'getEtatBien'])->name('getEtatBien');
-    Route::get('getBiensByProjet_Concat/{id}', [BienController::class, 'getBiensByProjet_Concat'])->name('getBiensByProjet_Concat');
     /***********************************Type biens******************************** */
     Route::resource('typeBien', TypeBienController::class);
     Route::get('get_typeBiens', [TypeBienController::class, 'get_typeBiens'])->name('get_typeBiens');
