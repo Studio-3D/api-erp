@@ -69,6 +69,7 @@ class BienController extends Controller
             $bien->superficie_box = $request->superficie_box;
             $bien->superficie_terrasse = $request->superficie_terrasse;
             $bien->superficie_jardin = $request->superficie_jardin;
+            $bien->superficie_jardin_calculer = $request->superficie_jardin_calculer;
             $bien->titre_foncier = $request->titre_foncier;
             $bien->avance_minimale = $request->avance_minimale;
             $bien->etat = $request->etat;
@@ -79,9 +80,16 @@ class BienController extends Controller
             $bien->immeuble_id = $request->immeuble_id;
             $bien->vue_id = $request->vue_id;
             $bien->typologie_id = $request->typologie_id;
+            $bien->prix_parking = $request->prix_parking;
+            $bien->num_parking = $request->num_parking;
+            $bien->num_box = $request->num_box;
+            $bien->prix_box = $request->prix_box;
+            $bien->superficie_terrasse_calculer = $request->superficie_terrasse_calculer;
+            $bien->superficie_balcon_calculer = $request->superficie_balcon_calculer;
+            $bien->superficie_balcon = $request->superficie_balcon;
             $bien->save();
 
-            return response()->json(['message' => $bien], 200);
+            return response()->json(['bien' => $bien], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

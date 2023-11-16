@@ -107,6 +107,7 @@ class ProjetController extends Controller
             $projet->nbre_tranches = $request->nbre_tranches ?: 0;
             $projet->nbre_blocs = $request->nbre_blocs ?: 0;
             $projet->nbre_immeubles = $request->nbre_immeubles ?: 0;
+            $projet->max_etages = $request->max_etages;
             $projet->nbre_biens = $request->nbre_biens ?: 0;
             if($request->verification==true){
                     if($projet->save()){
@@ -209,7 +210,7 @@ class ProjetController extends Controller
             $projet->nbre_blocs = $request->nbre_blocs ?: 0;
             $projet->nbre_immeubles = $request->nbre_immeubles ?: 0;
             $projet->nbre_biens = $request->nbre_biens ?: 0;
-
+            $projet->max_etages = $request->max_etages;
             if($projet->save()){
                 $user_projets=UserProjet::on('temp')->where('projet_id',$id)->delete();
                 $all=0;
