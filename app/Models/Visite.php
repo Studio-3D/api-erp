@@ -17,11 +17,13 @@ class Visite extends Model
     protected $table='visites';
     protected $dates=['deleted_at'];
     protected $casts=['rdv'=>'datetime:Y-m-d\TH:i'];
+    protected $with=['prospect','bien','source','user','historique_bien_visite','partenaire'];
 
     public function user()
     {
         return $this->belongsTo(User::class,'user_id');
     }
+
     public function prospect()
     {
         return $this->belongsTo(Prospect::class,'prospect_id');
@@ -34,4 +36,12 @@ class Visite extends Model
     public function source(){
         return $this->belongsTo(Source::class,'source_id');
     }
+    public function partenaire(){
+        return $this->belongsTo(Partenaire::class,'partenaire_id');
+    }
+    public function historique_bien_visite()
+    {
+        return $this->hasone(HistoriqueBien::class,'bien_id','bien_id')->where('action',5)->orderby('created_at','desc')->latest();
+    }
+
 }

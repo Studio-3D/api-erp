@@ -1,10 +1,12 @@
 <?php
 
 namespace App\Http\Requests;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateFreinRequest extends FormRequest
+class StorePartenaireRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -17,17 +19,14 @@ class UpdateFreinRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
+    * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
+
      */
     public function rules(): array
     {
         return [
-            'prix_min'=>'float',
-            'prix_max'=>'float',
-            'superficie_min'=>'float',
-            'superficie_max'=>'float',
-            'avance'=>'float',
-            'visite_id'=>'required|integer',
+            'description' =>'required',
+            'projet_id'=>'required',
         ];
     }
 }

@@ -36,7 +36,8 @@ class UpdateProspectRequest extends FormRequest
             'telephone_num2' => 'string',
             'email'=>'string',
             'source'=>'string',
-            'cin' => ['required', Rule::unique('temp.'.$DatabaseName.'.prospects','cin')->ignore($this->prospect)],
+            'cin'=>'required',
+           // 'cin' => ['required', Rule::unique('temp.'.$DatabaseName.'.prospects','cin')->ignore($this->prospect)],
         ];
     }
 

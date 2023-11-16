@@ -13,4 +13,9 @@ class FreinTypologie extends Model
 
     protected $table='frein_typologies';
     protected $dates=['deleted_at'];
+    protected $with = ['typologie'];
+    public function typologie()
+    {
+        return $this->belongsTo(Typologie::class,  'typologie_id');
+    }
 }
