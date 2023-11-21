@@ -13,4 +13,9 @@ class FreinVue extends Model
 
     protected $table='frein_vues';
     protected $dates=['deleted_at'];
+    protected $with = ['vue'];
+    public function vue()
+    {
+        return $this->belongsTo(Vue::class,  'vue_id');
+    }
 }

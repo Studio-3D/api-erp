@@ -23,7 +23,7 @@ class Bien extends Model
     ]; */
     protected $dates = ['deleted_at'];
 
-    protected $with = ['typeBien', 'projet', 'tranche', 'bloc', 'immeuble','typologie','vue'];
+    protected $with = ['typeBien', 'projet', 'tranche', 'bloc', 'immeuble','typologie','vue','is_proposed'];
     public function typeBien()
     {
         return $this->belongsTo(TypeBien::class, 'type_id');
@@ -55,4 +55,12 @@ class Bien extends Model
         return $this->belongsTo(Typologie::class, 'typologie_id');
     }
 
+    public function is_proposed()
+    {
+        return $this->hasone(HistoriqueBien::class,'bien_id')->where('action',6)->orderby('created_at','desc')->latest();
+    }
+    public function historique_bien_pre_reserve()
+    {
+        return $this->hasone(HistoriqueBien::class,'bien_id')->where('action',5)->orderby('created_at','desc')->latest();
+    }
 }

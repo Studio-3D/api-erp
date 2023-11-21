@@ -22,9 +22,11 @@ use App\Http\Controllers\TypeProjetController;
 use App\Http\Controllers\TypologieController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VisiteController;
+use App\Http\Controllers\PartenaireController;
 use App\Http\Controllers\VueController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\EnumController;
 
 /*
 |--------------------------------------------------------------------------
@@ -83,7 +85,6 @@ Route::middleware('auth:api')->group(function () {
     Route::post('restoreTypeProjet/{id}', [TypeProjetController::class, 'restoreTypeProjet'])->name('restoreTypeBien');
     Route::get('getTrashedTypesProjet', [TypeProjetController::class, 'getTrashedTypesProjet'])->name('getTrashedTypesProjet');
     Route::get('get_projets', [ProjetController::class, 'get_projets'])->name('get_projets');
-
     /*************************************Tranche***************************** */
     Route::resource('tranche', TrancheController::class);
     Route::get('tranches/{projet_id}', [TrancheController::class, 'index'])->name('tranches');
@@ -109,12 +110,13 @@ Route::middleware('auth:api')->group(function () {
 
     /*************************************Bien***************************** */
     Route::resource('bien', BienController::class);
-    Route::get('biens/{projet_id}', [BienController::class, 'index'])->name('biens');
+    Route::get('biens/{projet_id}', [BienController::class,'index'])->name('biens');
+    Route::get('biensProposition/{projet_id}', [BienController::class,'biens_proposition'])->name('');
     Route::post('restoreBien/{id}', [BienController::class, 'restoreBien'])->name('restoreBien');
     Route::get('getTrashedBiens', [BienController::class, 'getTrashedBiens'])->name('getTrashedBiens');
     Route::put('bloquerBien/{id}', [BienController::class, 'bloquerBien'])->name('bloquerBien');
     Route::put('reserverBien/{id}', [BienController::class, 'reserverBien'])->name('reserverBien');
-    Route::put('prereserverBien/{id}', [BienController::class, 'prereserverBien'])->name('prereserverBien');
+    Route::put('prereserverBien/{id}/{visite_id}', [BienController::class, 'prereserverBien'])->name('prereserverBien');
     Route::put('libererBien/{id}', [BienController::class, 'libererBien'])->name('libererBien');
     Route::get('getHistoriqueBien/{id}', [BienController::class, 'getHistoriqueBien'])->name('getHistoriqueBien');
     Route::resource('compositionBien', CompositionBienController::class);
@@ -122,6 +124,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getTrashedCompositionBiens', [CompositionBienController::class, 'getTrashedCompositionBiens'])->name('getTrashedCompositionBiens');
     Route::get('getComposition/{id}', [CompositionBienController::class, 'getComposition'])->name('getComposition');
     Route::get('getBiensByProjet/{id}', [BienController::class, 'getBiensByProjet'])->name('getBiensByProjet');
+    Route::get('getBiensByProjet_Concat/{id}', [BienController::class, 'getBiensByProjet_Concat'])->name('getBiensByProjet_Concat');
     Route::get('getBiensByTranche/{id}', [BienController::class, 'getBiensByTranche'])->name('getBiensByTranche');
     Route::get('getBiensByBloc/{id}', [BienController::class, 'getBiensByBloc'])->name('getBiensByBloc');
     Route::get('getBiensByImmeuble/{id}', [BienController::class, 'getBiensByImmeuble'])->name('getBiensByImmeuble');
@@ -129,9 +132,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getBiensDispoByBloc/{id}', [BienController::class, 'getBiensDispoByBloc'])->name('getBiensDispoByBloc');
     Route::get('getBiensDispoByTranche/{id}', [BienController::class, 'getBiensDispoByTranche'])->name('getBiensDispoByTranche');
     Route::get('getBiensDispoByProjet/{id}', [BienController::class, 'getBiensDispoByProjet'])->name('getBiensByDispoProjet');
-    Route::put('setPropostionBien/{id}', [BienController::class, 'setPropostionBien'])->name('setPropostionBien');
+    Route::put('setPropostionBien/{id}/{old_id}', [BienController::class, 'setPropostionBien'])->name('');
     Route::get('getEtatBien/{id}', [BienController::class, 'getEtatBien'])->name('getEtatBien');
-    Route::get('getBiensByProjet_Concat/{id}', [BienController::class, 'getBiensByProjet_Concat'])->name('getBiensByProjet_Concat');
     /***********************************Type biens******************************** */
     Route::resource('typeBien', TypeBienController::class);
     Route::get('get_typeBiens', [TypeBienController::class, 'get_typeBiens'])->name('get_typeBiens');
@@ -141,9 +143,10 @@ Route::middleware('auth:api')->group(function () {
     Route::get('TypeBiens/{projet_id}', [TypeBienController::class,'index'])->name('TypeBiens');
 
     /*************************************Visite***************************** */
-    Route::resource('visite', VisiteController::class);
-    Route::post('addLinkedVisite/{id}', [VisiteController::class, 'addLinkedVisite'])->name('addLinkedVisite');
-    Route::get('getAllAttributes', [VisiteController::class, 'getAllAttributes'])->name('getAllAttributes');
+    Route::resource('visite',VisiteController::class);
+    Route::get('visites/{projet_id}', [VisiteController::class,'index'])->name('visites');
+    Route::post('store_n_visite/{id}',[VisiteController::class,'store_n_visite'])->name('store_n_visite');
+    Route::get('getAllAttributes',[VisiteController::class,'getAllAttributes'])->name('getAllAttributes');
     /*************************************type_Freins***************************** */
     Route::resource('type_freins', TypeFreinController::class);
     Route::get('get_typeFreins', [TypeFreinController::class, 'get_typeFreins'])->name('get_typeFreins');
@@ -155,19 +158,31 @@ Route::middleware('auth:api')->group(function () {
     Route::resource('frein', FreinController::class);
 
     /*************************************Prospect***************************** */
-    Route::resource('prospect', ProspectController::class);
+    Route::resource('prospect',ProspectController::class);
+    Route::get('search_prospect_by_cin/{cin}', [ProspectController::class, 'search_prospect_by_cin']);
+    Route::get('search_prospect_by_phone/{cin}', [ProspectController::class, 'search_prospect_by_phone']);
+
 
     /*************************************Source***************************** */
-    Route::resource('source', SourceController::class);
+    Route::resource('sources',SourceController::class);
+    Route::get('get_sources', [SourceController::class, 'get_sources'])->name('get_sources');
+
 
     /*************************************Vue***************************** */
     Route::resource('vue', VueController::class);
     Route::get('get_vuesByProjet/{id}', [VueController::class, 'get_vuesByProjet'])->name('get_vuesByProjet');
     Route::get('vues/{projet_id}', [VueController::class,'index'])->name('vues');
 
+   /*************************************Partenaires***************************** */
+   Route::resource('partenaire', PartenaireController::class);
+   Route::get('partenaires/{projet_id}', [PartenaireController::class,'index'])->name('');
+   Route::get('get_partenaires/{projet_id}', [PartenaireController::class, 'get_partenaires'])->name('get_partenaires');
+
+
     /*************************************Typologie***************************** */
     Route::resource('typologie', TypologieController::class);
-
+    Route::get('get_typologiesByProjet/{id}', [TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');
+    Route::get('typologies/{projet_id}', [TypologieController::class,'index'])->name('typologies');
     /*************************************Banque***************************** */
     Route::resource('banque',BanqueController::class);
     Route::get('get_banques', [BanqueController::class, 'get_banques'])->name('get_banques');
@@ -203,5 +218,12 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getReservationssByProjet/{id}',[ReservationController::class,'getReservationssByProjet'])->name('getReservationssByProjet');
     Route::get('get_typologiesByProjet/{id}', [TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');
     Route::get('typologies/{projet_id}', [TypologieController::class,'index'])->name('typologies');
+
+    /*************************************EnumController***************************** */
+    Route::get('InteretEnum', [EnumController::class,'InteretEnum_get'])->name('');
+    Route::get('OrientationEnum', [EnumController::class,'OrientationEnum_get'])->name('');
+    Route::get('TypeNotificationEnum', [EnumController::class,'TypeNotificationEnum_get'])->name('');
+    Route::get('StatutVisiteEnum', [EnumController::class,'StatutVisiteEnum_get'])->name('');
+
 });
 Route::get('sendResetPasswordEmail', [UserController::class, 'sendResetPasswordEmail']);
