@@ -24,6 +24,10 @@ return new class extends Migration
             $table->date('date_reservation');
             $table->date('date_limite_reservation');
             $table->string('commentaire')->nullable();
+            $table->double('prix_remise')->nullable();
+            $table->string('prix_remise_lettre')->nullable();
+            $table->double('prix_forfetaire')->nullable();
+            $table->string('prix_forfetaire_lettre')->nullable();
             $table->double('montant_encaisse')->nullable()->default(0);
             $table->foreignId('visite_id')->nullable()->constrained('visites')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');

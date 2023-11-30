@@ -9,6 +9,7 @@ use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreAquereurRequest;
 use App\Http\Requests\StoreAvanceRequest;
 use App\Http\Requests\StoreClientRequest;
+use App\Http\Requests\StorePiecesJointeRequest;
 use App\Http\Requests\StoreReservationRequest;
 use App\Http\Requests\UpdateReservationRequest;
 use App\Models\Aquereur;
@@ -16,8 +17,8 @@ use App\Models\Avance;
 use App\Models\PiecesJointe;
 use App\Models\Reservation;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use \NumberFormatter;
 
 class ReservationController extends Controller
@@ -25,19 +26,19 @@ class ReservationController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request,$projet_id)
+    public function index(Request $request, $projet_id)
     {
-        if(Auth::guard('api')->check()){
+        if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $perPage=$request->input('pageSizee',5);
-            $page=$request->input('page',1);
-            $reservations=Reservation::on('temp')
-                ->orderBy('created_at','desc')
-                ->where('projet_id',$projet_id)
-               ->paginate($perPage,['*'],'page',$page);
-            return response()->json(['reservations'=>$reservations],200);
+            $perPage = $request->input('pageSizee', 5);
+            $page = $request->input('page', 1);
+            $reservations = Reservation::on('temp')
+                ->orderBy('created_at', 'desc')
+                ->where('projet_id', $projet_id)
+                ->paginate($perPage, ['*'], 'page', $page);
+            return response()->json(['reservations' => $reservations], 200);
         }
-        return response()->json(['error'=>'Unauthorized'],401);
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
 
     /**
@@ -55,107 +56,119 @@ class ReservationController extends Controller
     {
 
         $user = Auth::user();
-        if(RoleHelper::ACSup())
-        {
+        if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            $reservation=new Reservation();
+            $reservation = new Reservation();
             $reservation->setConnection('temp');
-            $reservation->nb_acquereurs=$request->nb_acquereurs;
-            $reservation->code_reservation=$request->code_reservation;
-            $reservation->prix=$request->prix;
-            $reservation->mode_financement=$request->mode_financement;
-            $reservation->date_reservation=$request->date_reservation;
-            $reservation->date_limite_reservation=$request->date_limite_reservation;
-            $reservation->commentaire=$request->commentaire;
-            $reservation->visite_id=$request->visite_id;
-            $bienController=new BienController();
-            $bien=$bienController->getEtatBien($request->bien_id);
-            if($bien==EtatBien::RESERVATION->name)
-            {
-                return response()->json(['message'=>'ce bien est deja reserver'],400);
-            }
-            else if($bien==EtatBien::PRE_RESERVATION->name)
-            {
-                return response()->json(['message'=>'ce bien est deja pre-reserver'],400);
-            }
-            else{
-    $reservation->bien_id = $request->bien_id;
-    $reservation->projet_id = $request->projet_id;
-    $reservation->user_id = '1';
-    if(RoleHelper::AdminSup()) {
-        $reservation->statut = StatutReservationEnum::VALIDER->value;
-    }
-    if(RoleHelper::Com()) {
-        $reservation->statut = StatutReservationEnum::EN_ATTENTE->value;
-    }
-    if($request->verifierPourcentages == true) {
-        if($reservation->save()) {
+            $reservation->nb_acquereurs = $request->nb_acquereurs;
+            $reservation->code_reservation = $request->code_reservation;
+            $reservation->prix = $request->prix;
+            $reservation->mode_financement = $request->mode_financement;
+            $reservation->date_reservation = $request->date_reservation;
+            $reservation->date_limite_reservation = $request->date_limite_reservation;
+            $reservation->commentaire = $request->commentaire;
+            $reservation->visite_id = $request->visite_id;
+            $reservation->prix_remise = $request->prix_remise;
+            $numberToWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
+            $prix_remise_lettre = $numberToWords->format($request->prix_remise);
+            $reservation->prix_remise_lettre = $prix_remise_lettre;
+            $reservation->prix_forfetaire = $request->prix_forfetaire;
+            $prix_forfetaire_lettre = $numberToWords->format($request->prix_forfetaire);
+            $reservation->prix_forfetaire_lettre = $prix_forfetaire_lettre;
             $bienController = new BienController();
-            $bienController->reserverBien($reservation->bien_id);
+            $bien = $bienController->getEtatBien($request->bien_id);
+            if ($bien == EtatBien::RESERVATION->name) {
+                return response()->json(['message' => 'ce bien est deja reserver'], 400);
+            } else if ($bien == EtatBien::PRE_RESERVATION->name) {
+                return response()->json(['message' => 'ce bien est deja pre-reserver'], 400);
+            } else {
+                $reservation->bien_id = $request->bien_id;
+                $reservation->projet_id = $request->projet_id;
+                $reservation->user_id = $userAuth->value('id');
+                if (RoleHelper::AdminSup()) {
+                    $reservation->statut = StatutReservationEnum::VALIDER->value;
+                }
+                if (RoleHelper::Com()) {
+                    $reservation->statut = StatutReservationEnum::EN_ATTENTE->value;
+                }
+                if ($request->verifierPourcentages == true) {
+                    if ($reservation->save()) {
+                        $bienController = new BienController();
+                        $bienController->reserverBien($reservation->bien_id);
+                    }
+                    $clientController = new ClientController();
+                    $clientRequest = new StoreClientRequest();
+                    $aquereurController = new AquereurController();
+                    $aquereurRequest = new StoreAquereurRequest();
+                    if ($request->clients) {
+                        foreach ($request->clients as $clientInfo) {
+                            $clientRequest->merge($clientInfo);
+                            $clientData = $clientController->store($clientRequest);
+                            $dataAquereur = [
+                                'pourcentage' => $clientInfo['pourcentage'],
+                                'client_id' => $clientData->id,
+                                'reservation_id' => $reservation->id,
+                            ];
+                            $aquereurRequest->merge($dataAquereur);
+                            $aquereurController->store($aquereurRequest);
+                        }}
+                    if ($request->clients1) {
+                        foreach ($request->clients1 as $clientInfo) {
+                            $dataAquereur = [
+                                'pourcentage' => $clientInfo['pourcentage1'],
+                                'client_id' => $clientInfo['id'],
+                                'reservation_id' => $reservation->id,
+                            ];
+                            $aquereurRequest->merge($dataAquereur);
+                            $aquereurController->store($aquereurRequest);
+                        }}
+                    $avanceController = new AvanceController();
+                    $avanceRequest = new StoreAvanceRequest();
+                    /* foreach ($request->avance as $avanceInfo){
+                    $avanceRequest->merge($avanceInfo);
+                    } */
+
+                    $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
+                    $mnt_lettre = $inWords->format($request->avance);
+                    $dataAvance = [
+                        'montant' => $request->avance,
+                        'mode_paiement' => $request->mode_paiement,
+                        'numero_paiemeant' => $request->numero_paiemeant,
+                        'date_reglement' => $request->date_reglement,
+                        'echeance' => $request->echeance,
+                        'banque_id' => $request->banque_id,
+                        'montant_par_lettre' => $mnt_lettre,
+                        'reservation_id' => $reservation->id,
+                        'commentaireAvance' => $request->commentaireAvance,
+                    ];
+                    $avanceRequest->merge($dataAvance);
+                    $avanceController->store($avanceRequest);
+                    //****store piece jointe***
+                    /* $piecesJointeController = new PiecesJointeController();
+                    $pieceJointeRequest = new StorePiecesJointeRequest();
+                    
+
+                    $datapieceJointe = [
+                        'fichier' => $request->fichier,
+                        'type' => $request->type,
+                        'reservation_id' => $reservation->id,
+                        'avance_id' => 3,
+
+                    ];
+                    $pieceJointeRequest->merge($datapieceJointe);
+                    $piecesJointeController->store($pieceJointeRequest); */
+                    return response()->json(['reservation' => $reservation], 200);
+                } else {
+
+                    return response()->json(['error' => 'la somme des pourcentage doit être 100%'], 422);
+
+                }
+
+            }
+
         }
-        $clientController = new ClientController();
-        $clientRequest = new StoreClientRequest();
-        $aquereurController = new AquereurController();
-        $aquereurRequest = new StoreAquereurRequest();
-        if($request->clients){
-            foreach ($request->clients as $clientInfo) {
-                $clientRequest->merge($clientInfo);
-                $clientData = $clientController->store($clientRequest);
-                $dataAquereur = [
-                    'pourcentage' => $clientInfo['pourcentage'],
-                    'client_id' => $clientData->id,
-                    'reservation_id' => $reservation->id
-                ];
-                $aquereurRequest->merge($dataAquereur);
-                $aquereurController->store($aquereurRequest);
-            }}
-        if($request->clients1){
-            foreach ($request->clients1 as $clientInfo) {
-                $dataAquereur = [
-                    'pourcentage' => $clientInfo['pourcentage1'],
-                    'client_id' => $clientInfo['id'],
-                    'reservation_id' => $reservation->id
-                ];
-                $aquereurRequest->merge($dataAquereur);
-                $aquereurController->store($aquereurRequest);
-            }}
-        $avanceController = new AvanceController();
-        $avanceRequest = new StoreAvanceRequest();
-        /* foreach ($request->avance as $avanceInfo){
-            $avanceRequest->merge($avanceInfo);
-        } */
-        
-
-        $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
-        $mnt_lettre=$inWords->format($request->avance);
-        $montant_per_lettre=$mnt_lettre;
-        $dataAvance = [
-            'montant' => $request->avance,
-            'mode_paiement' => $request->mode_paiement,
-            'numero_paiemeant' => $request->numero_paiemeant,
-            'date_reglement' => $request->date_reglement,
-            'echeance' => $request->echeance,
-            'banque_id' => $request->banque_id,
-            'montant_par_lettre'=> $montant_per_lettre,
-            'reservation_id' => $reservation->id,
-            'commentaireAvance' => $request->commentaireAvance
-        ];
-        $avanceRequest->merge($dataAvance);
-        $avanceController->store($avanceRequest);
-        return response()->json(['reservation' => $reservation], 200);
-    } else{
-
-        return response()->json(['error' => 'la somme des pourcentage doit être 100%'], 422);
-
-    }
-
-}
-
-            
-
-        }
-        return  response()->json(['error'=>'Unauthorized'],401);
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
 
     /**
@@ -163,13 +176,12 @@ class ReservationController extends Controller
      */
     public function show($id)
     {
-        if(RoleHelper::ACSup()){
+        if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $reservation=Reservation::on('temp')->findOrFail($id);
-            return response()->json(['reservation'=>$reservation],200);
-        }
-        else{
-            return response()->json(['error'=>'Unauthorized'],401);
+            $reservation = Reservation::on('temp')->findOrFail($id);
+            return response()->json(['reservation' => $reservation], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
     /**
@@ -183,19 +195,19 @@ class ReservationController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateReservationRequest $request,$id)
+    public function update(UpdateReservationRequest $request, $id)
     {
-        if(RoleHelper::ACSup()){
+        if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $reservation=Reservation::on('temp')->findOrFail($id);
-            $update=$request->all();
-            foreach ($update as $key => $value){
-                $reservation->$key=$value;
+            $reservation = Reservation::on('temp')->findOrFail($id);
+            $update = $request->all();
+            foreach ($update as $key => $value) {
+                $reservation->$key = $value;
             }
             $reservation->save();
-            return response()->json(['reservation'=>$reservation],200);
+            return response()->json(['reservation' => $reservation], 200);
         }
-        return response()->json(['error','Unauthorized'],401);
+        return response()->json(['error', 'Unauthorized'], 401);
     }
 
     /**
@@ -203,53 +215,51 @@ class ReservationController extends Controller
      */
     public function destroy($id)
     {
-        if(RoleHelper::ACSup()){
+        if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $reservation=Reservation::on('temp')->findOrFail($id);
-            $avanceController = new  AvanceController();
+            $reservation = Reservation::on('temp')->findOrFail($id);
+            $avanceController = new AvanceController();
             $avanceController->destoryUsingReservationId($id);
             $aquereurController = new AquereurController();
             $aquereurController->destroyAquerreursByReservationId($id);
-            $pjController =new PiecesJointeController();
+            $pjController = new PiecesJointeController();
             $pjController->destoryFileUsingReservationId($id);
-            if($reservation->delete()){
-                return response()->json(['message'=>'reservation supprimée avec succès.'],200);
-            }
-            else{
-                return response()->json(['message'=>"reservation n'est supprimée."],400);
+            if ($reservation->delete()) {
+                return response()->json(['message' => 'reservation supprimée avec succès.'], 200);
+            } else {
+                return response()->json(['message' => "reservation n'est supprimée."], 400);
             }
         }
-        return  response()->json(['error'=>'Unauthorized'],401);
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-
-
-    public function getAllInformationsReservation($id){
-        if(RoleHelper::ACSup()){
+    public function getAllInformationsReservation($id)
+    {
+        if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $reservation=Reservation::on('temp')->findOrFail($id);
-            $avances=Avance::on('temp')->where('reservation_id',$id)->get();
-            $aquereurs=Aquereur::on('temp')->where('reservation_id',$id)->get();
-            $pj=PiecesJointe::on('temp')->where('reservation_id',$id)->get();
-            $data=[
-                'reservation'=>$reservation,
-                'avances'=>$avances,
-                'aquereurs'=>$aquereurs,
-                'piecesjointes'=>$pj,
+            $reservation = Reservation::on('temp')->findOrFail($id);
+            $avances = Avance::on('temp')->where('reservation_id', $id)->get();
+            $aquereurs = Aquereur::on('temp')->where('reservation_id', $id)->get();
+            $pj = PiecesJointe::on('temp')->where('reservation_id', $id)->get();
+            $data = [
+                'reservation' => $reservation,
+                'avances' => $avances,
+                'aquereurs' => $aquereurs,
+                'piecesjointes' => $pj,
             ];
 
-            return response()->json(['data'=> $data],200);
+            return response()->json(['data' => $data], 200);
         }
-        return response()->json(['error'=>'Unauthorized'],401);
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-    public function getReservationssByProjet($projet_id){
+    public function getReservationssByProjet($projet_id)
+    {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $reservations = Reservation::on('temp')->where('projet_id', $projet_id)->get();
 
             return response()->json(['reservations' => $reservations], 200);
-
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
