@@ -2,24 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
+use \NumberFormatter;
 use App\Enum\EtatBien;
+use App\Models\Avance;
+use App\Models\Aquereur;
+use App\Models\Reservation;
+use App\Models\PiecesJointe;
+use Illuminate\Http\Request;
+use App\Http\Helpers\RoleHelper;
 use App\Enum\StatutReservationEnum;
 use App\Http\Helpers\DatabaseHelper;
-use App\Http\Helpers\RoleHelper;
-use App\Http\Requests\StoreAquereurRequest;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\StoreAvanceRequest;
 use App\Http\Requests\StoreClientRequest;
-use App\Http\Requests\StorePiecesJointeRequest;
+use App\Http\Requests\StoreAquereurRequest;
 use App\Http\Requests\StoreReservationRequest;
+use App\Http\Requests\StorePiecesJointeRequest;
 use App\Http\Requests\UpdateReservationRequest;
-use App\Models\Aquereur;
-use App\Models\Avance;
-use App\Models\PiecesJointe;
-use App\Models\Reservation;
-use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use \NumberFormatter;
 
 class ReservationController extends Controller
 {
@@ -78,8 +78,9 @@ class ReservationController extends Controller
             $reservation->prix_forfetaire_lettre = $prix_forfetaire_lettre;
             $bienController = new BienController();
             $bien = $bienController->getEtatBien($request->bien_id);
-            if ($bien !== EtatBien::DISPONIBLE->name) {
-                return response()->json(['message' => 'Ce bien n\'est pas disponible'], 400);
+            if ($bien->original['bienEtat']!==EtatBien::DISPONIBLE->name) {
+                return response()->json(['error' => 'Ce bien n\'est pas disponible'], 422);
+
             }
             else {
                 $reservation->bien_id = $request->bien_id;
@@ -112,8 +113,8 @@ class ReservationController extends Controller
                             $aquereurRequest->merge($dataAquereur);
                             $aquereurController->store($aquereurRequest);
                         }}
-                    if ($request->clients1) {
-                        foreach ($request->clients1 as $clientInfo) {
+                    if ($request->oldClients) {
+                        foreach ($request->oldClients as $clientInfo) {
                             $dataAquereur = [
                                 'pourcentage' => $clientInfo['pourcentage1'],
                                 'client_id' => $clientInfo['id'],

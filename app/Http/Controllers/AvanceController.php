@@ -22,7 +22,7 @@ class AvanceController extends Controller
     {
         if(Auth::guard('api')->check()){
             DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', 5); // Get the number of items per page
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
             $avances=Avance::on('temp')->join('reservations','avances.reservation_id','=','reservations.id')
                 ->join('projets','reservations.projet_id','=','projets.id')

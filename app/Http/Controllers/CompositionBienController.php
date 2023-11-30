@@ -20,8 +20,8 @@ class CompositionBienController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $perPage = 20; // Number of items per page
-            $page = $request->input('page', 1);
+            $perPage=$request->input('pageSizee',config('app.default_item_number_perpage'));
+            $page=$request->input('page',1);
 
             $CompositionBiens = CompositionBien::on('temp')->orderBy('created_at', 'desc')
                 ->skip(($page - 1) * $perPage)
