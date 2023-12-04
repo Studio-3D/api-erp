@@ -22,14 +22,14 @@ class StoreAvanceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "montant"=>"double",
-            "date_reglement"=>"date",
-            "mode_paiement"=>"integer",
+            "montant"=>"required|double",
+            "date_reglement"=>"required|date",
+            "mode_paiement"=>"required|integer",
             "echeance"=>"date",
             "sr"=>"boolean",
             "banque_id"=>"integer",
             "numero_paiemeant"=>"integer",
-            "reservation_id"=>"integer",
+            "reservation_id"=>"required|integer",
         ];
     }
 }

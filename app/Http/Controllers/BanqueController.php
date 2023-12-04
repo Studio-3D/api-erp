@@ -19,7 +19,7 @@ class BanqueController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $perPage=$request->input('pageSizee',5);
+            $perPage=$request->input('pageSizee',config('app.default_item_number_perpage'));
             $page=$request->input('page',1);
 
             $banques = Banque::on('temp')

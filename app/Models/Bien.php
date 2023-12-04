@@ -13,7 +13,7 @@ class Bien extends Model
     protected $table = 'biens';
     protected $dates = ['deleted_at'];
 
-    protected $with = ['typeBien', 'projet', 'tranche', 'bloc', 'immeuble','typologie','vue','is_proposed'];
+    protected $with = ['typeBien', 'projet', 'tranche', 'bloc', 'immeuble','typologie','vue'];
     public function typeBien()
     {
         return $this->belongsTo(TypeBien::class, 'type_id');
