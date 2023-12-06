@@ -150,7 +150,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getAllAttributes',[VisiteController::class,'getAllAttributes'])->name('getAllAttributes');
     Route::get('get_historiques_visite/{origin_id}', [VisiteController::class, 'get_historiques'])->name('get_historiques');
     Route::put('update_date_relance_rdv_visite/{id}',[VisiteController::class,'update_date_relance_rdv'])->name('');
-    Route::put('valider_relance_rdv_visite/{id}',[VisiteController::class,'valider_relance_rdv'])->name('');
+    Route::put('valider_relance_rdv_visite/{id}',[VisiteController::class,'traiter_relance_rdv'])->name('');
 
     /*************************************type_Freins***************************** */
     Route::resource('type_freins', TypeFreinController::class);
