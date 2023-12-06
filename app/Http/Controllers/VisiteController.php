@@ -132,11 +132,11 @@ class VisiteController extends Controller
                         }
                     }else{
                         //bien !=encours proposition ==>pre reserve
-                        return response()->json(['error_33' => 'le bien choisi :'.$bien_prop->propriete_dite_bien.' est '.$bien_prop->etat.' par autre Commercial '], 333);
+                        return response()->json(['error_33' => 'le bien choisi :'.$bien_prop->propriete_dite_bien.' est '.$bien_prop->etat], 333);
                     }
                 }
             }
-            //rendre bien disponible si interet!=interesse
+            //rendre bien disponible si interet!=interesse ==>receptif ou perdu
             if($request->bien_id){
                 if($request->interet!=InteretEnum::INTERESSE->value){
                     $bien=new BienController();
@@ -402,7 +402,7 @@ class VisiteController extends Controller
             $relance->commentaire=$request->commentaire;
             if($relance->save()){
                 //delete old notificcation
-                $notif_exist_relance=Notification::on('temp')->where('type',$relance->type_freins)->where('visite_id',$visite_id)->get();
+                $notif_exist_relance=Notification::on('temp')->where('type',$relance->type)->where('visite_id',$visite_id)->get();
                 if(count($notif_exist_relance)>0){
                     foreach($notif_exist_relance as $nt){
                         $nt->delete();
@@ -448,7 +448,7 @@ class VisiteController extends Controller
 
     }
 
-    public static function valider_relance_rdv($id,Request $request)
+    public static function traiter_relance_rdv($id,Request $request)
     {
 
         if(RoleHelper::ACSup()) {
@@ -620,6 +620,7 @@ class VisiteController extends Controller
                     NotificationHelper::storeNotification(
                         '/visites/show/'+$visite->origin_id, $request->date_relance,1,'RELANCE VISITE',Auth::guard('api')->user()->id,$visite->id,$visite->prospect_id,$visite->projet_id
                     );
+
                     $relance=new Relance_Rdv_visite();
                     $relance->setConnection('temp');
                     $relance->type=1;//relance
@@ -754,11 +755,11 @@ class VisiteController extends Controller
                     }
                 }else{
                     //bien !=encours proposition ==>pre reserve
-                    return response()->json(['error_33' => 'le bien choisi :'.$bien_prop->propriete_dite_bien.' est '.$bien_prop->etat.' par autre Commercial '], 333);
+                    return response()->json(['error_33' => 'le bien choisi :'.$bien_prop->propriete_dite_bien.' est '.$bien_prop->etat], 333);
                 }
             }
         }
-            //rendre bien disponible si interet!=interesse
+            //rendre bien disponible si interet!=interesse ==>si receptif ou perdu
             if($request->bien_id){
                 if($request->interet!=InteretEnum::INTERESSE->value){
                     $bien=new BienController();
