@@ -6,6 +6,8 @@ use App\Models\Societe;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
 
 class DatabaseHelper
 {
@@ -98,6 +100,42 @@ class DatabaseHelper
             'engine' => null,
         ];
     }
+    public static function deletePropositionTable($databases)
+    {
+        foreach ($databases as $database) {
+            $databaseName = 'Erp_' . $database->raison_sociale . '_' . $database->id;
+    
+            // Switch to the temporary database
+            $connection = DatabaseHelper::Connection_database($databaseName);
+            config(['database.connections.temp' => $connection]);
+            DB::connection('temp')->setDatabaseName($connection['database']);
+            DB::reconnect('temp');
+            // Retrieve users from the mother database
+            $notConnectedUsers = DB::table('users')->where('is_connected', 0)->pluck('id');
+            $connectedUsers = DB::table('users')->where('is_connected', 1)->pluck('id');
+
+            // 
+            if (Schema::connection('temp')->hasTable('propositions')) {
+                if ($notConnectedUsers->isNotEmpty()) {
+                   DB::connection('temp')->table('propositions')
+                        ->whereIn('user_id', $notConnectedUsers)  // id  from  users from mother db 
+                        ->delete();
+                    \Log::info("Deleted propositions for not connected users in $databaseName.");
+                }
+                if ($connectedUsers->isNotEmpty()) {
+                    DB::connection('temp')->table('propositions')
+                    ->select('id', 'created_at')
+                    ->whereIn('user_id', $connectedUsers)
+                    ->whereNotIn('id', function ($query) use ($connectedUsers) {  $query->select(DB::raw('MAX(id)'))->from('propositions')->whereIn('user_id', $connectedUsers) 
+                    ->groupBy('user_id'); })->delete();
+                    \Log::info("Deleted older propositions for connected users in $databaseName.");
+                }
+            } else {
+                \Log::info("Table 'propositions' does not exist in $databaseName.");
+            }
+        }
+    }
+    
 
     public static function Deletedatabase($databases)
     {

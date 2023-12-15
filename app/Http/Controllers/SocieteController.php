@@ -7,10 +7,18 @@ use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreSocieteRequest;
 use App\Http\Requests\UpdateSocieteRequest;
 use App\Models\Societe;
+use App\Models\User;
+use Pusher\Pusher;
+use App\Models\Projet;
 use File;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use \Illuminate\Support\Facades\Storage;
+use App\Events\Societes;
+use App\Events\NewSocieteEvent;
+use App\Events\NewNotificationEvent;
+
+
 
 class SocieteController extends Controller
 {
@@ -22,6 +30,7 @@ class SocieteController extends Controller
     {
         if (RoleHelper::Superadmin()) {
             $societes = Societe::all();
+            broadcast(new NewNotificationEvent($societes));
             return response()->json(['societes' => $societes]);
         }
 
@@ -51,13 +60,26 @@ class SocieteController extends Controller
         //
     }
 
+    public function sendsociete()
+    {
+        $notificationData= [
+            'title' => 'New Notification',
+            'message' => 'You have a new notification!',
+            'created_at' => now()->toDateTimeString(),
+            // ... other relevant data
+        ];
+        
+        broadcast(new NewNotificationEvent($notificationData));
+    
+    return response()->json(['message' => 'Notification sent successfully']);
+    }
+
     /**
      * Store a newly created resource in storage.
      */
     public function store(StoreSocieteRequest $request)
     {
         if (RoleHelper::Superadmin()) {
-
             $societe = new Societe();
             $societe->raison_sociale = $request->raison_sociale;
             $societe->adresse = $request->adresse;
@@ -70,10 +92,11 @@ class SocieteController extends Controller
                 $request->logo->move(public_path('img/societes'), $logo);
                 $societe->logo = $logo;
             }
-
             $societe->save();
+            // $societes = Societe::whereNull('adresse')->get();     
+            // $societes=Societe::all();      
+            // broadcast(new NewNotificationEvent($societes));
             $raison_sociale_concatene = str_replace(' ', '', $request->raison_sociale);
-
             $databaseSociete = new DatabaseHelper();
             $response = $databaseSociete->createNewClientDatabase($raison_sociale_concatene, $societe->id);
             if ($response->getStatusCode() == 200) {
@@ -124,7 +147,6 @@ class SocieteController extends Controller
             $societe->prenom_contact = $request->prenom_contact;
             $societe->tel = $request->tel;
             $societe->email = $request->email;
-
             if ($request->hasFile('logo')) {
 
                 if($societe->logo!=null){
@@ -139,15 +161,16 @@ class SocieteController extends Controller
             }
             $societe->save();
 
-
+            // $societes=Societe::all();      
+            // broadcast(new NewNotificationEvent($societes));
             if ($request->has('raison_sociale')) {
                 $newRaisonSociale = $societe->raison_sociale;
                 if ($originalRaisonSociale !== $newRaisonSociale) {
                     $newDatabaseName = 'Erp_' . $newRaisonSociale . '_' . $id;
                     $oldDatabaseName = 'Erp_' . $originalRaisonSociale . '_' . $id;
 
-                    $databaseHelper = new DatabaseHelper();
-                    $databaseHelper->renameDatabase($oldDatabaseName, $newDatabaseName);
+                    // $databaseHelper = new DatabaseHelper();
+                    // $databaseHelper->renameDatabase($oldDatabaseName, $newDatabaseName);
                 }
             }
 
@@ -171,7 +194,10 @@ class SocieteController extends Controller
             }
 
             if ($societe->delete()) {
+                $societes=Societe::all();      
+                broadcast(new NewNotificationEvent($societes));
                 return response()->json(['message' => 'Societe supprimée avec succès'], 200);
+              
             } else {
                 return response()->json(['message' => 'Societe non supprimée'], 404);
             }
@@ -237,5 +263,22 @@ class SocieteController extends Controller
             return response()->json(['message' => "Vous n'êtes pas dans une société"], 200);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
+    }
+    public function Pusher()
+    {
+        $options = [
+            'cluster' => 'eu',
+            'useTLS' => true,
+        ];
+
+        $pusher = new Pusher(
+            '14b5199abafacc5f7509',
+            'your_app_sd83981468d9e7b8566b8ecret',
+            '1722976',
+            $options
+        );
+
+
+        
     }
 }
