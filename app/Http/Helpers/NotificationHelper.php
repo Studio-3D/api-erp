@@ -23,4 +23,12 @@ class NotificationHelper
         $notif->projet_id= $projet_id;
         $notif->save();
     }
+    public static function destroy_notif_bien_dispo_frein($visite_id){
+        $notifications_bien=Notification::on('temp')->where('visite_id',$visite_id)->where('type',3)->get();
+        if(count($notifications_bien)>0){
+            foreach($notifications_bien as $nt){
+                $nt->delete();
+            }
+        }
+    }
 }

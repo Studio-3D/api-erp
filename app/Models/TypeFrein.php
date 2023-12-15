@@ -11,9 +11,6 @@ class TypeFrein extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = 'type_freins';
-    protected $fillable = [
-        'description'
-    ];
     protected $dates = ['deleted_at'];
-   
+
 }

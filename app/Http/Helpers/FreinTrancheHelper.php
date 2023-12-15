@@ -17,13 +17,13 @@ class FreinTrancheHelper
 
     public static function destroyFreinTranche($frein_id){
         $freinTranche=FreinTranche::on('temp')->where('frein_id',$frein_id)->get();
-        $frein=Frein::on('temp')->findOrfail($frein_id);
+       // $frein=Frein::on('temp')->findOrfail($frein_id);
         if(count($freinTranche)>0){
                 foreach($freinTranche as $fr){
                     $fr->delete();
                 }
-                $frein->tranche=0;
-                $frein->save();
+                //$frein->tranche=0;
+                //$frein->save();
         }
 
     }

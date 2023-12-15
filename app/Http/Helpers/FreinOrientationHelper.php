@@ -16,13 +16,13 @@ class FreinOrientationHelper
     }
     public static function destroyFreinOrientation($frein_id){
         $freinOrientation=FreinOrientation::on('temp')->where('frein_id',$frein_id)->get();
-        $frein=Frein::on('temp')->findOrfail($frein_id);
+       // $frein=Frein::on('temp')->findOrfail($frein_id);
         if(count($freinOrientation)>0){
                 foreach($freinOrientation as $fr){
                     $fr->delete();
                 }
-                $frein->orientation=0;
-                $frein->save();
+              //  $frein->orientation=0;
+              //  $frein->save();
         }
 
     }
