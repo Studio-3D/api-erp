@@ -381,7 +381,7 @@ class VisiteController extends Controller
         }
     }
 
-    public static function traiter_relance_rdv_visite($id,UpdateDate_relance_Rdv $request)
+ public static function traiter_relance_rdv_visite($id,UpdateDate_relance_Rdv $request)
     {
         if(RoleHelper::ACSup()) {
             DatabaseHelper::Config();
@@ -456,7 +456,7 @@ class VisiteController extends Controller
                                     $nt->delete();
                                 }
                             }
-                            return response()->json(['message' => 'Validé ave hhh succès.'], 200);
+                            return response()->json(['message' => 'Validé avec succès.'], 200);
                         }
 
             }
