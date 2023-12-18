@@ -713,7 +713,7 @@ class VisiteController extends Controller
                 $freinController->destroy($frein->id);
             }
             //relance_rdv
-            $relance_rdv=Relance_Rdv_visite::where('visite_id',$id)->get();
+            $relance_rdv=Relance_Rdv_visite::on('temp')->where('visite_id',$id)->get();
             if(count($relance_rdv)>0){
                 foreach($relance_rdv as $r){
                     $r->delete();
