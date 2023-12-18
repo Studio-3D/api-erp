@@ -13,16 +13,20 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         $schedule->command('app:delete-societe-database-command')->everyMinute();
-        $schedule->command('delete_proposition')->everyMinute();
-    }
+        $schedule->command('app:clear-proposition-table')->everyMinute();     
+       }
 
     /**
      * Register the commands for the application.
      */
+    
     protected function commands(): void
     {
+        
         $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }
+   
+    
 }
