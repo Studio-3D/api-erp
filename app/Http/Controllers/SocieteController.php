@@ -16,8 +16,6 @@ use Illuminate\Support\Facades\Auth;
 use \Illuminate\Support\Facades\Storage;
 use App\Events\Societes;
 use App\Events\NewSocieteEvent;
-use App\Events\NewNotificationEvent;
-
 
 
 class SocieteController extends Controller
@@ -30,7 +28,7 @@ class SocieteController extends Controller
     {
         if (RoleHelper::Superadmin()) {
             $societes = Societe::all();
-            broadcast(new NewNotificationEvent($societes));
+            broadcast(new NewSocieteEvent($societes));
             return response()->json(['societes' => $societes]);
         }
 
@@ -161,16 +159,15 @@ class SocieteController extends Controller
             }
             $societe->save();
 
-            // $societes=Societe::all();      
-            // broadcast(new NewNotificationEvent($societes));
+            
             if ($request->has('raison_sociale')) {
                 $newRaisonSociale = $societe->raison_sociale;
                 if ($originalRaisonSociale !== $newRaisonSociale) {
                     $newDatabaseName = 'Erp_' . $newRaisonSociale . '_' . $id;
                     $oldDatabaseName = 'Erp_' . $originalRaisonSociale . '_' . $id;
 
-                    // $databaseHelper = new DatabaseHelper();
-                    // $databaseHelper->renameDatabase($oldDatabaseName, $newDatabaseName);
+                    $databaseHelper = new DatabaseHelper();
+                    $databaseHelper->renameDatabase($oldDatabaseName, $newDatabaseName);
                 }
             }
 
@@ -195,7 +192,7 @@ class SocieteController extends Controller
 
             if ($societe->delete()) {
                 $societes=Societe::all();      
-                broadcast(new NewNotificationEvent($societes));
+                broadcast(new NewSocieteEvent($societes));
                 return response()->json(['message' => 'Societe supprimée avec succès'], 200);
               
             } else {

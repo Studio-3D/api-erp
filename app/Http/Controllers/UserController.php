@@ -29,13 +29,18 @@ class UserController extends Controller
             'email' => 'required|email',
             'password' => 'required',
         ]);
+    
         if (Auth::attempt($credentials)) {
-            $accessToken = Auth::user()->createToken('API Token')->accessToken;
+            $user = Auth::user();
+            $user->is_connected = 1;
+            $user->save();
+            $accessToken = $user->createToken('API Token')->accessToken;
+    
             return response()->json(['access_token' => $accessToken], 200);
         }
+    
         return response()->json(['error' => 'email ou mot de passe incorrect'], 422);
     }
-
     public function logout(Request $request)
     {
         $user = Auth::guard('api')->user();
