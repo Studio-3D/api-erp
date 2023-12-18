@@ -9,16 +9,29 @@ use App\Http\Helpers\FreinOrientationHelper;
 use App\Http\Helpers\FreinTrancheHelper;
 use App\Http\Helpers\FreinTypologieHelper;
 use App\Http\Helpers\FreinVueHelper;
+use App\Http\Helpers\FreinBienHelper;
 use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreFreinRequest;
+use App\Http\Requests\Traite_Bien_freinRequest;
 use App\Http\Requests\UpdateFreinRequest;
 use App\Models\Frein;
 use App\Models\FreinEtage;
 use App\Models\FreinOrientation;
 use App\Models\FreinTranche;
 use App\Models\FreinTypologie;
+use App\Models\Frein_Bien;
+use App\Models\Bien;
 use App\Models\FreinVue;
 use App\Models\Visite;
+use Illuminate\Http\Request;
+use App\Http\Helpers\PaginationHelper;
+use App\Models\Notification;
+use App\Http\Helpers\NotificationHelper;
+
+
+
+
+
 
 use Illuminate\Support\Facades\Auth;
 use function PHPUnit\Framework\countOf;
@@ -28,6 +41,7 @@ class FreinController extends Controller
     /**
      * Display a listing of the resource.
      */
+
     public function index()
     {
         if (Auth::guard('api')->check()) {
@@ -60,7 +74,7 @@ class FreinController extends Controller
             $frein->prix_max=$request->prix_max;
             $frein->superficie_min=$request->sup_min;
             $frein->superficie_max=$request->sup_max;
-            $frein->liste_attente=$request->list_att;
+            $frein->etat=$request->etat;
             $frein->avance=$request->avance;
             $frein->visite_id=$request->visite_id;
             $frein->tranche=empty($request->selectedTranches)?false:true;
@@ -153,6 +167,7 @@ class FreinController extends Controller
         if(RoleHelper::ACSup()){
             DatabaseHelper::Config();
             $frein=Frein::on('temp')->findOrFail($id);
+
             if(in_array("SUPERFICIE", $request->frein)=='true'){
                 $frein->superficie_min=$request->sup_min;
                 $frein->superficie_max=$request->sup_max;
@@ -175,7 +190,7 @@ class FreinController extends Controller
             }else{
                 $frein->avance=null;
             }
-            $frein->liste_attente=$request->list_att;
+            $frein->etat=$request->etat;
             $frein->tranche=in_array("TRANCHE", $request->frein)?false:true;
             $frein->etage=in_array("ETAGE", $request->frein)?false:true ;
             $frein->orientation= in_array("ORIENTATION", $request->frein)?false:true;
@@ -212,8 +227,11 @@ class FreinController extends Controller
                     FreinVueHelper::createFreinVue($valeur['id'],$frein->id);
                 }
             }
-
-            return response()->json(['frein'=>$frein],200);
+             //destroy frein bien dispo
+             FreinBienHelper::destroyFreinBien($frein->id);
+             //notification des biens disponible pour ce frein
+             NotificationHelper::destroy_notif_bien_dispo_frein($frein->visite_id);
+            return response()->json(['frein'=>$id]);
         }
         else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -259,8 +277,13 @@ class FreinController extends Controller
                 }
 
             }
+                //destroy frein bien dispo
+                FreinBienHelper::destroyFreinBien($id);
+                //notification des biens disponible pour ce frein
+                NotificationHelper::destroy_notif_bien_dispo_frein($frein->visite_id);
+
             if($frein->delete()){
-                return response()->json(['messqge'=>'Frein supprimé avec succès.'],200);
+                return response()->json(['message'=>'Frein supprimé avec succès.'],200);
             }
             else return response()->json(['error'=>"Le frein n'a pas été supprimé."],404);
         }
@@ -368,4 +391,170 @@ class FreinController extends Controller
 
 
     }
+
+
+
+    public function get_clients_freins($projet_id,Request $request)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
+            $page = $request->input('page', 1);
+            if(RoleHelper::AdminSup()){
+                $freins= Frein::on('temp')
+                ->join('visites', 'visites.id', '=', 'freins.visite_id')
+                ->join('prospects', 'prospects.id', '=', 'visites.prospect_id')
+                ->select('freins.tranche','freins.etage','freins.orientation','freins.typologie','freins.vue','freins.prix_min','freins.prix_max','freins.superficie_min','freins.superficie_max','freins.avance','freins.id','freins.created_at','visites.origin_id as id_origin','prospects.cin','prospects.nom', 'prospects.prenom', 'prospects.telephone','prospects.telephone_num2','visites.origin_id')
+                ->where('visites.projet_id', $projet_id)
+                ->where('freins.etat', 2)
+                ->where('visites.etat', 1)
+                ->get();
+                }
+                else{
+                    $freins= Frein::on('temp')
+                    ->join('visites', 'visites.id', '=', 'freins.visite_id')
+                    ->join('prospects', 'prospects.id', '=', 'visites.prospect_id')
+                    ->select('freins.tranche','freins.etage','freins.orientation','freins.typologie','freins.vue','freins.prix_min','freins.prix_max','freins.superficie_min','freins.superficie_max','freins.avance','freins.id','freins.created_at','visites.origin_id as id_origin','prospects.cin','prospects.nom', 'prospects.prenom', 'prospects.telephone','prospects.telephone_num2','visites.origin_id')
+                    ->where('visites.projet_id', $projet_id)
+                    ->where('visites.user_id', Auth::guard('api')->user()->id)
+                    ->where('freins.etat', 2)
+                    ->where('visites.etat', 1)
+                    ->get();
+                }
+
+
+            $clients=array();
+
+            if(($freins->count())>0) {
+                foreach ($freins as $fr) {
+                    $fr_type=null;
+
+                    //TRANCHE
+                    if ($fr->tranche==1) {
+
+                        if($fr_type==null){
+                            $fr_type.='TRANCHE';
+                           }else{
+                            $fr_type.=',TRANCHE';
+                        }
+                    }
+
+                    //ETAGES
+                    if ($fr->etage==1) {
+                        if($fr_type==null){
+                            $fr_type.='ETAGE';
+                           }else{
+                            $fr_type.=',ETAGE';
+                           }
+                    }
+                    //orientation
+                    if ($fr->orientation==1) {
+                        if($fr_type==null){
+                            $fr_type.='ORIENTATION';
+                           }else{
+                            $fr_type.=',ORIENTATION';
+                           }
+                    }
+                    //TYPOLOGIE
+                    if ($fr->typologie==1) {
+                        if($fr_type==null){
+                            $fr_type.='TYPOLOGIE';
+                           }else{
+                            $fr_type.=',TYPOLOGIE';
+                           }
+                    }
+                    //VUE
+                    if ($fr->vue==1) {
+                        if($fr_type==null){
+                            $fr_type.='VUE';
+                           }else{
+                            $fr_type.=',VUE';
+                           }
+                    }
+                    //avance
+                    if ($fr->avance!=null) {
+                        if($fr_type==null){
+                            $fr_type.='AVANCE';
+                           }else{
+                            $fr_type.=',AVANCE';
+                        }
+                    }
+                    //PRIX
+                    if ($fr->prix_min!=null ||  $fr->prix_max!=null) {
+                        if($fr_type==null){
+                            $fr_type.='PRIX';
+                           }else{
+                            $fr_type.=',PRIX';
+                           }
+                    }
+
+                    //SUPERFICIE
+                    if ($fr->superficie_min!=null && $fr->superficie_max!=null) {
+                        if($fr_type==null){
+                            $fr_type.='SUPERFICIE';
+                           }else{
+                            $fr_type.=',SUPERFICIE';
+                           }
+                    }
+
+
+                    array_push($clients,array('id' => $fr->id,'date' => $fr->created_at,'nom' => $fr->nom,'prenom' => $fr->prenom,'telephone' => $fr->telephone,'telephone_2' => $fr->telephone_num2,'id_origin' => $fr->origin_id,'frein'=>$fr_type));
+                 }
+                }
+                    $data = PaginationHelper::paginate_array($clients,$perPage,$page,$request->url());
+                    return response()->json(['clients' => $data,'count_clients'=>count($clients)]);
+
+              }
+        else{
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+
+    public function biens_by_frein(Request $request,$id)
+    {
+        if(Auth::guard('api')->check()){
+            DatabaseHelper::Config();
+            $perPage=$request->input('pageSize',config('app.default_item_number_perpage'));
+            $page=$request->input('page',1);
+            $biens= Frein_Bien::on('temp')->where('frein_id',$id)->paginate($perPage, ['*'], 'page', $page);;
+            return response()->json(['biens'=>$biens],200);
+        }
+        return response()->json(['error'=>'Unauthorized'],401);
+    }
+
+    public function traiter_bien_frein(Traite_Bien_freinRequest $request,$bien_id,$frein_id){
+
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $frein = Frein::on('temp')->findOrFail($frein_id);
+            if($request->pre_reserve==1){
+                $bien=new BienController();
+                $bien->prereserverBien($bien_id,null,1);
+            }
+            $frein->etat=3;
+            $frein->commentaire=$request->commentaire;
+            if($frein->save()){
+                //destroy frein bien
+                FreinBienHelper::destroyFreinBien($frein_id);
+                //notification des biens disponible pour ce frein
+                NotificationHelper::destroy_notif_bien_dispo_frein($frein->visite_id);
+            }
+
+         return response()->json(['message' => $frein], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+    }
+
+
+
+
+
+
+
+
+
 }

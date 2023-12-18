@@ -17,13 +17,14 @@ return new class extends Migration
             $table->float('prix_max')->nullable();
             $table->float('superficie_min')->nullable();
             $table->float('superficie_max')->nullable();
-            $table->boolean('liste_attente')->default(false);
+            $table->boolean('etat')->default(false)->comment('1 attent 2 existe_bien_dispoible 3 traite');;
             $table->double('avance')->nullable();
             $table->boolean('tranche')->default(false);
             $table->boolean('orientation' )->default(false);
             $table->boolean('etage')->default(false);
             $table->boolean('vue')->default(false);
             $table->boolean('typologie')->default(false);
+            $table->string('commentaire')->nullable();
             $table->foreignId('visite_id')->nullable()->constrained('visites')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();

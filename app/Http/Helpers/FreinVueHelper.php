@@ -17,13 +17,13 @@ class FreinVueHelper
 
     public static function destroyFreinVue($frein_id){
         $freinVue=FreinVue::on('temp')->where('frein_id',$frein_id)->get();
-        $frein=Frein::on('temp')->findOrfail($frein_id);
+       // $frein=Frein::on('temp')->findOrfail($frein_id);
         if(count($freinVue)>0){
                 foreach($freinVue as $fr){
                     $fr->delete();
                 }
-                $frein->vue=0;
-                $frein->save();
+               // $frein->vue=0;
+               // $frein->save();
         }
     }
 }

@@ -158,8 +158,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('store_n_visite/{id}',[VisiteController::class,'store_n_visite'])->name('store_n_visite');
     Route::get('getAllAttributes',[VisiteController::class,'getAllAttributes'])->name('getAllAttributes');
     Route::get('get_historiques_visite/{origin_id}', [VisiteController::class, 'get_historiques'])->name('get_historiques');
-    Route::put('update_date_relance_rdv_visite/{id}',[VisiteController::class,'update_date_relance_rdv'])->name('');
-    Route::put('valider_relance_rdv_visite/{id}',[VisiteController::class,'traiter_relance_rdv'])->name('');
+    Route::put('traiter_relance_rdv_visite/{id}',[VisiteController::class,'traiter_relance_rdv_visite'])->name('');
 
     /*************************************type_Freins***************************** */
     Route::resource('type_freins', TypeFreinController::class);
@@ -170,7 +169,9 @@ Route::middleware('auth:api')->group(function () {
 
     /*************************************Frein***************************** */
     Route::resource('frein', FreinController::class);
-
+    Route::get('get_clients_freins/{projet_id}', [FreinController::class, 'get_clients_freins'])->name('');
+    Route::get('biens_by_frein/{id}', [FreinController::class,'biens_by_frein'])->name('');
+    Route::put('traiter_bien_frein/{bien_id}/{frein_id}', [FreinController::class,'traiter_bien_frein'])->name('');
     /*************************************Prospect***************************** */
     Route::resource('prospect',ProspectController::class);
     Route::get('search_prospect_by_cin/{cin}', [ProspectController::class, 'search_prospect_by_cin']);
@@ -247,6 +248,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('get_notifications/{projet_id}', [NotificationController::class,'get_notifications'])->name('');
     Route::get('DestroyNotif/{id}', [NotificationController::class,'DestroyNotif'])->name('');
     Route::get('notifications/{projet_id}', [NotificationController::class,'index'])->name('');
+
 
 });
 Route::get('sendResetPasswordEmail', [UserController::class, 'sendResetPasswordEmail']);

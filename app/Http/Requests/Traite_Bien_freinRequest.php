@@ -1,10 +1,12 @@
 <?php
 
 namespace App\Http\Requests;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateDate_relance_Rdv extends FormRequest
+class Traite_Bien_freinRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -17,13 +19,13 @@ class UpdateDate_relance_Rdv extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
+    * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
+
      */
     public function rules(): array
     {
         return [
-            'commentaire' => 'required',
-           // 'date' => 'required',
+            'commentaire' =>'required',
         ];
     }
 }

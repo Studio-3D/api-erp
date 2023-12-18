@@ -16,13 +16,13 @@ class FreinTypologieHelper
     }
     public static function destroyFreinTypologie($frein_id){
         $freinTypologie=FreinTypologie::on('temp')->where('frein_id',$frein_id)->get();
-        $frein=Frein::on('temp')->findOrfail($frein_id);
+       // $frein=Frein::on('temp')->findOrfail($frein_id);
         if(count($freinTypologie)>0){
                 foreach($freinTypologie as $fr){
                     $fr->delete();
                 }
-                $frein->typologie=0;
-                $frein->save();
+                //$frein->typologie=0;
+                //$frein->save();
         }
     }
 }
