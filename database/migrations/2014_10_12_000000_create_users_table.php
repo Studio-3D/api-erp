@@ -32,7 +32,6 @@ return new class extends Migration
             $table->integer('cnss')->nullable();
             $table->integer('is_actif')->default(1);
             $table->integer('is_connected')->default(0);
-            $table->integer('is_connected')->default(0);
             $table->string('fonction')->nullable();
             $table->integer('solde_conge')->nullable();
             $table->timestamps();
