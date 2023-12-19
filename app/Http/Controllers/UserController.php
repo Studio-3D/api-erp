@@ -49,7 +49,7 @@ class UserController extends Controller
             $user->societe_id = 1;
             $user->save();
         }
-         $user->is_connected = 1;
+         $user->is_connected = 0;
             $user->save();
         return response()->json([
             'message' => 'Logout successful',
