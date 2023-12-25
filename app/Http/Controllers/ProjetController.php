@@ -7,7 +7,11 @@ use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\RoleHelper;
 use App\Http\Helpers\typeBienProjetHelper;
 use App\Http\Helpers\UserProjetHelper;
+use App\Http\Requests\StorePartenaireRequest;
 use App\Http\Requests\StoreProjetRequest;
+use App\Http\Requests\StoreTypeBienRequest;
+use App\Http\Requests\StoreTypologieRequest;
+use App\Http\Requests\StoreVueRequest;
 use App\Http\Requests\UpdateProjetRequest;
 use App\Models\Projet;
 use App\Models\User;
@@ -109,8 +113,60 @@ class ProjetController extends Controller
             $projet->nbre_immeubles = $request->nbre_immeubles ?: 0;
             $projet->max_etages = $request->max_etages;
             $projet->nbre_biens = $request->nbre_biens ?: 0;
-            if($request->verification==true){
-                    if($projet->save()){
+                if($projet->save()){
+                        if($request->donneesTypeBien){
+                            $typeBienController = new TypeBienController();
+                            $typeBienRequest = new StoreTypeBienRequest;
+                            foreach ($request->donneesTypeBien as $typeBiens) {
+            
+                                $dataTypebien = [
+                                'type' => $typeBiens,
+                                'projet_id' => $projet->id,
+                                ];
+                            $typeBienRequest->merge($dataTypebien);
+                            $typeBienController->store($typeBienRequest);
+                            }
+                        }
+                        if($request->donneesVue){
+                            $vueController = new VueController();
+                            $vueRequest = new StoreVueRequest();
+                            foreach ($request->donneesVue as $vues) {
+            
+                                $datavue = [
+                                'vue' => $vues,
+                                'projet_id' => $projet->id,
+                                ];
+                            $vueRequest->merge($datavue);
+                            $vueController->store($vueRequest);
+                            }
+                        }
+                        if($request->donneesTypologie){
+                            $typologieController = new TypologieController();
+                            $typologieRequest = new StoreTypologieRequest();
+                            foreach ($request->donneesTypologie as $Typologies) {
+            
+                                $dataTypologie = [
+                                'typologie' => $Typologies,
+                                'projet_id' => $projet->id,
+                                ];
+                            $typologieRequest->merge($dataTypologie);
+                            $typologieController->store($typologieRequest);
+                            }
+                        }
+                        if($request->partenaires){
+                            $partenaireController = new PartenaireController();
+                            $partenaireRequest = new StorePartenaireRequest();
+                            foreach ($request->partenaires as $Partenaire) {
+            
+                                $dataPartenaire = [
+                                    'description' => $Partenaire['description'],
+                                    'remise' => $Partenaire['remise'],
+                                    'projet_id' => $projet->id,
+                                ];
+                            $partenaireRequest->merge($dataPartenaire);
+                            $partenaireController->store($partenaireRequest);
+                            }
+                        }
                         if ($request->selectedtypeBien){
                             foreach($request->selectedtypeBien as $valeur){
                                 if($valeur[0])
@@ -144,13 +200,9 @@ class ProjetController extends Controller
                                 return response()->json(['projet' => $projet], 200);
 
                         }
-                    }
+                    }    
 
-            }
-            else{
-                return response()->json(['error' => 'Attention nombre de bien par type différent de nombre de bien total'], 422);//error not errors pour ne pas donner des prb dans le frontend
-
-            }
+            
 
 
           } else {
