@@ -16,7 +16,11 @@ use Illuminate\Support\Facades\Auth;
 use \Illuminate\Support\Facades\Storage;
 use App\Events\Societes;
 use App\Events\NewSocieteEvent;
+
 use Illuminate\Support\Facades\Config;
+
+
+
 
 class SocieteController extends Controller
 {
@@ -168,10 +172,7 @@ class SocieteController extends Controller
                     $databaseHelper->renameDatabase($oldDatabaseName, $newDatabaseName);
                 }
             }
-            // $societes=Societe::all();     
-            // Config::set('broadcasting.default', 'pusher_1');
-
-            // broadcast(new NewSocieteEvent($societes));
+            /
             Config::set('broadcasting.default', 'pusher_1');
             $societes = Societe::all();
             broadcast(new NewSocieteEvent($societes));
@@ -194,9 +195,9 @@ class SocieteController extends Controller
             }
 
             if ($societe->delete()) {
-                Config::set('broadcasting.default', 'pusher_1');
 
-                $societes = Societe::all();
+                Config::set('broadcasting.default', 'pusher_1');
+                $societes=Societe::all();      
                 broadcast(new NewSocieteEvent($societes));
                 return response()->json(['message' => 'Societe supprimée avec succès'], 200);
               
