@@ -9,23 +9,23 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use App\Events\NewNotificationEvent;
+use App\Events\NewProjectEvent;
 
 
-class NewNotificationEvent implements ShouldBroadcast
+class NewProjectEvent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public $notificationData;
+    public $projetData;
 
-    public function __construct($notificationData)
+    public function __construct($projetData)
     {
-        $this->notificationData = $notificationData;
+        $this->projetData = $projetData;
     }
 
     public function broadcastOn()
     {
-        return new Channel('notifications');
+        return new Channel('projets');
     }
 
   

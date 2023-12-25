@@ -16,9 +16,7 @@ use Illuminate\Support\Facades\Auth;
 use \Illuminate\Support\Facades\Storage;
 use App\Events\Societes;
 use App\Events\NewSocieteEvent;
-use App\Events\NewNotificationEvent;
-
-
+use Illuminate\Support\Facades\Config;
 
 class SocieteController extends Controller
 {
@@ -30,9 +28,10 @@ class SocieteController extends Controller
     {
         if (RoleHelper::Superadmin()) {
             $societes = Societe::all();
-            broadcast(new NewNotificationEvent($societes));
             return response()->json(['societes' => $societes]);
+           
         }
+       
 
         return response()->json(['error' => 'Unauthorized'], 401);
     }
@@ -60,19 +59,7 @@ class SocieteController extends Controller
         //
     }
 
-    public function sendsociete()
-    {
-        $notificationData= [
-            'title' => 'New Notification',
-            'message' => 'You have a new notification!',
-            'created_at' => now()->toDateTimeString(),
-            // ... other relevant data
-        ];
-        
-        broadcast(new NewNotificationEvent($notificationData));
     
-    return response()->json(['message' => 'Notification sent successfully']);
-    }
 
     /**
      * Store a newly created resource in storage.
@@ -93,17 +80,24 @@ class SocieteController extends Controller
                 $societe->logo = $logo;
             }
             $societe->save();
+
             // $societes = Societe::whereNull('adresse')->get();     
             // $societes=Societe::all();      
-            // broadcast(new NewNotificationEvent($societes));
+            // broadcast(new NewSocieteEvent($societes));
             $raison_sociale_concatene = str_replace(' ', '', $request->raison_sociale);
             $databaseSociete = new DatabaseHelper();
             $response = $databaseSociete->createNewClientDatabase($raison_sociale_concatene, $societe->id);
+            Config::set('broadcasting.default', 'pusher_1');
+            $societes = Societe::all();
+            broadcast(new NewSocieteEvent($societes));
             if ($response->getStatusCode() == 200) {
                 return response()->json(['message' => $response->getOriginalContent()['message']]);
             } else {
                 return response()->json(['message' => $response->getOriginalContent()['message']]);
             }
+           
+                      
+
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -160,21 +154,27 @@ class SocieteController extends Controller
                 $societe->logo = $logo;
             }
             $societe->save();
+   
 
-            // $societes=Societe::all();      
-            // broadcast(new NewNotificationEvent($societes));
+
+            
             if ($request->has('raison_sociale')) {
                 $newRaisonSociale = $societe->raison_sociale;
                 if ($originalRaisonSociale !== $newRaisonSociale) {
                     $newDatabaseName = 'Erp_' . $newRaisonSociale . '_' . $id;
                     $oldDatabaseName = 'Erp_' . $originalRaisonSociale . '_' . $id;
 
-                    // $databaseHelper = new DatabaseHelper();
-                    // $databaseHelper->renameDatabase($oldDatabaseName, $newDatabaseName);
+                    $databaseHelper = new DatabaseHelper();
+                    $databaseHelper->renameDatabase($oldDatabaseName, $newDatabaseName);
                 }
             }
+            // $societes=Societe::all();     
+            // Config::set('broadcasting.default', 'pusher_1');
 
-
+            // broadcast(new NewSocieteEvent($societes));
+            Config::set('broadcasting.default', 'pusher_1');
+            $societes = Societe::all();
+            broadcast(new NewSocieteEvent($societes));
             return response()->json(['message' => $societe], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -194,8 +194,10 @@ class SocieteController extends Controller
             }
 
             if ($societe->delete()) {
-                $societes=Societe::all();      
-                broadcast(new NewNotificationEvent($societes));
+                Config::set('broadcasting.default', 'pusher_1');
+
+                $societes = Societe::all();
+                broadcast(new NewSocieteEvent($societes));
                 return response()->json(['message' => 'Societe supprimée avec succès'], 200);
               
             } else {
@@ -208,7 +210,7 @@ class SocieteController extends Controller
     public function restoreSociete($societe_id)
     {
         if (RoleHelper::Superadmin()) {
-
+ 
             Societe::where('id', $societe_id)->withTrashed()->restore();
 
             return response()->json(['message' => 'Societe est restaurée avec succès'], 200);
