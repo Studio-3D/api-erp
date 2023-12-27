@@ -178,7 +178,7 @@ class ProjetController extends Controller
                         }   }
                         $all=0;
                         foreach($request->selectedUsers as $valeur) {
-                            if($valeur=='tous') {
+                            if($valeur['id']=='tous') {
                                 $all=1;
                                 break;
                             }
@@ -195,7 +195,7 @@ class ProjetController extends Controller
                         else{
 
                             foreach($request->selectedUsers as $valeur) {
-                                UserProjetHelper::createUserProjet($projet->id, $valeur);
+                                UserProjetHelper::createUserProjet($projet->id, $valeur['id']);
                             }
                                 return response()->json(['projet' => $projet], 200);
 
