@@ -165,6 +165,23 @@ class PartenaireController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+    public static function AjouterPartenaire($donneesPartenaire, $projet_id)
+    {
+            $partenaireController = new PartenaireController();
+            $partenaireRequest = new StorePartenaireRequest();
+            foreach ($donneesPartenaire as $Partenaire) {
+
+                $dataPartenaire = [
+                    'description' => $Partenaire['description'],
+                    'remise' => $Partenaire['remise'],
+                    'projet_id' => $projet_id,
+                ];
+            $partenaireRequest->merge($dataPartenaire);
+            $partenaireController->store($partenaireRequest);
+            }
+        
+       
+    }
 
 
 }

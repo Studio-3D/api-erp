@@ -184,6 +184,22 @@ class TypeBienController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+    public static function AjouterTypeBien($typeBiens, $projet_id)
+    {
+        
+            $typeBienController = new TypeBienController();
+            $typeBienRequest = new StoreTypeBienRequest;
+            foreach ($typeBiens as $typeBiens) {
+                $dataTypebien = [
+                    'type' => $typeBiens,
+                    'projet_id' => $projet_id,
+                ];
+                $typeBienRequest->merge($dataTypebien);
+                $typeBienController->store($typeBienRequest);
+            }
+        
+       
+    }
 
     
 

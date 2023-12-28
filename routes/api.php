@@ -151,6 +151,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('restoreTypeBien/{id}', [TypeBienController::class, 'restoreTypeBien'])->name('restoreTypeBien');
     Route::get('getTrashedTypesBien', [TypeBienController::class, 'getTrashedTypesBien'])->name('getTrashedTypesBien');
     Route::get('TypeBiens/{projet_id}', [TypeBienController::class,'index'])->name('TypeBiens');
+    Route::post('/AjouterTypeBien', [TypeBienController::class, 'AjouterTypeBien']);
 
     /*************************************Visite***************************** */
     Route::resource('visite',VisiteController::class);
