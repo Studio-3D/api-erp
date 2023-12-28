@@ -198,43 +198,6 @@ class ProjetController extends Controller
         }
     }
 
-    public function AjouterTypeBien($request, $projet_id)
-    {
-        
-            $typeBienController = new TypeBienController();
-            $typeBienRequest = new StoreTypeBienRequest;
-            foreach ($request->donneesTypeBien as $typeBiens) {
-                $dataTypebien = [
-                    'type' => $typeBiens,
-                    'projet_id' => $projet_id,
-                ];
-                $typeBienRequest->merge($dataTypebien);
-                $typeBienController->store($typeBienRequest);
-            }
-        
-       
-    }
-    public function AjouterVue($request, $projet_id)
-    {
-        if($request->donneesVue){
-            $vueController = new VueController();
-            $vueRequest = new StoreVueRequest();
-            foreach ($request->donneesVue as $vues) {
-
-                $datavue = [
-                'vue' => $vues,
-                'projet_id' => $projet_id,
-                ];
-            $vueRequest->merge($datavue);
-            $vueController->store($vueRequest);
-            }
-        }
-       
-    }
-    
-    
-    
-
     /**
      * Update the specified resource in storage.
      */
