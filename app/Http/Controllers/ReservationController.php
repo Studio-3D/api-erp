@@ -92,7 +92,7 @@ class ReservationController extends Controller
                 if (RoleHelper::Com()) {
                     $reservation->statut = StatutReservationEnum::EN_ATTENTE->value;
                 }
-                if ($request->verifierPourcentages == true) {
+                if ($request->verifierPourcentages === true) {
                     if ($reservation->save()) {
                         $bienController = new BienController();
                         $bienController->reserverBien($reservation->bien_id);

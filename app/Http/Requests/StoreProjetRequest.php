@@ -44,6 +44,7 @@ class StoreProjetRequest extends FormRequest
             'nbr_blocs' => 'integer',
             'nbr_immeubles' => 'integer',
             'nbr_biens' => 'integer',
+            'max_etages' => 'integer',
             'selectedUsers' => 'required',
             'nom' => ['required', Rule::unique('temp.'.$DatabaseName.'.projets','nom')],
         ];
