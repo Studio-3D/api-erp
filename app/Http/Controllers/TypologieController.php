@@ -133,19 +133,18 @@ class TypologieController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    public static function AjouterTypologie($typologies, $projet_id)
+    public static function AjouterTypologie($typologie, $projet_id)
     {
             $typologieController = new TypologieController();
             $typologieRequest = new StoreTypologieRequest();
-            foreach ($typologies as $Typologies) {
 
                 $dataTypologie = [
-                'typologie' => $Typologies,
+                'typologie' => $typologie,
                 'projet_id' => $projet_id,
                 ];
             $typologieRequest->merge($dataTypologie);
             $typologieController->store($typologieRequest);
-            }
+            
         
        
     }

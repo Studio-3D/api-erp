@@ -142,7 +142,6 @@ class VueController extends Controller
     {
             $vueController = new VueController();
             $vueRequest = new StoreVueRequest();
-            foreach ($vues as $vues) {
 
                 $datavue = [
                 'vue' => $vues,
@@ -150,7 +149,7 @@ class VueController extends Controller
                 ];
             $vueRequest->merge($datavue);
             $vueController->store($vueRequest);
-            }
+            
         
        
     }

@@ -115,17 +115,26 @@ class ProjetController extends Controller
             $projet->nbre_biens = $request->nbre_biens ?: 0;
                 if($projet->save()){
                     if($request->donneesTypeBien){
-                        TypeBienController::AjouterTypeBien($request->donneesTypeBien, $projet->id);
+                        foreach ($request->donneesTypeBien as $typeBien) {
+                            TypeBienController::AjouterTypeBien($typeBien, $projet->id);
+                        }    
                     }
                     if($request->donneesVue){
-                        VueController::AjouterVue($request->donneesVue, $projet->id);
+                        foreach ($request->donneesVue as $vue) {
+                            VueController::AjouterVue($vue, $projet->id);
+                        }
                     }
                     if($request->donneesTypologie){
-                        TypologieController::AjouterTypologie($request->donneesTypologie, $projet->id);
+                        foreach ($request->donneesTypologie as $Typologie) {
+                            TypologieController::AjouterTypologie($Typologie, $projet->id);
+                        }
                     }
                     if($request->partenaires){
-                        PartenaireController::AjouterPartenaire($request->partenaires, $projet->id);
+                        foreach ($request->partenaires as $Partenaire) {
+                            PartenaireController::AjouterPartenaire($Partenaire, $projet->id);
+                        }
                     }
+                    //nombre de bien par type de bien
                     if ($request->selectedtypeBien){
                             foreach($request->selectedtypeBien as $valeur){
                                 if($valeur[0])
@@ -134,7 +143,8 @@ class ProjetController extends Controller
                                 else{
                                     return response()->json(['error' => 'Veuillez choisir le type de bien'], 422);//error not errors pour ne pas donner des prb dans le frontend
                                 }
-                        }   }    
+                        }
+                    }    
                         $all=0;
                         foreach($request->selectedUsers as $valeur) {
                             if($valeur['id']=='tous') {
