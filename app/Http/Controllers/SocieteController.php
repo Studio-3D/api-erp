@@ -66,9 +66,9 @@ class SocieteController extends Controller
             'created_at' => now()->toDateTimeString(),
             // ... other relevant data
         ];
-        
+
         broadcast(new NewNotificationEvent($notificationData));
-    
+
     return response()->json(['message' => 'Notification sent successfully']);
     }
 
@@ -91,8 +91,8 @@ class SocieteController extends Controller
                 $societe->logo = $logo;
             }
             $societe->save();
-            // $societes = Societe::whereNull('adresse')->get();     
-            // $societes=Societe::all();      
+            // $societes = Societe::whereNull('adresse')->get();
+            // $societes=Societe::all();
             // broadcast(new NewNotificationEvent($societes));
             $raison_sociale_concatene = str_replace(' ', '', $request->raison_sociale);
             $databaseSociete = new DatabaseHelper();
@@ -159,7 +159,7 @@ class SocieteController extends Controller
             }
             $societe->save();
 
-            
+
             if ($request->has('raison_sociale')) {
                 $newRaisonSociale = $societe->raison_sociale;
                 if ($originalRaisonSociale !== $newRaisonSociale) {
@@ -191,10 +191,10 @@ class SocieteController extends Controller
             }
 
             if ($societe->delete()) {
-                $societes=Societe::all();      
+                $societes=Societe::all();
                 broadcast(new NewSocieteEvent($societes));
                 return response()->json(['message' => 'Societe supprimée avec succès'], 200);
-              
+
             } else {
                 return response()->json(['message' => 'Societe non supprimée'], 404);
             }
@@ -276,6 +276,6 @@ class SocieteController extends Controller
         );
 
 
-        
+
     }
 }
