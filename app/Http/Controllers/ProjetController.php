@@ -7,13 +7,21 @@ use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\RoleHelper;
 use App\Http\Helpers\typeBienProjetHelper;
 use App\Http\Helpers\UserProjetHelper;
+use App\Http\Requests\StorePartenaireRequest;
 use App\Http\Requests\StoreProjetRequest;
+use App\Http\Requests\StoreTypeBienRequest;
+use App\Http\Requests\StoreTypologieRequest;
+use App\Http\Requests\StoreVueRequest;
 use App\Http\Requests\UpdateProjetRequest;
 use App\Models\Projet;
 use App\Models\User;
 use App\Models\UserProjet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Events\NewProjectEvent;
+use Illuminate\Support\Facades\Config;
+
+
 
 class ProjetController extends Controller
 {
@@ -24,18 +32,23 @@ class ProjetController extends Controller
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            $projets = Projet::on('temp')->orderBy('created_at', 'desc')
-                ->get();
+            Config::set('broadcasting.default', 'pusher_2');
+            $projets = Projet::on('temp')->orderBy('created_at', 'desc')->get();
+            broadcast(new NewProjectEvent($projets));
             return response()->json(['projets' => $projets]);
         } else if (RoleHelper::Com()) {
             DatabaseHelper::Config();
             $id_auth=Auth::guard('api')->user()->id;
             $user_id=User::on('temp')->where('user_id_origin', $id_auth)->pluck('id');
+            Config::set('broadcasting.default', 'pusher_2');
             $projets = Projet::on('temp')
             ->join('user_projets', 'user_projets.projet_id', '=', 'projets.id')
             ->where('user_projets.user_id',$user_id)
             ->select('projets.*')
             ->get();
+            broadcast(new NewProjectEvent($projets));
+
+
             return response()->json(['projets'=>  $projets]);
 
 
@@ -109,9 +122,29 @@ class ProjetController extends Controller
             $projet->nbre_immeubles = $request->nbre_immeubles ?: 0;
             $projet->max_etages = $request->max_etages;
             $projet->nbre_biens = $request->nbre_biens ?: 0;
-            if($request->verification==true){
-                    if($projet->save()){
-                        if ($request->selectedtypeBien){
+                if($projet->save()){
+                    if($request->donneesTypeBien){
+                        foreach ($request->donneesTypeBien as $typeBien) {
+                            TypeBienController::AjouterTypeBien($typeBien, $projet->id);
+                        }    
+                    }
+                    if($request->donneesVue){
+                        foreach ($request->donneesVue as $vue) {
+                            VueController::AjouterVue($vue, $projet->id);
+                        }
+                    }
+                    if($request->donneesTypologie){
+                        foreach ($request->donneesTypologie as $Typologie) {
+                            TypologieController::AjouterTypologie($Typologie, $projet->id);
+                        }
+                    }
+                    if($request->partenaires){
+                        foreach ($request->partenaires as $Partenaire) {
+                            PartenaireController::AjouterPartenaire($Partenaire, $projet->id);
+                        }
+                    }
+                    //nombre de bien par type de bien
+                    if ($request->selectedtypeBien){
                             foreach($request->selectedtypeBien as $valeur){
                                 if($valeur[0])
                                     {typeBienProjetHelper::createTypeBienProjet((int)$valeur[0],$projet->id,(int)$valeur[1]);
@@ -119,10 +152,11 @@ class ProjetController extends Controller
                                 else{
                                     return response()->json(['error' => 'Veuillez choisir le type de bien'], 422);//error not errors pour ne pas donner des prb dans le frontend
                                 }
-                        }   }
+                        }
+                    }    
                         $all=0;
                         foreach($request->selectedUsers as $valeur) {
-                            if($valeur=='tous') {
+                            if($valeur['id']=='tous') {
                                 $all=1;
                                 break;
                             }
@@ -139,18 +173,14 @@ class ProjetController extends Controller
                         else{
 
                             foreach($request->selectedUsers as $valeur) {
-                                UserProjetHelper::createUserProjet($projet->id, $valeur);
+                                UserProjetHelper::createUserProjet($projet->id, $valeur['id']);
                             }
                                 return response()->json(['projet' => $projet], 200);
 
                         }
-                    }
+                    }    
 
-            }
-            else{
-                return response()->json(['error' => 'Attention nombre de bien par type différent de nombre de bien total'], 422);//error not errors pour ne pas donner des prb dans le frontend
-
-            }
+            
 
 
           } else {
@@ -249,6 +279,10 @@ class ProjetController extends Controller
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->findOrfail($id);
             if ($projet->delete()) {
+                Config::set('broadcasting.default', 'pusher_2');
+                $projets = Projet::on('temp')->orderBy('created_at', 'desc')->get();
+                broadcast(new NewProjectEvent($projets));
+
                 return response()->json(['message' => 'Projet supprimé avec succès'], 200);
             } else {
                 return response()->json(['message' => "Projet n'a pas été supprimé"], 404);

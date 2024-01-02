@@ -32,6 +32,7 @@ return [
             'enable_client_messages' => false,
             'enable_statistics' => true,
         ],
+
     ],
 
     /*

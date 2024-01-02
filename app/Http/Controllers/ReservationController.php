@@ -94,7 +94,7 @@ class ReservationController extends Controller
                 if (RoleHelper::Com()) {
                     $reservation->statut = StatutReservationEnum::EN_ATTENTE->value;
                 }
-                if ($request->verifierPourcentages == true) {
+                if ($request->verifierPourcentages === true) {
                     if ($reservation->save()) {
                         if (RoleHelper::Com()) {
                             //notifiction to admin de valider dossier d reservation user_id=>null

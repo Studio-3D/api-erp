@@ -7,18 +7,16 @@ use App\Http\Helpers\RoleHelper;
 use App\Http\Helpers\UserProjetHelper;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Mail\ResetPasswordMail;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use \Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Hash;
-use App\Mail\ResetPasswordMail;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-
-
+use Illuminate\Support\Str;
+use \Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -29,16 +27,16 @@ class UserController extends Controller
             'email' => 'required|email',
             'password' => 'required',
         ]);
-    
+
         if (Auth::attempt($credentials)) {
             $user = Auth::user();
             $user->is_connected = 1;
             $user->save();
             $accessToken = $user->createToken('API Token')->accessToken;
-    
+
             return response()->json(['access_token' => $accessToken], 200);
         }
-    
+
         return response()->json(['error' => 'email ou mot de passe incorrect'], 422);
     }
     public function logout(Request $request)
@@ -49,8 +47,8 @@ class UserController extends Controller
             $user->societe_id = 1;
             $user->save();
         }
-         $user->is_connected = 0;
-            $user->save();
+        $user->is_connected = 0;
+        $user->save();
         return response()->json([
             'message' => 'Logout successful',
         ]);
@@ -205,7 +203,7 @@ class UserController extends Controller
     }
     public function update(UpdateUserRequest $request, $id)
     {
-        if($request->is_profil) {
+        if ($request->is_profil) {
             if ($request->cin != null) {
                 $cin_exist = User::where('cin', $request->cin)->where('id', '!=', $id)->count();
                 if ($cin_exist > 0) {
@@ -250,8 +248,7 @@ class UserController extends Controller
 
             return response()->json(['message' => 'profil modifié avec succès'], 200);
 
-        }
-        else if (RoleHelper::Superadmin() && Auth::guard('api')->user()->societe_id == 1) {
+        } else if (RoleHelper::Superadmin() && Auth::guard('api')->user()->societe_id == 1) {
 
             if ($request->cin != null) {
                 $cin_exist = User::where('cin', $request->cin)->where('id', '!=', $id)->count();
@@ -343,9 +340,7 @@ class UserController extends Controller
             }
 
             return response()->json(['message' => 'Utilisateur modifié avec succès'], 200);
-        }
-
-        else {
+        } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
@@ -462,7 +457,6 @@ class UserController extends Controller
         }
     }
     public function sendEmail()
-
     {
         if (RoleHelper::SuperAdmin()) {
 
@@ -490,18 +484,16 @@ class UserController extends Controller
             $resetUrl = 'http://localhost:3000/reset-password/' . $token;
 
             // Send an email to the user with the reset URL
-            Mail::to($user)->send(new ResetPasswordMail($resetUrl,  $confirmationCode));
+            Mail::to($user)->send(new ResetPasswordMail($resetUrl, $confirmationCode));
 
             return response()->json(['message' => 'Password reset email sent']);
         }
     }
     public function resendEmail()
-
     {
         if (RoleHelper::SuperAdmin()) {
             // Validate the request and check for user existence
             $user = Auth::guard('api')->user()->email;
-
 
             if (!$user) {
                 return response()->json(['message' => 'User not found'], 404);
@@ -509,8 +501,6 @@ class UserController extends Controller
             DB::table('password_reset_tokens')
                 ->where('email', $user)
                 ->delete();
-
-
 
             $token = Str::random(60);
             $confirmationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -526,16 +516,14 @@ class UserController extends Controller
             // Construct the reset URL
             $resetUrl = env('HOST_NAME_FRONT') . '/reset-password/' . $token;
             // Send an email to the user with the reset URL
-            Mail::to($user)->send(new ResetPasswordMail($resetUrl,  $confirmationCode));
+            Mail::to($user)->send(new ResetPasswordMail($resetUrl, $confirmationCode));
 
             return response()->json(['message' => 'Password reset email sent']);
         }
     }
 
-
     public function resetPassword(Request $request, $token)
     {
-
 
         if (RoleHelper::ACSup()) {
             $passwordReset = DB::table('password_reset_tokens')
@@ -550,12 +538,10 @@ class UserController extends Controller
                 return response()->json(['message' => 'Token has expired'], 401);
             }
 
-
             $user = User::where('email', $passwordReset->email)->first();
             $user->update([
                 'password' => Hash::make($request->password),
             ]);
-
 
             DB::table('password_reset_tokens')
                 ->where('token', $token)
@@ -566,8 +552,6 @@ class UserController extends Controller
     }
     public function validateToken($token)
     {
-
-
 
         $passwordReset = DB::table('password_reset_tokens')
             ->where('token', $token)
