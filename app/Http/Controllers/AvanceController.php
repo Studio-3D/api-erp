@@ -3,14 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Enum\StatutReservationEnum;
+use App\Enum\ModeFinancement;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreAvanceRequest;
 use App\Http\Requests\UpdateAvanceRequest;
 use App\Models\Avance;
+use App\Models\Fiche_Transmission;
+use App\Models\Encaissement;
+use App\Models\User;
 use App\Models\Reservation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Helpers\NotificationHelper;
+use Carbon\Carbon;
+use App\Enum\RoleEnum;
+
+
 
 class AvanceController extends Controller
 {
@@ -50,17 +59,41 @@ class AvanceController extends Controller
 
         if(RoleHelper::ACSup()){
             DatabaseHelper::Config();
+            $user = Auth::user();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $reservation = Reservation::on('temp')->findOrFail($request->reservation_id);
             $avance= new Avance();
             $avance->setConnection('temp');
-            $avance->sr= (bool)$request->sr;
-            $avance->montant=$request->montant;
+            $last_num_recu = Avance::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")
+            ->get('num_recu')->first();
+            if ($last_num_recu!=null) {
+                $n_recu = $last_num_recu->num_recu + 1;
+                $avance->num_recu = '00' . $n_recu . '';
+            } else {
+                $avance->num_recu = '001';
+            }
+            if($request->montant==0){
+                $avance->sr=false;
+            }else{
+                $avance->sr= (bool)$request->sr;
+            }
             $avance->mode_paiement=$request->mode_paiement;
-            $avance->numero_paiemeant=$request->numero_paiemeant;
+            //cheque cheque-banque cheque cetifice
+            if($request->mode_paiement==2||$request->mode_paiement==3||$request->mode_paiement==4){
+                $avance->numero_paiement=$request->numero_paiement;
+                $avance->banque_id=$request->banque_id;
+                $avance->echeance=$request->echeance;
+
+            }
+            //virement versement
+            elseif($request->mode_paiement==5||$request->mode_paiement==6){
+                $avance->numero_paiement=$request->numero_paiement;
+                $avance->banque_id=$request->banque_id;
+            }
+            $avance->user_id=$userAuth->value('id');
             $avance->date_reglement=$request->date_reglement;
-            $avance->echeance=$request->echeance;
             $avance->commentaireAvance=$request->commentaireAvance;
-            $avance->banque_id=$request->banque_id;
+            $avance->montant=$request->montant;
             $avance->montant_par_lettre=$request->montant_par_lettre;
             $avance->reservation_id=$request->reservation_id;
             if(RoleHelper::Com()){
@@ -68,12 +101,69 @@ class AvanceController extends Controller
             }
             elseif(RoleHelper::AdminSup()){
                 $avance->statut=StatutReservationEnum::VALIDER->value;
+                $avance->user_id_valider=$userAuth->value('id');
+                $avance->date_validation=Carbon::now();
+                $avance->date_encaissement=$request->date_encaissement;
+                $avance->num_remise = $request->num_remise;
             }
+
+
             if($avance->save()){
-                $reservation->montant_encaisse +=$avance->montant;
-                $reservation->save();
-                return $avance;
+                //send notification d'echeance
+                if ($avance->echeance != null && $avance->sr == true) {
+                    NotificationHelper::storeNotification(
+                        '/reservations/show/'.$avance->reservation_id, Carbon::now(),5,'ECHEANCE',Auth::guard('api')->user()->id,null,null,null,$avance->reservation->projet_id,$avance->id,$request->reservation_id
+                    );
+                }
+                //si commercial==> demande validation du paiement
+                if (RoleHelper::Com()) {
+                    NotificationHelper::storeNotification(
+                        '/reservations/show/'.$avance->reservation_id, Carbon::now(),7,'Validation paiement',null,RoleEnum::ADMIN->value,null,null,$avance->reservation->projet_id,$avance->id,$request->reservation_id
+                    );
+                }
+                //store avance to fiche transmission
+                $fiche= new Fiche_Transmission();
+                $fiche->setConnection('temp');
+                //num recu cree aujourdhui
+                $recu_now = Fiche_Transmission::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")->whereDate('created_at', Carbon::now())
+                ->get('num_recu')->first();
+                if ($recu_now!=null) {
+                    $fiche->num_recu= $recu_now->num_recu;
+
+                } else {
+                    //num recu cree != aujourdhui
+                    $rec_not_now= Fiche_Transmission::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")->whereDate('created_at','!=', Carbon::now())
+                    ->get('num_recu')->first();
+                    if($rec_not_now!=null){
+                        $pp = $rec_not_now->num_recu + 1;
+                        $fiche->num_recu = '00' . $pp . '';
+                    }
+                    else{
+                        $fiche->num_recu = '001';
+                    }
+
+                }
+                $fiche->id_avance=$avance->id;
+                $fiche->user_id=$userAuth->value('id');
+                $fiche->save();
+
+                if(RoleHelper::AdminSup()){
+                    //store encaissement
+                    $encaiss=new Encaissement();
+                    $encaiss->setConnection('temp');
+                    $encaiss->reservation_id=$request->reservation_id;
+                    $encaiss->type_encaissement = $request->type_encaissement;//Avances
+                    $encaiss->montant = $avance->montant;
+                    $encaiss->id_avance = $avance->id;
+                    $encaiss->date_reglement = $avance->created_at;
+                    $encaiss->date_encaissement = $request->date_encaissement;
+                    $encaiss->user_id_valider= $userAuth->value('id');
+                    $encaiss->save();
+                    //store commission a voir
+                }
+
             }
+            return $avance;
 
         }
         return  response()->json(['error'=>'Unauthorized'],201);
