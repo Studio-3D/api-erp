@@ -7,6 +7,7 @@ use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreAquereurRequest;
 use App\Http\Requests\UpdateAquereurRequest;
 use App\Models\Aquereur;
+use App\Models\Reservation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -33,6 +34,29 @@ class AquereurController extends Controller
         }
         return response()->json(['error' => 'Unauthorized'],401);
     }
+
+    public function getAquereur_by_Reservation(Request $request, $reservation_id)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage'));
+             // Get the number of items per page
+            $page = $request->input('page', 1);
+            $aquereurs = Aquereur::on('temp')
+                ->orderBy('created_at', 'desc')
+                ->where('reservation_id', $reservation_id)
+                ->paginate($perPage, ['*'], 'page', $page);
+            return response()->json(['aquereurs' => $aquereurs], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    }
+    
+
+
+
 
     /**
      * Show the form for creating a new resource.

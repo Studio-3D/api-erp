@@ -103,7 +103,7 @@ class ClientController extends Controller
             DatabaseHelper::Config();
             $client=Client::on('temp')->where('id',$id)->get();
 
-            return response()->json(['client'=>$client]);
+            return response()->json(['client' => $client], 200);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
@@ -151,5 +151,24 @@ class ClientController extends Controller
             }
         }
         return response()->json(['error' => 'Unauthorized'], 401);
+    }
+    public function getClient_by_projet(Request $request, $projet_id)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
+            $page = $request->input('page', 1);
+            $clients=Client::on('temp')->join('aquereurs', 'aquereurs.client_id', '=', 'clients.id')
+             ->join('reservations', 'reservations.id', '=', 'aquereurs.reservation_id')
+             ->where('reservations.projet_id',$projet_id)
+             ->select('clients.*')
+             ->distinct()
+            ->paginate($perPage, ['*'], 'page', $page);
+            return response()->json(['clients' => $clients], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
     }
 }
