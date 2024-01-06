@@ -63,7 +63,21 @@ class SocieteController extends Controller
         //
     }
 
-    
+
+    public function sendsociete()
+    {
+        $notificationData= [
+            'title' => 'New Notification',
+            'message' => 'You have a new notification!',
+            'created_at' => now()->toDateTimeString(),
+            // ... other relevant data
+        ];
+
+        broadcast(new NewNotificationEvent($notificationData));
+
+    return response()->json(['message' => 'Notification sent successfully']);
+    }
+
 
     /**
      * Store a newly created resource in storage.
@@ -85,9 +99,11 @@ class SocieteController extends Controller
             }
             $societe->save();
 
+
             // $societes = Societe::whereNull('adresse')->get();     
             // $societes=Societe::all();      
             // broadcast(new NewSocieteEvent($societes));
+
             $raison_sociale_concatene = str_replace(' ', '', $request->raison_sociale);
             $databaseSociete = new DatabaseHelper();
             $response = $databaseSociete->createNewClientDatabase($raison_sociale_concatene, $societe->id);
@@ -161,7 +177,7 @@ class SocieteController extends Controller
    
 
 
-            
+
             if ($request->has('raison_sociale')) {
                 $newRaisonSociale = $societe->raison_sociale;
                 if ($originalRaisonSociale !== $newRaisonSociale) {
@@ -198,9 +214,10 @@ class SocieteController extends Controller
 
                 Config::set('broadcasting.default', 'pusher_1');
                 $societes=Societe::all();      
+
                 broadcast(new NewSocieteEvent($societes));
                 return response()->json(['message' => 'Societe supprimée avec succès'], 200);
-              
+
             } else {
                 return response()->json(['message' => 'Societe non supprimée'], 404);
             }
@@ -282,6 +299,6 @@ class SocieteController extends Controller
         );
 
 
-        
+
     }
 }
