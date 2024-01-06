@@ -15,17 +15,13 @@ class Client extends Model
 
     protected $table='clients';
     protected $dates=['deleted_at'];
-    protected $with = ['societe'];
 
 
     public function reservation()
     {
        return $this->hasMany(Reservation::class);
     }
-    public function societe()
-    {
-        return $this->belongsTo(Societe::class, 'societe_id');
-    }
+    
     public function aquereur()
     {
        return $this->hasMany(Aquereur::class);

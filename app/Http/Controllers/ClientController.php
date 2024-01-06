@@ -8,6 +8,7 @@ use App\Http\Requests\StoreClientRequest;
 use App\Http\Requests\UpdateClientRequest;
 use App\Models\Banque;
 use App\Models\Client;
+use App\Models\Reservation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -102,8 +103,12 @@ class ClientController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $client=Client::on('temp')->where('id',$id)->get();
+            $reservations=Reservation::on('temp')->join('aquereurs', 'aquereurs.reservation_id', '=', 'reservations.id')
+            ->select('reservations.*','aquereurs.pourcentage')
+            ->where('aquereurs.client_id',$id)
+            ->get();
+            return response()->json(['client' => $client,'reservations'=>$reservations], 200);
 
-            return response()->json(['client' => $client], 200);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
