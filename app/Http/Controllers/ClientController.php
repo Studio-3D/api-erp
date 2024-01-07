@@ -110,18 +110,29 @@ class ClientController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
 
             $client=Client::on('temp')->where('id',$id)->get();
+            $perPage = $request->input('pageSizee', config('app.default_item_number_perpage'));
+            $page = $request->input('page', 1);
             $reservations=Reservation::on('temp')->join('aquereurs', 'aquereurs.reservation_id', '=', 'reservations.id')
             ->select('reservations.*','aquereurs.pourcentage')
             ->where('aquereurs.client_id',$id)
-            ->get();
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);            
             return response()->json(['client' => $client,'reservations'=>$reservations], 200);
 
+            $client=Client::on('temp')->findOrFail($id);
+            /*if($client->id_prospect!=null){
+                $prospect = Prospect::on('temp')->findorfail($client->id_prospect)->with('visites_perdu');
+            }
+            else{
+                $prospect=null;
+            }*/
+        return response()->json(['client'=>$client]);
 
         }
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -171,7 +182,7 @@ class ClientController extends Controller
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
-  
+
     public function getClient_by_projet(Request $request, $projet_id)
     {
         if (RoleHelper::ACSup()) {
@@ -191,7 +202,7 @@ class ClientController extends Controller
 
         }
     }
-  
+
     public function search_client_by_cin($cin)
     {
         if(RoleHelper::ACSup()){
