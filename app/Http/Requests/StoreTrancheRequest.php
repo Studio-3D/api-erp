@@ -33,10 +33,10 @@ class StoreTrancheRequest extends FormRequest
             'nom' => ['required', Rule::unique('temp.'.$DatabaseName.'.tranches','nom')->where(function ($query) {
                 $query->where('nom', $this->nom)
                     ->where('projet_id', $this->projet_id);})],
-            'date_lancement' => 'required|date',
-            'date_livraison' => 'required|date',
+            'date_lancement' => 'date',
+            'date_livraison' => 'date',
             'niveau_etages' => 'required|integer',
-            'nbre_blocs' => 'integer ',
+            'nbre_blocs' => 'integer',
             'nbre_immeubles' => 'integer',
             'nbre_biens' => 'integer',
             'projet_id'=>'required|integer'
