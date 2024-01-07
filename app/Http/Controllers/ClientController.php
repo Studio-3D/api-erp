@@ -114,6 +114,7 @@ class ClientController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
+
             $client=Client::on('temp')->where('id',$id)->get();
             $reservations=Reservation::on('temp')->join('aquereurs', 'aquereurs.reservation_id', '=', 'reservations.id')
             ->select('reservations.*','aquereurs.pourcentage')
@@ -170,6 +171,7 @@ class ClientController extends Controller
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
+  
     public function getClient_by_projet(Request $request, $projet_id)
     {
         if (RoleHelper::ACSup()) {
@@ -189,6 +191,7 @@ class ClientController extends Controller
 
         }
     }
+  
     public function search_client_by_cin($cin)
     {
         if(RoleHelper::ACSup()){
@@ -256,4 +259,5 @@ class ClientController extends Controller
             return response()->json(['client' => $client,'prospect'=>$prospect]);
 
      }
+
 }
