@@ -121,7 +121,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('restoreBien/{id}', [BienController::class, 'restoreBien'])->name('restoreBien');
     Route::get('getTrashedBiens', [BienController::class, 'getTrashedBiens'])->name('getTrashedBiens');
     Route::put('bloquerBien/{id}', [BienController::class, 'bloquerBien'])->name('bloquerBien');
-    Route::put('reserverBien/{id}', [BienController::class, 'reserverBien'])->name('reserverBien');
+    //Route::put('reserverBien/{id}', [BienController::class, 'reserverBien'])->name('reserverBien');
     Route::put('prereserverBien/{id}/{visite_id}/{appel_id}', [BienController::class, 'prereserverBien'])->name('prereserverBien');
     Route::delete('libererBien/{id}', [BienController::class, 'libererBien'])->name('libererBien');
     Route::get('getHistoriqueBien/{id}', [BienController::class, 'getHistoriqueBien'])->name('getHistoriqueBien');
@@ -175,7 +175,7 @@ Route::middleware('auth:api')->group(function () {
     /*************************************Prospect***************************** */
     Route::resource('prospect',ProspectController::class);
     Route::get('search_prospect_by_cin/{cin}', [ProspectController::class, 'search_prospect_by_cin']);
-    Route::get('search_prospect_by_phone/{cin}', [ProspectController::class, 'search_prospect_by_phone']);
+    Route::get('search_prospect_by_phone/{phone}', [ProspectController::class, 'search_prospect_by_phone']);
 
 
     /*************************************Source***************************** */
@@ -207,6 +207,10 @@ Route::middleware('auth:api')->group(function () {
     Route::get('get_clients', [ClientController::class, 'get_clients'])->name('get_clients');
     Route::get('getClient_by_projet/{projet_id}', [ClientController::class, 'getClient_by_projet'])->name('getClient_by_projet');
     
+=======
+    Route::get('search_client_by_cin/{cin}', [ClientController::class, 'search_client_by_cin']);
+    Route::get('search_client_by_phone/{phone}', [ClientController::class, 'search_client_by_phone']);
+
 
     /*************************************Aquereurs***************************** */
     Route::resource('aquereur',AquereurController::class);
@@ -237,7 +241,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getReservationssByProjet/{id}',[ReservationController::class,'getReservationssByProjet'])->name('getReservationssByProjet');
     Route::get('get_typologiesByProjet/{id}', [TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');
     Route::get('typologies/{projet_id}', [TypologieController::class,'index'])->name('typologies');
-    Route::get('getreservation_by_client/{client_id}',[ReservationController::class, 'getreservation_by_client'])->name('getreservation_by_client');
 
     /*************************************EnumController***************************** */
     Route::get('Enums', [EnumController::class,'get_enums'])->name('');

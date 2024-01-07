@@ -27,4 +27,8 @@ class Client extends Model
        return $this->hasMany(Aquereur::class);
     }
     
+    public function prospect()
+    {
+        return $this->belongsTo(Prospect::class,'id_prospect');
+    }
 }
