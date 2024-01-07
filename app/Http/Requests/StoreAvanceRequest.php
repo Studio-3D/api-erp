@@ -22,9 +22,9 @@ class StoreAvanceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "montant"=>"required|double",
-            "date_reglement"=>"required|date",
-            "mode_paiement"=>"required|integer",
+            "montant"=>"required",
+            "date_reglement"=>"date",
+            "mode_paiement"=>"required",
             "echeance"=>"date",
             "sr"=>"boolean",
             "banque_id"=>"integer",

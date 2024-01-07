@@ -205,8 +205,13 @@ Route::middleware('auth:api')->group(function () {
     /*************************************Client***************************** */
     Route::resource('client',ClientController::class);
     Route::get('get_clients', [ClientController::class, 'get_clients'])->name('get_clients');
+
+    Route::get('getClient_by_projet/{projet_id}', [ClientController::class, 'getClient_by_projet'])->name('getClient_by_projet');
+    
+
     Route::get('search_client_by_cin/{cin}', [ClientController::class, 'search_client_by_cin']);
     Route::get('search_client_by_phone/{phone}', [ClientController::class, 'search_client_by_phone']);
+
 
 
     /*************************************Aquereurs***************************** */
@@ -215,12 +220,15 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('destoryAquereurUsingReservationId/{reservation_id}',[AquereurController::class, 'destroyAquerreursByReservationId'])->name('destoryAquereurUsingReservationId');
     Route::get('getAcquirerOfReservation/{reservation_id}',[AquereurController::class, 'getAquerreursByReservationId'])->name('getAcquirerOfReservation');
     Route::get('nbOfAcquirersInReservation/{reservation_id}',[AquereurController::class, 'nbAquerreursByReservation'])->name('nbOfAcquirersInReservation');
+    Route::get('getAquereur_by_Reservation/{reservation_id}',[AquereurController::class, 'getAquereur_by_Reservation'])->name('getAquereur_by_Reservation');
+
     /*************************************Avances***************************** */
     Route::resource('avance', AvanceController::class);
     Route::get('avances/{projet_id}', [AvanceController::class,'index'])->name('avances');
     Route::delete('destoryUsingReservationId/{reservation_id}',[AvanceController::class,'destoryUsingReservationId'])->name('destoryUsingReservationId');
     Route::put('valideAvance/{id}',[AvanceController::class,'valideAvance'])->name('valideAvance');
     Route::put('refuseAvance/{id}',[AvanceController::class,'refuseAvance'])->name('refuseAvance');
+    Route::get('getAvances_by_Reservation/{reservation_id}', [AvanceController::class,'getAvances_by_Reservation'])->name('getAvances_by_Reservation');
 
     /*************************************PiecesJointe***************************** */
     Route::resource('piecesjointe',PiecesJointeController::class);
@@ -235,6 +243,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getReservationssByProjet/{id}',[ReservationController::class,'getReservationssByProjet'])->name('getReservationssByProjet');
     Route::get('get_typologiesByProjet/{id}', [TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');
     Route::get('typologies/{projet_id}', [TypologieController::class,'index'])->name('typologies');
+    Route::get('getreservation_by_client/{client_id}',[ReservationController::class, 'getreservation_by_client'])->name('getreservation_by_client');
 
     /*************************************EnumController***************************** */
     Route::get('Enums', [EnumController::class,'get_enums'])->name('');

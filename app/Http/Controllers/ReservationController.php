@@ -285,4 +285,24 @@ class ReservationController extends Controller
 
         }
     }
+
+
+    public function getreservation_by_client(Request $request, $client_id)
+    { if (RoleHelper::ACSup()) {
+        DatabaseHelper::Config();
+        $perPage = $request->input('pageSize', config('app.default_item_number_perpage'));
+        $page = $request->input('page', 1);
+        $reservations=Reservation::on('temp')->join('aquereurs', 'aquereurs.reservation_id', '=', 'reservations.id')
+            ->select('reservations.*','aquereurs.pourcentage')
+            ->where('aquereurs.client_id',$client_id)
+            ->orderBy('reservations.date_reservation','desc')
+            ->paginate($perPage, ['*'], 'page', $page);         
+            
+            return response()->json(['reservations' => $reservations], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    }
 }

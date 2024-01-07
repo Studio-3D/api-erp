@@ -14,4 +14,8 @@ class Banque extends Model
 
     protected $table='banques';
     protected $dates=['deleted_at'];
+    public function avance()
+    {
+        return $this->hasMany(Avance::class);
+    }
 }

@@ -113,14 +113,11 @@ class ClientController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
+
             $client=Client::on('temp')->findOrFail($id);
-            /*if($client->id_prospect!=null){
-                $prospect = Prospect::on('temp')->findorfail($client->id_prospect)->with('visites_perdu');
-            }
-            else{
-                $prospect=null;
-            }*/
+            
         return response()->json(['client'=>$client]);
+
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
@@ -169,6 +166,27 @@ class ClientController extends Controller
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+    public function getClient_by_projet(Request $request, $projet_id)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
+            $page = $request->input('page', 1);
+            $clients=Client::on('temp')->join('aquereurs', 'aquereurs.client_id', '=', 'clients.id')
+             ->join('reservations', 'reservations.id', '=', 'aquereurs.reservation_id')
+             ->where('reservations.projet_id',$projet_id)
+             ->select('clients.*')
+             ->distinct()
+            ->paginate($perPage, ['*'], 'page', $page);
+            return response()->json(['clients' => $clients], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    }
+
     public function search_client_by_cin($cin)
     {
         if(RoleHelper::ACSup()){
@@ -236,4 +254,5 @@ class ClientController extends Controller
             return response()->json(['client' => $client,'prospect'=>$prospect]);
 
      }
+
 }
