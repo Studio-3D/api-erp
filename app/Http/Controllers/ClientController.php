@@ -115,7 +115,7 @@ class ClientController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
 
-            $client=Client::on('temp')->where('id',$id)->get();
+            $client=Client::on('temp')->findOrFail($id)->get();
             $perPage = $request->input('pageSizee', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
             $reservations=Reservation::on('temp')->join('aquereurs', 'aquereurs.reservation_id', '=', 'reservations.id')
@@ -125,14 +125,6 @@ class ClientController extends Controller
             ->paginate($perPage, ['*'], 'page', $page);            
             return response()->json(['client' => $client,'reservations'=>$reservations], 200);
 
-            $client=Client::on('temp')->findOrFail($id);
-            /*if($client->prospect_id!=null){
-                $prospect = Prospect::on('temp')->findorfail($client->prospect_id)->with('visites_perdu');
-            }
-            else{
-                $prospect=null;
-            }*/
-        return response()->json(['client'=>$client]);
 
         }
         return response()->json(['error' => 'Unauthorized'], 401);
