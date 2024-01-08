@@ -14,7 +14,8 @@ class Reservation extends Model
 
     protected $table='reservations';
     protected $dates=['deleted_at'];
-    protected $with = ['bien', 'visite', 'user', 'banque', 'projet','aquereur'];
+    protected $with = ['bien', 'visite', 'user', 'banque', 'projet','aquereurs'];
+
 
     public function visite(){
         return $this->belongsTo(Visite::class,'visite_id');
@@ -43,5 +44,9 @@ class Reservation extends Model
 
     public function projet(){
         return  $this->belongsTo(Projet::class,'projet_id');
+    }
+    public function aquereurs()
+    {
+        return $this->hasMany(Aquereur::class);
     }
 }
