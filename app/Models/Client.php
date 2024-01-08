@@ -15,8 +15,21 @@ class Client extends Model
 
     protected $table='clients';
     protected $dates=['deleted_at'];
+
+
+    public function reservation()
+    {
+       return $this->hasMany(Reservation::class);
+    }
+
+    public function aquereur()
+    {
+       return $this->hasMany(Aquereur::class);
+    }
+    
     public function prospect()
     {
         return $this->belongsTo(Prospect::class,'prospect_id');
     }
+
 }

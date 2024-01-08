@@ -8,6 +8,7 @@ use App\Http\Requests\StoreClientRequest;
 use App\Http\Requests\UpdateClientRequest;
 use App\Models\Banque;
 use App\Models\Client;
+use App\Models\Reservation;
 use App\Models\Prospect;
 use App\Enum\TypeClient;
 use Illuminate\Http\Request;
@@ -109,10 +110,21 @@ class ClientController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
+
+            $client=Client::on('temp')->where('id',$id)->get();
+            $perPage = $request->input('pageSizee', config('app.default_item_number_perpage'));
+            $page = $request->input('page', 1);
+            $reservations=Reservation::on('temp')->join('aquereurs', 'aquereurs.reservation_id', '=', 'reservations.id')
+            ->select('reservations.*','aquereurs.pourcentage')
+            ->where('aquereurs.client_id',$id)
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);            
+            return response()->json(['client' => $client,'reservations'=>$reservations], 200);
+
             $client=Client::on('temp')->findOrFail($id);
             /*if($client->prospect_id!=null){
                 $prospect = Prospect::on('temp')->findorfail($client->prospect_id)->with('visites_perdu');
@@ -121,6 +133,7 @@ class ClientController extends Controller
                 $prospect=null;
             }*/
         return response()->json(['client'=>$client]);
+
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
@@ -169,6 +182,27 @@ class ClientController extends Controller
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+    public function getClient_by_projet(Request $request, $projet_id)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
+            $page = $request->input('page', 1);
+            $clients=Client::on('temp')->join('aquereurs', 'aquereurs.client_id', '=', 'clients.id')
+             ->join('reservations', 'reservations.id', '=', 'aquereurs.reservation_id')
+             ->where('reservations.projet_id',$projet_id)
+             ->select('clients.*')
+             ->distinct()
+            ->paginate($perPage, ['*'], 'page', $page);
+            return response()->json(['clients' => $clients], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    }
+
     public function search_client_by_cin($cin)
     {
         if(RoleHelper::ACSup()){
@@ -236,4 +270,5 @@ class ClientController extends Controller
             return response()->json(['client' => $client,'prospect'=>$prospect]);
 
      }
+
 }

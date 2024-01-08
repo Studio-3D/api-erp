@@ -16,6 +16,7 @@ class Reservation extends Model
     protected $dates=['deleted_at'];
     protected $with = ['bien', 'visite', 'user', 'banque', 'projet','aquereurs'];
 
+
     public function visite(){
         return $this->belongsTo(Visite::class,'visite_id');
     }
@@ -24,6 +25,15 @@ class Reservation extends Model
         return $this->belongsTo(Bien::class,'bien_id');
     }
 
+    public function client(){
+        return $this->belongsTo(Client::class);
+    }
+
+    public function aquereur()
+    {
+       return $this->hasMany(Aquereur::class);
+    }
+    
     public function user(){
         return $this->belongsTo(User::class,'user_id');
     }

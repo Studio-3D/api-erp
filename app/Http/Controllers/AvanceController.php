@@ -42,6 +42,23 @@ class AvanceController extends Controller
         }
         return response()->json(['error'=>'Unauthorized'],401);
     }
+    public function getAvances_by_Reservation(Request $request, $reservation_id)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
+            $page = $request->input('page', 1);
+            $avances = Avance::on('temp')
+                ->orderBy('created_at', 'desc')
+                ->where('reservation_id', $reservation_id)
+                ->paginate($perPage, ['*'], 'page', $page);
+            return response()->json(['avances' => $avances], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    }
 
     /**
      * Show the form for creating a new resource.
@@ -225,11 +242,8 @@ class AvanceController extends Controller
         if(RoleHelper::ACSup()){
             DatabaseHelper::config();
             $avance=Avance::on('temp')->findOrFail($id);
-            $reservation = Reservation::on('temp')->where('id',$avance->reservation_id)->get();
-            $reservation->montant_encaisse-=$avance->montant;
-            if($avance->delete()){
-                $reservation->save();
-                return response()->json(['message'=>'Avance deleted successfully']);
+            if ($avance->delete()) {
+                return response()->json(['message' => 'avance deleted succesfully'], 200);
             }
             else{
                 return response()->json(['message'=>'avance non deleted']);

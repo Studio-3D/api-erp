@@ -10,6 +10,7 @@ class Aquereur extends Model
 {
     use HasFactory;
     use SoftDeletes;
+    protected $with=['client'];
 
     protected $table='aquereurs';
     protected $dates=['deleted_at'];
@@ -22,5 +23,6 @@ class Aquereur extends Model
     public function reservation(){
         return $this->belongsTo(Reservation::class,'reservation_id');
     }
+    
 
 }
