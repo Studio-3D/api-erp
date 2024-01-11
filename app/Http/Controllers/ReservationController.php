@@ -41,9 +41,8 @@ class ReservationController extends Controller
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
-            $reservations = Reservation::on('temp')
-                ->orderBy('created_at', 'desc')
-                ->where('projet_id', $projet_id)
+            $reservations = Reservation::on('temp')->orderBy('created_at', 'desc')
+                ->where('projet_id',$projet_id)
                 ->paginate($perPage, ['*'], 'page', $page);
             return response()->json(['reservations' => $reservations], 200);
         }
