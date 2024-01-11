@@ -11,11 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('fiche_transmissions', function (Blueprint $table) {
+        Schema::create('historique_reservations', function (Blueprint $table) {
             $table->id();
-            $table->string('num_recu');
-            $table->foreignId('avance_id')->constrained('avances')->nullable()->onDelete('cascade');
-            $table->integer('penalite_id')->nullable()->comment('Table Penalite');
+            $table->foreignId('reservation_id')->constrained('reservations')->onDelete('cascade');
+            $table->foreignId('bien_id')->constrained('biens')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
@@ -28,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('fiche_transmissions');
+        Schema::dropIfExists('historique_reservations');
     }
 };

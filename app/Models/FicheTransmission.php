@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Fiche_Transmission extends Model
+class FicheTransmission extends Model
 {
     use HasFactory;
     use SoftDeletes;
@@ -22,6 +22,6 @@ class Fiche_Transmission extends Model
 
     public function avance()
     {
-        return $this->belongsTo(Avance::class,'id_avance');
+        return $this->belongsTo(Avance::class,'avance_id');
     }
 }
