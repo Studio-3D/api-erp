@@ -21,7 +21,7 @@ return new class extends Migration
             $table->enum('orientation', [OrientationEnum::N->name, OrientationEnum::E->name, OrientationEnum::S->name, OrientationEnum::O->name, OrientationEnum::N_E->name, OrientationEnum::N_S->name, OrientationEnum::O_E->name, OrientationEnum::O_S->name, OrientationEnum::E_S->name]);
             $table->boolean('conventionne')->default(false);
             $table->double('prix_unitaire', 12, 2);
-            $table->double('prix', 12, 2);
+            $table->double('prix', 20, 2);
             $table->double('prix_parking', 12, 2)->nullable();;
             $table->string('num_parking')->nullable();;
             $table->string('num_box')->nullable();;
