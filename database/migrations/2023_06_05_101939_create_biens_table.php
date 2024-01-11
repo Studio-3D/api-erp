@@ -21,7 +21,7 @@ return new class extends Migration
             $table->enum('orientation',[OrientationEnum::N->name,OrientationEnum::E->name,OrientationEnum::S->name,OrientationEnum::O->name,OrientationEnum::N_E->name,OrientationEnum::N_S->name,OrientationEnum::O_E->name,OrientationEnum::O_S->name,OrientationEnum::E_S->name]);
             $table->boolean('conventionne')->nullable();
             $table->double('prix_unitaire', 12, 2);
-            $table->double('prix', 12, 2);
+            $table->double('prix', 20, 2);
             $table->double('superficie_architecte',12,2);
             $table->double('superficie_habitable',12,2)->nullable();
             $table->integer('nbre_facades');

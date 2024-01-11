@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('freins', function (Blueprint $table) {
             $table->id();
-            $table->float('prix_min')->nullable();
-            $table->float('prix_max')->nullable();
+            $table->double('prix_min',12,2)->nullable();
+            $table->double('prix_max', 12,2)->nullable();
             $table->float('superficie_min')->nullable();
             $table->float('superficie_max')->nullable();
             $table->boolean('etat')->default(false)->comment('1 attent 2 existe_bien_dispoible 3 traite');;
