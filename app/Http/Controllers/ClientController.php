@@ -125,10 +125,10 @@ class ClientController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->paginate($perPage, ['*'], 'page', $page);
             $visites = Visite::on('temp')->join('prospects', 'visites.prospect_id', '=', 'prospects.id')
-                ->join('clients', 'prospects.client_id', '=', 'clients.id')
-                ->select('visites.*', 'prospects.*')
-                ->where('visites.prospect_id', $id)
-                ->orderBy('created_at', 'desc')
+               // ->join('clients', 'prospects.client_id', '=', 'clients.id')
+                ->select('visites.*')
+                ->where('visites.prospect_id',  $client->prospect_id)
+               ->orderBy('created_at', 'desc')
                 ->paginate($perPage, ['*'], 'page', $page);
             return response()->json(['client' => $client, 'reservations' => $reservations,'visites' => $visites], 200);
 

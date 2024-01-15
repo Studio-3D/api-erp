@@ -29,6 +29,7 @@ return new class extends Migration
             $table->string('pays')->nullable();
             $table->string('profession')->nullable();
             $table->string('cin')->unique();
+            $table->integer('age')->nullable();
             $table->string('lieu_naissance')->nullable();
             $table->string('nationalite')->nullable();
             $table->date('date_naissance')->nullable();
@@ -40,8 +41,8 @@ return new class extends Migration
             $table->enum('situation_familliale',[SituationFamilliale::CELEBATAIRE->name,SituationFamilliale::MARIE->name,SituationFamilliale::DIVORCE->name,SituationFamilliale::VEUF->name])->nullable();
             $table->string('nom_pere')->nullable();
             $table->string('nom_mere')->nullable();
-            $table->foreignId('societe_id')->constrained('partenaires')->nullable()->onDelete('cascade');
-            $table->foreignId('prospect_id')->constrained('prospects')->nullable()->onDelete('cascade');
+            $table->foreignId('societe_id')->nullable()->constrained('partenaires')->onDelete('cascade');
+            $table->foreignId('prospect_id')->nullable()->constrained('prospects')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
         });

@@ -166,7 +166,6 @@ Route::middleware('auth:api')->group(function () {
     Route::post('restoreTypeFrein/{id}', [TypeFreinController::class, 'restoreTypeFrein'])->name('restoreTypeFrein');
 
     /*************************************Prospect***************************** */
-
     /*************************************Frein***************************** */
     Route::resource('frein', FreinController::class);
     Route::get('get_clients_freins/{projet_id}', [FreinController::class, 'get_clients_freins'])->name('');
@@ -176,6 +175,7 @@ Route::middleware('auth:api')->group(function () {
     Route::resource('prospect',ProspectController::class);
     Route::get('search_prospect_by_cin/{cin}', [ProspectController::class, 'search_prospect_by_cin']);
     Route::get('search_prospect_by_phone/{phone}', [ProspectController::class, 'search_prospect_by_phone']);
+    Route::get('get_prospects', [ProspectController::class, 'get_prospects']);
 
 
     /*************************************Source***************************** */

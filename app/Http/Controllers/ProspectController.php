@@ -27,6 +27,16 @@ class ProspectController extends Controller
         }
         else return response()->json(['error' => 'Unauthorized'], 401);
     }
+    public function get_prospects()
+    {
+        if (Auth::guard('api')->check())
+        {
+            DatabaseHelper::Config();
+            $prospects = Prospect::on('temp')->orderBy('created_at','desc')->get();
+            return response()->json(['prospects' =>  $prospects]);
+        }
+        else return response()->json(['error' => 'Unauthorized'], 401);
+    }
 
     /**
      * Show the form for creating a new resource.
