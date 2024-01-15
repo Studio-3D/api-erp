@@ -53,7 +53,7 @@ class AquereurController extends Controller
 
         }
     }
-    
+
 
 
 
@@ -163,28 +163,6 @@ class AquereurController extends Controller
 
 
 
-    public function getAquerreursByReservationId($reservation_id){
-        if(RoleHelper::ACSup()) {
-            DatabaseHelper::Config();
-            $aquereurs_reservation = Aquereur::on('temp')->where('reservation_id', $reservation_id)->get();
-            if ($aquereurs_reservation->isEmpty()){
-                return response()->json(['message'=>'aucun aquérreur existe dans cette réservation'],400);
-            }
-            else return response()->json(['aquérreurs'=>$aquereurs_reservation],200);
-        }
-        return response()->json(['error','Unauthorized'],401);
-    }
 
-    public function  nbAquerreursByReservation($reservation_id)
-    {
-        if(RoleHelper::ACSup()){
-            DatabaseHelper::Config();
-            $nbreaquerreurs=Aquereur::on('temp')->where('reservation_id',$reservation_id)->count();
-            if($nbreaquerreurs!=0){
-                return  response()->json(['nb_aquérreur'=>$nbreaquerreurs],200);
-            }
-        }
-        return  response()->json(['error'=>'Unauthorized'],401);
 
-    }
 }

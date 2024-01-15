@@ -351,6 +351,16 @@ class VisiteController extends Controller
 
     }
 
+    public function relance_rdv_by_visite($id)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+                $histo=Visite::on('temp')->with('historique_relances_rdvs')->where('origin_id',$id)->where('etat',1)->orderby('created_at', 'DESC')->get();
+            return response()->json(['histo'=>$histo], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
     public function show($id)
     {
         if (Auth::guard('api')->check()) {
@@ -363,7 +373,7 @@ class VisiteController extends Controller
                     $visite['frein']=$frein->searchFreinByVisiteId($visite->id,'without_row_deleted');
                 }
 
-                $relatedVisites=Visite::on('temp')->with('pre_reservation_visite','relance_relation','rdv_relation','historique_relances_rdvs')->where('origin_id',$visite->id)->where('etat',1)->orderby('created_at', 'DESC')->get();
+                $relatedVisites=Visite::on('temp')->with('pre_reservation_visite','relance_relation','rdv_relation')->where('origin_id',$visite->id)->where('etat',1)->orderby('created_at', 'DESC')->get();
 
                 foreach ($relatedVisites as $relatedVisite) {
                     if ($relatedVisite->interet == InteretEnum::PERDU->value) {

@@ -26,6 +26,8 @@ use App\Http\Requests\UpdateReservationRequest;
 use App\Http\Helpers\NotificationHelper;
 use App\Http\Helpers\Bien_Helper;
 use Carbon\Carbon;
+use DB;
+
 
 
 
@@ -41,9 +43,20 @@ class ReservationController extends Controller
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
-            $reservations = Reservation::on('temp')->orderBy('created_at', 'desc')
-                ->where('projet_id',$projet_id)
+
+            $avances=Avance::on('temp') ->select('reservation_id',DB::raw('SUM(avances.montant) as sum_avances'))
+            ->groupby('reservation_id');
+
+            $reservations = Reservation::on('temp')
+               ->joinSub($avances, 'avances_req', function ($join)
+                    {
+                        $join->on('avances_req.reservation_id', '=', 'reservations.id');
+                    })
+                ->select('reservations.*','avances_req.sum_avances')
+                ->orderBy('reservations.created_at', 'desc')
+                ->where('reservations.projet_id',$projet_id)
                 ->paginate($perPage, ['*'], 'page', $page);
+
             return response()->json(['reservations' => $reservations], 200);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -207,13 +220,22 @@ class ReservationController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $reservation = Reservation::on('temp')->findOrFail($id);
-             //get nom propriete _dite_bien concat utilisé dans edit visite
+             //get nom propriete _dite_bien concat
              $propriete=null;
              if($reservation->bien_id!=null){
                 $bien=new VisiteController();
                  $propriete= $bien->get_propriete_bien_concat($reservation->bien_id);
              }
-            return response()->json(['reservation' => $reservation,'propriete_dite_bien'=>$propriete], 200);
+             $sum_avances=0;
+             foreach($reservation->avances as $av){
+                //avance validé
+                if($av->statut==1){
+                    $sum_avances+=$av->montant;
+                }
+             }
+             $count_avances=Avance::on('temp')->where('reservation_id',$id)->count('id');
+
+            return response()->json(['reservation' => $reservation,'propriete_dite_bien'=>$propriete,'sum_avances'=>$sum_avances,'count_avances'=>$count_avances], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }

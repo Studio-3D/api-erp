@@ -155,10 +155,12 @@ Route::middleware('auth:api')->group(function () {
     /*************************************Visite***************************** */
     Route::resource('visite',VisiteController::class);
     Route::get('visites/{projet_id}', [VisiteController::class,'index'])->name('visites');
+    Route::get('relance_rdv_by_visite/{id}', [VisiteController::class,'relance_rdv_by_visite'])->name('');
     Route::post('store_n_visite/{id}',[VisiteController::class,'store_n_visite'])->name('store_n_visite');
     Route::get('getAllAttributes',[VisiteController::class,'getAllAttributes'])->name('getAllAttributes');
     Route::get('get_historiques_visite/{origin_id}', [VisiteController::class, 'get_historiques'])->name('get_historiques');
     Route::put('traiter_relance_rdv_visite/{id}',[VisiteController::class,'traiter_relance_rdv_visite'])->name('');
+
 
     /*************************************type_Freins***************************** */
     Route::resource('type_freins', TypeFreinController::class);
@@ -216,8 +218,6 @@ Route::middleware('auth:api')->group(function () {
     Route::resource('aquereur',AquereurController::class);
     Route::get('aquereurs/{projet_id}', [AquereurController::class,'index'])->name('aquereurs');
     Route::delete('destoryAquereurUsingReservationId/{reservation_id}',[AquereurController::class, 'destroyAquerreursByReservationId'])->name('destoryAquereurUsingReservationId');
-    Route::get('getAcquirerOfReservation/{reservation_id}',[AquereurController::class, 'getAquerreursByReservationId'])->name('getAcquirerOfReservation');
-    Route::get('nbOfAcquirersInReservation/{reservation_id}',[AquereurController::class, 'nbAquerreursByReservation'])->name('nbOfAcquirersInReservation');
     Route::get('getAquereur_by_Reservation/{reservation_id}',[AquereurController::class, 'getAquereur_by_Reservation'])->name('getAquereur_by_Reservation');
 
     /*************************************Avances***************************** */
@@ -249,6 +249,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('OrientationEnum', [EnumController::class,'OrientationEnum_get'])->name('');
     Route::get('TypeNotificationEnum', [EnumController::class,'TypeNotificationEnum_get'])->name('');
     Route::get('StatutVisiteEnum', [EnumController::class,'StatutVisiteEnum_get'])->name('');
+    Route::get('Mode_finance_Enum', [EnumController::class,'ModefinanceEnum_get'])->name('');
+
     /************************NotificationController********************* */
     Route::get('get_relances_visites/{projet_id}', [NotificationController::class,'get_relances_visites'])->name('');
     Route::get('get_rdv_visites/{projet_id}', [NotificationController::class,'get_rdv_visites'])->name('');
