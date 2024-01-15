@@ -7,6 +7,8 @@ use App\Enum\InteretEnum;
 use App\Enum\OrientationEnum;
 use App\Enum\TypeNotificationEnum;
 use App\Enum\StatutVisiteEnum;
+use App\Enum\ModeFinancement;
+
 
 
 class EnumController extends Controller
@@ -27,6 +29,10 @@ class EnumController extends Controller
     public function InteretEnum_get()
     {
         return response()->json(['list' => array_column(InteretEnum::cases(), 'name', 'value')]);
+    }
+    public function ModefinanceEnum_get()
+    {
+        return response()->json(['list' => array_column(ModeFinancement::cases(), 'name', 'value')]);
     }
     public function OrientationEnum_get()
     {

@@ -14,15 +14,18 @@ class Avance extends Model
 
     protected $table='avances';
     protected $dates=['deleted_at'];
-    protected $with = ['banque'];
+    protected $with = ['banque','user'];
 
     public function banque()
     {
         return $this->belongsTo(Banque::class,'banque_id');
     }
     public function reservation(){
-        
+
         return $this->belongsTo(Reservation::class,'reservation_id');
     }
-    
+    public function user()
+    {
+        return $this->belongsTo(User::class,'user_id');
+    }
 }

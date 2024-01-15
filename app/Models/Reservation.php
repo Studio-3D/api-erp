@@ -36,5 +36,9 @@ class Reservation extends Model
     {
         return $this->hasMany(Aquereur::class,'reservation_id');
     }
+    public function avances()
+    {
+        return $this->hasMany(Avance::class,'reservation_id');
+    }
 
 }
