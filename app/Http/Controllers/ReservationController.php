@@ -41,7 +41,7 @@ class ReservationController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
 
             $avances=Avance::on('temp') ->select('reservation_id',DB::raw('SUM(avances.montant) as sum_avances'))
@@ -421,6 +421,7 @@ class ReservationController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
 
         }
+        
     }
 
 }
