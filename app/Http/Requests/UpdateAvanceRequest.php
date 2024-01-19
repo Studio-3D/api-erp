@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Request;
 
 class UpdateAvanceRequest extends FormRequest
 {
@@ -19,16 +20,27 @@ class UpdateAvanceRequest extends FormRequest
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
-    public function rules(): array
+    public function rules(Request $request): array
     {
-        return [
-            "montant"=>"integer",
-            "date_reglement"=>"date",
-            "mode_paiement"=>"integer",
-            "echeance"=>"date",
-            "sr"=>"boolean",
-            "banque_id"=>"integer",
-            "reservation_id"=>"integer"
-        ];
+        $rules = [];
+        $rules['montant']='required';
+        $rules['mode_paiement']='required';
+         //mode_paiement cheqyue/cheque_banque/cheque_certifie/
+         if ($request->mode_paiement == 2||$request->mode_paiement == 3||$request->mode_paiement == 4){
+            $rules['banque_id']='required';
+            $rules['numero_paiement']='required';
+            $rules['echeance']='required';
+        }
+        //virement versement
+        elseif ($request->mode_paiement == 5||$request->mode_paiement == 6){
+            $rules['banque_id']='required';
+            $rules['numero_paiement']='required';
+
+        }
+
+        return $rules;
+
+
     }
+
 }

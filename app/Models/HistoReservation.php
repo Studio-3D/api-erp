@@ -13,7 +13,7 @@ class HistoReservation extends Model
     protected $table = 'historique_reservations';
 
     protected $dates = ['deleted_at'];
-    protected $with = ['user', 'avance'];
+    protected $with = ['user', 'bien'];
 
     public function reservation()
     {
@@ -23,5 +23,9 @@ class HistoReservation extends Model
     public function bien()
     {
         return $this->belongsTo(Bien::class,'bien_id');
+    }
+    public function user()
+    {
+        return $this->belongsTo(User::class ,'user_id');
     }
 }

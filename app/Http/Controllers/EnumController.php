@@ -8,6 +8,7 @@ use App\Enum\OrientationEnum;
 use App\Enum\TypeNotificationEnum;
 use App\Enum\StatutVisiteEnum;
 use App\Enum\ModeFinancement;
+use App\Enum\ModePaiement;
 
 
 
@@ -33,6 +34,11 @@ class EnumController extends Controller
     public function ModefinanceEnum_get()
     {
         return response()->json(['list' => array_column(ModeFinancement::cases(), 'name', 'value')]);
+    }
+
+    public function ModePaiementEnum_get()
+    {
+        return response()->json(['list' => array_column(ModePaiement::cases(), 'name', 'value')]);
     }
     public function OrientationEnum_get()
     {

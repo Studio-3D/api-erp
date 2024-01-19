@@ -14,7 +14,7 @@ class Avance extends Model
 
     protected $table='avances';
     protected $dates=['deleted_at'];
-    protected $with = ['banque','user'];
+    protected $with = ['banque','user','reservation'];
 
     public function banque()
     {
@@ -27,5 +27,13 @@ class Avance extends Model
     public function user()
     {
         return $this->belongsTo(User::class,'user_id');
+    }
+    public function encaissement()
+    {
+        return $this->hasOne(Encaissement::class,'avance_id');
+    }
+    public function historiques()
+    {
+        return $this->hasMany(HistoriqueAvance::class,'avance_id');
     }
 }

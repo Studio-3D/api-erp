@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('fiche_transmissions', function (Blueprint $table) {
             $table->id();
             $table->string('num_recu');
+            $table->date('date');
             $table->foreignId('avance_id')->constrained('avances')->nullable()->onDelete('cascade');
             $table->integer('penalite_id')->nullable()->comment('Table Penalite');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
