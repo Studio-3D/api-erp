@@ -204,27 +204,35 @@ class ReservationController extends Controller
     /**
      * Display the specified resource.
      */
+
+
     public function show($id)
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $reservation = Reservation::on('temp')->findOrFail($id);
-            //get nom propriete _dite_bien concat
-            $propriete = null;
-            if ($reservation->bien_id != null) {
-                $bien = new VisiteController();
-                $propriete = $bien->get_propriete_bien_concat($reservation->bien_id);
-            }
-            $sum_avances = 0;
-            foreach ($reservation->avances as $av) {
-                //avance validé
-                if ($av->statut == 1) {
-                    $sum_avances += $av->montant;
-                }
-            }
-            $count_avances = Avance::on('temp')->where('reservation_id', $id)->count('id');
 
-            return response()->json(['reservation' => $reservation, 'propriete_dite_bien' => $propriete, 'sum_avances' => $sum_avances, 'count_avances' => $count_avances], 200);
+             //get nom propriete _dite_bien concat
+             $propriete=null;
+             if($reservation->bien_id!=null){
+                $bien=new VisiteController();
+                 $propriete= $bien->get_propriete_bien_concat($reservation->bien_id);
+             }
+             $sum_avances_valides=0;
+             $sum_avances=0;
+             foreach($reservation->avances as $av){
+                //avance validé
+                if($av->statut==StatutReservationEnum::VALIDER->value){
+                    $sum_avances_valides+=$av->montant;
+                }
+                /*//tous les avances !=refuse
+                if($av->statut!=StatutReservationEnum::REFUSER->value){
+                    $sum_avances+=$av->montant;
+                }*/
+             }
+             $count_avances=Avance::on('temp')->where('reservation_id',$id)->count('id');
+
+            return response()->json(['reservation' => $reservation,'propriete_dite_bien'=>$propriete,'sum_avances_valides'=>$sum_avances_valides,'count_avances'=>$count_avances], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -419,6 +427,22 @@ class ReservationController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
 
         }
+
+    public function get_Historiques_by_reservation($id,Request $request)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
+            $page = $request->input('page', 1);
+            $historiques = HistoReservation::on('temp')->where('reservation_id', $id)->orderby('created_at','desc')
+                ->paginate($perPage, ['*'], 'page', $page);
+            return response()->json(['historiques' => $historiques]);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+
 
     }
 

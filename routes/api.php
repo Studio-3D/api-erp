@@ -227,6 +227,7 @@ Route::middleware('auth:api')->group(function () {
     Route::put('valideAvance/{id}',[AvanceController::class,'valideAvance'])->name('valideAvance');
     Route::put('refuseAvance/{id}',[AvanceController::class,'refuseAvance'])->name('refuseAvance');
     Route::get('getAvances_by_Reservation/{reservation_id}', [AvanceController::class,'getAvances_by_Reservation'])->name('getAvances_by_Reservation');
+    Route::get('historiques_avance/{id}', [AvanceController::class,'historiques_avance'])->name('');
 
     /*************************************PiecesJointe***************************** */
     Route::resource('piecesjointe',PiecesJointeController::class);
@@ -239,6 +240,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('reservations/{projet_id}', [ReservationController::class,'index'])->name('reservations');
     Route::get('getAllInformationsReservation/{id}',[ReservationController::class,'getAllInformationsReservation'])->name('getAllInformationsReservation');
     Route::get('getReservationssByProjet/{id}',[ReservationController::class,'getReservationssByProjet'])->name('getReservationssByProjet');
+    Route::get('get_Historiques_by_reservation/{id}',[ReservationController::class,'get_Historiques_by_reservation'])->name('');
+    /******************************Typologie **********************/
     Route::get('get_typologiesByProjet/{id}', [TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');
     Route::get('typologies/{projet_id}', [TypologieController::class,'index'])->name('typologies');
 
@@ -249,6 +252,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('TypeNotificationEnum', [EnumController::class,'TypeNotificationEnum_get'])->name('');
     Route::get('StatutVisiteEnum', [EnumController::class,'StatutVisiteEnum_get'])->name('');
     Route::get('Mode_finance_Enum', [EnumController::class,'ModefinanceEnum_get'])->name('');
+    Route::get('Mode_paiement_Enum', [EnumController::class,'ModePaiementEnum_get'])->name('');
 
     /************************NotificationController********************* */
     Route::get('get_relances_visites/{projet_id}', [NotificationController::class,'get_relances_visites'])->name('');
