@@ -6,10 +6,8 @@ use Illuminate\Validation\Rules\Enum;
 
 Enum StatutReservationEnum:int
 {
-    case VALIDER=1;
-    case REFUSER=2;
-
-    case EN_ATTENTE=3;
-
-    case ANNULLER=4;
+    case Validé=1;
+    case Refusé=2;
+    case En_Attente=3;
+    case Annulé=4;
 }

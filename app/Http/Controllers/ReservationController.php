@@ -55,6 +55,29 @@ class ReservationController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
+    public function get_dossiers(Request $request, $projet_id,$dos_id)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+
+            $avances = Avance::on('temp')->select('reservation_id', DB::raw('SUM(avances.montant) as sum_avances'))
+                ->groupby('reservation_id');
+
+            $reservations = Reservation::on('temp')
+                ->joinSub($avances, 'avances_req', function ($join) {
+                    $join->on('avances_req.reservation_id', '=', 'reservations.id');
+                })
+                ->select('reservations.*', 'avances_req.sum_avances')
+                ->whereColumn('sum_avances','<','reservations.prix')
+                ->where('reservations.id',$dos_id)
+                ->orderBy('reservations.created_at', 'desc')
+                ->where('reservations.projet_id', $projet_id)
+                ->get();
+
+            return response()->json(['reservations' => $reservations], 200);
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
     /**
      * Show the form for creating a new resource.
      */
@@ -104,10 +127,10 @@ class ReservationController extends Controller
             $reservation->projet_id = $request->projet_id;
             $reservation->user_id = $userAuth->value('id');
             if (RoleHelper::AdminSup()) {
-                $reservation->statut = StatutReservationEnum::VALIDER->value;
+                $reservation->statut = StatutReservationEnum::Validé->value;
             }
             if (RoleHelper::Com()) {
-                $reservation->statut = StatutReservationEnum::EN_ATTENTE->value;
+                $reservation->statut = StatutReservationEnum::En_Attente->value;
             }
             if ($request->verifierPourcentages === true) {
                 if ($reservation->save()) {
@@ -157,6 +180,7 @@ class ReservationController extends Controller
                     $mnt_lettre = $inWords->format($request->avance);
                     $dataAvance = [
                         'sr' => $request->sr,
+                        'check_montant' => $request->check_montant,
                         'type_encaissement' => 1,
                         'montant' => $request->avance,
                         'mode_paiement' => $request->mode_paiement,
@@ -205,6 +229,21 @@ class ReservationController extends Controller
      * Display the specified resource.
      */
 
+     public function info_reservation($id)
+     {
+         if (RoleHelper::ACSup()) {
+             DatabaseHelper::Config();
+             $reservation = Reservation::on('temp')->findOrFail($id);
+             $code=$reservation->code_reservation;
+             $prix=$reservation->prix;
+             $nb_aq=count($reservation->aquereurs);
+             $nb_histo=count($reservation->historiques);
+             $nb_pj=0;
+             return response()->json(['code_res' => $code,'prix'=>$prix,'nb_aquer'=>$nb_aq,'nb_histo'=>$nb_histo,'nb_pj'=>$nb_pj], 200);
+         } else {
+             return response()->json(['error' => 'Unauthorized'], 401);
+         }
+     }
 
     public function show($id)
     {
@@ -222,7 +261,7 @@ class ReservationController extends Controller
              $sum_avances=0;
              foreach($reservation->avances as $av){
                 //avance validé
-                if($av->statut==StatutReservationEnum::VALIDER->value){
+                if($av->statut==StatutReservationEnum::Validé->value){
                     $sum_avances_valides+=$av->montant;
                 }
                 /*//tous les avances !=refuse
@@ -427,6 +466,7 @@ class ReservationController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
 
         }
+    }
 
     public function get_Historiques_by_reservation($id,Request $request)
     {

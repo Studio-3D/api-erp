@@ -237,10 +237,13 @@ Route::middleware('auth:api')->group(function () {
 
     /*************************************Reservation***************************** */
     Route::resource('reservation',ReservationController::class);
+    Route::get('info_reservation/{projet_id}', [ReservationController::class,'info_reservation'])->name('');
     Route::get('reservations/{projet_id}', [ReservationController::class,'index'])->name('reservations');
     Route::get('getAllInformationsReservation/{id}',[ReservationController::class,'getAllInformationsReservation'])->name('getAllInformationsReservation');
     Route::get('getReservationssByProjet/{id}',[ReservationController::class,'getReservationssByProjet'])->name('getReservationssByProjet');
     Route::get('get_Historiques_by_reservation/{id}',[ReservationController::class,'get_Historiques_by_reservation'])->name('');
+    Route::get('getDossiers/{projet_id}/{dos_id}', [ReservationController::class,'get_dossiers'])->name('');
+
     /******************************Typologie **********************/
     Route::get('get_typologiesByProjet/{id}', [TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');
     Route::get('typologies/{projet_id}', [TypologieController::class,'index'])->name('typologies');
@@ -253,7 +256,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('StatutVisiteEnum', [EnumController::class,'StatutVisiteEnum_get'])->name('');
     Route::get('Mode_finance_Enum', [EnumController::class,'ModefinanceEnum_get'])->name('');
     Route::get('Mode_paiement_Enum', [EnumController::class,'ModePaiementEnum_get'])->name('');
-
+    Route::get('StatutReservationEnum', [EnumController::class,'StatutReservationEnum_get'])->name('');
     /************************NotificationController********************* */
     Route::get('get_relances_visites/{projet_id}', [NotificationController::class,'get_relances_visites'])->name('');
     Route::get('get_rdv_visites/{projet_id}', [NotificationController::class,'get_rdv_visites'])->name('');

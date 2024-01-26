@@ -52,6 +52,7 @@ class AvanceController extends Controller
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
+            $reservation=Reservation::on('temp')->select('prix')->findorfail($reservation_id);
             $avances = Avance::on('temp')
                 ->withcount('historiques')
                 ->orderBy('created_at', 'desc')
@@ -60,12 +61,12 @@ class AvanceController extends Controller
                 $sum_avances=0;
                 foreach($avances as $av){
                     //tous les avances !=refuse
-                    if($av->statut!=StatutReservationEnum::REFUSER->value){
+                    if($av->statut!=StatutReservationEnum::Refusé->value){
                         $sum_avances+=$av->montant;
                     }
                  }
             $data = PaginationHelper::paginate_array($avances->toArray(),$perPage,$page,$request->url());
-            return response()->json(['avances' => $data,'sum_avances'=>$sum_avances], 200);
+            return response()->json(['avances' => $data,'sum_avances'=>$sum_avances,'prix'=>$reservation->prix], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -112,19 +113,7 @@ class AvanceController extends Controller
             } else {
                 $avance->num_recu = '001';
             }
-            if($request->montant==0){
-                $avance->sr=false;
-
-            }elseif($request->mode_paiement==5){
-                //virement
-                $avance->sr=true;
-            }
-
-            else{
-                $avance->sr= (bool)$request->sr;
-
-            }
-
+            $avance->sr= (bool)$request->sr;
             $avance->mode_paiement=$request->mode_paiement;
             //cheque cheque-banque cheque cetifice
             if($request->mode_paiement==2||$request->mode_paiement==3||$request->mode_paiement==4){
@@ -152,14 +141,10 @@ class AvanceController extends Controller
 
             $avance->reservation_id=$request->reservation_id;
             if(RoleHelper::Com()){
-                if($request->montant==0){
-                    $avance->statut=StatutReservationEnum::VALIDER->value;
-                }else{
-                    $avance->statut=StatutReservationEnum::EN_ATTENTE->value;
-                }
+                $avance->statut=StatutReservationEnum::En_Attente->value;
             }
             elseif(RoleHelper::AdminSup()){
-                $avance->statut=StatutReservationEnum::VALIDER->value;
+                $avance->statut=StatutReservationEnum::Validé->value;
                 $avance->user_id_valider=$userAuth->value('id');
                 $avance->date_validation=Carbon::now();
                 $avance->date_encaissement=$request->date_encaissement;
@@ -293,21 +278,7 @@ class AvanceController extends Controller
             $histo->fichier = $request->fichier;
 
             if( $histo->save()){
-
-
-
-                if($request->montant==0){
-                    $avance->sr=false;
-
-                }elseif($request->mode_paiement==5){
-                    //virement
-                    $avance->sr=true;
-                }
-
-                else{
-                    $avance->sr= (bool)$request->sr;
-
-                }
+                $avance->sr= (bool)$request->sr;
                 $avance->mode_paiement=$request->mode_paiement;
                 //cheque cheque-banque cheque cetifice
                 if($request->mode_paiement==2||$request->mode_paiement==3||$request->mode_paiement==4){
@@ -340,12 +311,12 @@ class AvanceController extends Controller
                     $avance->date_encaissement=$request->date_encaissement;
                     $avance->num_remise = $request->num_remise;
                     //rejete et remodifier par admin
-                    if($avance->statut==StatutReservationEnum::REFUSER->value){
-                        $avance->statut=StatutReservationEnum::VALIDER->value;
+                    if($avance->statut==StatutReservationEnum::Refusé->value){
+                        $avance->statut=StatutReservationEnum::Validé->value;
                     }
                 }
                 if($request->montant==0){
-                    $avance->statut=StatutReservationEnum::VALIDER->value;
+                    $avance->statut=StatutReservationEnum::Validé->value;
                 }
 
                     $last_num_recu = Avance::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")
@@ -471,7 +442,7 @@ class AvanceController extends Controller
             DatabaseHelper::Config();
             $avance=Avance::on('temp')->findOrFail($id);
             if($avance->exists()){
-                $avance->statut=StatutReservationEnum::VALIDER->value;
+                $avance->statut=StatutReservationEnum::Validé->value;
                 if($avance->save())
                 {
                     return response()->json(['message'=>'Advance has been validated'],200);
@@ -490,7 +461,7 @@ class AvanceController extends Controller
             DatabaseHelper::Config();
             $avance = Avance::on('temp')->findOrFail($id);
             if ($avance->exists) {
-                $avance->statut = StatutReservationEnum::REFUSER->value;
+                $avance->statut = StatutReservationEnum::Refusé->value;
                 if ($avance->save()) {
                     return response()->json(['message' => 'The advance has been refused'], 200);
                 } else {

@@ -4,10 +4,10 @@ namespace App\Enum;
 
 enum ModePaiement:int
 {
-    case ESPECE=1;
-    case CHEQUE=2;
-    case CHEQUE_BANQUE=3;
-    case CHEQUE_CERTIFIE=4;
-    case VIREMENT=5;
-    case VERSEMENT=6;
+    case Espèce=1;
+    case Chèque=2;
+    case Chèque_Banque=3;
+    case Chèque_Certifié=4;
+    case Virement=5;
+    case Versement=6;
 }
