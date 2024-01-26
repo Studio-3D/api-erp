@@ -7,6 +7,7 @@ use App\Enum\InteretEnum;
 use App\Enum\OrientationEnum;
 use App\Enum\TypeNotificationEnum;
 use App\Enum\StatutVisiteEnum;
+use App\Enum\StatutReservationEnum;
 use App\Enum\ModeFinancement;
 use App\Enum\ModePaiement;
 
@@ -53,6 +54,10 @@ class EnumController extends Controller
         return response()->json(['list' => array_column(StatutVisiteEnum::cases(), 'name', 'value')]);
     }
 
+    public function StatutReservationEnum_get()
+    {
+        return response()->json(['list' => array_column(StatutReservationEnum::cases(), 'name', 'value')]);
+    }
     /**
      * Show the form for creating a new resource.
      */

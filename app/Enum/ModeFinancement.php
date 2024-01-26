@@ -4,8 +4,8 @@ namespace App\Enum;
 
 enum ModeFinancement:int
 {
-    case  COMPTANT=1;
-    case CREDIT=2;
-    case INDECIS=3;
+    case Comptant=1;
+    case Crédit=2;
+    case Indécis=3;
 
 }
