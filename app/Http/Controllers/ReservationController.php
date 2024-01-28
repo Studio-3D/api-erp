@@ -427,6 +427,7 @@ class ReservationController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
 
         }
+    }
 
     public function get_Historiques_by_reservation($id,Request $request)
     {
