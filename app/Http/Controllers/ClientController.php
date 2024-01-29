@@ -73,10 +73,7 @@ class ClientController extends Controller
             $client = new Client();
             $client->setConnection('temp');
             $client->type_client = $request->type_client;
-            if ($request->type_client == 'PART') { //PARTICULIER
-                $client->type_client = TypeClient::PARTICULIER->value;
-            } else {
-                $client->type_client = TypeClient::SOCIETE->value;
+            if ($request->type_client ==  TypeClient::Société->value) {
                 $client->societe_id = $request->societe_id;
             }
             $client->nom = $request->nom;
@@ -119,7 +116,7 @@ class ClientController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
 
-            $client = Client::on('temp')->findOrFail($id);
+            $client = Client::on('temp')->with('partenaire')->findOrFail($id);
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
             $avances = Avance::on('temp')->select('reservation_id', DB::raw('SUM(avances.montant) as sum_avances'))
@@ -160,9 +157,9 @@ class ClientController extends Controller
                         'propriete_dite_bien' => $visite->first()->bien_id?$visite->first()->bien->propriete_dite_bien:'',
                         'etat_bien' => $visite->first()->bien_id?$visite->first()->bien->etat:'',
                         'visit_count' => count($visite)
-        
+
                     ];});
-        
+
                   $data = PaginationHelper::paginate_array($visites->toArray(),$perPage,$page,$request->url());
             return response()->json(['client' => $client, 'reservations' => $reservations, 'visites' => $data], 200);
 

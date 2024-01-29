@@ -4,6 +4,6 @@ namespace App\Enum;
 
 enum TypeClient:int
 {
-    case PARTICULIER=1;
-    case SOCIETE=2;
+    case Particulier=1;
+    case Société=2;
 }

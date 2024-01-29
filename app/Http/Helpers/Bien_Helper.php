@@ -32,13 +32,13 @@ class Bien_Helper
         if($bien->save()){
             Bien_Helper::store_bien_frein($bien->id);
             //UPDATE DERNIER VISITE pre reserve=>pre reserve_perdu // vendu==>reservation_perdu
-            $visite=Visite::on('temp')->where('bien_id',$id)->where('interet',InteretEnum::INTERESSE->value)->orderBy('created_at', 'DESC')->first();
+            $visite=Visite::on('temp')->where('bien_id',$id)->where('interet',InteretEnum::Intéressé->value)->orderBy('created_at', 'DESC')->first();
             if($visite!=null){
                 //pre reserve
-                if($visite->statut==StatutVisiteEnum::PRE_RESERVATION->value){
-                    $visite->statut=StatutVisiteEnum::PRE_RESERVATION_PERDU->value;
-                }elseif($visite->statut==StatutVisiteEnum::VENDU->value){
-                    $visite->statut=StatutVisiteEnum::RESERVATION_PERDU->value;
+                if($visite->statut==StatutVisiteEnum::Pré_Réservation->value){
+                    $visite->statut=StatutVisiteEnum::Pré_Réservation_Perdu->value;
+                }elseif($visite->statut==StatutVisiteEnum::Vendu->value){
+                    $visite->statut=StatutVisiteEnum::Réservation_Perdu->value;
                 }
                 $visite->save();
 
@@ -61,8 +61,8 @@ class Bien_Helper
                             $old->type_traitement=2;//auto
                             $old->date_traitement=Carbon::now();
                             //si old visite pre reserve en suite n visite vendu ==>user_id_traite(l'ancien user)
-                            if($old->visite->statut==StatutVisiteEnum::PRE_RESERVATION->value){
-                                if($newVisit->statut==StatutVisiteEnum::VENDU->value){
+                            if($old->visite->statut==StatutVisiteEnum::Pré_Réservation->value){
+                                if($newVisit->statut==StatutVisiteEnum::Vendu->value){
                                     $old->user_id_traite=$visite->user_id;
                                 }
                                 else{

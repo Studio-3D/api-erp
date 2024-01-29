@@ -143,7 +143,7 @@ class UserController extends Controller
             $user->nb_appel_recu = $request->nb_appel_recu;
             $user->nb_appel_traite = $request->nb_appel_traite;
             $user->solde_conge = $request->solde_conge;
-            
+
             if ($request->hasFile('photo')) {
                 $photo = time() . '.' . $request->name . '.' . $request->photo->extension();
                 $request->file('photo');
@@ -165,7 +165,7 @@ class UserController extends Controller
     }
     public function createSubUser($request, $user_id,$user_photo)
     {
-        
+
         DatabaseHelper::Config($request->societe_id);
         $user = new User();
         $user->setConnection('temp');
@@ -192,7 +192,7 @@ class UserController extends Controller
 
         }
         $user->save();
-        
+
 
     }
 

@@ -18,8 +18,8 @@ return new class extends Migration
             $table->unsignedBigInteger('origin_id')->nullable(); // pour garder l'historique de visite
             $table->string('commentaire')->nullable(); // car en peut recoit des vistes sans commentaire.
             $table->boolean('notifie')->default(false)->nullable();
-            $table->enum('interet',[InteretEnum::INTERESSE->value,InteretEnum::RECEPTIF->value,InteretEnum::PERDU->value]);
-            $table->enum('statut',[StatutVisiteEnum::PRE_RESERVATION->value,StatutVisiteEnum::VENDU->value,StatutVisiteEnum::PRE_RESERVATION_PERDU->value,StatutVisiteEnum::RESERVATION_PERDU->value])->nullable();
+            $table->enum('interet',[InteretEnum::Intéressé->value,InteretEnum::Réceptif->value,InteretEnum::Perdu->value]);
+            $table->enum('statut',[StatutVisiteEnum::Pré_Réservation->value,StatutVisiteEnum::Vendu->value,StatutVisiteEnum::Pré_Réservation_Perdu->value,StatutVisiteEnum::Réservation_Perdu->value])->nullable();
             $table->boolean('etat')->default(true)->nullable();
             $table->foreignId('old_v_id')->nullable()->constrained('visites')->onDelete('cascade');
             $table->string('description')->nullable();

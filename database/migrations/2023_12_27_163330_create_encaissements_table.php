@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::create('encaissements', function (Blueprint $table) {
             $table->id();
             $table->foreignId('reservation_id')->constrained('reservations')->onDelete('cascade');
-            $table->enum('type_encaissement',[TypeEncaissement::AVANCE->value,TypeEncaissement::RESTITUTION->value,TypeEncaissement::REMBOURSEMENT->value,TypeEncaissement::DECHARGE->value,TypeEncaissement::DEBLOCAGE->value])->comment('	1==>Avances 2==>restitution 3=>remboursement 4==>decharge 5=>deblocage credit cih');
+            $table->enum('type_encaissement',[TypeEncaissement::Avance->value,TypeEncaissement::Restitution->value,TypeEncaissement::Remboursement->value,TypeEncaissement::Décharge->value,TypeEncaissement::Déblocage_Crédit->value])->comment('	1==>Avances 2==>restitution 3=>remboursement 4==>decharge 5=>deblocage credit cih');
             $table->double('montant');
             $table->date('date_reglement');
             $table->date('date_encaissement');

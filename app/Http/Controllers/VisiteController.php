@@ -94,7 +94,7 @@ class VisiteController extends Controller
             $historiques=Visite::on('temp')->with('relance_relation','rdv_relation')
             ->where('origin_id',$origin_id)->withTrashed()->orderby('created_at', 'asc')->get();
             foreach ($historiques as $histo) {
-                if ($histo->interet == InteretEnum::PERDU->value) {
+                if ($histo->interet == InteretEnum::Perdu->value) {
                     $frein_h_ = $frein_h->searchFreinByVisiteId($histo->id,'with_row_deleted_at');
                     $histo['frein'] = $frein_h_;
                 }
@@ -127,7 +127,7 @@ class VisiteController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
              //test si le user connecte celui qui a  fait la proposition // bien pre reserve par autre
-            if($request->bien_id!=NULL && $request->interet==InteretEnum::INTERESSE->value){
+            if($request->bien_id!=NULL && $request->interet==InteretEnum::Intéressé->value){
                 $bien_prop=Bien::on('temp')->findorfail($request->bien_id);
                 if($bien_prop->etat!='DISPONIBLE'){
                     if($bien_prop->etat=='ENCOURS_DE_PROPOSITION'){
@@ -141,9 +141,9 @@ class VisiteController extends Controller
                     }
                 }
             }
-            //rendre bien disponible si interet!=interesse ==>receptif ou perdu
+            //rendre bien disponible si interet!=Intéressé ==>Réceptif ou Perdu
             if($request->bien_id){
-                if($request->interet!=InteretEnum::INTERESSE->value){
+                if($request->interet!=InteretEnum::Intéressé->value){
                     Bien_Helper::libererBien($request->bien_id,null);
 
                 }
@@ -216,7 +216,7 @@ class VisiteController extends Controller
             }
             $visite->notifie = $request->notifie;
             $visite->interet = $request->interet;
-            if($request->interet==InteretEnum::INTERESSE->value){
+            if($request->interet==InteretEnum::Intéressé->value){
                 $visite->bien_id = $request->bien_id;
                 $visite->statut= $request->statut;
             }
@@ -230,15 +230,15 @@ class VisiteController extends Controller
 
                 //STORE HISTORIQUE DU BIEN
                 if($visite->bien_id!=null){
-                    if($visite->statut==StatutVisiteEnum::VENDU->value){
-                        HistoriqueBienHelper::createHistoriqueBien(5, "Creation visite vendu du client :".$prospect->cin .' '.$prospect->nom .' '.$prospect->prenom,$visite->bien_id, Auth::guard('api')->user()->id,$visite->id,NULL);
+                    if($visite->statut==StatutVisiteEnum::Vendu->value){
+                        HistoriqueBienHelper::createHistoriqueBien(5, "Creation visite Vendu du client :".$prospect->cin .' '.$prospect->nom .' '.$prospect->prenom,$visite->bien_id, Auth::guard('api')->user()->id,$visite->id,NULL);
                     }
-                    else if($visite->statut==StatutVisiteEnum::PRE_RESERVATION->value){
+                    else if($visite->statut==StatutVisiteEnum::Pré_Réservation->value){
                         HistoriqueBienHelper::createHistoriqueBien(5, "Creation visite pré reservé du client :".$prospect->cin .' '.$prospect->nom .' '.$prospect->prenom, $visite->bien_id, Auth::guard('api')->user()->id,$visite->id,NULL);
                     }
                 }
                     //store relances et rdv et notifications
-                    if($visite->statut==StatutVisiteEnum::PRE_RESERVATION->value ||$visite->interet==InteretEnum::RECEPTIF->value){
+                    if($visite->statut==StatutVisiteEnum::Pré_Réservation->value ||$visite->interet==InteretEnum::Réceptif->value){
                         if ($request->date_relance != null) {
                             NotificationHelper::storeNotification(
                                 '/visites/show/'.$visite->origin_id, $request->date_relance,1,'RELANCE VISITE',Auth::guard('api')->user()->id,null,$visite->getAttribute('id'),$visite->prospect_id,$visite->projet_id,null,null
@@ -270,17 +270,17 @@ class VisiteController extends Controller
                         }
                     }
                 //store code pre reserve to table ==>PreReservation
-                if($visite->interet==InteretEnum::INTERESSE->value && $visite->statut==StatutVisiteEnum::PRE_RESERVATION->value){
+                if($visite->interet==InteretEnum::Intéressé->value && $visite->statut==StatutVisiteEnum::Pré_Réservation->value){
                     $bien_c=new BienController();
                     $bien_c->prereserverBien($visite->bien_id,$visite->id,null);
 
                 }
-                /*elseif ($visite->interet == 'INTERESSE' && $visite->statut == 'vendu') {
+                /*elseif ($visite->interet == 'Intéressé' && $visite->statut == 'Vendu') {
                     store reservation
                 }*/
 
 
-                if ($visite->interet == InteretEnum::PERDU->value) {
+                if ($visite->interet == InteretEnum::Perdu->value) {
 
                     $freinRequest['visite_id']=$visite->getAttribute('id');
                     $freinRequest['prix_min']=$request->prix_min;
@@ -369,14 +369,14 @@ class VisiteController extends Controller
 
             $visite = Visite::on('temp')->with('relance_relation','rdv_relation')->findOrfail($id);
             $frein=new FreinController();
-                if($visite->interet==InteretEnum::PERDU->value) {
+                if($visite->interet==InteretEnum::Perdu->value) {
                     $visite['frein']=$frein->searchFreinByVisiteId($visite->id,'without_row_deleted');
                 }
 
                 $relatedVisites=Visite::on('temp')->with('pre_reservation_visite','relance_relation','rdv_relation')->where('origin_id',$visite->id)->where('etat',1)->orderby('created_at', 'DESC')->get();
 
                 foreach ($relatedVisites as $relatedVisite) {
-                    if ($relatedVisite->interet == InteretEnum::PERDU->value) {
+                    if ($relatedVisite->interet == InteretEnum::Perdu->value) {
                         $frein_v = $frein->searchFreinByVisiteId($relatedVisite->id,'without_row_deleted');
                         $relatedVisite['frein'] = $frein_v;
                     }
@@ -506,7 +506,7 @@ class VisiteController extends Controller
             $old_visite = Visite::on('temp')->findOrFail($id);
 
              //test si le user connecte celui qui a  fait la proposition
-             if($request->bien_id!=NULL && $request->interet==InteretEnum::INTERESSE->value){
+             if($request->bien_id!=NULL && $request->interet==InteretEnum::Intéressé->value){
                 $bien_prop=Bien::on('temp')->findorfail($request->bien_id);
 
                     if($bien_prop->etat=='ENCOURS_DE_PROPOSITION' && $bien_prop->is_proposed->user_id!=Auth::guard('api')->user()->id){
@@ -547,11 +547,11 @@ class VisiteController extends Controller
 
              /****Libérer le bien de l'ancienne visite**/
                     //chngement de bien
-            if($request->interet==InteretEnum::INTERESSE->value){
-                if (($visite->statut == StatutVisiteEnum::PRE_RESERVATION->value|| $visite->statut == StatutVisiteEnum::VENDU->value) && $visite->bien_id!=null) {
+            if($request->interet==InteretEnum::Intéressé->value){
+                if (($visite->statut == StatutVisiteEnum::Pré_Réservation->value|| $visite->statut == StatutVisiteEnum::Vendu->value) && $visite->bien_id!=null) {
                     if($visite->bien_id!=$request->bien_id){
                         $oldBien = Bien::on('temp')->find($visite->bien_id);
-                            if ($oldBien->etat == 'PRE_RESERVATION' || $oldBien->etat == 'VENDU') {
+                            if ($oldBien->etat == 'Pré_Réservation' || $oldBien->etat == 'Vendu') {
                                 Bien_Helper::libererBien($visite->bien_id,null);
 
                             }
@@ -560,8 +560,8 @@ class VisiteController extends Controller
 
             }
 
-                    //changement d'interet (receptif ou perdu)
-            if($visite->bien_id!=null && $request->interet != InteretEnum::INTERESSE->value){
+                    //changement d'interet (Réceptif ou Perdu)
+            if($visite->bien_id!=null && $request->interet != InteretEnum::Intéressé->value){
                 Bien_Helper::libererBien($visite->bien_id,null);
 
             }
@@ -580,17 +580,17 @@ class VisiteController extends Controller
             $visite->notifie = $request->notifie;
             $visite->interet = $request->interet;
 
-            //interesse
-            if($request->interet==InteretEnum::INTERESSE->value){
+            //Intéressé
+            if($request->interet==InteretEnum::Intéressé->value){
                 $visite->bien_id = $request->bien_id;
                 $visite->statut= $request->statut;
             }
 
-            elseif($request->interet==InteretEnum::RECEPTIF->value){
+            elseif($request->interet==InteretEnum::Réceptif->value){
                 $visite->statut= null;
                 $visite->bien_id =null;
             }
-            elseif($request->interet==InteretEnum::PERDU->value){
+            elseif($request->interet==InteretEnum::Perdu->value){
                 $visite->statut= null;
                 $visite->bien_id =null;
             }
@@ -600,14 +600,14 @@ class VisiteController extends Controller
             /** store relances et rdv **/
             //STORE HISTORIQUE DU BIEN
             if($visite->bien_id!=null){
-                if($visite->statut==StatutVisiteEnum::VENDU->value){
+                if($visite->statut==StatutVisiteEnum::Vendu->value){
                     HistoriqueBienHelper::createHistoriqueBien(5, "Modification visite vendu du client :".$prospect->cin .' '.$prospect->nom .' '.$prospect->prenom, $visite->bien_id, Auth::guard('api')->user()->id,$visite->id,NULL);
                 }
-                else if($visite->statut==StatutVisiteEnum::PRE_RESERVATION->value){
+                else if($visite->statut==StatutVisiteEnum::Pré_Réservation->value){
                     HistoriqueBienHelper::createHistoriqueBien(5, "Modification visite pré reservé du client :".$prospect->cin .' '.$prospect->nom .' '.$prospect->prenom, $visite->bien_id, Auth::guard('api')->user()->id,$visite->id,NULL);
                 }
             }
-            /**si ancien perdu avec notif des bien dispo on supprime la notif** pas encours */
+            /**si ancien Perdu avec notif des bien dispo on supprime la notif** pas encours */
             //supprimer ancien notif relance rdv
             $notif_exist_relance_rdv=Notification::on('temp')->whereIN('type',[1,2])->where('visite_id',$old_visite->id)->get();
             if(count($notif_exist_relance_rdv)>0){
@@ -617,7 +617,7 @@ class VisiteController extends Controller
             }
 
              //store relances et rdv et notifications
-             if($visite->statut==StatutVisiteEnum::PRE_RESERVATION->value ||$visite->interet==InteretEnum::RECEPTIF->value){
+             if($visite->statut==StatutVisiteEnum::Pré_Réservation->value ||$visite->interet==InteretEnum::Réceptif->value){
                 if ($request->date_relance != null) {
                     if($old_visite->relance_relation!=null){
                         $old_visite->relance_relation->delete();
@@ -654,19 +654,19 @@ class VisiteController extends Controller
                 }
             }
             //store code pre reserve to table ==>PreReservation
-            if($old_visite->statut!=StatutVisiteEnum::PRE_RESERVATION->value ){
-                if($visite->interet==InteretEnum::INTERESSE->value && $visite->statut==StatutVisiteEnum::PRE_RESERVATION->value){
+            if($old_visite->statut!=StatutVisiteEnum::Pré_Réservation->value ){
+                if($visite->interet==InteretEnum::Intéressé->value && $visite->statut==StatutVisiteEnum::Pré_Réservation->value){
                     $bien_c=new BienController();
                     $bien_c->prereserverBien($visite->bien_id,$visite->id,null);
                 }
             }
 
 
-             /*elseif ($visite->interet == 'INTERESSE' && $visite->statut == 'vendu') {
+             /*elseif ($visite->interet == 'Intéressé' && $visite->statut == 'vendu') {
                                         store reservation
                                     }*/
 
-            if ($visite->interet == InteretEnum::PERDU->value) {
+            if ($visite->interet == InteretEnum::Perdu->value) {
                 $frein_id=Frein::on('temp')->where('visite_id', $visite->id)->get();
                 $freinRequest['prix_min']=$request->prix_min;
                 $freinRequest['frein']=$request->frein;
@@ -710,12 +710,12 @@ class VisiteController extends Controller
         if(RoleHelper::ACSup()){
             DatabaseHelper::Config();
             $visite=Visite::on('temp')->findOrFail($id);
-            if($visite->interet== InteretEnum::INTERESSE->value){
+            if($visite->interet== InteretEnum::Intéressé->value){
                 if($visite->bien_id){
                     Bien_Helper::libererBien($visite->bien_id,null);
                 }
             }
-            if($visite->interet == InteretEnum::PERDU->name){
+            if($visite->interet == InteretEnum::Perdu->name){
                 $frein=Frein::on('temp')->where('visite_id',$visite->id)->get();
                 $freinController= new FreinController();
                 $freinController->destroy($frein->id);
@@ -746,7 +746,7 @@ class VisiteController extends Controller
 
         $user = Auth::user();
          //test si le user connecte celui qui a  fait la proposition // bien pre reserve par autre
-         if($request->bien_id!=NULL && $request->interet==InteretEnum::INTERESSE->value){
+         if($request->bien_id!=NULL && $request->interet==InteretEnum::Intéressé->value){
             $bien_prop=Bien::on('temp')->findorfail($request->bien_id);
             if($bien_prop->etat!='DISPONIBLE'){
                 if($bien_prop->etat=='ENCOURS_DE_PROPOSITION'){
@@ -760,9 +760,9 @@ class VisiteController extends Controller
                 }
             }
         }
-            //rendre bien disponible si interet!=interesse ==>si receptif ou perdu
+            //rendre bien disponible si interet!=Intéressé ==>si Réceptif ou Perdu
             if($request->bien_id){
-                if($request->interet!=InteretEnum::INTERESSE->value){
+                if($request->interet!=InteretEnum::Intéressé->value){
                    Bien_Helper::libererBien($request->bien_id,null);
                 }
             }
@@ -797,23 +797,23 @@ class VisiteController extends Controller
             $newVisit->notifie = $originalVisite->notifie;
             $newVisit->commentaire = $request->commentaire;
             $newVisit->interet = $request->interet;
-            if($request->interet==InteretEnum::INTERESSE->value){
+            if($request->interet==InteretEnum::Intéressé->value){
                 $newVisit->bien_id = $request->bien_id;
                 $newVisit->statut= $request->statut;
             }
             if($newVisit->save()){
                  //STORE HISTORIQUE DU BIEN
                 if($newVisit->bien_id!=null){
-                    if($newVisit->statut==StatutVisiteEnum::VENDU->value){
+                    if($newVisit->statut==StatutVisiteEnum::Vendu->value){
                         HistoriqueBienHelper::createHistoriqueBien(5, "Creation nouvelle visite vendu du client :".$prospect->cin .' '.$prospect->nom .' '.$prospect->prenom,$newVisit->bien_id, Auth::guard('api')->user()->id,$newVisit->id,NULL);
                     }
-                    else if($newVisit->statut==StatutVisiteEnum::PRE_RESERVATION->value){
+                    else if($newVisit->statut==StatutVisiteEnum::Pré_Réservation->value){
                         HistoriqueBienHelper::createHistoriqueBien(5, "Creation nouvelle visite pré reservé du client :".$prospect->cin .' '.$prospect->nom .' '.$prospect->prenom, $newVisit->bien_id, Auth::guard('api')->user()->id,$newVisit->id,NULL);
                     }
                 }
 
                 //store relances et rdv et notifications du new visite
-                if($newVisit->statut==StatutVisiteEnum::PRE_RESERVATION->value ||$newVisit->interet==InteretEnum::RECEPTIF->value){
+                if($newVisit->statut==StatutVisiteEnum::Pré_Réservation->value ||$newVisit->interet==InteretEnum::Réceptif->value){
                     if ($request->date_relance != null) {
                         NotificationHelper::storeNotification(
                             '/visites/show/'.$newVisit->origin_id, $request->date_relance,1,'RELANCE VISITE',Auth::guard('api')->user()->id,null,$newVisit->getAttribute('id'),$newVisit->prospect_id,$newVisit->projet_id,null,null
@@ -846,9 +846,9 @@ class VisiteController extends Controller
                 }
 
                      //Si lors de l'ancienne visite le client a préreservé==>libérer le bien et supprimer les relances
-                if ($old_visite->statut == StatutVisiteEnum::PRE_RESERVATION->value ) {
+                if ($old_visite->statut == StatutVisiteEnum::Pré_Réservation->value ) {
                     $oldBien = Bien::on('temp')->find($old_visite->bien_id);
-                    if ($oldBien->etat == 'PRE_RESERVATION' && $oldBien->historique_bien_pre_reserve->visite_id==$old_visite->id) {
+                    if ($oldBien->etat == 'Pré_Réservation' && $oldBien->historique_bien_pre_reserve->visite_id==$old_visite->id) {
                         Bien_Helper::libererBien($old_visite->bien_id,null);
                     }
 
@@ -871,9 +871,9 @@ class VisiteController extends Controller
                         foreach($old_relances_rdv as $old){
                             $old->type_traitement=2;//auto
                             $old->date_traitement=Carbon::now();
-                            //si old visite pre reserve en suite n visite vendu ==>user_id_traite(l'ancien user)
-                            if($old->visite->statut==StatutVisiteEnum::PRE_RESERVATION->value){
-                                if($newVisit->statut==StatutVisiteEnum::VENDU->value){
+                            //si old visite pre reserve en suite n visite Vendu ==>user_id_traite(l'ancien user)
+                            if($old->visite->statut==StatutVisiteEnum::Pré_Réservation->value){
+                                if($newVisit->statut==StatutVisiteEnum::Vendu->value){
                                     $old->user_id_traite=$old_visite->user_id;
                                 }
                                 else{
@@ -889,15 +889,15 @@ class VisiteController extends Controller
                     }
 
                   //store code pre reserve to table ==>PreReservation
-                if($newVisit->interet==InteretEnum::INTERESSE->value && $newVisit->statut==StatutVisiteEnum::PRE_RESERVATION->value){
+                if($newVisit->interet==InteretEnum::Intéressé->value && $newVisit->statut==StatutVisiteEnum::Pré_Réservation->value){
                     $bien_c=new BienController();
                     $bien_c->prereserverBien($newVisit->bien_id,$newVisit->id,null);
                 }
-                  /*elseif ($newVisit->interet == 'INTERESSE' && $newVisit->statut == 'vendu') {
+                  /*elseif ($newVisit->interet == 'Intéressé' && $newVisit->statut == 'Vendu') {
                     store reservation
                   }*/
 
-                  if ($newVisit->interet == InteretEnum::PERDU->value) {
+                  if ($newVisit->interet == InteretEnum::Perdu->value) {
                     $freinRequest['visite_id']=$newVisit->getAttribute('id');
                     $freinRequest['prix_min']=$request->prix_min;
                     $freinRequest['prix_max']=$request->prix_max;
