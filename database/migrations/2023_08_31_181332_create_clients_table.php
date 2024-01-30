@@ -16,14 +16,14 @@ return new class extends Migration
     {
         Schema::create('clients', function (Blueprint $table) {
             $table->id();
-            $table->enum('type_client',[TypeClient::PARTICULIER->name,TypeClient::SOCIETE->name]);
+            $table->enum('type_client',[TypeClient::Particulier->name,TypeClient::Société->name]);
             $table->string('nom');
             $table->string('prenom');
             $table->string('telephone_num1');
             $table->string('telephone_num2')->nullable();
             $table->boolean('notifie')->default(false);
             $table->string('email')->nullable();
-            $table->enum('civilite',[Civilite::MR->name,Civilite::MME->name,Civilite::MLLE->name]);
+            $table->enum('civilite',[Civilite::Mr->name,Civilite::Mme->name,Civilite::Mlle->name]);
             $table->string('adresse')->nullable();
             $table->string('ville')->nullable();
             $table->string('pays')->nullable();
@@ -37,7 +37,7 @@ return new class extends Migration
             $table->date('date_mariage')->nullable();
             $table->string('nom_responsable')->nullable();
             $table->string('relation_familliale')->nullable();
-            $table->enum('situation_familliale',[SituationFamilliale::CELEBATAIRE->name,SituationFamilliale::MARIE->name,SituationFamilliale::DIVORCE->name,SituationFamilliale::VEUF->name]);
+            $table->enum('situation_familliale',[SituationFamilliale::Célibataire->name,SituationFamilliale::Marié->name,SituationFamilliale::Divorcé->name,SituationFamilliale::Veuf->name]);
             $table->string('nom_pere')->nullable();
             $table->string('nom_mere')->nullable();
             $table->foreignId('societe_id')->constrained('partenaires')->nullable()->onDelete('cascade');

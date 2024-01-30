@@ -19,7 +19,7 @@ return new class extends Migration
             $table->integer('type_traitement')->default(0)->comment('//0 manuelle //1manuelle //2 automatique 3// nouvel relance/rdv');
             $table->string('commentaire')->nullable();
             $table->timestamp('date_traitement')->nullable();
-            $table->enum('mode_relance',[TypeNotificationEnum::SMS->value,TypeNotificationEnum::APPEL->value,TypeNotificationEnum::EMAIL->value])->nullable();
+            $table->enum('mode_relance',[TypeNotificationEnum::Sms->value,TypeNotificationEnum::Appel->value,TypeNotificationEnum::Email->value])->nullable();
             $table->date('date_relance')->nullable();
             $table->timestamp('rdv')->nullable();
             $table->foreignId('user_id_traite')->nullable()->constrained('users')->onDelete('cascade');

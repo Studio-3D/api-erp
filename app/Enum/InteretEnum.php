@@ -4,7 +4,7 @@ namespace App\Enum;
 
 enum InteretEnum:int
 {
-    case  INTERESSE=1;
-    case RECEPTIF=2;
-    case PERDU=3;
+    case Intéressé=1;
+    case Réceptif=2;
+    case Perdu=3;
 }

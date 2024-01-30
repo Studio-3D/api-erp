@@ -4,7 +4,7 @@ namespace App\Enum;
 
 enum Civilite:int
 {
-    case MR=1;
-    case MME=2;
-    case MLLE=3;
+    case Mr=1;
+    case Mme=2;
+    case Mlle=3;
 }

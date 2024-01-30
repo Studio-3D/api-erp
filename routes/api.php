@@ -257,6 +257,11 @@ Route::middleware('auth:api')->group(function () {
     Route::get('Mode_finance_Enum', [EnumController::class,'ModefinanceEnum_get'])->name('');
     Route::get('Mode_paiement_Enum', [EnumController::class,'ModePaiementEnum_get'])->name('');
     Route::get('StatutReservationEnum', [EnumController::class,'StatutReservationEnum_get'])->name('');
+    Route::get('TypesClient_Enum', [EnumController::class,'TypesClientEnum_get'])->name('');
+    Route::get('Civilite_Enum', [EnumController::class,'CiviliteEnum_get'])->name('');
+    Route::get('StatutFamilleEnum', [EnumController::class,'StatutFamilleEnum_get'])->name('');
+
+
     /************************NotificationController********************* */
     Route::get('get_relances_visites/{projet_id}', [NotificationController::class,'get_relances_visites'])->name('');
     Route::get('get_rdv_visites/{projet_id}', [NotificationController::class,'get_rdv_visites'])->name('');

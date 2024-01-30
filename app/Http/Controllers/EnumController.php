@@ -10,7 +10,9 @@ use App\Enum\StatutVisiteEnum;
 use App\Enum\StatutReservationEnum;
 use App\Enum\ModeFinancement;
 use App\Enum\ModePaiement;
-
+use App\Enum\TypeClient;
+use App\Enum\Civilite;
+use App\Enum\SituationFamilliale;
 
 
 class EnumController extends Controller
@@ -41,6 +43,21 @@ class EnumController extends Controller
     {
         return response()->json(['list' => array_column(ModePaiement::cases(), 'name', 'value')]);
     }
+
+    public function TypesClientEnum_get()
+    {
+        return response()->json(['list' => array_column(TypeClient::cases(), 'name', 'value')]);
+    }
+
+    public function CiviliteEnum_get()
+    {
+        return response()->json(['list' => array_column(Civilite::cases(), 'name', 'value')]);
+    }
+    public function StatutFamilleEnum_get()
+    {
+        return response()->json(['list' => array_column(SituationFamilliale::cases(), 'name', 'value')]);
+    }
+
     public function OrientationEnum_get()
     {
         return response()->json(['list' => array_column(OrientationEnum::cases(), 'name', 'value')]);

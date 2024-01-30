@@ -26,10 +26,15 @@ class Client extends Model
     {
        return $this->hasMany(Aquereur::class);
     }
-    
+
     public function prospect()
     {
         return $this->belongsTo(Prospect::class,'prospect_id');
+    }
+
+    public function partenaire()
+    {
+        return $this->belongsTo(Partenaire::class,'societe_id');
     }
 
 }

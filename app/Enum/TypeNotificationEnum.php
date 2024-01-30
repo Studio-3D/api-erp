@@ -4,7 +4,7 @@ namespace App\Enum;
 
 enum TypeNotificationEnum:int
 {
-   case SMS=1;
-   case APPEL=2;
-   case EMAIL=3;
+   case Sms=1;
+   case Appel=2;
+   case Email=3;
 }

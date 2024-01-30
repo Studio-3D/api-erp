@@ -20,10 +20,10 @@ return new class extends Migration
             $table->string('commentaire')->nullable(); // car en peut recoit des vistes sans commentaire.
             $table->boolean('notifie')->default(false)->nullable();
             $table->integer('action');//1 modifiction /2 suppression
-            $table->enum('interet',[InteretEnum::INTERESSE->value,InteretEnum::RECEPTIF->value,InteretEnum::PERDU->value]);
-            $table->enum('mode_relance',[TypeNotificationEnum::SMS->value,TypeNotificationEnum::APPEL->value,TypeNotificationEnum::EMAIL->value])->nullable();
+            $table->enum('interet',[InteretEnum::Intéressé->value,InteretEnum::Réceptif->value,InteretEnum::Perdu->value]);
+            $table->enum('mode_relance',[TypeNotificationEnum::Sms->value,TypeNotificationEnum::Appel->value,TypeNotificationEnum::Email->value])->nullable();
             $table->date('date_relance')->nullable();
-            $table->enum('statut',[StatutVisiteEnum::PRE_RESERVATION->value,StatutVisiteEnum::VENDU->value])->nullable();
+            $table->enum('statut',[StatutVisiteEnum::Pré_Réservation->value,StatutVisiteEnum::Vendu->value,StatutVisiteEnum::Pré_Réservation_Perdu->value,StatutVisiteEnum::Réservation_Perdu->value])->nullable();
             $table->dateTime('rdv')->nullable();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('bien_id')->nullable()->constrained('biens')->onDelete('cascade');
