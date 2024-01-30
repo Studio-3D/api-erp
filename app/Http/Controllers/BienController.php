@@ -589,7 +589,9 @@ class BienController extends Controller
 
         }
     }
-
+    /**
+     * get bien by projet_id and concat tranche bloc immeuble
+     */
     public function getBiensByProjet_Concat($projet_id){
 
 
