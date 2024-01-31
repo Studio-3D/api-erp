@@ -16,11 +16,12 @@ return new class extends Migration
             $table->string('cin')->unique()->nullable();
             $table->integer('client_id')->nullable();
             $table->string('nom');
-            $table->string('prenom');
+            $table->string('prenom')->nullable();
             $table->string('telephone');
             $table->string('telephone_num2')->nullable();
             $table->string('email')->nullable()->unique();
             $table->integer('source');
+            $table->text('message');
             $table->string('origin');
             $table->timestamps();
             $table->softDeletes();

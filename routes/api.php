@@ -28,6 +28,8 @@ use App\Http\Controllers\NotificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EnumController;
+use App\Http\Controllers\Facebook\FacebookController;
+use App\Http\Controllers\WhatsApp\WhatsAppController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,16 +42,23 @@ use App\Http\Controllers\EnumController;
 |
  */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
-});
+
 
 Route::post('login', [UserController::class, 'login'])->name('login');
 Route::post('/validateToken/{token}', [UserController::class, 'validateToken']);
+Route::post('handlemessage', [FacebookController::class, 'handleMessage']);
+Route::get('get_pivacy_policy', [FacebookController::class, 'get_pivacy_policy']);
+Route::post('/webhooks', [WhatsAppController::class, 'webhooks']);
+
+
+
 
 //Route::post('register', [UserController::class, 'register'])->name('register');
 
 Route::middleware('auth:api')->group(function () {
+
+
+
 
     /*************************************Société***************************** */
     Route::resource('societe', SocieteController::class);
@@ -178,8 +187,10 @@ Route::middleware('auth:api')->group(function () {
     Route::get('search_prospect_by_cin/{cin}', [ProspectController::class, 'search_prospect_by_cin']);
     Route::get('search_prospect_by_phone/{phone}', [ProspectController::class, 'search_prospect_by_phone']);
     Route::get('get_prospects', [ProspectController::class, 'get_prospects']);
+    // Route::post('Store_WhatsApp', [ProspectController::class, 'Store_WhatsApp']);
 
 
+ 
     /*************************************Source***************************** */
     Route::resource('sources',SourceController::class);
     Route::get('get_sources', [SourceController::class, 'get_sources'])->name('get_sources');
