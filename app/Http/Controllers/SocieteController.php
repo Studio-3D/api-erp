@@ -101,6 +101,7 @@ class SocieteController extends Controller
             if ($request->hasFile('logo')) {
                 $request->logo->move(public_path('img/'. $raison_sociale_concatene.'_'.$societe->id.'/logos'), $logo);
                 $societe->logo = $logo;
+                $societe->save();
             }
 
             // $societes = Societe::whereNull('adresse')->get();
