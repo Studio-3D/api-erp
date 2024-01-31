@@ -69,7 +69,7 @@ class ReservationController extends Controller
                 })
                 ->select('reservations.*', 'avances_req.sum_avances')
                 ->whereColumn('sum_avances','<','reservations.prix')
-                ->where('reservations.id',$dos_id)
+                ->where('reservations.id','!=',$dos_id)
                 ->orderBy('reservations.created_at', 'desc')
                 ->where('reservations.projet_id', $projet_id)
                 ->get();

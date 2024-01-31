@@ -21,14 +21,19 @@ class StoreProspectRequest extends FormRequest
      */
     public function rules(): array
     {
+        $societe_id = Auth::guard('api')->user()->societe_id;
+        $societe=Societe::findOrfail( $societe_id);
+        $DatabaseName='Erp_'.$societe->raison_sociale.'_'.$societe_id;
+        DatabaseHelper::Config();
         return [
-            'cin' => 'string',
             'nom' => 'required|string',
             'prenom' => 'required|string',
             'telephone' => 'required|string',
             'telephone_num2' => 'string',
-            'email'=>'string',
-            'source'=>'string'
+            'source'=>'string',
+            'cin' => ['string', Rule::unique('temp.'.$DatabaseName.'.prospects','cin')->ignore($this->prospect)],
+            'email' => ['string', Rule::unique('temp.'.$DatabaseName.'.prospects','email')->ignore($this->prospect)],
+
         ];
     }
 }

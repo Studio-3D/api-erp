@@ -145,6 +145,15 @@ class ProspectController extends Controller
             return response()->json(['prospect' => $prospect]);
          }
      }
+     public function search_prospect_by_email($email)
+     {
+         if(RoleHelper::ACSup()){
+              DatabaseHelper::Config();
+              $prospect = Prospect::on('temp')->where('email',$email)
+                 ->get()->first();
+             return response()->json(['prospect' => $prospect]);
+          }
+      }
      public function search_prospect_by_phone($phone)
     {
         if(RoleHelper::ACSup()){
