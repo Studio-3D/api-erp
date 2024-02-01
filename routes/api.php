@@ -121,9 +121,9 @@ Route::middleware('auth:api')->group(function () {
     Route::post('restoreBien/{id}', [BienController::class, 'restoreBien'])->name('restoreBien');
     Route::get('getTrashedBiens', [BienController::class, 'getTrashedBiens'])->name('getTrashedBiens');
     Route::put('bloquerBien/{id}', [BienController::class, 'bloquerBien'])->name('bloquerBien');
-    //Route::put('reserverBien/{id}', [BienController::class, 'reserverBien'])->name('reserverBien');
+    //Route::put('reserverBien/{id}', [BienController::class, 'reserverBien'])->name('reserverBienff');
     Route::put('prereserverBien/{id}/{visite_id}/{appel_id}', [BienController::class, 'prereserverBien'])->name('prereserverBien');
-    Route::delete('libererBien/{id}', [BienController::class, 'libererBien'])->name('libererBien');
+    Route::delete('libererBien/{id}', [BienController::class, 'libererBien_function'])->name('libererBien');
     Route::get('getHistoriqueBien/{id}', [BienController::class, 'getHistoriqueBien'])->name('getHistoriqueBien');
     Route::resource('compositionBien', CompositionBienController::class);
     Route::get('compositionBiens/{bien_id}', [CompositionBienController::class,'index'])->name('compositionBiens');
@@ -175,6 +175,7 @@ Route::middleware('auth:api')->group(function () {
     Route::put('traiter_bien_frein/{bien_id}/{frein_id}', [FreinController::class,'traiter_bien_frein'])->name('');
     /*************************************Prospect***************************** */
     Route::resource('prospect',ProspectController::class);
+    Route::get('search_prospect_by_email/{email}', [ProspectController::class, 'search_prospect_by_email']);
     Route::get('search_prospect_by_cin/{cin}', [ProspectController::class, 'search_prospect_by_cin']);
     Route::get('search_prospect_by_phone/{phone}', [ProspectController::class, 'search_prospect_by_phone']);
     Route::get('get_prospects', [ProspectController::class, 'get_prospects']);

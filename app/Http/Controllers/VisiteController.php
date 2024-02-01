@@ -122,7 +122,6 @@ class VisiteController extends Controller
                 lead to visite
             ****/
 
-
         $user = Auth::user();
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
@@ -363,6 +362,7 @@ class VisiteController extends Controller
     }
     public function show($id)
     {
+
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
 

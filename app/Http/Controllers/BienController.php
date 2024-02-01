@@ -175,6 +175,15 @@ class BienController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+    public function libererBien_function($id){
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            Bien_Helper::libererBien($id,null);
+            return response()->json('le bien est liberé');
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
 
     /**
      * Show the form for editing the specified resource.
