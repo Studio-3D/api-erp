@@ -26,7 +26,7 @@ class UpdateBienRequest extends FormRequest
     public function rules(): array
     { $societe_id = Auth::guard('api')->user()->societe_id;
         $societe = Societe::findOrfail($societe_id);
-        $DatabaseName = 'Erp_' . $societe->raison_sociale . '_' . $societe_id;
+        $DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
         DatabaseHelper::Config();
         return [
             'niveau' => 'integer',

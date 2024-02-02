@@ -27,7 +27,7 @@ class UpdateTypologieRequest extends FormRequest
     {
         $societe_id = Auth::guard('api')->user()->societe_id;
         $societe = Societe::findOrfail($societe_id);
-        $DatabaseName = 'Erp_' . $societe->raison_sociale . '_' . $societe_id;
+        $DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
         DatabaseHelper::Config();
         return [
             'typologie' => ['required', Rule::unique('temp.' . $DatabaseName . '.typologies', 'typologie')
