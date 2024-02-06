@@ -9,6 +9,8 @@ use App\Http\Requests\UpdateProspectRequest;
 use App\Models\Prospect;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+
 
 class ProspectController extends Controller
 {
@@ -52,6 +54,7 @@ class ProspectController extends Controller
     public function store(StoreProspectRequest $request)
     {
         if(RoleHelper::ACSup()){
+            Log::info($request);
             DatabaseHelper::Config();
             $prospect= new Prospect();
             $prospect->setConnection("temp");
@@ -65,8 +68,26 @@ class ProspectController extends Controller
             $prospect->source=$request->source;
             $prospect->save();
             return $prospect;
+          
         }
         else return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    
+    public static function Store_WhatsApp($phone_number_id, $from, $msg_body, $name,$societe_id)
+    {
+      
+        DatabaseHelper::Config($societe_id);
+        $prospect = new Prospect();
+        $prospect->setConnection("temp");
+        $prospect->cin = null;
+        $prospect->message =  $msg_body;
+        $prospect->nom = $name;
+        $prospect->telephone = $from;
+        $prospect->email = null;
+        $prospect->origin = 'whatssap';
+        $prospect->source = 1;
+        $prospect->save();
     }
 
     /**

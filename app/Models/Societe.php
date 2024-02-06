@@ -14,7 +14,7 @@ class Societe extends Model
         'adresse',
         'email', 'nom_contact',
         'prenom_contact',
-        'raison_sociale', 'tel',
+        'raison_sociale', 'tel','societe_id',
     ];
 
     protected $dates = ['deleted_at'];

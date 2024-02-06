@@ -13,15 +13,16 @@ return new class extends Migration
     {
         Schema::create('prospects', function (Blueprint $table) {
             $table->id();
-            $table->string('cin')->unique();
+            $table->string('cin')->unique()->nullable();
             $table->integer('client_id')->nullable();
             $table->string('nom');
-            $table->string('prenom');
+            $table->string('prenom')->nullable();
             $table->string('telephone');
             $table->string('telephone_num2')->nullable();
             $table->string('email')->nullable()->unique();
             $table->string('origin');
             $table->integer('source');
+            $table->text('message');
             $table->timestamps();
             $table->softDeletes();
             $table->index(['cin','telephone','telephone_num2']);

@@ -81,6 +81,8 @@ class DatabaseHelper
 
         DB::statement("DROP DATABASE $oldDatabaseName");
     }
+
+
     public static function Config($societe_id = null)
     {
         if (!$societe_id) {
@@ -91,6 +93,17 @@ class DatabaseHelper
         $connection = DatabaseHelper::Connection_database($DatabaseName);
         config(['database.connections.temp' => $connection]);
     }
+    
+    // public static function Config($societe_id = null)
+    // {
+    //     if (!$societe_id) {
+    //         $societe_id = Auth::guard('api')->user()->societe_id;
+    //     }
+    //     $societe = Societe::findOrfail($societe_id);
+    //     $DatabaseName = 'Erp_' . $societe->raison_sociale . '_' . $societe_id;
+    //     $connection = DatabaseHelper::Connection_database($DatabaseName);
+    //     config(['database.connections.temp' => $connection]);
+    // }
     public static function Connection_database($databaseName)
     {
         return [
