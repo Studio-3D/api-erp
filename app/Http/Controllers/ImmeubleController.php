@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\RoleHelper;
 use Illuminate\Http\Request;
+use App\Models\Tranche;
+use App\Models\Bloc;
 
 
 
@@ -58,7 +60,15 @@ class ImmeubleController extends Controller
             $immeuble->tranche_id = $request->tranche_id;
             $immeuble->bloc_id = $request->bloc_id;
             $immeuble->nbre_biens = $request->nbre_biens? $request->nbre_biens:0;
+            if($request->bloc_id && ($request->tranche_id===null||!$request->tranche_id))
+                {
+                    $bloc = Bloc::on('temp')->findOrfail($request->bloc_id);
+                    $immeuble->tranche_id=$bloc->tranche_id;
+                    
+                }
+            
             $immeuble->save();
+
             return response()->json(['message' => $immeuble], 200);
 
         } else {

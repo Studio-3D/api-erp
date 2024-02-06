@@ -25,6 +25,9 @@ use App\Models\Notification;
 use App\Models\Visite;
 use Carbon\Carbon;
 use App\Http\Helpers\Bien_Helper;
+use App\Models\Tranche;
+use App\Models\Bloc;
+use App\Models\Immeuble;
 
 
 
@@ -148,11 +151,29 @@ class BienController extends Controller
             $bien->superficie_terrasse_calculer = $request->superficie_terrasse_calculer;
             $bien->superficie_balcon_calculer = $request->superficie_balcon_calculer;
             $bien->superficie_balcon = $request->superficie_balcon;
+           
+            if($request->bloc_id && ($request->tranche_id===null||!$request->tranche_id))
+                {
+                    $bloc = Bloc::on('temp')->findOrfail($request->bloc_id);
+                    $bien->tranche_id=$bloc->tranche_id;
+
+                }
+            if($request->immeuble_id)
+                {
+                    $immeuble = Immeuble::on('temp')->findOrfail($request->immeuble_id);
+                    if($request->tranche_id===null||!$request->tranche_id){ 
+                        $bien->tranche_id=$immeuble->tranche_id;
+                    }
+                    if($request->bloc_id===null||!$request->bloc_id){
+                        $bien->bloc_id=$immeuble->bloc_id;   
+                    }
+                } 
             if($bien->save()){
                 if($bien->etat=='disponible'){
                     Bien_Helper::store_bien_frein($bien->id);
-
-                }
+        
+                }       
+                
             }
 
             return response()->json(['bien' => $bien], 200);
