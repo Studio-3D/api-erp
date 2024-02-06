@@ -20,6 +20,8 @@ use App\Http\Requests\Store_n_VisiteRequest;
 use App\Http\Requests\UpdateFreinRequest;
 use App\Http\Requests\UpdateVisiteRequest;
 use App\Http\Requests\UpdateDate_relance_Rdv;
+use App\Http\Requests\StoreReservationRequest;
+use \NumberFormatter;
 use App\Models\Bien;
 use App\Models\Notification;
 use App\Models\PreReservation;
@@ -77,7 +79,8 @@ class VisiteController extends Controller
                 'statut' => $visite->first()->statut,
                 'propriete_dite_bien' => $visite->first()->bien_id?$visite->first()->bien->propriete_dite_bien:'',
                 'etat_bien' => $visite->first()->bien_id?$visite->first()->bien->etat:'',
-                'visit_count' => count($visite)
+                'visit_count' => count($visite),
+                'reservation' => $visite->first()->reservation,
 
             ];});
 
@@ -121,7 +124,6 @@ class VisiteController extends Controller
                 convert
                 lead to visite
             ****/
-
         $user = Auth::user();
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
@@ -171,11 +173,11 @@ class VisiteController extends Controller
                     $cin_exist=Prospect::on('temp')->where('cin',$request->cin)->where('id','!=',$request->prospect_id)->count();
                     if($cin_exist==0){
                         $prospect->cin=$request->cin;
+                        $prospect->email=$request->email;
                     }
                 }
                 $prospect->nom=$request->nom;
                 $prospect->prenom=$request->prenom;
-                $prospect->email=$request->email;
                 $prospect->telephone=$request->telephone;
                 $prospect->telephone_num2=$request->telephone_num2;
                 $prospect->source=$request->source_id;
@@ -274,9 +276,63 @@ class VisiteController extends Controller
                     $bien_c->prereserverBien($visite->bien_id,$visite->id,null);
 
                 }
-                /*elseif ($visite->interet == 'Intéressé' && $visite->statut == 'Vendu') {
-                    store reservation
-                }*/
+                elseif ($visite->interet == InteretEnum::Intéressé->value && $visite->statut ==StatutVisiteEnum::Vendu->value) {
+                    //set visite pre reserve
+
+                        $reservationController = new ReservationController();
+                        $reservationRequest = new StoreReservationRequest();
+
+                        $numberToWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
+                        $prix_remise_lettre = $numberToWords->format($request->prix_remise);
+                        $prix_forfetaire_lettre = $numberToWords->format($request->prix_forfetaire);
+
+                        $dataReservation = [
+                            'nb_acquereurs'=>1,
+                            'code_reservation'=>$request->code_reservation,
+                            'origin'=>'visite',
+                            'prix'=>$request->prix,
+                            'mode_financement'=>$request->mode_financement,
+                            'date_reservation'=>$request->date_reservation,
+                            'date_limite_reservation'=>$request->date_limite_reservation,
+                            'commentaire'=>$request->commentaire_res,
+                            'visite_id'=>$visite->id,
+                            'prix_remise'=>$request->prix_remise,
+                            'prix_remise_lettre'=>$request->prix_remise_lettre,
+                            'prix_forfetaire'=>$request->prix_forfetaire,
+                            'prix_forfetaire_lettre'=>$request->prix_forfetaire_lettre,
+                            'bien_id'=>$request->bien_id,
+                            'projet_id'=>$request->selectedProjet,
+                            'verifierPourcentages'=>true,
+                            'origin'=>'visite',
+                            'cin'=>$request->cin,
+                            'nom'=>$request->nom,
+                            'prenom'=>$request->prenom,
+                            'telephone_num1'=>$request->telephone,
+                            'telephone_num2'=>$request->telephone_num2,
+                            'notifie'=>$visite->notifie,
+                            'prospect_id'=>$prospect->id,
+                            'civilite'=>'Mr',
+                            'type_client'=>1,
+
+                            'sr' => $request->sr,
+                            'check_montant' => $request->check_montant,
+                            'type_encaissement' => 1,
+                            'avance' => $request->avance_res,
+                            'mode_paiement' => $request->mode_paiement,
+                            'numero_paiement' => $request->numero_paiement,
+                            'date_reglement' => $request->date_reglement,
+                            'echeance' => $request->echeance,
+                            'banque_id' => $request->banque_id,
+                            'commentaireAvance' => $request->commentaireAvance,
+                            'num_remise' => $request->num_remise,
+                            'date_encaissement' => $request->date_encaissement,
+
+                        ];
+                        $reservationRequest->merge($dataReservation);
+                        $reservationController->store($reservationRequest);
+
+
+                }
 
 
                 if ($visite->interet == InteretEnum::Perdu->value) {
@@ -367,13 +423,13 @@ class VisiteController extends Controller
             DatabaseHelper::Config();
 
 
-            $visite = Visite::on('temp')->with('relance_relation','rdv_relation')->findOrfail($id);
+            $visite = Visite::on('temp')->with('relance_relation','rdv_relation','reservation')->findOrfail($id);
             $frein=new FreinController();
                 if($visite->interet==InteretEnum::Perdu->value) {
                     $visite['frein']=$frein->searchFreinByVisiteId($visite->id,'without_row_deleted');
                 }
 
-                $relatedVisites=Visite::on('temp')->with('pre_reservation_visite','relance_relation','rdv_relation')->where('origin_id',$visite->id)->where('etat',1)->orderby('created_at', 'DESC')->get();
+                $relatedVisites=Visite::on('temp')->with('pre_reservation_visite','relance_relation','rdv_relation','reservation')->where('origin_id',$visite->id)->where('etat',1)->orderby('created_at', 'DESC')->get();
 
                 foreach ($relatedVisites as $relatedVisite) {
                     if ($relatedVisite->interet == InteretEnum::Perdu->value) {
@@ -498,6 +554,7 @@ class VisiteController extends Controller
      */
     public function update(UpdateVisiteRequest $request,$id)
     {
+
         $user = Auth::user();
         if(RoleHelper::ACSup()) {
             DatabaseHelper::Config();
@@ -534,11 +591,11 @@ class VisiteController extends Controller
                 $cin_exist=Prospect::on('temp')->where('cin',$request->cin)->where('id','!=',$visite->prospect_id)->count();
                 if($cin_exist==0){
                     $prospect->cin=$request->cin;
+                    $prospect->email=$request->email;
                 }
             }
             $prospect->nom=$request->nom;
             $prospect->prenom=$request->prenom;
-            $prospect->email=$request->email;
             $prospect->telephone=$request->telephone;
             $prospect->telephone_num2=$request->telephone_num2;
             $prospect->source=$request->source_id;
@@ -661,10 +718,65 @@ class VisiteController extends Controller
                 }
             }
 
+            //if($old_visite->statut!=StatutVisiteEnum::Vendu->value ){
+            if ($visite->interet == InteretEnum::Intéressé->value && $visite->statut ==StatutVisiteEnum::Vendu->value) {
 
-             /*elseif ($visite->interet == 'Intéressé' && $visite->statut == 'vendu') {
-                                        store reservation
-                                    }*/
+                    $reservationController = new ReservationController();
+                    $reservationRequest = new StoreReservationRequest();
+
+                    $numberToWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
+                    $prix_remise_lettre = $numberToWords->format($request->prix_remise);
+                    $prix_forfetaire_lettre = $numberToWords->format($request->prix_forfetaire);
+
+                    $dataReservation = [
+                        'nb_acquereurs'=>1,
+                        'code_reservation'=>$request->code_reservation,
+                        'origin'=>'visite',
+                        'prix'=>$request->prix,
+                        'mode_financement'=>$request->mode_financement,
+                        'date_reservation'=>$request->date_reservation,
+                        'date_limite_reservation'=>$request->date_limite_reservation,
+                        'commentaire'=>$request->commentaire_res,
+                        'visite_id'=>$visite->id,
+                        'prix_remise'=>$request->prix_remise,
+                        'prix_remise_lettre'=>$request->prix_remise_lettre,
+                        'prix_forfetaire'=>$request->prix_forfetaire,
+                        'prix_forfetaire_lettre'=>$request->prix_forfetaire_lettre,
+                        'bien_id'=>$request->bien_id,
+                        'projet_id'=>$visite->projet_id,
+                        'verifierPourcentages'=>true,
+                        'origin'=>'visite',
+                        'cin'=>$prospect->cin,
+                        'nom'=>$prospect->nom,
+                        'prenom'=>$prospect->prenom,
+                        'telephone_num1'=>$prospect->telephone,
+                        'telephone_num2'=>$prospect->telephone_num2,
+                        'notifie'=>$visite->notifie,
+                        'prospect_id'=>$prospect->id,
+                        'civilite'=>'Mr',
+                        'type_client'=>1,
+
+
+                        'sr' => $request->sr,
+                        'check_montant' => $request->check_montant,
+                        'type_encaissement' => 1,
+                        'avance' => $request->avance_res,
+                        'mode_paiement' => $request->mode_paiement,
+                        'numero_paiement' => $request->numero_paiement,
+                        'date_reglement' => $request->date_reglement,
+                        'echeance' => $request->echeance,
+                        'banque_id' => $request->banque_id,
+                        'commentaireAvance' => $request->commentaireAvance,
+                        'num_remise' => $request->num_remise,
+                        'date_encaissement' => $request->date_encaissement,
+
+                    ];
+                    $reservationRequest->merge($dataReservation);
+                    $reservationController->store($reservationRequest);
+
+
+            }
+            // }
 
             if ($visite->interet == InteretEnum::Perdu->value) {
                 $frein_id=Frein::on('temp')->where('visite_id', $visite->id)->get();
@@ -893,9 +1005,63 @@ class VisiteController extends Controller
                     $bien_c=new BienController();
                     $bien_c->prereserverBien($newVisit->bien_id,$newVisit->id,null);
                 }
-                  /*elseif ($newVisit->interet == 'Intéressé' && $newVisit->statut == 'Vendu') {
-                    store reservation
-                  }*/
+                elseif ($newVisit->interet == InteretEnum::Intéressé->value && $newVisit->statut ==StatutVisiteEnum::Vendu->value) {
+                       //set visite pre reserve
+
+                        $reservationController = new ReservationController();
+                        $reservationRequest = new StoreReservationRequest();
+
+                        $numberToWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
+                        $prix_remise_lettre = $numberToWords->format($request->prix_remise);
+                        $prix_forfetaire_lettre = $numberToWords->format($request->prix_forfetaire);
+
+                        $dataReservation = [
+                            'nb_acquereurs'=>1,
+                            'code_reservation'=>$request->code_reservation,
+                            'origin'=>'visite',
+                            'prix'=>$request->prix,
+                            'mode_financement'=>$request->mode_financement,
+                            'date_reservation'=>$request->date_reservation,
+                            'date_limite_reservation'=>$request->date_limite_reservation,
+                            'commentaire'=>$request->commentaire_res,
+                            'visite_id'=>$newVisit->id,
+                            'prix_remise'=>$request->prix_remise,
+                            'prix_remise_lettre'=>$request->prix_remise_lettre,
+                            'prix_forfetaire'=>$request->prix_forfetaire,
+                            'prix_forfetaire_lettre'=>$request->prix_forfetaire_lettre,
+                            'bien_id'=>$request->bien_id,
+                            'projet_id'=>$request->selectedProjet,
+                            'verifierPourcentages'=>true,
+                            'origin'=>'visite',
+                            'cin'=>$prospect->cin,
+                            'nom'=>$prospect->nom,
+                            'prenom'=>$prospect->prenom,
+                            'telephone_num1'=>$prospect->telephone,
+                            'telephone_num2'=>$prospect->telephone_num2,
+                            'notifie'=>$newVisit->notifie,
+                            'prospect_id'=>$prospect->id,
+                            'civilite'=>'Mr',
+                            'type_client'=>1,
+
+                            'sr' => $request->sr,
+                            'check_montant' => $request->check_montant,
+                            'type_encaissement' => 1,
+                            'avance' => $request->avance_res,
+                            'mode_paiement' => $request->mode_paiement,
+                            'numero_paiement' => $request->numero_paiement,
+                            'date_reglement' => $request->date_reglement,
+                            'echeance' => $request->echeance,
+                            'banque_id' => $request->banque_id,
+                            'commentaireAvance' => $request->commentaireAvance,
+                            'num_remise' => $request->num_remise,
+                            'date_encaissement' => $request->date_encaissement,
+
+                        ];
+                        $reservationRequest->merge($dataReservation);
+                        $reservationController->store($reservationRequest);
+
+
+                }
 
                   if ($newVisit->interet == InteretEnum::Perdu->value) {
                     $freinRequest['visite_id']=$newVisit->getAttribute('id');

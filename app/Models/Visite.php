@@ -58,6 +58,10 @@ class Visite extends Model
     {
         return $this->hasone(Relance_Rdv_Visite::class,'visite_id','id')->withTrashed()->orderby('created_at','desc')->where('rdv','!=',null)->latest();
     }
+    public function reservation()
+    {
+        return $this->hasone(Reservation::class,'visite_id','id');
+    }
 
 
 }

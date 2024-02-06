@@ -24,6 +24,9 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Models\Visite;
+use App\Models\Client;
+use App\Enum\StatutVisiteEnum;
 use \NumberFormatter;
 
 class ReservationController extends Controller
@@ -101,7 +104,7 @@ class ReservationController extends Controller
                 /* if($bien_prop->etat!=EtatBien::DISPONIBLE->name){
                 return response()->json(['error' => 'Ce bien n\'est pas disponible'], 422);
                 }*/
-                if ($bien_prop->etat == 'ENCOURS_DE_PROPOSITION' && $bien_prop->is_proposed->user_id != $userAuth->value('id')) {
+                if ($bien_prop->etat == 'ENCOURS_DE_PROPOSITION' && $bien_prop->is_proposed->user_id != Auth::guard('api')->user()->id) {
                     return response()->json(['error' => 'le bien choisi :' . $bien_prop->propriete_dite_bien . ' est en cours de proposition  par : ' . $bien_prop->is_proposed->user->name . ' ' . $bien_prop->is_proposed->user->prenom]);
                 }
 
@@ -148,34 +151,60 @@ class ReservationController extends Controller
                     $clientRequest = new StoreClientRequest();
                     $aquereurController = new AquereurController();
                     $aquereurRequest = new StoreAquereurRequest();
-                    if ($request->clients) {
-                        foreach ($request->clients as $clientInfo) {
-                            $clientRequest->merge($clientInfo);
-                            $clientData = $clientController->store($clientRequest);
-                            $dataAquereur = [
-                                'pourcentage' => $clientInfo['pourcentage'],
-                                'client_id' => $clientData->id,
-                                'reservation_id' => $reservation->id,
+                    if($request->origin=='visite'){
+                        $client_exist=Client::on('temp')->where('prospect_id',$request->prospect_id)->orderBy('created_at', 'DESC')->first();
+                        if($client_exist!=null){
+                            $clientData =$client_exist;
+                        }else{
+                            $dataClient= [
+                                'cin'=>$request->cin,
+                                'nom'=>$request->nom,
+                                'prenom'=>$request->prenom,
+                                'telephone_num1'=>$request->telephone_num1,
+                                'telephone_num2'=>$request->telephone_num2,
+                                'notifie'=>$request->notifie,
+                                'prospect_id'=>$request->prospect_id,
+                                'civilite'=>'Mr',
+                                'type_client'=>1,
                             ];
-                            $aquereurRequest->merge($dataAquereur);
-                            $aquereurController->store($aquereurRequest);
-                        }}
-                    if ($request->oldClients) {
-                        foreach ($request->oldClients as $clientInfo) {
-                            $dataAquereur = [
-                                'pourcentage' => $clientInfo['pourcentage1'],
-                                'client_id' => $clientInfo['id'],
-                                'reservation_id' => $reservation->id,
-                            ];
-                            $aquereurRequest->merge($dataAquereur);
-                            $aquereurController->store($aquereurRequest);
-                        }}
-                    $avanceController = new AvanceController();
-                    $avanceRequest = new StoreAvanceRequest();
-                    /* foreach ($request->avance as $avanceInfo){
-                    $avanceRequest->merge($avanceInfo);
-                    } */
+                            $clientRequest->merge($dataClient);
+                         $clientData = $clientController->store($clientRequest);
+                        }
+                        $dataAquereur = [
+                            'pourcentage' => 100,
+                            'client_id' => $clientData->id,
+                            'reservation_id' => $reservation->id,
+                        ];
+                        $aquereurRequest->merge($dataAquereur);
+                        $aquereurController->store($aquereurRequest);
+                    }
+                    else{
+                        if ($request->clients) {
+                            foreach ($request->clients as $clientInfo) {
+                                $clientRequest->merge($clientInfo);
+                                $clientData = $clientController->store($clientRequest);
+                                $dataAquereur = [
+                                    'pourcentage' => $clientInfo['pourcentage'],
+                                    'client_id' => $clientData->id,
+                                    'reservation_id' => $reservation->id,
+                                ];
+                                $aquereurRequest->merge($dataAquereur);
+                                $aquereurController->store($aquereurRequest);
+                            }}
+                        if ($request->oldClients) {
+                            foreach ($request->oldClients as $clientInfo) {
+                                $dataAquereur = [
+                                    'pourcentage' => $clientInfo['pourcentage1'],
+                                    'client_id' => $clientInfo['id'],
+                                    'reservation_id' => $reservation->id,
+                                ];
+                                $aquereurRequest->merge($dataAquereur);
+                                $aquereurController->store($aquereurRequest);
+                            }}
 
+                    }
+                   $avanceController = new AvanceController();
+                    $avanceRequest = new StoreAvanceRequest();
                     $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
                     $mnt_lettre = $inWords->format($request->avance);
                     $dataAvance = [
