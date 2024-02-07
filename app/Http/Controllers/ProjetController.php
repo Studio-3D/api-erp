@@ -242,7 +242,7 @@ class ProjetController extends Controller
                     return response()->json(['projet' => $projet], 200);
                 } else {
                     foreach ($request->selectedUsers as $valeur) {
-                        UserProjetHelper::createUserProjet($projet->id, $valeur);
+                        UserProjetHelper::createUserProjet($projet->id,  $valeur['id']);
                     }
                     return response()->json(['projet' => $projet], 200);
                 }
