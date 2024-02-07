@@ -112,7 +112,7 @@ class DatabaseHelper
     public static function deletePropositionTable($databases)
     {
         foreach ($databases as $database) {
-            $databaseName = 'Erp_' . $database->raison_sociale . '_' . $database->id;
+            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
 
             // Switch to the temporary database
             $connection = DatabaseHelper::Connection_database($databaseName);
@@ -166,7 +166,7 @@ class DatabaseHelper
     public static function destroy_notif($databases)
     {
         foreach ($databases as $database) {
-            $databaseName = 'Erp_' . $database->raison_sociale . '_' . $database->id;
+            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
 
             // Switch to the temporary database
             $connection = DatabaseHelper::Connection_database($databaseName);
@@ -192,7 +192,7 @@ class DatabaseHelper
     public static function liberer_bien_pre_reserve($databases)
     {
         foreach ($databases as $database) {
-            $databaseName = 'Erp_' . $database->raison_sociale . '_' . $database->id;
+            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
 
             // Switch to the temporary database
             $connection = DatabaseHelper::Connection_database($databaseName);
@@ -234,7 +234,7 @@ class DatabaseHelper
     public static function Deletedatabase($databases)
     {
         foreach ($databases as $database) {
-            $databaseName = 'Erp_' . $database->raison_sociale . '_' . $database->id;
+            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
             DB::statement("DROP DATABASE IF EXISTS `$databaseName`");
         }
     }

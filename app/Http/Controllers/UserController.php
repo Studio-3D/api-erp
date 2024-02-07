@@ -243,15 +243,16 @@ class UserController extends Controller
             $user->solde_conge = $request->input('solde_conge');
             $photo = time() . '.' . $request->name . '.' . $request->photo->extension();
             $user_origin = User::where('id', $user->user_id_origin)->first();
+            $societe = Societe::findOrfail($user_origin->societe_id);
             if ($request->hasFile('photo')) {
                 if ($user->photo != null) {
-                    $image_path = public_path('img/users/' . $user->photo);
+                    $image_path=asset('img/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/users'.$user_origin->photo);
+                    //$image_path = public_path('img/users/' . $user->photo);
                     if (file_exists($image_path)) {
                         unlink($image_path);
                     }
                 }
                 $photo = time() . '.' . $request->name . '.' . $request->photo->extension();
-                $societe = Societe::findOrfail($user_origin->societe_id);
                 $request->photo->move(public_path('img/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/users'), $photo);
                 $user->photo = $photo;
             }
