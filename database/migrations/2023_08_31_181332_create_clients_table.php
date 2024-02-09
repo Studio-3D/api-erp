@@ -40,7 +40,7 @@ return new class extends Migration
             $table->enum('situation_familliale',[SituationFamilliale::Célibataire->name,SituationFamilliale::Marié->name,SituationFamilliale::Divorcé->name,SituationFamilliale::Veuf->name]);
             $table->string('nom_pere')->nullable();
             $table->string('nom_mere')->nullable();
-            $table->foreignId('societe_id')->constrained('partenaires')->nullable()->onDelete('cascade');
+            $table->foreignId('partenaire_id')->constrained('partenaires')->nullable()->onDelete('cascade');
             $table->foreignId('prospect_id')->constrained('prospects')->nullable()->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
