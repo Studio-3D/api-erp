@@ -3,7 +3,10 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-
+use App\Http\Helpers\DatabaseHelper;
+use App\Models\Societe;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 class StoreProspectRequest extends FormRequest
 {
     /**
@@ -31,8 +34,8 @@ class StoreProspectRequest extends FormRequest
             'telephone' => 'required|string',
             'telephone_num2' => 'string',
             'source'=>'string',
-            'cin' => ['string', Rule::unique('temp.'.$DatabaseName.'.prospects','cin')->ignore($this->prospect)],
-            'email' => ['string', Rule::unique('temp.'.$DatabaseName.'.prospects','email')->ignore($this->prospect)],
+            'cin' => ['string', Rule::unique('temp.'.$DatabaseName.'.prospects','cin')],
+            'email' => ['string', Rule::unique('temp.'.$DatabaseName.'.prospects','email')],
 
         ];
     }

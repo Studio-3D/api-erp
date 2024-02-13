@@ -39,6 +39,8 @@ return new class extends Migration
             $table->double('superficie_jardin', 12, 2)->nullable();
             $table->double('superficie_jardin_calculer', 12, 2)->nullable();
             $table->string('titre_foncier')->nullable();
+            $table->double('superficie_total', 12, 2)->nullable();
+            $table->double('superficie_vendable', 12, 2)->nullable();
             $table->enum('etat', [EtatBien::DISPONIBLE->name, EtatBien::PRE_RESERVATION->name, EtatBien::RESERVATION->name, EtatBien::BLOQUE->name, EtatBien::VENDU->name, EtatBien::ENCOURS_DE_PROPOSITION->name]); //1=disponible, 2=pré-réservé, 3=réservé, 4=bloqué
             $table->timestamps();
             $table->softDeletes();
