@@ -3,35 +3,26 @@
 namespace App\Http\Controllers;
 
 use App\Enum\EtatBien;
+use App\Http\Helpers\Bien_Helper;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\HistoriqueBienHelper;
-use App\Http\Helpers\FreinBienHelper;
 use App\Http\Helpers\PaginationHelper;
 use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreBienRequest;
 use App\Http\Requests\UpdateBienRequest;
 use App\Models\Bien;
-use App\Models\Proposition;
-use App\Models\Frein_Bien;
+use App\Models\Bloc;
 use App\Models\Frein;
-use App\Models\PreReservation;
+use App\Models\Frein_Bien;
 use App\Models\HistoriqueBien;
+use App\Models\Immeuble;
+use App\Models\PreReservation;
+use App\Models\Proposition;
+use App\Models\Tranche;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use App\Models\User;
-use App\Http\Helpers\NotificationHelper;
-use App\Models\Notification;
-use App\Models\Visite;
-use Carbon\Carbon;
-use App\Http\Helpers\Bien_Helper;
-use App\Models\Tranche;
-use App\Models\Bloc;
-use App\Models\Immeuble;
-
-
-
-
 
 class BienController extends Controller
 {
@@ -50,7 +41,6 @@ class BienController extends Controller
                 ->paginate($perPage, ['*'], 'page', $page);
             return response()->json(['biens' => $biens], 200);
 
-
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
 
@@ -58,41 +48,40 @@ class BienController extends Controller
 
     }
 
-    public function biens_proposition(Request $request,$projet_id){
+    public function biens_proposition(Request $request, $projet_id)
+    {
 
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
-            if(RoleHelper::AdminSup()){
-                $biens = Proposition::on('temp')->join('biens','biens.id', '=', 'propositions.bien_id')->latest('propositions.created_at')->where('biens.projet_id',$projet_id)->where('biens.etat','ENCOURS_DE_PROPOSITION')
-                ->select('propositions.*')
-                ->get()
-                ->groupby('bien_id');
+            if (RoleHelper::AdminSup()) {
+                $biens = Proposition::on('temp')->join('biens', 'biens.id', '=', 'propositions.bien_id')->latest('propositions.created_at')->where('biens.projet_id', $projet_id)->where('biens.etat', 'ENCOURS_DE_PROPOSITION')
+                    ->select('propositions.*')
+                    ->get()
+                    ->groupby('bien_id');
                 $biens = $biens->map(function ($bn) {
                     return [
                         'id' => $bn->first()->id,
                         'propriete_dite_bien' => $bn->first()->bien->propriete_dite_bien,
-                        'responsable' => $bn->first()->user->name.' '.$bn->first()->user->prenom,
-                        'created_at' => $bn->first()->created_at
+                        'responsable' => $bn->first()->user->name . ' ' . $bn->first()->user->prenom,
+                        'created_at' => $bn->first()->created_at,
                     ];});
-                    $data = PaginationHelper::paginate_array($biens->toArray(),$perPage,$page,$request->url());
-            }
-            else{
+                $data = PaginationHelper::paginate_array($biens->toArray(), $perPage, $page, $request->url());
+            } else {
                 //commercial
-                $biens = Proposition::on('temp')->join('biens','biens.id', '=', 'propositions.bien_id')->latest('propositions.created_at')->where('biens.projet_id',$projet_id)->where('propositions.user_id',Auth::guard('api')->user()->id)->where('biens.etat','ENCOURS_DE_PROPOSITION')
-                ->select('propositions.*')
-                ->get()
-                ->groupby('bien_id');
+                $biens = Proposition::on('temp')->join('biens', 'biens.id', '=', 'propositions.bien_id')->latest('propositions.created_at')->where('biens.projet_id', $projet_id)->where('propositions.user_id', Auth::guard('api')->user()->id)->where('biens.etat', 'ENCOURS_DE_PROPOSITION')
+                    ->select('propositions.*')
+                    ->get()
+                    ->groupby('bien_id');
                 $biens = $biens->map(function ($bn) {
                     return [
                         'id' => $bn->first()->id,
                         'propriete_dite_bien' => $bn->first()->bien->propriete_dite_bien,
-                        'responsable' => $bn->first()->user->name.' '.$bn->first()->user->prenom,
-                        'created_at' => $bn->first()->created_at
+                        'responsable' => $bn->first()->user->name . ' ' . $bn->first()->user->prenom,
+                        'created_at' => $bn->first()->created_at,
                     ];});
-                    $data = PaginationHelper::paginate_array($biens->toArray(),$perPage,$page,$request->url());
-
+                $data = PaginationHelper::paginate_array($biens->toArray(), $perPage, $page, $request->url());
 
             }
             return response()->json(['biens' => $data], 200);
@@ -128,6 +117,8 @@ class BienController extends Controller
             $bien->prix = $request->prix;
             $bien->superficie_architecte = $request->superficie_architecte;
             $bien->superficie_habitable = $request->superficie_habitable;
+            $bien->superficie_total = $request->superficie_total;
+            $bien->superficie_vendable = $request->superficie_vendable;
             $bien->nbre_facades = $request->nbre_facades;
             $bien->superficie_parking = $request->superficie_parking;
             $bien->superficie_box = $request->superficie_box;
@@ -151,29 +142,27 @@ class BienController extends Controller
             $bien->superficie_terrasse_calculer = $request->superficie_terrasse_calculer;
             $bien->superficie_balcon_calculer = $request->superficie_balcon_calculer;
             $bien->superficie_balcon = $request->superficie_balcon;
-           
-            if($request->bloc_id && ($request->tranche_id===null||!$request->tranche_id))
-                {
-                    $bloc = Bloc::on('temp')->findOrfail($request->bloc_id);
-                    $bien->tranche_id=$bloc->tranche_id;
+
+            if ($request->bloc_id && ($request->tranche_id === null || !$request->tranche_id)) {
+                $bloc = Bloc::on('temp')->findOrfail($request->bloc_id);
+                $bien->tranche_id = $bloc->tranche_id;
+
+            }
+            if ($request->immeuble_id) {
+                $immeuble = Immeuble::on('temp')->findOrfail($request->immeuble_id);
+                if ($request->tranche_id === null || !$request->tranche_id) {
+                    $bien->tranche_id = $immeuble->tranche_id;
+                }
+                if ($request->bloc_id === null || !$request->bloc_id) {
+                    $bien->bloc_id = $immeuble->bloc_id;
+                }
+            }
+            if ($bien->save()) {
+                if ($bien->etat == 'disponible') {
+                    Bien_Helper::store_bien_frein($bien->id);
 
                 }
-            if($request->immeuble_id)
-                {
-                    $immeuble = Immeuble::on('temp')->findOrfail($request->immeuble_id);
-                    if($request->tranche_id===null||!$request->tranche_id){ 
-                        $bien->tranche_id=$immeuble->tranche_id;
-                    }
-                    if($request->bloc_id===null||!$request->bloc_id){
-                        $bien->bloc_id=$immeuble->bloc_id;   
-                    }
-                } 
-            if($bien->save()){
-                if($bien->etat=='disponible'){
-                    Bien_Helper::store_bien_frein($bien->id);
-        
-                }       
-                
+
             }
 
             return response()->json(['bien' => $bien], 200);
@@ -196,10 +185,11 @@ class BienController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    public function libererBien_function($id){
+    public function libererBien_function($id)
+    {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            Bien_Helper::libererBien($id,null);
+            Bien_Helper::libererBien($id, null);
             return response()->json('le bien est liberé');
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -233,9 +223,9 @@ class BienController extends Controller
             foreach ($update as $key => $value) {
                 $bien->$key = $value;
             }
-            if($bien->save()){
-                if($bien->etat==1){
-                    Bien_Helper::libererBien($bien->id,null);
+            if ($bien->save()) {
+                if ($bien->etat == 1) {
+                    Bien_Helper::libererBien($bien->id, null);
                 }
             }
 
@@ -295,10 +285,10 @@ class BienController extends Controller
             DatabaseHelper::Config();
             $bien = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat = EtatBien::BLOQUE->value;
-            if($bien->save()){
+            if ($bien->save()) {
                 $this->libere_bien_frein($bien->id);
             }
-            HistoriqueBienHelper::createHistoriqueBien(4, "bloquer", $bien_id, Auth::guard('api')->user()->id,NULL,NULL);
+            HistoriqueBienHelper::createHistoriqueBien(4, "bloquer", $bien_id, Auth::guard('api')->user()->id, null, null);
 
             return response()->json(['message' => $bien], 200);
 
@@ -307,16 +297,16 @@ class BienController extends Controller
         }
     }
 
-    public function reserverBien($bien_id,$visite_id,$reservation_id)
+    public function reserverBien($bien_id, $visite_id, $reservation_id)
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $bien = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat = EtatBien::RESERVATION->value;
-            if($bien->save()){
+            if ($bien->save()) {
                 $this->libere_bien_frein($bien->id);
             }
-            HistoriqueBienHelper::createHistoriqueBien(3, "reserver", $bien_id, Auth::guard('api')->user()->id,$visite_id,$reservation_id);
+            HistoriqueBienHelper::createHistoriqueBien(3, "reserver", $bien_id, Auth::guard('api')->user()->id, $visite_id, $reservation_id);
             return response()->json(['message' => $bien], 200);
 
         } else {
@@ -324,20 +314,20 @@ class BienController extends Controller
         }
     }
 
-    public function prereserverBien($bien_id,$visite_id,$appel_id)
+    public function prereserverBien($bien_id, $visite_id, $appel_id)
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $bien = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat = EtatBien::PRE_RESERVATION->name;
-            if( $bien->save()){
-                $code='';
+            if ($bien->save()) {
+                $code = '';
                 $biens_get_pre = PreReservation::on('temp')->orderByRaw("CAST(code_pre_reserve as UNSIGNED) DESC")
-                ->get('code_pre_reserve')->first();
-                if ($biens_get_pre!=null) {
-                $code = $biens_get_pre->code_pre_reserve + 1;
+                    ->get('code_pre_reserve')->first();
+                if ($biens_get_pre != null) {
+                    $code = $biens_get_pre->code_pre_reserve + 1;
                 } else {
-                    $code=1;
+                    $code = 1;
                 }
                 $bien_visite_pre_reserve = new PreReservation();
                 $bien_visite_pre_reserve->setConnection('temp');
@@ -351,7 +341,7 @@ class BienController extends Controller
 
             }
 
-            HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id,$visite_id,NULL);
+            HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id, $visite_id, null);
             return response()->json(['message' => $bien], 200);
 
         } else {
@@ -359,29 +349,30 @@ class BienController extends Controller
         }
     }
 
-    public function libere_bien_frein($id){
+    public function libere_bien_frein($id)
+    {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
 
-            $array_fr_id=array();
+            $array_fr_id = array();
 
-            $frein_biens=Frein_Bien::on('temp')->where('bien_id',$id)->get();
-            if(count($frein_biens)>0){
+            $frein_biens = Frein_Bien::on('temp')->where('bien_id', $id)->get();
+            if (count($frein_biens) > 0) {
                 //delete bien_id fron frein_bien
-                foreach($frein_biens as $fr_b){
+                foreach ($frein_biens as $fr_b) {
                     //push all _fr_id to array
-                    array_push($array_fr_id,$fr_b->frein_id);
+                    array_push($array_fr_id, $fr_b->frein_id);
                     $fr_b->forceDelete();
                 }
 
                 //if array is full
-                if(count($array_fr_id)>0){
+                if (count($array_fr_id) > 0) {
                     //test if frein_bien not contains fr_id(id)
-                    for($i=0;$i<=sizeof($array_fr_id)-1;$i++){
-                        $frein_id_count=Frein_Bien::on('temp')->where('frein_id',$array_fr_id[$i])->count();
-                        if($frein_id_count==0){
-                            $frein=Frein::on('temp')->findOrFail($array_fr_id[$i]);
-                            $frein->etat=1;//reset etat frein to 1 (no bien disponible)
+                    for ($i = 0; $i <= sizeof($array_fr_id) - 1; $i++) {
+                        $frein_id_count = Frein_Bien::on('temp')->where('frein_id', $array_fr_id[$i])->count();
+                        if ($frein_id_count == 0) {
+                            $frein = Frein::on('temp')->findOrFail($array_fr_id[$i]);
+                            $frein->etat = 1; //reset etat frein to 1 (no bien disponible)
                             $frein->save();
                         }
                     }
@@ -432,19 +423,19 @@ class BienController extends Controller
 
         }
     }
-    public function getBiensByTranchepaginate(Request $request,$tranche_id){
+    public function getBiensByTranchepaginate(Request $request, $tranche_id)
+    {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
 
             $biens = Bien::on('temp')
-            ->orderBy('created_at', 'desc')
-            ->where('tranche_id', $tranche_id)
-            ->paginate($perPage, ['*'], 'page', $page);
+                ->orderBy('created_at', 'desc')
+                ->where('tranche_id', $tranche_id)
+                ->paginate($perPage, ['*'], 'page', $page);
 
             return response()->json(['biens' => $biens], 200);
-
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -464,19 +455,19 @@ class BienController extends Controller
 
         }
     }
-    public function getBiensByBlocpaginate(Request $request,$bloc_id){
+    public function getBiensByBlocpaginate(Request $request, $bloc_id)
+    {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
 
             $biens = Bien::on('temp')
-            ->orderBy('created_at', 'desc')
-            ->where('bloc_id', $bloc_id)
-            ->paginate($perPage, ['*'], 'page', $page);
+                ->orderBy('created_at', 'desc')
+                ->where('bloc_id', $bloc_id)
+                ->paginate($perPage, ['*'], 'page', $page);
 
             return response()->json(['biens' => $biens], 200);
-
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -496,16 +487,17 @@ class BienController extends Controller
 
         }
     }
-    public function getBiensByImmeublepaginate(Request $request,$immeuble_id){
+    public function getBiensByImmeublepaginate(Request $request, $immeuble_id)
+    {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
 
             $biens = Bien::on('temp')
-            ->orderBy('created_at', 'desc')
-            ->where('immeuble_id', $immeuble_id)
-            ->paginate($perPage, ['*'], 'page', $page);
+                ->orderBy('created_at', 'desc')
+                ->where('immeuble_id', $immeuble_id)
+                ->paginate($perPage, ['*'], 'page', $page);
             return response()->json(['biens' => $biens], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -563,35 +555,35 @@ class BienController extends Controller
         }
 
     }
-    public function setPropostionBien($bien_id,$old_id){
+    public function setPropostionBien($bien_id, $old_id)
+    {
         if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
             DatabaseHelper::Config();
 
-            if($old_id==0){
+            if ($old_id == 0) {
                 $bien = Bien::on('temp')->findOrFail($bien_id);
-                $bien->etat=EtatBien::ENCOURS_DE_PROPOSITION->value;
-                if( $bien->save()){
+                $bien->etat = EtatBien::ENCOURS_DE_PROPOSITION->value;
+                if ($bien->save()) {
                     $bien_propose = new Proposition();
                     $bien_propose->setConnection('temp');
                     $bien_propose->bien_id = $bien_id;
-                    $bien_propose->user_id =Auth::guard('api')->user()->id;
+                    $bien_propose->user_id = Auth::guard('api')->user()->id;
                     $bien_propose->save();
                 }
 
-            }
-            else{
-                Bien_Helper::libererBien($old_id,null);
+            } else {
+                Bien_Helper::libererBien($old_id, null);
                 $bien = Bien::on('temp')->findOrFail($bien_id);
-                $bien->etat=EtatBien::ENCOURS_DE_PROPOSITION->value;
-                if( $bien->save()){
+                $bien->etat = EtatBien::ENCOURS_DE_PROPOSITION->value;
+                if ($bien->save()) {
                     $bien_propose = new Proposition();
                     $bien_propose->setConnection('temp');
                     $bien_propose->bien_id = $bien_id;
-                    $bien_propose->user_id =Auth::guard('api')->user()->id;
+                    $bien_propose->user_id = Auth::guard('api')->user()->id;
                     $bien_propose->save();
                 }
             }
-         return response()->json(['message' => $bien], 200);
+            return response()->json(['message' => $bien], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -599,20 +591,14 @@ class BienController extends Controller
 
     }
 
-
-
-
-
-
-
-    public function getEtatBien($bien_id){
+    public function getEtatBien($bien_id)
+    {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
 
             $bien = Bien::on('temp')
                 ->findOrFail($bien_id);
             return response()->json(['bienEtat' => $bien->etat], 200);
-
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -622,98 +608,96 @@ class BienController extends Controller
     /**
      * get bien by projet_id and concat tranche bloc immeuble
      */
-    public function getBiensByProjet_Concat($projet_id){
-
+    public function getBiensByProjet_Concat($projet_id)
+    {
 
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
 
             $biens_pr = Bien::on('temp')->with('is_proposed')
-            ->select('propriete_dite_bien AS propriete_dite_bien','id','etat','tranche_id','bloc_id','immeuble_id','prix','avance_minimale','prix_unitaire','superficie_terrasse_calculer','superficie_jardin_calculer','superficie_balcon_calculer','superficie_habitable')
-            ->where(function($query) {
-                $query->where('etat', 'DISPONIBLE')->orwhere('etat', 'ENCOURS_DE_PROPOSITION');
-            })
-            ->where('projet_id', $projet_id)->get();
+                ->select('propriete_dite_bien AS propriete_dite_bien', 'id', 'etat', 'tranche_id', 'bloc_id', 'immeuble_id', 'prix', 'avance_minimale', 'prix_unitaire', 'superficie_terrasse_calculer', 'superficie_jardin_calculer', 'superficie_balcon_calculer', 'superficie_habitable')
+                ->where(function ($query) {
+                    $query->where('etat', 'DISPONIBLE')->orwhere('etat', 'ENCOURS_DE_PROPOSITION');
+                })
+                ->where('projet_id', $projet_id)->get();
             $biens = [];
-            foreach($biens_pr as $b_pr){
-                 //tranches bloc w immeuble
-                 if($b_pr->tranche_id!=null && $b_pr->bloc_id!=null && $b_pr->immeuble_id!=null){
-                    $biens = Bien::on('temp')->with('is_proposed')->join('tranches','biens.tranche_id', '=', 'tranches.id')
-                    ->join('blocs','blocs.id', '=', 'biens.bloc_id')
-                    ->join('immeubles','immeubles.id', '=', 'biens.immeuble_id')
-                    ->where(function($query) {
-                        $query->where('biens.etat', 'DISPONIBLE')->orwhere('biens.etat', 'ENCOURS_DE_PROPOSITION');
-                    })
-                    ->where('biens.projet_id', $projet_id)
-                    ->select(DB::raw("CONCAT(tranches.nom,'-',blocs.nom,'-',immeubles.nom,'-',biens.propriete_dite_bien) AS propriete_dite_bien"),'biens.id','biens.etat','biens.prix','biens.avance_minimale','prix_unitaire','superficie_terrasse_calculer','superficie_jardin_calculer','superficie_balcon_calculer','superficie_habitable')->get();
+            foreach ($biens_pr as $b_pr) {
+                //tranches bloc w immeuble
+                if ($b_pr->tranche_id != null && $b_pr->bloc_id != null && $b_pr->immeuble_id != null) {
+                    $biens = Bien::on('temp')->with('is_proposed')->join('tranches', 'biens.tranche_id', '=', 'tranches.id')
+                        ->join('blocs', 'blocs.id', '=', 'biens.bloc_id')
+                        ->join('immeubles', 'immeubles.id', '=', 'biens.immeuble_id')
+                        ->where(function ($query) {
+                            $query->where('biens.etat', 'DISPONIBLE')->orwhere('biens.etat', 'ENCOURS_DE_PROPOSITION');
+                        })
+                        ->where('biens.projet_id', $projet_id)
+                        ->select(DB::raw("CONCAT(tranches.nom,'-',blocs.nom,'-',immeubles.nom,'-',biens.propriete_dite_bien) AS propriete_dite_bien"), 'biens.id', 'biens.etat', 'biens.prix', 'biens.avance_minimale', 'prix_unitaire', 'superficie_terrasse_calculer', 'superficie_jardin_calculer', 'superficie_balcon_calculer', 'superficie_habitable')->get();
                 }
-                 //tranche bloc
-                elseif($b_pr->tranche_id!=null && $b_pr->bloc_id!=null && $b_pr->immeuble_id==null){
-                    $biens = Bien::on('temp')->with('is_proposed')->join('tranches','biens.tranche_id', '=', 'tranches.id')
-                    ->join('blocs','blocs.id', '=', 'biens.bloc_id')
-                    ->where(function($query) {
-                        $query->where('biens.etat', 'DISPONIBLE')->orwhere('biens.etat', 'ENCOURS_DE_PROPOSITION');
-                    })
-                    ->where('biens.projet_id', $projet_id)
-                    ->select(DB::raw("CONCAT(tranches.nom,'-',blocs.nom,'-',biens.propriete_dite_bien) AS propriete_dite_bien"),'biens.id','biens.etat','biens.prix','biens.avance_minimale','prix_unitaire','superficie_terrasse_calculer','superficie_jardin_calculer','superficie_balcon_calculer','superficie_habitable')->get();
+                //tranche bloc
+                elseif ($b_pr->tranche_id != null && $b_pr->bloc_id != null && $b_pr->immeuble_id == null) {
+                    $biens = Bien::on('temp')->with('is_proposed')->join('tranches', 'biens.tranche_id', '=', 'tranches.id')
+                        ->join('blocs', 'blocs.id', '=', 'biens.bloc_id')
+                        ->where(function ($query) {
+                            $query->where('biens.etat', 'DISPONIBLE')->orwhere('biens.etat', 'ENCOURS_DE_PROPOSITION');
+                        })
+                        ->where('biens.projet_id', $projet_id)
+                        ->select(DB::raw("CONCAT(tranches.nom,'-',blocs.nom,'-',biens.propriete_dite_bien) AS propriete_dite_bien"), 'biens.id', 'biens.etat', 'biens.prix', 'biens.avance_minimale', 'prix_unitaire', 'superficie_terrasse_calculer', 'superficie_jardin_calculer', 'superficie_balcon_calculer', 'superficie_habitable')->get();
                 }
-                  //tranche immeuble
-                elseif($b_pr->tranche_id!=null && $b_pr->bloc_id==null && $b_pr->immeuble_id!=null){
-                    $biens = Bien::on('temp')->with('is_proposed')->join('tranches','biens.tranche_id', '=', 'tranches.id')
-                    ->join('immeubles','immeubles.id', '=', 'biens.immeuble_id')
-                    ->where(function($query) {
-                        $query->where('biens.etat', 'DISPONIBLE')->orwhere('biens.etat', 'ENCOURS_DE_PROPOSITION');
-                    })
-                    ->where('biens.projet_id', $projet_id)
-                    ->select(DB::raw("CONCAT(tranches.nom,'-',immeubles.nom,'-',biens.propriete_dite_bien) AS propriete_dite_bien"),'biens.id','biens.etat','biens.prix','biens.avance_minimale','prix_unitaire','superficie_terrasse_calculer','superficie_jardin_calculer','superficie_balcon_calculer','superficie_habitable')->get();
+                //tranche immeuble
+                elseif ($b_pr->tranche_id != null && $b_pr->bloc_id == null && $b_pr->immeuble_id != null) {
+                    $biens = Bien::on('temp')->with('is_proposed')->join('tranches', 'biens.tranche_id', '=', 'tranches.id')
+                        ->join('immeubles', 'immeubles.id', '=', 'biens.immeuble_id')
+                        ->where(function ($query) {
+                            $query->where('biens.etat', 'DISPONIBLE')->orwhere('biens.etat', 'ENCOURS_DE_PROPOSITION');
+                        })
+                        ->where('biens.projet_id', $projet_id)
+                        ->select(DB::raw("CONCAT(tranches.nom,'-',immeubles.nom,'-',biens.propriete_dite_bien) AS propriete_dite_bien"), 'biens.id', 'biens.etat', 'biens.prix', 'biens.avance_minimale', 'prix_unitaire', 'superficie_terrasse_calculer', 'superficie_jardin_calculer', 'superficie_balcon_calculer', 'superficie_habitable')->get();
                 }
                 //bloc immeuble
-                elseif ($b_pr->tranche_id==null && $b_pr->bloc_id!=null && $b_pr->immeuble_id!=null){
+                elseif ($b_pr->tranche_id == null && $b_pr->bloc_id != null && $b_pr->immeuble_id != null) {
                     $biens = Bien::on('temp')->with('is_proposed')
-                    ->join('blocs','blocs.id', '=', 'biens.bloc_id')
-                    ->join('immeubles','immeubles.id', '=', 'biens.immeuble_id')
-                    ->where(function($query) {
-                        $query->where('biens.etat', 'DISPONIBLE')->orwhere('biens.etat', 'ENCOURS_DE_PROPOSITION');
-                    })
-                    ->where('biens.projet_id', $projet_id)
-                    ->select(DB::raw("CONCAT(blocs.nom,'-',immeubles.nom,'-',biens.propriete_dite_bien) AS propriete_dite_bien"),'biens.id','biens.etat','biens.prix','biens.avance_minimale','prix_unitaire','superficie_terrasse_calculer','superficie_jardin_calculer','superficie_balcon_calculer','superficie_habitable')->get();
+                        ->join('blocs', 'blocs.id', '=', 'biens.bloc_id')
+                        ->join('immeubles', 'immeubles.id', '=', 'biens.immeuble_id')
+                        ->where(function ($query) {
+                            $query->where('biens.etat', 'DISPONIBLE')->orwhere('biens.etat', 'ENCOURS_DE_PROPOSITION');
+                        })
+                        ->where('biens.projet_id', $projet_id)
+                        ->select(DB::raw("CONCAT(blocs.nom,'-',immeubles.nom,'-',biens.propriete_dite_bien) AS propriete_dite_bien"), 'biens.id', 'biens.etat', 'biens.prix', 'biens.avance_minimale', 'prix_unitaire', 'superficie_terrasse_calculer', 'superficie_jardin_calculer', 'superficie_balcon_calculer', 'superficie_habitable')->get();
                 }
-                 //bloc
-                elseif($b_pr->tranche_id==null && $b_pr->bloc_id!=null && $b_pr->immeuble_id==null){
+                //bloc
+                elseif ($b_pr->tranche_id == null && $b_pr->bloc_id != null && $b_pr->immeuble_id == null) {
                     $biens = Bien::on('temp')->with('is_proposed')
-                    ->join('blocs','blocs.id', '=', 'biens.bloc_id')
-                    ->where(function($query) {
-                        $query->where('biens.etat', 'DISPONIBLE')->orwhere('biens.etat', 'ENCOURS_DE_PROPOSITION');
-                    })
-                    ->where('biens.projet_id', $projet_id)
-                    ->select(DB::raw("CONCAT(blocs.nom,'-',biens.propriete_dite_bien) AS propriete_dite_bien"),'biens.id','biens.etat','biens.prix','biens.avance_minimale','prix_unitaire','superficie_terrasse_calculer','superficie_jardin_calculer','superficie_balcon_calculer','superficie_habitable')->get();
+                        ->join('blocs', 'blocs.id', '=', 'biens.bloc_id')
+                        ->where(function ($query) {
+                            $query->where('biens.etat', 'DISPONIBLE')->orwhere('biens.etat', 'ENCOURS_DE_PROPOSITION');
+                        })
+                        ->where('biens.projet_id', $projet_id)
+                        ->select(DB::raw("CONCAT(blocs.nom,'-',biens.propriete_dite_bien) AS propriete_dite_bien"), 'biens.id', 'biens.etat', 'biens.prix', 'biens.avance_minimale', 'prix_unitaire', 'superficie_terrasse_calculer', 'superficie_jardin_calculer', 'superficie_balcon_calculer', 'superficie_habitable')->get();
                 }
                 //immeuble
-                elseif($b_pr->tranche_id==null && $b_pr->bloc_id==null && $b_pr->immeuble_id!=null){
-                    $biens = Bien::on('temp')->with('is_proposed')->join('immeubles','immeubles.id', '=', 'biens.immeuble_id')
-                    ->where(function($query) {
-                        $query->where('biens.etat', 'DISPONIBLE')->orwhere('biens.etat', 'ENCOURS_DE_PROPOSITION');
-                    })
-                    ->where('biens.projet_id', $projet_id)
-                    ->select(DB::raw("CONCAT(immeubles.nom,'-',biens.propriete_dite_bien) AS propriete_dite_bien"),'biens.id','biens.etat','biens.prix','biens.avance_minimale','prix_unitaire','superficie_terrasse_calculer','superficie_jardin_calculer','superficie_balcon_calculer','superficie_habitable')->get();
+                elseif ($b_pr->tranche_id == null && $b_pr->bloc_id == null && $b_pr->immeuble_id != null) {
+                    $biens = Bien::on('temp')->with('is_proposed')->join('immeubles', 'immeubles.id', '=', 'biens.immeuble_id')
+                        ->where(function ($query) {
+                            $query->where('biens.etat', 'DISPONIBLE')->orwhere('biens.etat', 'ENCOURS_DE_PROPOSITION');
+                        })
+                        ->where('biens.projet_id', $projet_id)
+                        ->select(DB::raw("CONCAT(immeubles.nom,'-',biens.propriete_dite_bien) AS propriete_dite_bien"), 'biens.id', 'biens.etat', 'biens.prix', 'biens.avance_minimale', 'prix_unitaire', 'superficie_terrasse_calculer', 'superficie_jardin_calculer', 'superficie_balcon_calculer', 'superficie_habitable')->get();
                 }
-                 //tranche
-                 elseif($b_pr->tranche_id!=null && $b_pr->bloc_id==null && $b_pr->immeuble_id==null){
-                    $biens = Bien::on('temp')->with('is_proposed')->join('tranches','biens.tranche_id', '=', 'tranches.id')
-                    ->where(function($query) {
-                        $query->where('biens.etat', 'DISPONIBLE')->orwhere('biens.etat', 'ENCOURS_DE_PROPOSITION');
-                    })
-                    ->where('biens.projet_id', $projet_id)
-                    ->select(DB::raw("CONCAT(tranches.nom,'-',biens.propriete_dite_bien) AS propriete_dite_bien"),'biens.id','biens.etat','biens.prix','biens.avance_minimale','prix_unitaire','superficie_terrasse_calculer','superficie_jardin_calculer','superficie_balcon_calculer','superficie_habitable')->get();
+                //tranche
+                elseif ($b_pr->tranche_id != null && $b_pr->bloc_id == null && $b_pr->immeuble_id == null) {
+                    $biens = Bien::on('temp')->with('is_proposed')->join('tranches', 'biens.tranche_id', '=', 'tranches.id')
+                        ->where(function ($query) {
+                            $query->where('biens.etat', 'DISPONIBLE')->orwhere('biens.etat', 'ENCOURS_DE_PROPOSITION');
+                        })
+                        ->where('biens.projet_id', $projet_id)
+                        ->select(DB::raw("CONCAT(tranches.nom,'-',biens.propriete_dite_bien) AS propriete_dite_bien"), 'biens.id', 'biens.etat', 'biens.prix', 'biens.avance_minimale', 'prix_unitaire', 'superficie_terrasse_calculer', 'superficie_jardin_calculer', 'superficie_balcon_calculer', 'superficie_habitable')->get();
                 }
-
-
 
             }
-            if(count($biens)==0){
-                $biens=$biens_pr;
+            if (count($biens) == 0) {
+                $biens = $biens_pr;
             }
-           return response()->json(['biens' => $biens], 200);
+            return response()->json(['biens' => $biens], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

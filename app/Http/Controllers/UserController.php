@@ -28,8 +28,9 @@ class UserController extends Controller
             'email' => 'required|email',
             'password' => 'required',
         ]);
-
-        if (Auth::attempt($credentials)) {
+        $User = User::where('email', $request->email)->first();
+        if($User->is_actif==1)
+        {if (Auth::attempt($credentials)) {
             $user = Auth::user();
             $user->is_connected = 1;
             $user->save();
@@ -37,8 +38,12 @@ class UserController extends Controller
 
             return response()->json(['access_token' => $accessToken], 200);
         }
-
         return response()->json(['error' => 'email ou mot de passe incorrect'], 422);
+
+    }
+        
+
+        return response()->json(['error' => 'utilisateur non actif'], 422);
     }
     public function logout(Request $request)
     {
@@ -406,35 +411,33 @@ class UserController extends Controller
     }
     public function activateUser($user_id)
     {
-        if (RoleHelper::AdminSup() ) {
+        if (RoleHelper::AdminSup()) {
             $user = User::findOrFail($user_id);
             $user->is_actif = 1;
             if ($user->save()) {
                 DatabaseHelper::Config($user->societe_id);
                 $user_societes = User::on('temp')->where('user_id_origin', $user->id);
                 $user_societes->update(['is_actif' => 1]);
-                return response()->json(['message' => 'uu désactivé avec succès'], 200);
+                return response()->json(['message' => 'utilisateur activé avec succès'], 200);
 
             }
-        }
-        else {
+        } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
     public function desactivateUser($user_id)
     {
-        if (RoleHelper::AdminSup() ) {
+        if (RoleHelper::AdminSup()) {
             $user = User::findOrFail($user_id);
             $user->is_actif = 0;
             if ($user->save()) {
                 DatabaseHelper::Config($user->societe_id);
                 $user_societes = User::on('temp')->where('user_id_origin', $user->id);
                 $user_societes->update(['is_actif' => 0]);
-                return response()->json(['message' => 'uu désactivé avec succès'], 200);
+                return response()->json(['message' => 'utilisateur désactivé avec succès'], 200);
 
             }
-        }
-        else {
+        } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
