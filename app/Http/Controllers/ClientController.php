@@ -74,7 +74,7 @@ class ClientController extends Controller
             $client->setConnection('temp');
             $client->type_client = $request->type_client;
             if ($request->type_client ==  TypeClient::Société->value) {
-                $client->societe_id = $request->societe_id;
+                $client->partenaire_id = $request->partenaire_id;
             }
             $client->nom = $request->nom;
             $client->prenom = $request->prenom;
