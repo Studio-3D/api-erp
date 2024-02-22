@@ -274,6 +274,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('TypesClient_Enum', [EnumController::class,'TypesClientEnum_get'])->name('');
     Route::get('Civilite_Enum', [EnumController::class,'CiviliteEnum_get'])->name('');
     Route::get('StatutFamilleEnum', [EnumController::class,'StatutFamilleEnum_get'])->name('');
+    Route::get('EtatBien', [EnumController::class,'EtatBien_get'])->name('');
 
 
     /************************NotificationController********************* */

@@ -28,8 +28,9 @@ class UserController extends Controller
             'email' => 'required|email',
             'password' => 'required',
         ]);
-
-        if (Auth::attempt($credentials)) {
+        $User = User::where('email', $request->email)->first();
+        if($User->is_actif==1)
+        {if (Auth::attempt($credentials)) {
             $user = Auth::user();
             $user->is_connected = 1;
             $user->save();
@@ -37,8 +38,12 @@ class UserController extends Controller
 
             return response()->json(['access_token' => $accessToken], 200);
         }
-
         return response()->json(['error' => 'email ou mot de passe incorrect'], 422);
+
+    }
+        
+
+        return response()->json(['error' => 'utilisateur non actif'], 422);
     }
     public function logout(Request $request)
     {
@@ -156,14 +161,14 @@ class UserController extends Controller
                     $user->photo = $photo;
                     $user->save();
                 }
-                $this->createSubUser($request, $user->id,$user->photo);
+                $this->createSubUser($request, $user->id, $user->photo);
             }
             return response()->json(['message' => $user], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    public function createSubUser($request, $user_id,$user_photo)
+    public function createSubUser($request, $user_id, $user_photo)
     {
 
         DatabaseHelper::Config($request->societe_id);
@@ -192,7 +197,6 @@ class UserController extends Controller
 
         }
         $user->save();
-
 
     }
 
@@ -246,7 +250,7 @@ class UserController extends Controller
             $societe = Societe::findOrfail($user_origin->societe_id);
             if ($request->hasFile('photo')) {
                 if ($user->photo != null) {
-                    $image_path=asset('img/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/users'.$user_origin->photo);
+                    $image_path = asset('img/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/users' . $user_origin->photo);
                     //$image_path = public_path('img/users/' . $user->photo);
                     if (file_exists($image_path)) {
                         unlink($image_path);
@@ -263,7 +267,7 @@ class UserController extends Controller
                 if ($user_origin) {
                     $user_origin->update($request->all());
                     if ($request->hasFile('photo')) {
-                        $user_origin->photo= $photo;
+                        $user_origin->photo = $photo;
                         $user_origin->save();
                     }
                 }
@@ -308,7 +312,7 @@ class UserController extends Controller
                 if ($user_societes) {
                     $user_societes->update($request->all());
                     if ($request->hasFile('photo')) {
-                        $user_societes->photo= $photo;
+                        $user_societes->photo = $photo;
                         $user_societes->save();
                     }
                 }
@@ -316,7 +320,7 @@ class UserController extends Controller
 
             return response()->json(['message' => 'Utilisateur modifié avec succès par super admin'], 200);
 
-        } else if (RoleHelper::Admin()||(RoleHelper::Superadmin() && Auth::guard('api')->user()->societe_id !== 1)) {
+        } else if (RoleHelper::Admin() || (RoleHelper::Superadmin() && Auth::guard('api')->user()->societe_id !== 1)) {
             DatabaseHelper::Config();
             $user = User::on('temp')->findOrfail($id);
             $user->name = $request->input('name');
@@ -354,7 +358,7 @@ class UserController extends Controller
                 if ($user_societes) {
                     $user_societes->update($request->all());
                     if ($request->hasFile('photo')) {
-                        $user_societes->photo= $photo;
+                        $user_societes->photo = $photo;
                         $user_societes->save();
                     }
                 }
@@ -407,31 +411,31 @@ class UserController extends Controller
     }
     public function activateUser($user_id)
     {
-        if (RoleHelper::SuperAdmin()) {
+        if (RoleHelper::AdminSup()) {
             $user = User::findOrFail($user_id);
             $user->is_actif = 1;
             if ($user->save()) {
-                DatabaseHelper::Config();
+                DatabaseHelper::Config($user->societe_id);
                 $user_societes = User::on('temp')->where('user_id_origin', $user->id);
                 $user_societes->update(['is_actif' => 1]);
+                return response()->json(['message' => 'utilisateur activé avec succès'], 200);
+
             }
-            return response()->json(['message' => 'Utilisateur activé avec succès'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
     public function desactivateUser($user_id)
     {
-        if (RoleHelper::SuperAdmin()) {
+        if (RoleHelper::AdminSup()) {
             $user = User::findOrFail($user_id);
             $user->is_actif = 0;
             if ($user->save()) {
                 DatabaseHelper::Config($user->societe_id);
-                $user_societes = User::on('temp')->where('user_id_origin', $user->id)->first();
+                $user_societes = User::on('temp')->where('user_id_origin', $user->id);
                 $user_societes->update(['is_actif' => 0]);
-                return response()->json(['message' => 'utilisateur désactiver avec succès'], 200);
-            } else {
-                return response()->json(['message' => "Oups l'utilisatuer n'a pas été désactiver"], 404);
+                return response()->json(['message' => 'utilisateur désactivé avec succès'], 200);
+
             }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

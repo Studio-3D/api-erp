@@ -17,5 +17,9 @@ class Partenaire extends Model
     public function projet(){
         return $this->belongsTo(Projet::class,'projet_id');
     }
+    public function client()
+    {
+        return $this->hasMany(Client::class);
+    }
 
 }

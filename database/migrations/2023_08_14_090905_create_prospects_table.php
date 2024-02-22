@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('email')->nullable()->unique();
             $table->string('origin');
             $table->text('message')->nullable();
-            $table->foreignId('source')->nullable()->constrained('sources')->onDelete('cascade');
+            $table->foreignId('source')->nullable();
             $table->foreignId('partenaire_id')->nullable()->constrained('partenaires')->onDelete('cascade');
             $table->boolean('notifie')->default(false)->nullable();
             $table->timestamps();

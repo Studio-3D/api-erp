@@ -13,6 +13,7 @@ use App\Enum\ModePaiement;
 use App\Enum\TypeClient;
 use App\Enum\Civilite;
 use App\Enum\SituationFamilliale;
+use App\Enum\EtatBien;
 
 
 class EnumController extends Controller
@@ -74,6 +75,11 @@ class EnumController extends Controller
     public function StatutReservationEnum_get()
     {
         return response()->json(['list' => array_column(StatutReservationEnum::cases(), 'name', 'value')]);
+    }
+
+    public function EtatBien_get()
+    {
+        return response()->json(['list' => array_column(EtatBien::cases(), 'name', 'value')]);
     }
     /**
      * Show the form for creating a new resource.

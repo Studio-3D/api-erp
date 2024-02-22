@@ -15,6 +15,7 @@ class Client extends Model
 
     protected $table='clients';
     protected $dates=['deleted_at'];
+    protected $with = ['partenaire'];
 
 
     public function reservation()
@@ -34,7 +35,7 @@ class Client extends Model
 
     public function partenaire()
     {
-        return $this->belongsTo(Partenaire::class,'societe_id');
+        return $this->belongsTo(Partenaire::class,'partenaire_id');
     }
 
 }
