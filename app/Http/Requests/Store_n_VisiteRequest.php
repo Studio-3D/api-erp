@@ -30,8 +30,8 @@ use Illuminate\Http\Request;
         $rules['interet']='required';
          //interesse
          if ($request->interet == 1){
-            $rules['bien_id']='required';
-            $rules['statut']='required';
+            //$rules['bien_id']='required';
+            //$rules['statut']='required';
         }
         //perdu
         elseif ($request->interet == 3){

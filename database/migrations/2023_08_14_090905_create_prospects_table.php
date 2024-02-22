@@ -21,8 +21,10 @@ return new class extends Migration
             $table->string('telephone_num2')->nullable();
             $table->string('email')->nullable()->unique();
             $table->string('origin');
-            $table->integer('source');
             $table->text('message')->nullable();
+            $table->foreignId('source')->nullable();
+            $table->foreignId('partenaire_id')->nullable()->constrained('partenaires')->onDelete('cascade');
+            $table->boolean('notifie')->default(false)->nullable();
             $table->timestamps();
             $table->softDeletes();
             $table->index(['cin','telephone','telephone_num2']);

@@ -17,15 +17,14 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('origin_id')->nullable(); // pour garder l'historique de visite
             $table->string('commentaire')->nullable(); // car en peut recoit des vistes sans commentaire.
-            $table->boolean('notifie')->default(false)->nullable();
             $table->enum('interet',[InteretEnum::Intéressé->value,InteretEnum::Réceptif->value,InteretEnum::Perdu->value]);
-            $table->enum('statut',[StatutVisiteEnum::Pré_Réservation->value,StatutVisiteEnum::Vendu->value,StatutVisiteEnum::Pré_Réservation_Perdu->value,StatutVisiteEnum::Réservation_Perdu->value])->nullable();
+            $table->enum('statut',[StatutVisiteEnum::Pré_Réservation->value,StatutVisiteEnum::Vendu->value,StatutVisiteEnum::Pré_Réservation_Perdu->value,StatutVisiteEnum::Réservation_Perdu->value,StatutVisiteEnum::Pré_Réservation_Vendu->value])->nullable();
             $table->boolean('etat')->default(true)->nullable();
-            $table->foreignId('old_v_id')->nullable()->constrained('visites')->onDelete('cascade');
+            $table->foreignId('old_v_id')->nullable();
             $table->string('description')->nullable();
+            $table->string('show_id')->nullable();
+            $table->string('related_show_id')->nullable();
             $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
-            $table->foreignId('partenaire_id')->nullable()->constrained('partenaires')->onDelete('cascade');
-            $table->foreignId('source_id')->nullable()->constrained('sources')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('prospect_id')->constrained('prospects')->onDelete('cascade');
             $table->foreignId('bien_id')->nullable()->constrained('biens')->onDelete('cascade');

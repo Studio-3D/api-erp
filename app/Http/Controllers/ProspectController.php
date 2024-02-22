@@ -68,15 +68,15 @@ class ProspectController extends Controller
             $prospect->source=$request->source;
             $prospect->save();
             return $prospect;
-          
+
         }
         else return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-    
+
     public static function Store_WhatsApp($phone_number_id, $from, $msg_body, $name,$societe_id)
     {
-      
+
         DatabaseHelper::Config($societe_id);
         $prospect = new Prospect();
         $prospect->setConnection("temp");
@@ -179,7 +179,7 @@ class ProspectController extends Controller
     {
         if(RoleHelper::ACSup()){
              DatabaseHelper::Config();
-             $prospect = Prospect::on('temp')->where('cin',$cin)
+             $prospect = Prospect::on('temp')->with('visite_pre_reserves')->where('cin',$cin)
                 ->get()->first();
             return response()->json(['prospect' => $prospect]);
          }
@@ -188,7 +188,7 @@ class ProspectController extends Controller
      {
          if(RoleHelper::ACSup()){
               DatabaseHelper::Config();
-              $prospect = Prospect::on('temp')->where('email',$email)
+              $prospect = Prospect::on('temp')->with('visite_pre_reserves')->where('email',$email)
                  ->get()->first();
              return response()->json(['prospect' => $prospect]);
           }
@@ -197,7 +197,7 @@ class ProspectController extends Controller
     {
         if(RoleHelper::ACSup()){
              DatabaseHelper::Config();
-             $prospect = Prospect::on('temp')
+             $prospect = Prospect::on('temp')->with('visite_pre_reserves')
              ->where(function($query) use ($phone) {
                 $query->where('telephone',$phone)
                     ->orwhere('telephone_num2',$phone)

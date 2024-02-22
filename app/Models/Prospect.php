@@ -15,7 +15,7 @@ class Prospect extends Model
      */
     protected $table='prospects';
     protected $dates=['deleted_at'];
-
+    protected $with=['source','partenaire'];
     public function client()
     {
         return $this->belongsTo(Client::class,'prospect_id');
@@ -23,6 +23,17 @@ class Prospect extends Model
     public function visites_perdu()
     {
         return $this->hasMany(Visite::class,'prospect_id')->where('interet',3)->where('etat',1);
+    }
+    public function source(){
+        return $this->belongsTo(Source::class,'source');
+    }
+    public function partenaire(){
+        return $this->belongsTo(Partenaire::class,'partenaire_id');
+    }
+
+    public function visite_pre_reserves()
+    {
+        return $this->hasMany(Visite::class,'prospect_id')->where('interet',1)->where('etat',1)->where('statut',1);
     }
 
 }

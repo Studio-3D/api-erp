@@ -172,7 +172,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getAllAttributes',[VisiteController::class,'getAllAttributes'])->name('getAllAttributes');
     Route::get('get_historiques_visite/{origin_id}', [VisiteController::class, 'get_historiques'])->name('get_historiques');
     Route::put('traiter_relance_rdv_visite/{id}',[VisiteController::class,'traiter_relance_rdv_visite'])->name('');
-
+    Route::get('get_oldBien_visite_pre_reserve/{origin_id}', [VisiteController::class, 'get_oldBien_visite_pre_reserve'])->name('');
+    Route::put('update_visite_bien_pre_reserve/{origin_id}',[VisiteController::class,'update_visite_bien_pre_reserve'])->name('');
 
     /*************************************type_Freins***************************** */
     Route::resource('type_freins', TypeFreinController::class);
@@ -194,7 +195,7 @@ Route::middleware('auth:api')->group(function () {
     // Route::post('Store_WhatsApp', [ProspectController::class, 'Store_WhatsApp']);
 
 
- 
+
     /*************************************Source***************************** */
     Route::resource('sources',SourceController::class);
     Route::get('get_sources', [SourceController::class, 'get_sources'])->name('get_sources');
@@ -258,6 +259,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getReservationssByProjet/{id}',[ReservationController::class,'getReservationssByProjet'])->name('getReservationssByProjet');
     Route::get('get_Historiques_by_reservation/{id}',[ReservationController::class,'get_Historiques_by_reservation'])->name('');
     Route::get('getDossiers/{projet_id}/{dos_id}', [ReservationController::class,'get_dossiers'])->name('');
+    Route::get('search_reservation_by_code/{code_res}', [ReservationController::class, 'search_reservation_by_code']);
 
     /******************************Typologie **********************/
     Route::get('get_typologiesByProjet/{id}', [TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');

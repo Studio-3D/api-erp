@@ -23,6 +23,10 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Http\Helpers\NotificationHelper;
+use App\Models\Notification;
+use App\Models\Visite;
+use Carbon\Carbon;
 use App\Events\PropositionUpdated;
 use Illuminate\Support\Facades\Config;
 
@@ -351,6 +355,7 @@ class BienController extends Controller
         }
     }
 
+
     public function libere_bien_frein($id)
     {
         if (Auth::guard('api')->check()) {
@@ -562,36 +567,21 @@ class BienController extends Controller
         if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             Config::set('broadcasting.default', 'pusher_4');
-
-
-            if ($old_id == 0) {
-                $bien = Bien::on('temp')->findOrFail($bien_id);
-                $bien->etat = EtatBien::ENCOURS_DE_PROPOSITION->value;
-                if ($bien->save()) {
-                    $bien_propose = new Proposition();
-                    $bien_propose->setConnection('temp');
-                    $bien_propose->bien_id = $bien_id;
-                    $bien_propose->user_id = Auth::guard('api')->user()->id;
-                    $bien_propose->save();
-                    event(new PropositionUpdated($bien_id, $bien_propose->user_id));
-
-                }
-
-            } else {
-                Bien_Helper::libererBien($old_id, null);
-                $bien = Bien::on('temp')->findOrFail($bien_id);
-                $bien->etat = EtatBien::ENCOURS_DE_PROPOSITION->value;
-                if ($bien->save()) {
-                    $bien_propose = new Proposition();
-                    $bien_propose->setConnection('temp');
-                    $bien_propose->bien_id = $bien_id;
-                    $bien_propose->user_id = Auth::guard('api')->user()->id;
-                    $bien_propose->save();
-                    event(new PropositionUpdated($bien_id, $bien_propose->user_id));
-
-                }
+            if($old_id!=0){
+                Bien_Helper::libererBien($old_id,null);
             }
-            return response()->json(['message' => $bien], 200);
+            $bien = Bien::on('temp')->findOrFail($bien_id);
+            $bien->etat=EtatBien::ENCOURS_DE_PROPOSITION->value;
+                if($bien->save()){
+                    $bien_propose = new Proposition();
+                    $bien_propose->setConnection('temp');
+                    $bien_propose->bien_id = $bien_id;
+                    $bien_propose->user_id = Auth::guard('api')->user()->id;
+                    $bien_propose->save();
+                    event(new PropositionUpdated($bien_id, $bien_propose->user_id));
+                }
+
+         return response()->json(['message' => $bien], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

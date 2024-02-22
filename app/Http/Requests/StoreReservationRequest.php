@@ -2,7 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Helpers\DatabaseHelper;
+use App\Models\Societe;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class StoreReservationRequest extends FormRequest
 {
@@ -21,15 +25,20 @@ class StoreReservationRequest extends FormRequest
      */
     public function rules(): array
     {
+        $societe_id = Auth::guard('api')->user()->societe_id;
+        $societe=Societe::findOrfail( $societe_id);
+        $DatabaseName='Erp_'.$societe->raison_sociale.'_'.$societe_id;
+        DatabaseHelper::Config();
         return [
-            "nb_acquereurs"=>"integer",
-            "code_reservation"=>"string",
-            "prix"=>"integer",
-            "mode_financement"=>"required",
-            "date_reservation"=>"date",
-            "date_limite_reservation"=>"date",
-            //"visite_id"=>"integer",
-            "bien_id" => "integer",
+            'nb_acquereurs' => 'required|integer',
+            'code_reservation' => 'required|string',
+            'prix' => 'required',
+            'mode_financement' => 'required',
+            'date_reservation'=>'date',
+            'date_limite_reservation'=>'date',
+            'code_reservation' => ['string', Rule::unique('temp.'.$DatabaseName.'.reservations','code_reservation')->ignore($this->reservation)],
+            'bien_id' => 'integer',
+
         ];
     }
 }
