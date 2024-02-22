@@ -209,7 +209,6 @@ class ReservationController extends Controller
                     $mnt_lettre = $inWords->format($request->avance);
                     $dataAvance = [
                         'sr' => $request->sr,
-                        'check_montant' => $request->check_montant,
                         'type_encaissement' => 1,
                         'montant' => $request->avance,
                         'mode_paiement' => $request->mode_paiement,
@@ -258,6 +257,15 @@ class ReservationController extends Controller
      * Display the specified resource.
      */
 
+     public function search_reservation_by_code($code)
+     {
+         if(RoleHelper::ACSup()){
+              DatabaseHelper::Config();
+              $reservation = Reservation::on('temp')->where('code_reservation',$code)
+                 ->get()->first();
+             return response()->json(['reservation' => $reservation]);
+          }
+      }
      public function info_reservation($id)
      {
          if (RoleHelper::ACSup()) {

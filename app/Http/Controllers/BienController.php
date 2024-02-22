@@ -30,9 +30,6 @@ use App\Models\Bloc;
 use App\Models\Immeuble;
 
 
-
-
-
 class BienController extends Controller
 {
     /**
@@ -151,7 +148,7 @@ class BienController extends Controller
             $bien->superficie_terrasse_calculer = $request->superficie_terrasse_calculer;
             $bien->superficie_balcon_calculer = $request->superficie_balcon_calculer;
             $bien->superficie_balcon = $request->superficie_balcon;
-           
+
             if($request->bloc_id && ($request->tranche_id===null||!$request->tranche_id))
                 {
                     $bloc = Bloc::on('temp')->findOrfail($request->bloc_id);
@@ -161,19 +158,19 @@ class BienController extends Controller
             if($request->immeuble_id)
                 {
                     $immeuble = Immeuble::on('temp')->findOrfail($request->immeuble_id);
-                    if($request->tranche_id===null||!$request->tranche_id){ 
+                    if($request->tranche_id===null||!$request->tranche_id){
                         $bien->tranche_id=$immeuble->tranche_id;
                     }
                     if($request->bloc_id===null||!$request->bloc_id){
-                        $bien->bloc_id=$immeuble->bloc_id;   
+                        $bien->bloc_id=$immeuble->bloc_id;
                     }
-                } 
+                }
             if($bien->save()){
                 if($bien->etat=='disponible'){
                     Bien_Helper::store_bien_frein($bien->id);
-        
-                }       
-                
+
+                }
+
             }
 
             return response()->json(['bien' => $bien], 200);
@@ -358,6 +355,7 @@ class BienController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+
 
     public function libere_bien_frein($id){
         if (Auth::guard('api')->check()) {
@@ -566,22 +564,10 @@ class BienController extends Controller
     public function setPropostionBien($bien_id,$old_id){
         if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-
-            if($old_id==0){
-                $bien = Bien::on('temp')->findOrFail($bien_id);
-                $bien->etat=EtatBien::ENCOURS_DE_PROPOSITION->value;
-                if( $bien->save()){
-                    $bien_propose = new Proposition();
-                    $bien_propose->setConnection('temp');
-                    $bien_propose->bien_id = $bien_id;
-                    $bien_propose->user_id =Auth::guard('api')->user()->id;
-                    $bien_propose->save();
-                }
-
-            }
-            else{
+            if($old_id!=0){
                 Bien_Helper::libererBien($old_id,null);
-                $bien = Bien::on('temp')->findOrFail($bien_id);
+            }
+            $bien = Bien::on('temp')->findOrFail($bien_id);
                 $bien->etat=EtatBien::ENCOURS_DE_PROPOSITION->value;
                 if( $bien->save()){
                     $bien_propose = new Proposition();
@@ -590,7 +576,7 @@ class BienController extends Controller
                     $bien_propose->user_id =Auth::guard('api')->user()->id;
                     $bien_propose->save();
                 }
-            }
+
          return response()->json(['message' => $bien], 200);
 
         } else {

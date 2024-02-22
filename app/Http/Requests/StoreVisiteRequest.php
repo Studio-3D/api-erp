@@ -40,8 +40,9 @@ use Illuminate\Http\Request;
         }
          //interesse
          if ($request->interet == 1){
-            $rules['bien_id']='required';
-            $rules['statut']='required';
+            //multiple
+            //$rules['bien_id']='required';
+            //$rules['statut']='required';
             $rules['cin']='required';
         }
         //perdu

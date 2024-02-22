@@ -34,6 +34,7 @@ class Bien_Helper
             //UPDATE DERNIER VISITE pre reserve=>pre reserve_perdu // vendu==>reservation_perdu
             $visite=Visite::on('temp')->where('bien_id',$id)->where('interet',InteretEnum::Intéressé->value)->orderBy('created_at', 'DESC')->first();
             if($visite!=null){
+                if($text=='console'){
                 //pre reserve
                 if($visite->statut==StatutVisiteEnum::Pré_Réservation->value){
                     $visite->statut=StatutVisiteEnum::Pré_Réservation_Perdu->value;
@@ -41,6 +42,7 @@ class Bien_Helper
                     $visite->statut=StatutVisiteEnum::Réservation_Perdu->value;
                 }
                 $visite->save();
+                }
 
                 //SUPPRIMER LES OLDS NOTIF
                 $notif_old_relance=Notification::on('temp')->where(function ($query){
@@ -79,7 +81,7 @@ class Bien_Helper
             }
         }
         if($text=='console'){
-            HistoriqueBienHelper::createHistoriqueBien(1, "liberer automatique",$id,NULL,NULL,NULL);
+            HistoriqueBienHelper::createHistoriqueBien(1, "liberation automatique",$id,NULL,NULL,NULL);
         }
         else{
             HistoriqueBienHelper::createHistoriqueBien(4, "liberer", $id, Auth::guard('api')->user()->id,NULL,NULL);

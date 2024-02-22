@@ -2,7 +2,12 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Helpers\DatabaseHelper;
+use App\Models\Societe;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
+
 
 class StoreProspectRequest extends FormRequest
 {

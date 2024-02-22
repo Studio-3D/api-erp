@@ -505,7 +505,7 @@ class UserController extends Controller
 
             $token = Str::random(60);
             $confirmationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-            $expirationTime = now()->addMinutes(3); 
+            $expirationTime = now()->addMinutes(3);
             DB::table('password_reset_tokens')->insert([
                 'email' => $user,
                 'token' => $token,
