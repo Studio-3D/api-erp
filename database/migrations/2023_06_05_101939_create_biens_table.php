@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('propriete_dite_bien');
             $table->string('numero');
             $table->integer('niveau');
-            $table->enum('orientation',[OrientationEnum::N->name,OrientationEnum::E->name,OrientationEnum::S->name,OrientationEnum::O->name,OrientationEnum::N_E->name,OrientationEnum::N_S->name,OrientationEnum::O_E->name,OrientationEnum::O_S->name,OrientationEnum::E_S->name]);
+            $table->enum('orientation', [OrientationEnum::N->name, OrientationEnum::E->name, OrientationEnum::S->name, OrientationEnum::O->name, OrientationEnum::N_E->name, OrientationEnum::N_O->name,OrientationEnum::O_E->name, OrientationEnum::O_S->name, OrientationEnum::E_S->name]);
             $table->boolean('conventionne')->nullable();
             $table->double('prix_unitaire', 12, 2);
             $table->double('prix', 20, 2);

@@ -156,7 +156,7 @@ class VisiteController extends Controller
                  convert
                  lead to visite
              ****/
-            
+
 
              $user = Auth::user();
              if (RoleHelper::ACSup()) {
