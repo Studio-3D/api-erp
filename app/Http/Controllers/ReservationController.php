@@ -164,7 +164,8 @@ class ReservationController extends Controller
                                 'telephone_num2'=>$request->telephone_num2,
                                 'notifie'=>$request->notifie,
                                 'prospect_id'=>$request->prospect_id,
-                                'civilite'=>'Mr',
+                                'civilite'=>$request->civilite,
+                                'situation_familliale'=>$request->situation_familliale,
                                 'type_client'=>1,
                             ];
                             $clientRequest->merge($dataClient);
