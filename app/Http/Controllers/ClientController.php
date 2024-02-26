@@ -147,6 +147,7 @@ class ClientController extends Controller
                         'nom_cc' => $visite->first()->user->name,
                         'prenom_cc' => $visite->first()->user->prenom,
                         'date' => $visite->first()->created_at,
+                        'prospect_id' => $visite->first()->prospect->id,
                         'cin' => $visite->first()->prospect->cin,
                         'nom' => $visite->first()->prospect->nom,
                         'prenom' => $visite->first()->prospect->prenom,
@@ -156,7 +157,9 @@ class ClientController extends Controller
                         'statut' => $visite->first()->statut,
                         'propriete_dite_bien' => $visite->first()->bien_id?$visite->first()->bien->propriete_dite_bien:'',
                         'etat_bien' => $visite->first()->bien_id?$visite->first()->bien->etat:'',
+                        'bien_id' => $visite->first()->bien_id?$visite->first()->bien_id:'',
                         'visit_count' => count($visite)
+
 
                     ];});
 

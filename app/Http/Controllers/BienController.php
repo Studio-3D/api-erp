@@ -195,7 +195,9 @@ class BienController extends Controller
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
+            Config::set('broadcasting.default', 'pusher_4');
             Bien_Helper::libererBien($id, null);
+            event(new PropositionUpdated($id, null));
             return response()->json('le bien est liberé');
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
