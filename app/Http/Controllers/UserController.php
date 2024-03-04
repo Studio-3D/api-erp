@@ -260,6 +260,7 @@ class UserController extends Controller
             $user->solde_conge = $request->input('solde_conge');
             $user_origin = User::where('id', $user->user_id_origin)->first();
             $societe = Societe::findOrfail($user_origin->societe_id);
+            $photo = '';
             if ($request->hasFile('photo')) {
                 if ($user->photo != null) {
                     $image_path = asset('img/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/users' . $user_origin->photo);
@@ -279,7 +280,6 @@ class UserController extends Controller
                 if ($user_origin) {
                     $user_origin->update($request->all());
                     if ($request->hasFile('photo')) {
-                        $photo = time() . '.' . $request->name. '_' . $request->prenom  . '.' . $request->photo->extension();
                         $user_origin->photo = $photo;
                         $user_origin->save();
                     }
@@ -304,6 +304,7 @@ class UserController extends Controller
             $user->cnss = $request->input('cnss');
             $user->is_actif = $request->input('is_actif'); // Default to 1 if not provided
             $user->solde_conge = $request->input('solde_conge');
+            $photo = '';
             if ($request->hasFile('photo')) {
                 if ($user->photo != null) {
                     $image_path = public_path('img/users/' . $user->photo);
@@ -324,7 +325,6 @@ class UserController extends Controller
                 if ($user_societes) {
                     $user_societes->update($request->all());
                     if ($request->hasFile('photo')) {
-                        $photo = time() . '.' . $request->name . '_' . $request->prenom . '.' . $request->photo->extension();
                         $user_societes->photo = $photo;
                         $user_societes->save();
                     }
@@ -351,6 +351,7 @@ class UserController extends Controller
             $user->is_actif = $request->input('is_actif'); // Default to 1 if not provided
             $user->solde_conge = $request->input('solde_conge');
             $user_societes = User::where('id', $user->user_id_origin)->first();
+            $photo = '';
             if ($request->hasFile('photo')) {
                 if ($user->photo != null) {
                     $image_path = public_path('img/users/' . $user->photo);
@@ -369,7 +370,6 @@ class UserController extends Controller
                 if ($user_societes) {
                     $user_societes->update($request->all());
                     if ($request->hasFile('photo')) {
-                        $photo = time() . '.' . $request->name . '_' . $request->prenom . '.' . $request->photo->extension();
                         $user_societes->photo = $photo;
                         $user_societes->save();
                     }
