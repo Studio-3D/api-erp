@@ -74,8 +74,6 @@ class DesistementController extends Controller
     public function store(StoreDesistementRequest $request)
 
     {
-
-
         $user = Auth::user();
         if(RoleHelper::AC()){
             DatabaseHelper::Config();

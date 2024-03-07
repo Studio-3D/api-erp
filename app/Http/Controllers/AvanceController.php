@@ -27,7 +27,7 @@ use App\Enum\ModePaiement;
 
 
 
-class AvanceController extends Controller
+class AvanceController  extends Controller
 {
     /**
      * Display a listing of the resource.

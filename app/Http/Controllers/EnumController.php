@@ -35,6 +35,7 @@ class EnumController extends Controller
 
         return response()->json(['list_interets' => $list_interets,'list_orientations' => $list_orientations,'list_type_notifs' => $list_type_notifs,'list_statut_Visites'=>$list_statut_Visites]);
     }
+    
     public function get_enums_desistements()
     {
         $type_desistements=array_column(TypeDesistement::cases(), 'name', 'value');

@@ -16,6 +16,7 @@ class RemboursementController extends Controller
      * Display a listing of the resource.
      */
 
+     
      public function get_detail_transfert(Request $request, $reservation_id)
      {
          if (RoleHelper::ACSup()) {

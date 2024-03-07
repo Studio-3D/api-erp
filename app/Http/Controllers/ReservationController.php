@@ -536,6 +536,7 @@ class ReservationController extends Controller
         }
     }
 
+    
     public function get_Historiques_by_reservation($id,Request $request)
     {
         if (Auth::guard('api')->check()) {
