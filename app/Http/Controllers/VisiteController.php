@@ -221,7 +221,7 @@ class VisiteController extends Controller
                         if ($request->list_bien_interesse) {
                             foreach ($request->list_bien_interesse as $key => $list_biens) {
                                 if($list_biens['bien_id']){
-                                        Bien_Helper::libererBien($list_biens['bien_id'],null);
+                                        Bien_Helper::libererBien($list_biens['bien_id'],null,null);
                                 }
                             }
                             }
@@ -305,7 +305,7 @@ class VisiteController extends Controller
                                                 if ($old_visite->statut == StatutVisiteEnum::Pré_Réservation->value ) {
                                                     $oldBien = Bien::on('temp')->find($old_visite->bien_id);
                                                     if ($oldBien->etat == 'Pré_Réservation' && $oldBien->historique_bien_pre_reserve->visite_id==$old_visite->id) {
-                                                        Bien_Helper::libererBien($old_visite->bien_id,null);
+                                                        Bien_Helper::libererBien($old_visite->bien_id,null,null);
                                                         if($old_visite->statut==StatutVisiteEnum::Pré_Réservation->value){
                                                             $old_visite->statut=StatutVisiteEnum::Pré_Réservation_Perdu->value;
                                                         }elseif($old_visite->statut==StatutVisiteEnum::Vendu->value){
@@ -477,11 +477,9 @@ class VisiteController extends Controller
                                                     $dataReservation = [
                                                         'nb_acquereurs'=>1,
                                                         'code_reservation'=>$list_biens['code_reservation'],
-                                                        'origin'=>'visite',
                                                         'prix'=>$list_biens['prix'],
                                                         'mode_financement'=>$list_biens['mode_financement'],
                                                         'date_reservation'=>$list_biens['date_reservation'],
-                                                        'date_limite_reservation'=>$list_biens['date_limite_reservation'],
                                                         'commentaire'=>$list_biens['commentaire_res'],
                                                         'visite_id'=>$visite->id,
                                                         'prix_remise'=>$list_biens['prix_remise'],
@@ -636,11 +634,9 @@ class VisiteController extends Controller
                                            $dataReservation = [
                                                'nb_acquereurs'=>1,
                                                'code_reservation'=>$list_biens['code_reservation'],
-                                               'origin'=>'visite',
                                                'prix'=>$list_biens['prix'],
                                                'mode_financement'=>$list_biens['mode_financement'],
                                                'date_reservation'=>$list_biens['date_reservation'],
-                                               'date_limite_reservation'=>$list_biens['date_limite_reservation'],
                                                'commentaire'=>$list_biens['commentaire_res'],
                                                'visite_id'=>$visite->id,
                                                'prix_remise'=>$list_biens['prix_remise'],
@@ -990,7 +986,7 @@ class VisiteController extends Controller
                     if($visite->bien_id!=$request->bien_id){
                         $oldBien = Bien::on('temp')->find($visite->bien_id);
                             if ($oldBien->etat == 'Pré_Réservation' || $oldBien->etat == 'Vendu') {
-                                Bien_Helper::libererBien($visite->bien_id,null);
+                                Bien_Helper::libererBien($visite->bien_id,null,null);
 
                             }
                     }
@@ -1000,7 +996,7 @@ class VisiteController extends Controller
 
                     //changement d'interet (Réceptif ou Perdu)
             if($visite->bien_id!=null && $request->interet != InteretEnum::Intéressé->value){
-                Bien_Helper::libererBien($visite->bien_id,null);
+                Bien_Helper::libererBien($visite->bien_id,null,null);
 
             }
 
@@ -1109,11 +1105,9 @@ class VisiteController extends Controller
                     $dataReservation = [
                         'nb_acquereurs'=>1,
                         'code_reservation'=>$request->code_reservation,
-                        'origin'=>'visite',
                         'prix'=>$request->prix,
                         'mode_financement'=>$request->mode_financement,
                         'date_reservation'=>$request->date_reservation,
-                        'date_limite_reservation'=>$request->date_limite_reservation,
                         'commentaire'=>$request->commentaire_res,
                         'visite_id'=>$visite->id,
                         'prix_remise'=>$request->prix_remise,
@@ -1201,7 +1195,7 @@ class VisiteController extends Controller
             $visite=Visite::on('temp')->findOrFail($id);
             if($visite->interet== InteretEnum::Intéressé->value){
                 if($visite->bien_id){
-                    Bien_Helper::libererBien($visite->bien_id,null);
+                    Bien_Helper::libererBien($visite->bien_id,null,null);
                 }
             }
             if($visite->interet == InteretEnum::Perdu->name){
@@ -1270,14 +1264,14 @@ class VisiteController extends Controller
                    if ($request->list_bien_interesse) {
                     foreach ($request->list_bien_interesse as $key => $list_biens) {
                         if($list_biens['bien_id']){
-                                Bien_Helper::libererBien($list_biens['bien_id'],null);
+                                Bien_Helper::libererBien($list_biens['bien_id'],null,null);
                         }
                     }
                     }
                     if ($request->list_bien_transfere_vendu) {
                         foreach ($request->list_bien_transfere_vendu as $key => $list_biens_ve) {
                             if($list_biens['bien_id']){
-                                    Bien_Helper::libererBien($list_biens_ve['bien_id'],null);
+                                    Bien_Helper::libererBien($list_biens_ve['bien_id'],null,null);
                             }
                         }
                     }
@@ -1336,7 +1330,7 @@ class VisiteController extends Controller
                                 if ($old_visite->statut == StatutVisiteEnum::Pré_Réservation->value ) {
                                     $oldBien = Bien::on('temp')->find($old_visite->bien_id);
                                     if ($oldBien->etat == 'Pré_Réservation' && $oldBien->historique_bien_pre_reserve->visite_id==$old_visite->id) {
-                                        Bien_Helper::libererBien($old_visite->bien_id,null);
+                                        Bien_Helper::libererBien($old_visite->bien_id,null,null);
                                         if($old_visite->statut==StatutVisiteEnum::Pré_Réservation->value){
                                             $old_visite->statut=StatutVisiteEnum::Pré_Réservation_Perdu->value;
                                         }elseif($old_visite->statut==StatutVisiteEnum::Vendu->value){
@@ -1510,11 +1504,9 @@ class VisiteController extends Controller
                                         $dataReservation = [
                                             'nb_acquereurs'=>1,
                                             'code_reservation'=>$list_biens['code_reservation'],
-                                            'origin'=>'visite',
                                             'prix'=>$list_biens['prix'],
                                             'mode_financement'=>$list_biens['mode_financement'],
                                             'date_reservation'=>$list_biens['date_reservation'],
-                                            'date_limite_reservation'=>$list_biens['date_limite_reservation'],
                                             'commentaire'=>$list_biens['commentaire_res'],
                                             'visite_id'=>$newVisit->id,
                                             'prix_remise'=>$list_biens['prix_remise'],
@@ -1610,11 +1602,9 @@ class VisiteController extends Controller
                                             $dataReservation = [
                                                 'nb_acquereurs'=>1,
                                                 'code_reservation'=>$list_biens['code_reservation'],
-                                                'origin'=>'visite',
                                                 'prix'=>$list_biens['prix'],
                                                 'mode_financement'=>$list_biens['mode_financement'],
                                                 'date_reservation'=>$list_biens['date_reservation'],
-                                                'date_limite_reservation'=>$list_biens['date_limite_reservation'],
                                                 'commentaire'=>$list_biens['commentaire_res'],
                                                 'visite_id'=>$newVisit->id,
                                                 'prix_remise'=>$list_biens['prix_remise'],
