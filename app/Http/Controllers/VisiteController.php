@@ -1532,7 +1532,6 @@ class VisiteController extends Controller
                                             'bien_id'=>$list_biens['bien_id'],
                                             'projet_id'=>$request->selectedProjet,
                                             'verifierPourcentages'=>true,
-                                            'origin'=>'visite',
                                             'cin'=>$prospect->cin,
                                             'nom'=>$prospect->nom,
                                             'prenom'=>$prospect->prenom,
