@@ -78,6 +78,7 @@ class VisiteController extends Controller
                 'interet' => $visite->first()->interet,
                 'statut' => $visite->first()->statut,
                 'propriete_dite_bien' => $visite->first()->bien_id?$visite->first()->bien->propriete_dite_bien:'',
+                'bien_id' => $visite->first()->bien_id?$visite->first()->bien_id:'',
                 'etat_bien' => $visite->first()->bien_id?$visite->first()->bien->etat:'',
                 'visit_count' => count($visite),
                 'reservation' => $visite->first()->reservation,

@@ -278,7 +278,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('Civilite_Enum', [EnumController::class,'CiviliteEnum_get'])->name('');
     Route::get('StatutFamilleEnum', [EnumController::class,'StatutFamilleEnum_get'])->name('');
     Route::get('EtatBien', [EnumController::class,'EtatBien_get'])->name('');
-
+    Route::get('Enums_desistements', [EnumController::class,'get_enums_desistements'])->name('');
 
     /************************NotificationController********************* */
     Route::get('get_relances_visites/{projet_id}', [NotificationController::class,'get_relances_visites'])->name('');
