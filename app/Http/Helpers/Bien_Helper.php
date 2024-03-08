@@ -66,7 +66,7 @@ class Bien_Helper
                             $old->date_traitement=Carbon::now();
                             //si old visite pre reserve en suite n visite vendu ==>user_id_traite(l'ancien user)
                             if($old->visite->statut==StatutVisiteEnum::Pré_Réservation->value){
-                                if($newVisit->statut==StatutVisiteEnum::Vendu->value){
+                                if($visite->statut==StatutVisiteEnum::Vendu->value){
                                     $old->user_id_traite=$visite->user_id;
                                 }
                                 else{
