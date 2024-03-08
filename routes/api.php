@@ -31,6 +31,8 @@ use App\Http\Controllers\EnumController;
 use App\Http\Controllers\Facebook\FacebookController;
 use App\Http\Controllers\WhatsApp\WhatsAppController;
 use App\Http\Controllers\Landing_page\Landing_pageController;
+use App\Http\Controllers\DesistementController;
+use App\Http\Controllers\RemboursementController;
 
 
 /*
@@ -279,6 +281,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('Civilite_Enum', [EnumController::class,'CiviliteEnum_get'])->name('');
     Route::get('StatutFamilleEnum', [EnumController::class,'StatutFamilleEnum_get'])->name('');
     Route::get('EtatBien', [EnumController::class,'EtatBien_get'])->name('');
+    Route::get('Enums_desistements', [EnumController::class,'get_enums_desistements'])->name('');
+
 
 
     /************************NotificationController********************* */
@@ -289,6 +293,15 @@ Route::middleware('auth:api')->group(function () {
     Route::get('get_notifications/{projet_id}', [NotificationController::class,'get_notifications'])->name('');
     Route::get('DestroyNotif/{id}', [NotificationController::class,'DestroyNotif'])->name('');
     Route::get('notifications/{projet_id}', [NotificationController::class,'index'])->name('');
+
+    /********************************DesistemenController*********** */
+    Route::resource('desistement',DesistementController::class);
+    Route::get('get_historiques_desistement_by_reservation/{code_desistement}', [DesistementController::class,'get_historiques_desistement_by_reservation'])->name('');
+
+
+    /******************************************* */
+    Route::resource('remboursement',RemboursementController::class);
+    Route::get('get_detail_transfert/{reservation_id}', [RemboursementController::class,'get_detail_transfert'])->name('');
 
 
 });

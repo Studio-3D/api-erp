@@ -46,7 +46,7 @@ class ClientController extends Controller
         if (RoleHelper::Superadmin() && Auth::guard('api')->user()->societe_id == 1) {
             $clients = Client::all();
             return response()->json(['clients' => $clients]);
-        } else if (RoleHelper::AdminSup()) {
+        } else if (RoleHelper::AC()) {
             DatabaseHelper::Config();
             $clients = Client::on('temp')->get();
             return response()->json(['clients' => $clients], 200);
