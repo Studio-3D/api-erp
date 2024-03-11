@@ -20,7 +20,7 @@ return new class extends Migration
         $table->foreignId('reservation_id')->constrained('reservations')->onDelete('cascade');
         $table->foreignId('reservation_id_new')->nullable()->constrained('reservations')->onDelete('cascade');
         $table->enum('type',[TypeDesistement::Désistement_Définitif->value,TypeDesistement::Désistement_Au_Profit->value,TypeDesistement::Changement_De_Bien->value]);
-        $table->enum('type_dp',[TypeDesistementProfit::Désistement_AU_PROFIT_UN_PROCHE->value,TypeDesistementProfit::Désistement_AU_PROFIT_UN_CO_RESERVATAIRE->value,TypeDesistementProfit::DESISTEMENT_PARTIEL->value])->nullable();
+        $table->enum('type_dp',[TypeDesistementProfit::Désistement_AU_PROFIT_UN_PROCHE->value,TypeDesistementProfit::Désistement_AU_PROFIT_UN_CO_RESERVATAIRE->value,TypeDesistementProfit::Désistement_Partiel->value])->nullable();
         $table->string('num_recu')->nullable();
         $table->integer('statut')->default(0)->comment('0=en attente 1=>valide 2=>rejete');
         $table->enum('motif',[MotifDesistement::Incapacité_Financière->value,
