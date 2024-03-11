@@ -164,7 +164,7 @@ class UserController extends Controller
 
             if ($request->hasFile('photo')) {
                 $photo = time() . '.' . $request->name. '_' . $request->prenom . '.' . $request->photo->extension();
-                $request->photo = $photo;
+                $user->photo = $photo;
 
             }
             if ($user->save()) {

@@ -10,6 +10,8 @@ use App\Models\Prospect;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Models\Visite;
+use App\Http\Helpers\PaginationHelper;
 
 class ProspectController extends Controller
 {
@@ -69,6 +71,7 @@ class ProspectController extends Controller
             $prospect->notifie = $request->notifie;
             $prospect->source = $request->source;
             $prospect->partenaire_id = $request->partenaire_id;
+            $prospect->message = $request->message;
             $prospect->save();
             return $prospect;
 
@@ -204,5 +207,45 @@ class ProspectController extends Controller
                 ->get()->first();
             return response()->json(['prospect' => $prospect]);
         }
+    }
+
+    public function VisitesByprospect(Request $request, $prospect_id)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage'));
+            $page = $request->input('page', 1);
+            $visites = Visite::on('temp')->latest('created_at')->where('etat', 1)
+                ->select('visites.*')
+                ->where('prospect_id', $prospect_id)
+                ->get()->groupby('origin_id');
+            
+            $visites = $visites->map(function ($visite) {
+                return [
+                    'id' => $visite->first()->id,
+                    'origin_id' => $visite->first()->origin_id,
+                    'nom_cc' => $visite->first()->user->name,
+                    'prenom_cc' => $visite->first()->user->prenom,
+                    'date' => $visite->first()->created_at,
+                    'prospect_id' => $visite->first()->prospect->id,
+                    'cin' => $visite->first()->prospect->cin,
+                    'nom' => $visite->first()->prospect->nom,
+                    'prenom' => $visite->first()->prospect->prenom,
+                    'telephone' => $visite->first()->prospect->telephone,
+                    'telephone2' => $visite->first()->prospect->telephone_num2,
+                    'interet' => $visite->first()->interet,
+                    'statut' => $visite->first()->statut,
+                    'propriete_dite_bien' => $visite->first()->bien_id ? $visite->first()->bien->propriete_dite_bien : '',
+                    'etat_bien' => $visite->first()->bien_id ? $visite->first()->bien->etat : '',
+                    'bien_id' => $visite->first()->bien_id ? $visite->first()->bien_id : '',
+                    'visit_count' => count($visite),
+
+                ];});
+
+            $data = PaginationHelper::paginate_array($visites->toArray(), $perPage, $page, $request->url());
+            return response()->json(['visites' => $data], 200);
+
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
 }
