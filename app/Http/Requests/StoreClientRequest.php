@@ -40,7 +40,7 @@ class StoreClientRequest extends FormRequest
             "age"=>"integer",
             "nom_responsable"=>"string",
             "relation_familliale"=>"string",
-            "situation_familliale"=>"string",
+            "situation_familliale"=>"required|string",
             "nom_pere"=>"string",
             "nom_mere"=>"string",
             "nom_mari"=>"string",

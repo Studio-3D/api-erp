@@ -195,6 +195,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('search_prospect_by_phone/{phone}', [ProspectController::class, 'search_prospect_by_phone']);
     Route::get('get_prospects', [ProspectController::class, 'get_prospects']);
     // Route::post('Store_WhatsApp', [ProspectController::class, 'Store_WhatsApp']);
+    Route::get('VisitesByprospect/{prospect_id}', [ProspectController::class, 'VisitesByprospect']);
 
 
 
