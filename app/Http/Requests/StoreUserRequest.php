@@ -40,4 +40,11 @@ class StoreUserRequest extends FormRequest
 
         ];
     }
+    public function messages(): array
+    {
+        return [
+            'cin.unique' => 'Le Cin que vous avez saisi apprtient à un autre utilisateur',
+            'email.unique' => 'L\'email que vous avez saisi appartient à un autre utilisateur',
+        ];
+    }
 }

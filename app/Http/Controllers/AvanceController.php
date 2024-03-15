@@ -23,6 +23,9 @@ use Carbon\Carbon;
 use App\Enum\RoleEnum;
 use \NumberFormatter;
 use App\Enum\ModePaiement;
+use Illuminate\Support\Facades\File;
+use App\Http\Requests\StorePiecesJointeRequest;
+use App\Models\Societe;
 
 
 
@@ -188,6 +191,33 @@ class AvanceController  extends Controller
 
 
             if($avance->save()){
+                 ////storer les pieces jointe de paiement 
+
+                {if($request->files_avance){
+                    foreach ($request->files_avance as $file) {
+                        $piecesJointeController = new PiecesJointeController();
+                        $pieceJointeRequest = new StorePiecesJointeRequest();
+                        $path = $file->store('public');
+                        $user_societes = User::where('id', $request->user_connecter)->first();
+                        $societe = Societe::findOrfail($user_societes->societe_id);
+
+                        // Récupérer le nom du fichier
+                        $fileName = basename($path);
+                        $Myfile = time() . '.' .$fileName;
+                        $directory = public_path('files/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiement');
+                        File::makeDirectory($directory, 0755, true, true);
+                        $file->move($directory, $Myfile);
+                        $fileType = $file->getClientOriginalExtension();
+                        $datapieceJointe = [
+                            'fichier' => $Myfile,
+                            'type' => $fileType,
+                            'avance_id' => $avance->id,
+                        ];
+
+                        $pieceJointeRequest->merge($datapieceJointe);
+                        $piecesJointeController->store($pieceJointeRequest);
+                    }
+                }}
                 //send notification d'echeance
                 if ($avance->echeance != null) {
                     NotificationHelper::storeNotification(

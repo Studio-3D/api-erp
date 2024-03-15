@@ -54,12 +54,8 @@ class PiecesJointeController extends Controller
             DatabaseHelper::Config();
             $pJ = new PiecesJointe();
             $pJ->setConnection('temp');
-            if ($request->hasFile('fichier')) {
-                $file = time() . '.' . $request->file('fichier')->getClientOriginalName();
-                $request->fichier->move(public_path('img/fichier'), $file);
-                $pJ->fichier = $file;
-                $pJ->type = $request->file('fichier')->getClientOriginalExtension();
-            }
+            $pJ->fichier = $request->fichier;
+            $pJ->type = $request->type;
             $pJ->avance_id = $request->avance_id;
             $pJ->reservation_id = $request->reservation_id;
             if ($pJ->save()) {
