@@ -21,14 +21,14 @@ use App\Models\Client;
 use App\Models\HistoReservation;
 use App\Models\PiecesJointe;
 use App\Models\Reservation;
+use App\Models\Societe;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use \NumberFormatter;
 use Illuminate\Support\Facades\File;
-use App\Models\Societe;
+use \NumberFormatter;
 
 class ReservationController extends Controller
 {
@@ -259,24 +259,23 @@ class ReservationController extends Controller
                     'num_remise' => $request->num_remise,
                     'date_encaissement' => $request->date_encaissement,
                     'files_avance' => $request->file('files_avance'),
-                    'user_connecter'=>$userAuth->value('user_id_origin')
+                    'user_connecter' => $userAuth->value('user_id_origin'),
                 ];
                 $avanceRequest->merge($dataAvance);
                 $avanceController->store($avanceRequest);
                 //****store piece jointe***
-                
-                //////storer les pieces jointe de paiement                
-                if($request->file('files_reservation')){
+
+                //////storer les pieces jointe de paiement
+                if ($request->file('files_reservation')) {
                     foreach ($request->file('files_reservation') as $file) {
                         $piecesJointeController = new PiecesJointeController();
                         $pieceJointeRequest = new StorePiecesJointeRequest();
-                        $path = $file->store('public');
                         $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
                         $societe = Societe::findOrfail($user_societes->societe_id);
 
                         // Récupérer le nom du fichier
-                        $fileName = basename($path);
-                        $Myfile = time() . '.' .$fileName;
+                        $fileName = $file->getClientOriginalName();
+                        $Myfile = time() . '.' . $fileName;
                         $directory = public_path('files/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations');
                         File::makeDirectory($directory, 0755, true, true);
                         $file->move($directory, $Myfile);
@@ -291,7 +290,7 @@ class ReservationController extends Controller
                         $piecesJointeController->store($pieceJointeRequest);
                     }
                 }
-                
+
             }
             return response()->json(['reservation' => $reservation], 200);
 

@@ -197,12 +197,11 @@ class AvanceController  extends Controller
                     foreach ($request->files_avance as $file) {
                         $piecesJointeController = new PiecesJointeController();
                         $pieceJointeRequest = new StorePiecesJointeRequest();
-                        $path = $file->store('public');
                         $user_societes = User::where('id', $request->user_connecter)->first();
                         $societe = Societe::findOrfail($user_societes->societe_id);
 
                         // Récupérer le nom du fichier
-                        $fileName = basename($path);
+                        $fileName = $file->getClientOriginalName();
                         $Myfile = time() . '.' .$fileName;
                         $directory = public_path('files/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiement');
                         File::makeDirectory($directory, 0755, true, true);
