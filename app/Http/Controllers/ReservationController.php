@@ -302,37 +302,38 @@ class ReservationController extends Controller
      * Display the specified resource.
      */
 
-    public function search_reservation_by_code($code)
-    {
-        if (RoleHelper::ACSup()) {
-            DatabaseHelper::Config();
-            $reservation = Reservation::on('temp')->where('code_reservation', $code)
-                ->get()->first();
-            return response()->json(['reservation' => $reservation]);
-        }
-    }
-    public function info_reservation($id)
-    {
-        if (RoleHelper::ACSup()) {
-            DatabaseHelper::Config();
-            $reservation = Reservation::on('temp')->findOrFail($id);
-            $etat = $reservation->etat;
-            $code = $reservation->code_reservation;
-            $code_desistement = $reservation->code_desistement;
-            $prix = $reservation->prix;
-            if ($reservation->etat > 1) {
-                $nb_aq = count($reservation->aquereurs_ancien);
-                $nb_pj = count($reservation->piece_jointe_desiste);
-            } else {
-                $nb_aq = count($reservation->aquereurs);
-                $nb_pj = count($reservation->piece_jointe);
-            }
-            $nb_histo = count($reservation->historiques);
-            return response()->json(['code_res' => $code, 'code_desistement' => $code_desistement, 'prix' => $prix, 'nb_aquer' => $nb_aq, 'nb_histo' => $nb_histo, 'nb_pj' => $nb_pj, 'etat' => $etat], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-    }
+
+     public function search_reservation_by_code($code)
+     {
+         if(RoleHelper::ACSup()){
+              DatabaseHelper::Config();
+              $reservation = Reservation::on('temp')->where('code_reservation',$code)->where('etat',1)
+                 ->get()->first();
+             return response()->json(['reservation' => $reservation]);
+          }
+      }
+     public function info_reservation($id)
+     {
+         if (RoleHelper::ACSup()) {
+             DatabaseHelper::Config();
+             $reservation = Reservation::on('temp')->findOrFail($id);
+             $etat=$reservation->etat;
+             $code=$reservation->code_reservation;
+             $code_desistement=$reservation->code_desistement;
+             $prix=$reservation->prix;
+             if($reservation->etat>1){
+                $nb_aq=count($reservation->aquereurs_ancien);
+                $nb_pj=count($reservation->piece_jointe_desiste);
+             }else{
+                $nb_aq=count($reservation->aquereurs);
+                $nb_pj=count($reservation->piece_jointe);
+             }
+             $nb_histo=count($reservation->historiques);
+             return response()->json(['code_res' => $code,'code_desistement' => $code_desistement,'prix'=>$prix,'nb_aquer'=>$nb_aq,'nb_histo'=>$nb_histo,'nb_pj'=>$nb_pj,'etat'=>$etat], 200);
+         } else {
+             return response()->json(['error' => 'Unauthorized'], 401);
+         }
+     }
 
     public function show($id)
     {
