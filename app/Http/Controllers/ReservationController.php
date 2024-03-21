@@ -275,7 +275,7 @@ class ReservationController extends Controller
 
                         // Récupérer le nom du fichier
                         $fileName = $file->getClientOriginalName();
-                        $Myfile = time() . '.' . $fileName;
+                        $Myfile = $fileName;
                         $directory = public_path('files/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations');
                         File::makeDirectory($directory, 0755, true, true);
                         $file->move($directory, $Myfile);
@@ -402,8 +402,8 @@ class ReservationController extends Controller
             $reservation = Reservation::on('temp')->findOrFail($id);
             $old_bien_id = $reservation->bien_id;
             //test si le user connecte celui qui a  fait la proposition /etat du bien
-            if ($old_bien_id != $request->bien_id) {
-                $bien_prop = Bien::on('temp')->findorfail($request->bien_id);
+            if ($old_bien_id != $request->input('bien_id')) {
+                $bien_prop = Bien::on('temp')->findorfail($request->input('bien_id'));
                 /*if($bien_prop->etat!=EtatBien::DISPONIBLE->name){
                 return response()->json(['error' => 'Ce bien n\'est pas disponible'], 422);
                 }*/
@@ -414,28 +414,28 @@ class ReservationController extends Controller
             }
 
             $reservation->setConnection('temp');
-            $reservation->nb_acquereurs = $request->nb_acquereurs;
-            $reservation->code_reservation = $request->code_reservation;
-            $reservation->prix = $request->prix;
-            $reservation->mode_financement = $request->mode_financement;
-            $reservation->date_reservation = $request->date_reservation;
-            $reservation->commentaire = $request->commentaire;
-            $reservation->prix_remise = $request->prix_remise;
+            $reservation->nb_acquereurs = $request->input('nb_acquereurs');
+            $reservation->code_reservation = $request->input('code_reservation');
+            $reservation->prix = $request->input('prix');
+            $reservation->mode_financement = $request->input('mode_financement');
+            $reservation->date_reservation = $request->input('date_reservation');
+            $reservation->commentaire = $request->input('commentaire');
+            $reservation->prix_remise = $request->input('prix_remise');
             $numberToWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
-            $prix_remise_lettre = $numberToWords->format($request->prix_remise);
+            $prix_remise_lettre = $numberToWords->format($request->input('prix_remise'));
             $reservation->prix_remise_lettre = $prix_remise_lettre;
-            $reservation->prix_forfetaire = $request->prix_forfetaire;
-            $prix_forfetaire_lettre = $numberToWords->format($request->prix_forfetaire);
+            $reservation->prix_forfetaire = $request->input('prix_forfetaire');
+            $prix_forfetaire_lettre = $numberToWords->format($request->input('prix_forfetaire'));
             $reservation->prix_forfetaire_lettre = $prix_forfetaire_lettre;
-            $reservation->bien_id = $request->bien_id;
-            if ($request->verifierPourcentages === true) {
+            $reservation->bien_id = $request->input('bien_id');
+            
                 if ($reservation->save()) {
                     if (RoleHelper::AdminSup()) {
                         //admin /sup admin peut changer le bien et les avances
-                        if ($old_bien_id != $request->bien_id) {
+                        if ($old_bien_id != $request->input('bien_id')) {
                             //reserver new bien
                             $bienController = new BienController();
-                            $bienController->reserverBien($request->bien_id, null, $reservation->id);
+                            $bienController->reserverBien($request->input('bien_id'), null, $reservation->id);
                             //liberer l'ancien bien
                             Bien_Helper::libererBien($old_bien_id, null, null);
                             //store to historique reservation
@@ -466,7 +466,7 @@ class ReservationController extends Controller
                     $clientRequest = new StoreClientRequest();
                     $aquereurController = new AquereurController();
                     $aquereurRequest = new StoreAquereurRequest();
-                    if ($request->clients) {
+                    /* if ($request->clients) {
                         foreach ($request->clients as $clientInfo) {
                             $clientRequest->merge($clientInfo);
                             $clientData = $clientController->store($clientRequest);
@@ -487,16 +487,70 @@ class ReservationController extends Controller
                             ];
                             $aquereurRequest->merge($dataAquereur);
                             $aquereurController->store($aquereurRequest);
-                        }}
+                        }} */
+                        $dataArray_clients = json_decode($request->input('clients'), true);
+                        $dataArrayString = $request->input('oldClients', '[]');
+    
+                        $dataArray_oldClients = json_decode($dataArrayString, true); // Ensure it's an array
+        
+                        if ($dataArray_clients) {
+                            foreach ($dataArray_clients as $clientInfo) {
+                                $clientRequest->merge($clientInfo);
+                                $clientData = $clientController->store($clientRequest);
+                                $dataAquereur = [
+                                    'pourcentage' => $clientInfo['pourcentage'],
+                                    'client_id' => $clientData->id,
+                                    'reservation_id' => $reservation->id,
+                                ];
+                                $aquereurRequest->merge($dataAquereur);
+                                $aquereurController->store($aquereurRequest);
+                            }}
+                        if ($dataArray_oldClients) {
+                            foreach ($dataArray_oldClients as $clientInfo) {
+                                $dataAquereur = [
+                                    'pourcentage' => $clientInfo['pourcentage1'],
+                                    'client_id' => $clientInfo['id'],
+                                    'reservation_id' => $reservation->id,
+                                ];
+                                $aquereurRequest->merge($dataAquereur);
+                                $aquereurController->store($aquereurRequest);
+                            }}
+                    
 
                     //****delete piece jointe***
+                    if ($request->file('files_reservation')) {
+                            $pjController = new PiecesJointeController();
+                            $pjController->destoryFileUsingReservationId($id);
+                        foreach ($request->file('files_reservation') as $file) {
+                            $piecesJointeController = new PiecesJointeController();
+                            $pieceJointeRequest = new StorePiecesJointeRequest();
+                            $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+                            $societe = Societe::findOrfail($user_societes->societe_id);
+                            
+                            // Récupérer le nom du fichier
+                            $Myfile = $file->getClientOriginalName();
+                            
+                            $directory = public_path('files/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations');
+                            File::makeDirectory($directory, 0755, true, true);
+                            if(!file_exists($directory . '/' . $Myfile)){
+                                $file->move($directory, $Myfile);
+                            }
+                            $fileType = $file->getClientOriginalExtension();
+                            $datapieceJointe = [
+                                'fichier' => $Myfile,
+                                'type' => $fileType,
+                                'reservation_id' => $reservation->id,
+                            ];
+    
+                            $pieceJointeRequest->merge($datapieceJointe);
+                            $piecesJointeController->store($pieceJointeRequest);
+                            
+                        }
+                    }
                     //store new pieces jointes
                 }
                 return response()->json(['reservation' => $reservation], 200);
-            } else {
-                return response()->json(['error' => 'la somme des pourcentage doit être 100%'], 422);
-
-            }
+            
             //return response()->json(['reservation' => $reservation], 200);
         }
         return response()->json(['error', 'Unauthorized'], 401);
