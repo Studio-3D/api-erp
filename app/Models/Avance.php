@@ -38,6 +38,6 @@ class Avance extends Model
     }
     public function piece_jointe()
     {
-        return $this->hasMany(PiecesJointe::class, 'reservation_id');
+        return $this->hasMany(PiecesJointe::class, 'avance_id');
     }
 }

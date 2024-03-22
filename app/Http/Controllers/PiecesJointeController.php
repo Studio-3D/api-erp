@@ -169,6 +169,18 @@ class PiecesJointeController extends Controller
         }
         return response()->json(['error'=>'Unauthorized'],401);
     }
+    public function destoryFileUsingAvanceId($avance_id){
+        if(RoleHelper::ACSup()){
+            DatabaseHelper::Config();
+            $pj=PiecesJointe::on('temp')->where('avance_id',$avance_id)->get();
+            foreach($pj as $p){
+                $p->delete();
+            }
+                return response()->json(['message'=>'PJ deleted successfully'],200);
+
+        }
+        return response()->json(['error'=>'Unauthorized'],401);
+    }
 
 
 }
