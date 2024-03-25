@@ -76,14 +76,14 @@ class UserController extends Controller
     public function get_users()
     {
         if (RoleHelper::Superadmin()) {
-            if(Auth::guard('api')->user()->societe_id == 1){
+            if (Auth::guard('api')->user()->societe_id == 1) {
                 $users = User::all();
                 return response()->json(['users' => $users]);
-            }else{
+            } else {
                 $users = User::where('societe_id', Auth::guard('api')->user()->societe_id)->get();
                 return response()->json(['users' => $users]);
             }
-           
+
         } else if (RoleHelper::Admin()) {
             DatabaseHelper::Config();
             $users = User::on('temp')->get();
@@ -95,21 +95,21 @@ class UserController extends Controller
     public function index(Request $request)
     {
         if (RoleHelper::Superadmin()) {
-            if(Auth::guard('api')->user()->societe_id == 1){
+            if (Auth::guard('api')->user()->societe_id == 1) {
                 $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
                 $page = $request->input('page', 1);
                 $users = User::orderBy('created_at', 'desc')
-                            ->paginate($perPage, ['*'], 'page', $page);
+                    ->paginate($perPage, ['*'], 'page', $page);
                 return response()->json(['users' => $users]);
-            }else{
+            } else {
                 $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
                 $page = $request->input('page', 1);
                 $users = User::where('societe_id', Auth::guard('api')->user()->societe_id)
-                        ->orderBy('created_at', 'desc')
-                        ->paginate($perPage, ['*'], 'page', $page);
+                    ->orderBy('created_at', 'desc')
+                    ->paginate($perPage, ['*'], 'page', $page);
                 return response()->json(['users' => $users]);
             }
-           
+
         } else if (RoleHelper::Admin()) {
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
@@ -135,12 +135,12 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request)
     {
-        if ($request->cin != null) {
-            $cin_exist = User::where('cin', $request->cin)->count();
-            if ($cin_exist > 0) {
-                return response()->json(['error' => 'Le Cin que vous avez saisi' . $request->cin . ' apprtient à un autre utilisateur'], 422);
-            }
+        /*  if ($request->cin != null) {
+        $cin_exist = User::where('cin', $request->cin)->count();
+        if ($cin_exist > 0) {
+        return response()->json(['error' => 'Le Cin que vous avez saisi' . $request->cin . ' apprtient à un autre utilisateur'], 422);
         }
+        } */
         if (RoleHelper::SuperAdmin()) {
             $user = new User();
             $user->name = $request->name;
@@ -163,7 +163,7 @@ class UserController extends Controller
             $user->solde_conge = $request->solde_conge;
 
             if ($request->hasFile('photo')) {
-                $photo = time() . '.' . $request->name. '_' . $request->prenom . '.' . $request->photo->extension();
+                $photo = time() . '.' . $request->name . '_' . $request->prenom . '.' . $request->photo->extension();
                 $user->photo = $photo;
 
             }
@@ -171,7 +171,7 @@ class UserController extends Controller
                 if ($request->hasFile('photo')) {
                     $societe = Societe::findOrfail($user->societe_id);
                     $request->photo->move(public_path('img/' . $societe->raison_sociale_concatene . '_' . $user->societe_id . '/users'), $photo);
-                    
+
                 }
                 $this->createSubUser($request, $user->id, $user->photo);
             }
@@ -219,7 +219,7 @@ class UserController extends Controller
     {
         if (RoleHelper::Superadmin()) {
             $user = User::findOrfail($id);
-            
+
             if ($user) {
                 return response()->json(['user' => $user], 200);
             } else {
@@ -235,12 +235,12 @@ class UserController extends Controller
     }
     public function update(UpdateUserRequest $request, $id)
     {
-        if ($request->cin != null) {
-            $cin_exist = User::where('cin', $request->cin)->where('id', '!=', $id)->count();
-            if ($cin_exist > 0) {
-                return response()->json(['error' => 'Le Cin que vous avez saisi' . $request->cin . ' apprtient à un autre utilisateur'], 422);
-            }
+        /* if ($request->cin != null) {
+        $cin_exist = User::where('cin', $request->cin)->where('id', '!=', $id)->count();
+        if ($cin_exist > 0) {
+        return response()->json(['error' => 'Le Cin que vous avez saisi' . $request->cin . ' apprtient à un autre utilisateur'], 422);
         }
+        } */
         if ($request->is_profil) {
             $user = Auth::user();
             DatabaseHelper::Config();
@@ -269,7 +269,7 @@ class UserController extends Controller
                         unlink($image_path);
                     }
                 }
-                $photo = time() . '.' . $request->name. '_' . $request->prenom  . '.' . $request->photo->extension();
+                $photo = time() . '.' . $request->name . '_' . $request->prenom . '.' . $request->photo->extension();
                 $request->photo->move(public_path('img/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/users'), $photo);
                 $user->photo = $photo;
             }

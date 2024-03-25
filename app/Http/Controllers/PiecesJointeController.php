@@ -54,12 +54,8 @@ class PiecesJointeController extends Controller
             DatabaseHelper::Config();
             $pJ = new PiecesJointe();
             $pJ->setConnection('temp');
-            if ($request->hasFile('fichier')) {
-                $file = time() . '.' . $request->file('fichier')->getClientOriginalName();
-                $request->fichier->move(public_path('img/fichier'), $file);
-                $pJ->fichier = $file;
-                $pJ->type = $request->file('fichier')->getClientOriginalExtension();
-            }
+            $pJ->fichier = $request->fichier;
+            $pJ->type = $request->type;
             $pJ->avance_id = $request->avance_id;
             $pJ->reservation_id = $request->reservation_id;
             if ($pJ->save()) {
@@ -165,6 +161,18 @@ class PiecesJointeController extends Controller
         if(RoleHelper::ACSup()){
             DatabaseHelper::Config();
             $pj=PiecesJointe::on('temp')->where('reservation_id',$reservation_id)->get();
+            foreach($pj as $p){
+                $p->delete();
+            }
+                return response()->json(['message'=>'PJ deleted successfully'],200);
+
+        }
+        return response()->json(['error'=>'Unauthorized'],401);
+    }
+    public function destoryFileUsingAvanceId($avance_id){
+        if(RoleHelper::ACSup()){
+            DatabaseHelper::Config();
+            $pj=PiecesJointe::on('temp')->where('avance_id',$avance_id)->get();
             foreach($pj as $p){
                 $p->delete();
             }

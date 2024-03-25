@@ -28,9 +28,9 @@ class UpdateUserRequest extends FormRequest
             'role' => 'integer',
             'phone' => 'string|min:10|max:14|nullable',
             'photo' => 'image|mimes:png,jpg,jpeg|max:2048',
-           /* 'cin' => [
+           'cin' => [
                 Rule::unique('users')->ignore($this->user),
-            ],*/
+            ],
             'date_embauche' => 'date',
             'cnss' => 'integer|nullable',
             'is_actif' => 'integer',
@@ -38,6 +38,13 @@ class UpdateUserRequest extends FormRequest
             'password' => 'min:6|nullable',
 
 
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'cin.unique' => 'Le Cin que vous avez saisi apprtient à un autre utilisateur',
         ];
     }
 }
