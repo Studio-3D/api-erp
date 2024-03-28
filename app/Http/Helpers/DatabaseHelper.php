@@ -249,6 +249,8 @@ class DatabaseHelper
         foreach ($databases as $database) {
             $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
             DB::statement("DROP DATABASE IF EXISTS `$databaseName`");
+            DB::table('users')->where('societe_id', $database->id)->delete();
+            DB::table('societes')->where('id', $database->id)->delete();
         }
     }
 
