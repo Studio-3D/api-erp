@@ -30,7 +30,7 @@ class SocieteController extends Controller
     public function get_societes()
     {
         if (RoleHelper::Superadmin()) {
-            $societes = Societe::all();
+            $societes = Societe::whereNotIn('id', [1])->get();    
             return response()->json(['societes' => $societes]);
 
         }
