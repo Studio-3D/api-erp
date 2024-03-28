@@ -28,7 +28,7 @@ class DeleteSocieteDatabaseCommand extends Command
      */
     public function handle()
     {
-        $databases = DB::table('societes')->whereNotNull('deleted_at')->get();
+           $databases = DB::table('societes')->whereNotNull('deleted_at')->where('id','!=',1)->get();
         DatabaseHelper::Deletedatabase($databases);
     }
 }
