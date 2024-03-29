@@ -45,8 +45,9 @@ class SocieteController extends Controller
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
 
-            $societes = Societe::orderBy('created_at', 'desc')
-                ->paginate($perPage, ['*'], 'page', $page);
+           $societes = Societe::where('id', '!=', 1)
+                   ->orderBy('created_at', 'desc')
+                   ->paginate($perPage, ['*'], 'page', $page);
 
             return response()->json(['societes' => $societes]);
         }
