@@ -22,7 +22,7 @@ use Carbon\Carbon;
 
 class Bien_Helper
 {
-    
+
     public static function libererBien($id,$text,$dst_id)
 
     {

@@ -50,6 +50,8 @@ return new class extends Migration
         $table->boolean('archive')->default(0)->comment('si desistement rejete apres re create desistement on fait archive=1');
         $table->integer('penalite_id')->nullable();
         $table->String('commentaire')->nullable();
+        $table->String('commentaire_rejete')->nullable();
+        $table->date('date_validation')->nullable();
         $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
         $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
         $table->timestamps();

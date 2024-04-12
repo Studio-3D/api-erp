@@ -30,6 +30,7 @@ return new class extends Migration
         $table->date('date_encaissement')->nullable();
         $table->timestamp('date_validation')->nullable();
         $table->string('commentaire_validation')->nullable();
+        $table->boolean('archive')->default(0)->comment('si desistement rejete apres re create desistement on fait archive=1');
         $table->foreignId('user_id_valider')->nullable()->constrained('users')->onDelete('cascade');
         $table->timestamps();
         $table->softDeletes();

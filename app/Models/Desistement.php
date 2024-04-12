@@ -32,16 +32,40 @@ class Desistement extends Model
     }
     public function Bien_nouveau()
     {
-        return $this->belongsTo(Bien::class,'bien_id');
+        return $this->belongsTo(Bien::class,'bien_id_new');
     }
-    public function aquereurs_desistements()
+    public function banque()
     {
-        return $this->hasMany(AquereurDesistement::class);
+        return $this->belongsTo(Banque::class,'banque_id');
+    }
+    public function aquereurs_desisteurs()
+    {
+        return $this->hasMany(AquereurDesistement::class,'desistement_id')->where('type','desisteur');
+    }
+    public function aquereurs_non_desisteurs()
+    {
+        return $this->hasMany(AquereurDesistement::class,'desistement_id')->where('type','non_desisteur');
+    }
+    public function aquereurs_profits()
+    {
+        return $this->hasMany(AquereurDesistement::class,'desistement_id')->where('type','au_profit');
+    }
+    public function aquereurs_partiel()
+    {
+        return $this->hasMany(AquereurDesistement::class,'desistement_id')->where('type','partiel');
     }
 
+    public function remboursement()
+    {
+        return $this->hasOne(Remboursement::class,'desistement_id');
+    }
 
     public function nouvel_aquereurs_desistements()
     {
         return $this->hasMany(NouvelAquereurDesistement::class)->whereNotNull('desistement_id');
+    }
+    public function penalite_desistement()
+    {
+        return $this->hasOne(PenaliteDesistement::class,'desistement_id');
     }
 }

@@ -61,7 +61,7 @@ class StoreDesistementRequest extends FormRequest
                         if($request->type_remb_transfere=='immediat'){
 
                             $rules['date_remboursement']='required';
-                            $rules['mode_rembursement_transfere']='required';
+                            $rules['mode_remboursement_transfere']='required';
                             $rules['num_paiement_transfere']='required';
                             $rules['pour_le_compte_transfere']='required';
                             if($request->pour_le_compte_transfere=='autre'){
