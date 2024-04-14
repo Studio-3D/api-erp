@@ -72,7 +72,7 @@ class ExcelDataController extends Controller
            
                         foreach($bloc as $blocs)
                         {
-                            $immeuble = Immeuble::where('nom', $tem['immeuble'])->where('tranche_id',  $tranches->id)->where('project_id', $projet_id)->where('bloc_id', $blocs->id)->get(['id']);
+                            $immeuble = Immeuble::where('nom', $item['immeuble'])->where('tranche_id',  $tranches->id)->where('project_id', $projet_id)->where('bloc_id', $blocs->id)->get(['id']);
                             if($immeuble)
                             {
                                 Log::info('immeuble exist ');
