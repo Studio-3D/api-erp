@@ -19,6 +19,7 @@ use App\Enum\TypeDesistementProfit;
 use App\Enum\MotifDesistement;
 use App\Enum\LienParente;
 
+
 class EnumController extends Controller
 {
     /**
@@ -93,7 +94,6 @@ class EnumController extends Controller
     {
         return response()->json(['list' => array_column(EtatBien::cases(), 'name', 'value')]);
     }
-
     /**
      * Show the form for creating a new resource.
      */

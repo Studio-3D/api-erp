@@ -232,7 +232,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('search_client_by_phone/{phone}', [ClientController::class, 'search_client_by_phone']);
     Route::get('ReservationsByClient/{client_id}', [ClientController::class, 'ReservationsByClient']);
     Route::get('VisitesByClient/{client_id}', [ClientController::class, 'VisitesByClient']);
-    
+
 
     /*************************************Aquereurs***************************** */
     Route::resource('aquereur',AquereurController::class);
@@ -297,6 +297,20 @@ Route::middleware('auth:api')->group(function () {
     /********************************DesistemenController*********** */
     Route::resource('desistement',DesistementController::class);
     Route::get('get_historiques_desistement_by_reservation/{code_desistement}', [DesistementController::class,'get_historiques_desistement_by_reservation'])->name('');
+    Route::put('validation_desistement/{id}', [DesistementController::class,'validation_desitement'])->name('');
+    Route::get('get_notif_dst_commercial/{projet_id}', [DesistementController::class,'get_notif_dst_commercial'])->name('');
+    Route::get('get_notif_dst_admin/{projet_id}', [DesistementController::class,'get_notif_dst_admin'])->name('');
+    Route::get('get_desistements/{projet_id}/{type}/{etat}', [DesistementController::class,'get_desistements'])->name('');
+    Route::post('desistement/corriger_desistement', [DesistementController::class,'store'])->name('');
+
+    //penalites
+    Route::get('penalites/{projet_id}/{etat}', [DesistementController::class,'get_all_penalites'])->name('');
+    Route::put('traiter_penalite/{id}',[DesistementController::class,'traiter_penalite'])->name('');
+    Route::get('show_penalite/{id}',[DesistementController::class,'show_penalite'])->name('');
+    Route::post('penalites/corriger_penalite',[DesistementController::class,'corriger_penalite'])->name('');
+    Route::get('get_notif_penalite_admin/{projet_id}', [DesistementController::class,'get_notif_pen_admin'])->name('');
+    Route::get('get_notif_penalite_commercial/{projet_id}', [DesistementController::class,'get_notif_pen_commercial'])->name('');
+    Route::get('get_historiques_penalites/{desistement_id}', [DesistementController::class,'get_historiques_penalites_by_desId'])->name('');
 
 
     /******************************************* */

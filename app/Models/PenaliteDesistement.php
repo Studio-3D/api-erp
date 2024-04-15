@@ -15,7 +15,6 @@ class PenaliteDesistement extends Model
     protected $table='penalites_desistements';
     protected $dates=['deleted_at'];
 
-
     public function desistement(){
         return $this->belongsTo(Desistement::class,'desistement_id');
     }

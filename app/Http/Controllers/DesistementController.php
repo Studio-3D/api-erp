@@ -14,7 +14,9 @@ use Illuminate\Http\Request;
 use App\Enum\TypeDesistement;
 use App\Enum\TypeDesistementProfit;
 use App\Http\Helpers\PaginationHelper;
+use App\Enum\StatutReservationEnum;
 
+use App\Events\NotificationEvent;
 
 use App\Enum\ModePaiement;
 use App\Models\PiecesJointe;
@@ -42,8 +44,9 @@ use App\Http\Requests\StoreAquereurRequest;
 use App\Http\Requests\StoreClientRequest;
 use App\Http\Helpers\Bien_Helper;
 use App\Http\Helpers\HistoriqueBienHelper;
+use DB;
 
-
+use Illuminate\Support\Facades\Config;
 
 
 
@@ -75,6 +78,7 @@ class DesistementController extends Controller
 
     {
         $user = Auth::user();
+        Config::set('broadcasting.default', 'pusher_3');
         if(RoleHelper::AC()){
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -84,7 +88,7 @@ class DesistementController extends Controller
             if($reservation->code_desistement!=null){
               $code_desist_reservation=$reservation->code_desistement;
             }else{
-                $last_code = Reservation::on('temp')->where('etat',1)->orderByRaw("CAST(code_desistement as UNSIGNED) DESC")
+                $last_code = Reservation::on('temp')->orderByRaw("CAST(code_desistement as UNSIGNED) DESC")
                 ->get('code_desistement')->first();
                 if ($last_code->code_desistement!=null) {
                     $code_desist_reservation= $last_code->code_desistement + 1;
@@ -145,8 +149,8 @@ class DesistementController extends Controller
             if (RoleHelper::AdminSup()) {
                 //validé
                 $desistement->statut = 1;
+                $desistement->date_validation=Carbon::now();
             }
-
 
             if($desistement->save()){
 
@@ -181,7 +185,7 @@ class DesistementController extends Controller
                                 $remboursement->date_rembourse=$request->date_remboursement;
                                 $remboursement->mode_rembourse_client=$request->mode_remboursement_transfere;
                                 $remboursement->pour_le_compte=$request->pour_le_compte_transfere;
-                                $remboursement->num_paiement=$request->num_paiement;
+                                $remboursement->num_paiement=$request->num_paiement_transfere;
                                 /*if($request->fichier_autorisation_transfere!=null){
                                     //store_fichier
                                 }
@@ -227,7 +231,7 @@ class DesistementController extends Controller
                                 $remboursement->mode_rembourse=$request->type_remb;
                                 $remboursement->mode_rembourse_client=$request->mode_remboursement;
                                 $remboursement->pour_le_compte=$request->pour_le_compte;
-                                $remboursement->num_paiement=$request->num_paiement_transfere;
+                                $remboursement->num_paiement=$request->num_paiement;
                                 if (RoleHelper::AdminSup()) {
                                     $remboursement->statut=1;
                                 }
@@ -414,12 +418,13 @@ class DesistementController extends Controller
                             $pen->setConnection('temp');
                             $pen->desistement_id=$desistement->id;
                             $pen->num_recu=$num_recu;
-                            if (RoleHelper::AdminSup()) {
+                            $pen->statut=0;
+                            /*if (RoleHelper::AdminSup()) {
                                 //validé
                                 $pen->statut = 1;
                             }else{
                                 $pen->statut=0;
-                            }
+                            }*/
                             $pen->montant=$request->penalite_montant;
                             $pen->montant_par_lettre=$pen_mnt_lettre;
                             $pen->penalite_par=$request->penalite_par;
@@ -444,8 +449,9 @@ class DesistementController extends Controller
                                 if($request->penalite_par=='prix'){
                                    if($pen->echeance!=null){
                                     NotificationHelper::storeNotification(
-                                        '/desistements/show/'.$desistement->id, $pen->echeance,5,'ECHEANCE',Auth::guard('api')->user()->id,null,null,null,$desistement->projet_id,null,$desistement->reservation_id
+                                        '/desistements/penalite/show/'.$pen->id, $pen->echeance,5,'ECHEANCE Pénalité',Auth::guard('api')->user()->id,null,null,null,$desistement->projet_id,null,$desistement->reservation_id
                                     );
+                                    broadcast(new NotificationEvent($pen->id));
                                    }
                                 }
                                 //store pice_jointe_penalite
@@ -482,12 +488,13 @@ class DesistementController extends Controller
                                         $fiche->date = Carbon::now();
                                     }
                                     if($fiche->save()){
-                                        if (RoleHelper::Com()) {
+                                        //if (RoleHelper::Com()) {
                                               //notifiction to admin de valider penalite
                                                     NotificationHelper::storeNotification(
-                                                        '/penalites/show/' . $pen->id, null, 6, 'DEMANDE VALIDATION Pénlite', null, RoleEnum::ADMIN->value, null, null, $desistement->projet_id, null, $desistement->reservation_id
+                                                        'desistements/penalites/show/' . $pen->id, null, 6, 'DEMANDE VALIDATION Pénalité', null, RoleEnum::ADMIN->value, null, null, $desistement->projet_id, null, $desistement->reservation_id
                                                     );
-                                         }
+                                                    broadcast(new NotificationEvent($pen->id));
+                                        // }
                                     }
 
                             }
@@ -495,7 +502,7 @@ class DesistementController extends Controller
                         }
 
                     //store piece jointe
-                     //store archive si rejete et re store nouveau desistement
+
 
 
 
@@ -1025,8 +1032,23 @@ class DesistementController extends Controller
                         NotificationHelper::storeNotification(
                             '/desistements/show/'.$desistement->id, Carbon::now(),9,'Demande Validation desistement',null,RoleEnum::ADMIN->value,null,null,$desistement->projet_id,null,$desistement->reservation_id
                         );
+                        broadcast(new NotificationEvent($desistement->id));
                     }
+
+
             }
+
+              //store archive si rejete et re store nouveau desistement
+              if($request->desistement_id_rejete!=null){
+                $old_desistement=Desistement::on('temp')->findorfail($request->desistement_id_rejete);
+                $old_desistement->archive=1;
+                if($old_desistement->save()){
+                    if($old_desistement->penalite_desistement!=null){
+                        $old_desistement->penalite_desistement->archive=1;
+                        $old_desistement->save();
+                    }
+                }
+             }
 
 
 
@@ -1147,62 +1169,998 @@ class DesistementController extends Controller
 
         }
     }
-    public function index(Request $request)
-    {
-        if(RoleHelper::ACSup()){
-            DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', 5); // Get the number of items per page
-            $page = $request->input('page', 1);
-            $sources = Desistement::on('temp')->orderBy('created_at', 'desc')
-                ->paginate($perPage, ['*'], 'page', $page);
-            return response()->json(['sources' => $sources],200);
-        }
-       else  return response()->json(['error'=>'Unauthorized'], 401);
-    }
+
     /**
      * Display the specified resource.
      */
+
+
     public function show($id)
     {
         if (Auth::guard('api')->check()) {
+            Config::set('broadcasting.default', 'pusher_3');
             DatabaseHelper::Config();
+            $desistement = Desistement::on('temp')->with('aquereurs_desisteurs','aquereurs_non_desisteurs','aquereurs_profits','remboursement','nouvel_aquereurs_desistements','aquereurs_partiel','Bien_nouveau','banque','penalite_desistement')->findOrFail($id);
+            $reservation_ancien=Reservation::on('temp')->findorfail($desistement->reservation_id);
+            $sum_avances_valides_ancien=0;
+            //si dossier desiste
+            if($reservation_ancien->etat>1){
+               foreach($reservation_ancien->avances_desist as $av){
+                   //avance validé
+                   if($av->statut==StatutReservationEnum::Validé->value){
+                       $sum_avances_valides_ancien+=$av->montant;
+                   }
+                }
 
-            return response()->json([], 200);
+            }else{
+               foreach($reservation_ancien->avances as $av){
+                   //avance validé
+                   if($av->statut==StatutReservationEnum::Validé->value){
+                       $sum_avances_valides_ancien+=$av->montant;
+                   }
+                }
+            }
+              //get nom propriete _dite_bien concat utilisé
+              $propriete=null;
+              if($desistement->bien_id_new!=null){
+                $bien=new VisiteController();
+                $propriete= $bien->get_propriete_bien_concat($desistement->bien_id_new);
+              }
+            return response()->json(['desistement' => $desistement,'sum_avances_valides_ancien'=>$sum_avances_valides_ancien,'propriete_dite_bien' => $propriete], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
+    public function validation_desitement($id,Request $request){
+        if(RoleHelper::AdminSup()){
+            Config::set('broadcasting.default', 'pusher_3');
+            DatabaseHelper::Config();
+            $desistement = Desistement::on('temp')->findOrFail($id);
+            $reservation = Reservation::on('temp')->findOrFail($desistement->reservation_id);
+            $remboursement=Remboursement::on('temp')->where('desistement_id',$id)->get()->first();
+
+            //valider
+            if($request->statut==1){
+                //etape validation
+                $code_desist_reservation=0;
+                if($reservation->code_desistement!=null){
+                  $code_desist_reservation=$reservation->code_desistement;
+                }else{
+                    $last_code = Reservation::on('temp')->where('etat',1)->orderByRaw("CAST(code_desistement as UNSIGNED) DESC")
+                    ->get('code_desistement')->first();
+                    if ($last_code->code_desistement!=null) {
+                        $code_desist_reservation= $last_code->code_desistement + 1;
+                    } else {
+                        $code_desist_reservation = 1;
+                    }
+
+                }
+                if($desistement->type==TypeDesistement::Désistement_Définitif->value){
+                    //update eta de reservation
+                    $reservation->setConnection('temp');
+                    $reservation->etat=EtatReservationEnum::desist_definitif->value ;
+                    $reservation->code_desistement=$code_desist_reservation;
+
+                    if($reservation->save()){
+                        //soft_delete_avances
+                        $avanceController = new AvanceController();
+                        $avanceController->soft_destroy_avances_by_reservationId($desistement->reservation_id);
+                        //soft delete aquereurs
+                        $aquController = new AquereurController();
+                        $aquController->soft_destroy_aqueureurs_by_reservationId($desistement->reservation_id);
+                        //set piece jointe etat=0
+                        $pjController = new PiecesJointeController();
+                        $pjController->soft_destroy_pj_by_reservationId($desistement->reservation_id);
+                        //set bien disponible et desistement_id
+                        Bien_Helper::libererBien($desistement->bien_id_ancien,null,$desistement->id);
+                        //si sum_avances >0
+                        if($remboursement!=null){
+
+                                    if($remboursement->mode_rembourse=='transfert' || $remboursement->mode_rembourse=='transfert_rem_direct'||$remboursement->mode_rembourse=='transfert_rem_apres_vente' ){
+                                        //store avance
+
+                                        $avanceController = new AvanceController();
+                                        $avanceRequest = new StoreAvanceRequest();
+
+                                        $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
+                                        if($remboursement->mode_rembourse=='transfert_rem_direct'||$remboursement->mode_rembourse=='transfert_rem_apres_vente'){
+                                            $montant=$remboursement->montant_transfert;
+                                            $mnt_lettre = $inWords->format($montant);
+                                        }else{
+                                            $montant=$remboursement->s_avances;
+                                            $mnt_lettre = $inWords->format($montant);
+                                        }
+                                        $dataAvance = [
+                                            //addedd
+                                            'desistement_id'=>$id,
+                                            'dossier_id_transfert'=>$desistement->reservation_id,
+                                            'reservation_id'=> $remboursement->dossier_id_transfert,
+                                            /////
+                                            'sr' => false,
+                                            'type_encaissement' => 1,
+                                            'montant' => $montant,
+                                        // 'mode_transfert' => $mode_transfert,
+                                            'mode_paiement' => ModePaiement::transfert_dossier->value,
+                                            'numero_paiement' => null,
+                                            'date_reglement' => Carbon::now(),
+                                            'echeance' => null,
+                                            'banque_id' => null,
+                                            'montant_par_lettre' => $mnt_lettre,
+                                            'commentaireAvance' => null,
+                                            'num_remise' => null,
+                                            'date_encaissement' =>null,
+
+                                        ];
+                                        $avanceRequest->merge($dataAvance);
+                                        $avanceController->store($avanceRequest);
+                                        //send piece jointes
+                                    }
+                            //validation desistement
+                            $desistement->reservation_id_new=$desistement->reservation_id;
+
+                            if($desistement->save()){
+                                //store Historique Désistement
+                                    //test si res_id exist deja en table historique
+                                    $histo_count=HistoriqueDesistement::on('temp')->where('reservation_id',$desistement->reservation_id)->count();
+                                    if($histo_count==0){
+                                        $this->store_historique_desistement($desistement->reservation_id,null,$desistement->bien_id_ancien,$code_desist_reservation,$reservation->created_at);
+                                    }
+                                    // store histo desi
+                                    $this->store_historique_desistement(null,$desistement->id,$desistement->bien_id_ancien,$code_desist_reservation,Carbon::now());
+                            }
+                        }
+                    }
+                }
+            //DP
+            elseif($desistement->type==TypeDesistement::Désistement_Au_Profit->value){
+
+                    //dp_proche//dp_co
+                    if($desistement->type_dp==TypeDesistementProfit::Désistement_AU_PROFIT_UN_PROCHE->value||$desistement->type_dp==TypeDesistementProfit::Désistement_AU_PROFIT_UN_CO_RESERVATAIRE->value){
+                        $aq_non_desisteur=AquereurDesistement::on('temp')->where('desistement_id',$id)->where('type','non_desisteur')->get();
+                        $nouvel_aqu=NouvelAquereurDesistement::on('temp')->where('desistement_id',$id)->get();
+                        $les_au_profit=AquereurDesistement::on('temp')->where('desistement_id',$id)->where('type','au_profit')->get();
+
+                    }else{
+                        //partiel
+                        $les_partiel=AquereurDesistement::on('temp')->where('desistement_id',$id)->where('type','partiel')->get();
+                        $nouvel_aqu=NouvelAquereurDesistement::on('temp')->where('desistement_id',$id)->get();
+                    }
+
+
+                    $resv_ancien = Reservation::on('temp')->findOrFail($desistement->reservation_id);
+                    //coppier ancien reservation meme code _reservation
+                    $resv_new = $resv_ancien->replicate();
+                    $resv_new->setConnection('temp');
+                    $resv_new->ancien_id = $resv_ancien->id;
+                    $resv_new->code_reservation= $resv_ancien->code_reservation;
+                    $resv_new->code_desistement=$code_desist_reservation;
+                    $resv_new->etat= 1;
+                    if($desistement->type_dp==TypeDesistementProfit::Désistement_AU_PROFIT_UN_PROCHE->value){
+                        $resv_new->nb_acquereurs = count($aq_non_desisteur)+count($nouvel_aqu);
+                    }elseif($desistement->type_dp==TypeDesistementProfit::Désistement_AU_PROFIT_UN_CO_RESERVATAIRE->value){
+                        $resv_new->nb_acquereurs = count($aq_non_desisteur)+count($les_au_profit);
+                    }
+                    elseif($desistement->type_dp==TypeDesistementProfit::Désistement_Partiel->value){
+                        $resv_new->nb_acquereurs = count($les_partiel)+count($nouvel_aqu);
+                    }
+
+                    $resv_new->created_at = Carbon::now();
+                    $resv_new->updated_at = Carbon::now();
+                    if($resv_new->save()){
+                        //set resv ancien etat
+                        $resv_ancien->setConnection('temp');
+                        if($desistement->type_dp==TypeDesistementProfit::Désistement_AU_PROFIT_UN_PROCHE->value){
+                            $resv_ancien->etat=EtatReservationEnum::desist_profit_proche->value;
+                        }elseif($desistement->type_dp==TypeDesistementProfit::Désistement_AU_PROFIT_UN_CO_RESERVATAIRE->value){
+                            $resv_ancien->etat=EtatReservationEnum::desist_profit_co->value;
+
+                        }elseif($desistement->type_dp==TypeDesistementProfit::Désistement_Partiel->value){
+                            $resv_ancien->etat=EtatReservationEnum::desist_partiel->value;
+                        }
+                        $resv_ancien->code_desistement=$code_desist_reservation;
+
+                        if($resv_ancien->save()){
+                            //replicate piece jointe
+                            $pj_ancien = PiecesJointe::on('temp')->where('reservation_id',$desistement->reservation_id)->get();
+                            if(count($pj_ancien)>0){
+                                foreach($pj_ancien as $pj_old){
+                                    $pj_new = $pj_old->replicate();
+                                    $pj_new->setConnection('temp');
+                                    $pj_new->reservation_id = $resv_new->id;
+                                    $pj_new->created_at = Carbon::now();
+                                    $pj_new->updated_at = Carbon::now();
+                                    if($pj_new->save()){
+                                        $pj_old->delete();
+                                    }
+                                }
+                            }
+
+                            //replicate avance
+                            $av_ancien = Avance::on('temp')->where('reservation_id',$desistement->reservation_id)->get();
+                            if(count($av_ancien)>0){
+                                foreach($av_ancien as $av_old){
+                                    $av_new = $av_old->replicate();
+                                    $av_new->setConnection('temp');
+                                    $av_new->reservation_id = $resv_new->id;
+                                    $av_new->reservation_id_ancien = $desistement->reservation_id;
+                                    $av_new->desistement_id = $desistement->id;
+                                    $av_new->ancien_recu = $av_old->num_recu;
+                                    $last_num_recu = Avance::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")
+                                    ->get('num_recu')->first();
+                                    if ($last_num_recu!=null) {
+                                        $n_recu = $last_num_recu->num_recu + 1;
+                                        $av_new->num_recu = '00' . $n_recu . '';
+                                    } else {
+                                        $av_new->num_recu = '001';
+                                    }
+                                    $av_new->created_at = Carbon::now();
+                                    $av_new->updated_at = Carbon::now();
+                                    if($av_new->save()){
+                                        $av_old->delete();
+                                    }
+                                }
+                            }
+                            //soft delete ancien aquereurs
+                            $aquController = new AquereurController();
+                            $aquController->soft_destroy_aqueureurs_by_reservationId($desistement->reservation_id);
+
+                        }
+                        if($desistement->type_dp==TypeDesistementProfit::Désistement_AU_PROFIT_UN_PROCHE->value){
+                            //store les non desisteur
+                            $aqu_non_desist_Controller = new AquereurController();
+                            $aquRequest = new StoreAquereurRequest();
+                            if (count($aq_non_desisteur)>0) {
+                                foreach ($aq_non_desisteur as $aq_nfo) {
+                                    $dataAquereur = [
+                                        'pourcentage' => $aq_nfo->pourcentage,
+                                        'client_id' => $aq_nfo->client_id,
+                                        'reservation_id' => $resv_new->id,
+                                    ];
+                                    $aquRequest->merge($dataAquereur);
+                                    $aqu_non_desist_Controller->store($aquRequest);
+                                }
+                            }
+                            //store les new clients
+                            $clientController = new ClientController();
+                            $clientRequest = new StoreClientRequest();
+                            $aquereurController = new AquereurController();
+                            $aquereurRequest = new StoreAquereurRequest();
+                                if(count($nouvel_aqu)>0){
+                                foreach ($nouvel_aqu as $info) {
+                                    $client_exist=Client::on('temp')->where('cin',$info->cin)->orderBy('created_at', 'DESC')->get()->first();
+
+                                        if($client_exist!=null){
+                                            $clientData =$client_exist;
+                                        }else{
+                                            // si est un prospect
+                                            $prospect_exist = Prospect::on('temp')->where(function($query) use ($info) {
+                                            $query->where('telephone',$info->telephone)
+                                                ->orwhere('telephone_num2',$info->telephone)
+                                                ->orwhere('cin',$info->cin)
+                                                ;})
+                                                ->get()->first();
+                                            if($prospect_exist!=null){
+                                                $dataClient= [
+                                                    'cin'=>$info->cin,
+                                                    'nom'=>$info->nom,
+                                                    'prenom'=>$info->prenom,
+                                                    'telephone_num1'=>$info->telephone,
+                                                    'telephone_num2'=>$prospect_exist->telephone_num2,
+                                                    'notifie'=>$prospect_exist->notifie,
+                                                    'civilite'=>'Mr',
+                                                    'situation_familliale'=>'Célibataire',
+                                                    'type_client'=>1,
+                                                ];
+                                            }else{
+                                                //new client
+                                                $dataClient= [
+                                                    'cin'=>$info->cin,
+                                                    'nom'=>$info->nom,
+                                                    'prenom'=>$info->prenom,
+                                                    'telephone_num1'=>$info->telephone,
+                                                    'telephone_num2'=>null,
+                                                    'notifie'=>0,
+                                                    'civilite'=>'Mr',
+                                                    'situation_familliale'=>'Célibataire',
+                                                    'type_client'=>1,
+                                                ];
+                                            }
+
+                                            $clientRequest->merge($dataClient);
+                                            $clientData = $clientController->store($clientRequest);
+                                        }
+                                        $dataAquereur = [
+                                            'pourcentage' => $info->pourcentage,
+                                            'client_id' => $clientData->id,
+                                            'reservation_id' => $resv_new->id,
+                                        ];
+                                        $aquereurRequest->merge($dataAquereur);
+                                        $aquereurController->store($aquereurRequest);
+                                }
+                            }
+                        }
+                        elseif($desistement->type_dp==TypeDesistementProfit::Désistement_AU_PROFIT_UN_CO_RESERVATAIRE->value){
+                            //store les non desisteur
+                            $aqu_non_desist_Controller = new AquereurController();
+                            $aquRequest = new StoreAquereurRequest();
+                            if (count($aq_non_desisteur)>0) {
+                                foreach ($aq_non_desisteur as $aq_nfo) {
+                                    $dataAquereur = [
+                                        'pourcentage' => $aq_nfo->pourcentage,
+                                        'client_id' => $aq_nfo->client_id,
+                                        'reservation_id' => $resv_new->id,
+                                    ];
+                                    $aquRequest->merge($dataAquereur);
+                                    $aqu_non_desist_Controller->store($aquRequest);
+                                }
+                            }
+                            //store les au profit + new pourcenage
+                            $aqu_profit_Controller = new AquereurController();
+                            $aquRequest_pr = new StoreAquereurRequest();
+                            if (count($les_au_profit)>0) {
+                                foreach ($les_au_profit as $aq_nfo) {
+                                    //get old pourcentage
+                                    $aquer_old_percent=Aquereur::on('temp')->onlyTrashed()->findorfail($aq_nfo->aq_id);
+                                    $dataAquereur = [
+                                        'pourcentage' => $aq_nfo->pourcentage+$aquer_old_percent->pourcentage,
+                                        'client_id' => $aq_nfo->client_id,
+                                        'reservation_id' => $resv_new->id,
+                                    ];
+                                    $aquRequest_pr->merge($dataAquereur);
+                                    $aqu_profit_Controller->store($aquRequest_pr);
+                                }
+                            }
+                        }
+                        elseif($desistement->type_dp==TypeDesistementProfit::Désistement_Partiel->value){
+                            //store les desisteur partiel
+                            $les_partiel_Controller = new AquereurController();
+                            $aquRequest = new StoreAquereurRequest();
+                            if (count($les_partiel)>0) {
+                                foreach ($les_partiel as $aq_nfo) {
+                                    $dataAquereur = [
+                                        'pourcentage' => $aq_nfo->pourcentage,
+                                        'client_id' => $aq_nfo->client_id,
+                                        'reservation_id' => $resv_new->id,
+                                    ];
+                                    $aquRequest->merge($dataAquereur);
+                                    $les_partiel_Controller->store($aquRequest);
+                                }
+                            }
+                            //store les new clients partiel
+                            $clientController = new ClientController();
+                            $clientRequest = new StoreClientRequest();
+                            $aquereurController = new AquereurController();
+                            $aquereurRequest = new StoreAquereurRequest();
+                                if(count($nouvel_aqu)>0){
+                                foreach ($nouvel_aqu as $info) {
+                                    $client_exist=Client::on('temp')->where('cin',$info->cin)->orderBy('created_at', 'DESC')->get()->first();
+
+                                        if($client_exist!=null){
+                                            $clientData =$client_exist;
+                                        }else{
+                                            // si est un prospect
+                                            $prospect_exist = Prospect::on('temp')->where(function($query) use ($info) {
+                                            $query->where('telephone',$info->telephone)
+                                                ->orwhere('telephone_num2',$info->telephone)
+                                                ->orwhere('cin',$info->cin)
+                                                ;})
+                                                ->get()->first();
+                                            if($prospect_exist!=null){
+                                                $dataClient= [
+                                                    'cin'=>$info->cin,
+                                                    'nom'=>$info->nom,
+                                                    'prenom'=>$info->prenom,
+                                                    'telephone_num1'=>$info->telephone,
+                                                    'telephone_num2'=>$prospect_exist->telephone_num2,
+                                                    'notifie'=>$prospect_exist->notifie,
+                                                    'civilite'=>'Mr',
+                                                    'situation_familliale'=>'Célibataire',
+                                                    'type_client'=>1,
+                                                ];
+                                            }else{
+                                                //new client
+                                                $dataClient= [
+                                                    'cin'=>$info->cin,
+                                                    'nom'=>$info->nom,
+                                                    'prenom'=>$info->prenom,
+                                                    'telephone_num1'=>$info->telephone,
+                                                    'telephone_num2'=>null,
+                                                    'notifie'=>0,
+                                                    'civilite'=>'Mr',
+                                                    'situation_familliale'=>'Célibataire',
+                                                    'type_client'=>1,
+                                                ];
+                                            }
+
+                                            $clientRequest->merge($dataClient);
+                                            $clientData = $clientController->store($clientRequest);
+                                        }
+                                        $dataAquereur = [
+                                            'pourcentage' => $info->pourcentage,
+                                            'client_id' => $clientData->id,
+                                            'reservation_id' => $resv_new->id,
+                                        ];
+                                        $aquereurRequest->merge($dataAquereur);
+                                        $aquereurController->store($aquereurRequest);
+                                }
+                            }
+                        }
+                        //validation du desistement et add reservation_id_new
+                            $desistement->reservation_id_new=$resv_new->id;
+                            if($desistement->save()){
+
+                                /**store Historique */
+                                  //test si res_id exist deja en table historique
+                                  $histo_count_res_ancien=HistoriqueDesistement::on('temp')->where('reservation_id',$desistement->reservation_id)->count();
+                                  if($histo_count_res_ancien==0){
+                                      $this->store_historique_desistement($desistement->reservation_id,null,$desistement->bien_id_ancien,$code_desist_reservation,$reservation->created_at);
+                                  }
+                                  // store histo desi
+                                  $this->store_historique_desistement(null,$desistement->id,$desistement->bien_id_ancien,$code_desist_reservation,Carbon::now());
+                                  //store histo res_new
+                                  $this->store_historique_desistement($resv_new->id,null,$desistement->bien_id_ancien,$code_desist_reservation,Carbon::now());
+
+                            }
+                    }
+
+            }
+            //CHANGEMENT DE BIEN
+
+            elseif($desistement->type==TypeDesistement::Changement_De_Bien->value){
+                //set bien Pré-Réservé
+                $bien_c=new BienController();
+                $bien_c->prereserverBien($desistement->bien_id_new,null,null);
+                //replicate reservation
+                $resv_ancien = Reservation::on('temp')->findOrFail($desistement->reservation_id);
+                //coppier ancien reservation meme code _reservation
+                $resv_new = $resv_ancien->replicate();
+                $resv_new->setConnection('temp');
+                $resv_new->ancien_id = $resv_ancien->id;
+                $resv_new->bien_id = $desistement->bien_id_new;
+                $resv_new->code_reservation= $resv_ancien->code_reservation;
+                $resv_new->etat= 1;
+                $resv_new->created_at = Carbon::now();
+                $resv_new->updated_at = Carbon::now();
+                $resv_new->code_desistement=$code_desist_reservation;
+
+                if($resv_new->save()){
+                    //set resv ancien etat
+                    $resv_ancien->setConnection('temp');
+                    $resv_ancien->etat=EtatReservationEnum::desist_change_bien->value;
+                    $resv_ancien->code_desistement=$code_desist_reservation;
+
+                    if($resv_ancien->save()){
+                        //replicate piece jointe
+                        $pj_ancien = PiecesJointe::on('temp')->where('reservation_id',$desistement->reservation_id)->get();
+                        if(count($pj_ancien)>0){
+                            foreach($pj_ancien as $pj_old){
+                                $pj_new = $pj_old->replicate();
+                                $pj_new->setConnection('temp');
+                                $pj_new->reservation_id = $resv_new->id;
+                                $pj_new->created_at = Carbon::now();
+                                $pj_new->updated_at = Carbon::now();
+                                if($pj_new->save()){
+                                    $pj_old->delete();
+                                }
+                            }
+                        }
+
+                        //replicate avance
+                        $av_ancien = Avance::on('temp')->where('reservation_id',$desistement->reservation_id)->get();
+                        if(count($av_ancien)>0){
+                            foreach($av_ancien as $av_old){
+                                $av_new = $av_old->replicate();
+                                $av_new->setConnection('temp');
+                                $av_new->reservation_id = $resv_new->id;
+                                $av_new->reservation_id_ancien = $desistement->reservation_id;
+                                $av_new->desistement_id = $desistement->id;
+                                $av_new->ancien_recu = $av_old->num_recu;
+                                $last_num_recu = Avance::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")
+                                ->get('num_recu')->first();
+                                if ($last_num_recu!=null) {
+                                    $n_recu = $last_num_recu->num_recu + 1;
+                                    $av_new->num_recu = '00' . $n_recu . '';
+                                } else {
+                                    $av_new->num_recu = '001';
+                                }
+                                $av_new->created_at = Carbon::now();
+                                $av_new->updated_at = Carbon::now();
+                                if($av_new->save()){
+                                    $av_old->delete();
+                                }
+                            }
+                        }
+                      //replicate piece jointe
+                      $old_aqu_s = Aquereur::on('temp')->where('reservation_id',$desistement->reservation_id)->get();
+                      if(count($old_aqu_s)>0){
+                          foreach($old_aqu_s as $aq_old){
+                              $aq_new = $aq_old->replicate();
+                              $aq_new->setConnection('temp');
+                              $aq_new->reservation_id = $resv_new->id;
+                              $aq_new->created_at = Carbon::now();
+                              $aq_new->updated_at = Carbon::now();
+                              if($aq_new->save()){
+                                  $aq_old->delete();
+                              }
+                          }
+                      }
+
+                    }
+                    //if(montant_a_ajouter >0)
+                    if($desistement->montant_a_ajouter>0){
+
+                        //store avance
+                        $avanceController = new AvanceController();
+                        $avanceRequest = new StoreAvanceRequest();
+
+                        $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
+                        $montant=$desistement->montant_a_ajouter;
+                        $mnt_lettre = $inWords->format($montant);
+                        $dataAvance = [
+                            //addedd
+                            'desistement_id'=>$desistement->id,
+                            'dossier_id_transfert'=>null,
+                            'reservation_id'=>$resv_new->id,
+                            /////
+                            'sr' => (bool)$desistement->sr,
+                            'type_encaissement' => 1,
+                            'montant' => $montant,
+                            'mode_paiement' => $desistement->mode_paiement,
+                            'numero_paiement' => $desistement->numero_paiement,
+                            'date_reglement' => Carbon::now(),
+                            'echeance' => $desistement->echeance,
+                            'banque_id' => $desistement->banque_id,
+                            'montant_par_lettre' => $mnt_lettre,
+                            'commentaireAvance' => null,
+                            'num_remise' => null,
+                            'date_encaissement' =>null,
+
+                        ];
+                        $avanceRequest->merge($dataAvance);
+                        $avanceController->store($avanceRequest);
+                        }
+                        //send piece jointes
+                    }
+
+                    //libration de l'ancien bien
+                    Bien_Helper::libererBien($desistement->bien_id_ancien,null,$desistement->id);
+
+
+
+             //validation du desistement et add reservation_id_new
+                 $desistement->reservation_id_new=$resv_new->id;
+                if($desistement->save()){
+                                /**store Historique */
+                                  //test si res_id exist deja en table historique
+                                  $histo_count_res_ancien=HistoriqueDesistement::on('temp')->where('reservation_id',$desistement->reservation_id)->count();
+                                  if($histo_count_res_ancien==0){
+                                      $this->store_historique_desistement($desistement->reservation_id,null,$desistement->bien_id_ancien,$code_desist_reservation,$reservation->created_at);
+                                  }
+                                  // store histo desi
+                                  $this->store_historique_desistement(null,$desistement->id,$desistement->bien_id_ancien,$code_desist_reservation,Carbon::now());
+                                  //store histo res_new
+                                  $this->store_historique_desistement($resv_new->id,null,$desistement->bien_id_ancien,$code_desist_reservation,Carbon::now());
+
+                }
+            }
+            $desistement->statut=1;
+            $desistement->date_validation=Carbon::now();
+
+            if( $desistement->save()){
+                    //desistement validé
+                    NotificationHelper::storeNotification(
+                        '/desistements/show/'.$desistement->id, Carbon::now(),11,'desistement validé',null,RoleEnum::ADMIN->value,null,null,$desistement->projet_id,null,$desistement->reservation_id
+                    );
+                    broadcast(new NotificationEvent($desistement->id));
+            }
+
+            }else{
+                //rejeter
+                $desistement->statut=$request->statut;
+                $desistement->commentaire_rejete=$request->commentaire;
+                $desistement->date_validation=Carbon::now();
+
+                if($desistement->save()){
+                     //desistement validé
+                     NotificationHelper::storeNotification(
+                        '/desistements/corriger_desistement/'.$desistement->id, Carbon::now(),11,'desistement rejeté',null,RoleEnum::ADMIN->value,null,null,$desistement->projet_id,null,$desistement->reservation_id
+                    );
+                    broadcast(new NotificationEvent($desistement->id));
+                }
+            }
+
+            return response()->json('données enregistrés avec success');
+        } else  return response()->json(['error'=>'Unauthorized'], 401);
+    }
+    public function get_notif_dst_commercial($projet_id){
+        $user = Auth::user();
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $nb_desistement_valide = Desistement::on('temp')->where('archive',0)->where('projet_id',$projet_id)->where('statut',1)->where('user_id', $userAuth->value('id'))->whereDate('date_validation', Carbon::now())->count();
+            $nb_desistement_rejete = Desistement::on('temp')->where('archive',0)->where('projet_id',$projet_id)->where('statut',2)->where('user_id', $userAuth->value('id'))->whereDate('date_validation', Carbon::now())->count();
+            //$nb_desistement_encours = Desistement::on('temp')->where('projet_id',$projet_id)->where('statut',0)->where('user_id', $userAuth->value('id'))->count();
+
+            //par type
+            $nb_desistement_valide_par_type =Desistement::on('temp')->select(DB::raw('count(id) as nb_dst,type,type_dp'))
+            ->where('projet_id',$projet_id)->where('archive',0)->where('statut',1)->where('user_id', $userAuth->value('id'))->whereDate('date_validation', Carbon::now())->groupBy('type','type_dp')->get();
+            $nb_desistement_rejete_par_type =Desistement::on('temp')->select(DB::raw('count(id) as nb_dst,type,type_dp'))
+            ->where('projet_id',$projet_id)->where('archive',0)->where('statut',2)->where('user_id', $userAuth->value('id'))->whereDate('date_validation', Carbon::now())->groupBy('type','type_dp')->get();
+           /* $nb_desistement_encours_par_type =Desistement::on('temp')->select(DB::raw('count(id) as nb_dst,type,type_dp'))
+            ->where('projet_id',$projet_id)->where('statut',0)->where('user_id', $userAuth->value('id'))->groupBy('type','type_dp')->get();*/
+
+
+
+            return response()->json(['nb_dst_valide'=>$nb_desistement_valide,
+            'nb_dst_rejete'=>$nb_desistement_rejete,
+            //'nb_dst_encours'=>$nb_desistement_encours,
+            'nb_desistement_valide_par_type'=>$nb_desistement_valide_par_type,
+            'nb_desistement_rejete_par_type'=>$nb_desistement_rejete_par_type,
+            //'nb_desistement_encours_par_type'=>$nb_desistement_encours_par_type
+        ]);
+        } else  return response()->json(['error'=>'Unauthorized'], 401);
+    }
+    public function get_notif_dst_admin($projet_id){
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $nb_desistement_att_valide = Desistement::on('temp')->where('archive',0)->where('projet_id',$projet_id)->where('statut',0)->count();
+            //nb_des desistement par type
+            $nb_desistement_att_valide_par_type =Desistement::on('temp')->select(DB::raw('count(id) as nb_dst,type,type_dp'))
+            ->where('projet_id',$projet_id)->where('archive',0)->where('statut',0)->groupBy('type','type_dp')->get();
+
+            return response()->json(['nb_dst_att_valide'=>$nb_desistement_att_valide,'nb_dst_att_valide_par_type'=>$nb_desistement_att_valide_par_type]);
+        } else  return response()->json(['error'=>'Unauthorized'], 401);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateVueRequest $request,$id)
-    {
-        if(RoleHelper::ACSup()){
-            DatabaseHelper::Config();
 
-            return response()->json([],200);
+    public function get_desistements(Request $request,$projet_id,$type,$statut)
+    {
+        $perPage = $request->input('pageSize', 5); // Get the number of items per page
+        $page = $request->input('page', 1);
+        $type_e=null;
+        $type_e_dp=null;
+        if($type=='dst_definitif'){
+            $type_e=TypeDesistement::Désistement_Définitif->value;
+        }elseif($type=='change_bien'){
+            $type_e=TypeDesistement::Changement_De_Bien->value;
+        }else{
+            if( $type=='dp_co'){
+                $type_e_dp=TypeDesistementProfit::Désistement_AU_PROFIT_UN_CO_RESERVATAIRE->value;
+                $type_e=TypeDesistement::Désistement_Au_Profit->value;
+            }
+            else if( $type=='dp_proche'){
+                $type_e_dp=TypeDesistementProfit::Désistement_AU_PROFIT_UN_PROCHE->value;
+                $type_e=TypeDesistement::Désistement_Au_Profit->value;
+            }
+            else if( $type=='dp_partiel'){
+                $type_e_dp=TypeDesistementProfit::Désistement_Partiel->value;
+                $type_e=TypeDesistement::Désistement_Au_Profit->value;
+            }
         }
-        else {
+
+        //att de validation(admin)==>encours(commercial)
+        if($statut==5){
+            $statut=0;
+        }
+
+        if(RoleHelper::AdminSup()){
+            DatabaseHelper::Config();
+            $desistements = Desistement::on('temp')->with('penalite_desistement','remboursement','nouvel_aquereurs_desistements','aquereurs_desisteurs','aquereurs_profits','aquereurs_partiel','Bien_nouveau')->orderBy('created_at', 'desc')
+                ->where('statut',$statut)
+                ->where('type',$type_e)
+                ->where('type_dp',$type_e_dp)
+                ->where('projet_id',$projet_id)
+                ->where('archive',0)
+                ->paginate($perPage, ['*'], 'page', $page);
+                return response()->json(['desistements' => $desistements],200);
+
+        }elseif(RoleHelper::Com()){
+            DatabaseHelper::Config();
+             $user = Auth::user();
+         $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $desistements = Desistement::on('temp')->with('penalite_desistement','remboursement','nouvel_aquereurs_desistements','aquereurs_desisteurs','aquereurs_profits','aquereurs_partiel','Bien_nouveau')->orderBy('created_at', 'desc')
+                ->where('statut',$statut)
+                ->where('type',$type_e)
+                ->where('user_id', $userAuth->value('id'))
+                ->where('type_dp',$type_e_dp)
+                ->where('projet_id',$projet_id)
+                ->where('archive',0)
+                ->paginate($perPage, ['*'], 'page', $page);
+                return response()->json(['desistements' => $desistements],200);
+        }
+
+      // else  return response()->json(['error'=>'Unauthorized'], 401);
+    }
+
+    /**************************************Penalites***************************************/
+
+    public function get_historiques_penalites_by_desId($desistement_id){
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $penalites = PenaliteDesistement::on('temp')->with('banque')
+            //->where('archive',0)
+            ->where('desistement_id',$desistement_id)
+            ->orderBy('created_at','asc')->get();
+            return response()->json(['penalites'=>$penalites ]);
+        } else  return response()->json(['error'=>'Unauthorized'], 401);
+    }
+    public function get_notif_pen_commercial($projet_id){
+        $user = Auth::user();
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $nb_pen_valide = PenaliteDesistement::on('temp')->join('desistements', 'desistements.id', '=', 'penalites_desistements.desistement_id')
+            ->where('penalites_desistements.archive',0)
+            ->where('desistements.archive',0)
+            ->where('desistements.projet_id',$projet_id)
+            ->where('penalites_desistements.statut',1)
+            ->where('desistements.user_id', $userAuth->value('id'))
+            ->whereDate('penalites_desistements.date_validation', Carbon::now())->count();
+
+            $nb_pen_rejete =PenaliteDesistement::on('temp')->join('desistements', 'desistements.id', '=', 'penalites_desistements.desistement_id')
+            ->where('penalites_desistements.archive',0)
+            ->where('desistements.archive',0)
+            ->where('desistements.projet_id',$projet_id)
+            ->where('penalites_desistements.statut',2)
+            ->where('desistements.user_id', $userAuth->value('id'))
+            ->count();
+
+
+            return response()->json(['nb_pen_valide'=>$nb_pen_valide,
+            'nb_pen_rejete'=>$nb_pen_rejete,
+        ]);
+        } else  return response()->json(['error'=>'Unauthorized'], 401);
+    }
+
+    public function get_notif_pen_admin($projet_id){
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $nb_pen_att_valide = PenaliteDesistement::on('temp')->join('desistements', 'desistements.id', '=', 'penalites_desistements.desistement_id')
+            ->where('penalites_desistements.archive',0)
+            ->where('desistements.archive',0)
+            ->where('desistements.projet_id',$projet_id)->where('penalites_desistements.statut',0)->count();
+
+
+            return response()->json(['nb_pen_att_valide'=>$nb_pen_att_valide]);
+        } else  return response()->json(['error'=>'Unauthorized'], 401);
+    }
+
+    public function corriger_penalite(Request $request){
+        $user = Auth::user();
+        Config::set('broadcasting.default', 'pusher_3');
+        if(RoleHelper::AC()){
+            DatabaseHelper::Config();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $penalite = new PenaliteDesistement();
+            $penalite->setConnection('temp');
+                $num_recu=null;
+                $last_num_recu = PenaliteDesistement::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")
+                ->get('num_recu')->first();
+                if ($last_num_recu!=null) {
+                    $n_recu = $last_num_recu->num_recu + 1;
+                    $num_recu = '00' . $n_recu . '';
+                } else {
+                    $num_recu = '001';
+                }
+                $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
+                $pen_mnt_lettre = $inWords->format($request->penalite_montant);
+                $pen = new PenaliteDesistement();
+                $pen->setConnection('temp');
+                $pen->desistement_id=$request->desistement_id;
+                $pen->num_recu=$num_recu;
+                $pen->statut=0;
+                /*if (RoleHelper::AdminSup()) {
+                    //validé
+                    $pen->statut = 1;
+                }else{
+                    $pen->statut=0;
+                }*/
+                $pen->montant=$request->penalite_montant;
+                $pen->montant_par_lettre=$pen_mnt_lettre;
+                $pen->penalite_par=$request->penalite_par;
+                $pen->mode_penalite=$request->mode_penalite;
+                $pen->sr= (bool)$request->sr_pen;
+                $pen->mode_paiement=$request->mode_paiement_pen;
+                //cheque cheque-banque cheque cetifice
+                if($request->mode_paiement_pen==2||$request->mode_paiement_pen==3||$request->mode_paiement_pen==4){
+                    $pen->numero_paiement=$request->numero_paiement_pen;
+                    $pen->banque_id=$request->banque_id_pen;
+                    $pen->echeance=$request->echeance_pen;
+                }
+                //virement versement
+                elseif($request->mode_paiement_pen==5||$request->mode_paiement_pen==6){
+                    $pen->numero_paiement=$request->numero_paiement_pen;
+                    $pen->banque_id=$request->banque_id_pen;
+                }
+                //les pices jointes des penalité a jouter
+
+                if( $pen->save()){
+                    //store notification echeance
+                    if($request->penalite_par=='prix'){
+                       if($pen->echeance!=null){
+                        NotificationHelper::storeNotification(
+                            '/desistements/penalite/show/'.$pen->id, $pen->echeance,5,'ECHEANCE Pénalité',Auth::guard('api')->user()->id,null,null,null,$desistement->projet_id,null,$desistement->reservation_id
+                        );
+                        broadcast(new NotificationEvent($pen->id));
+                       }
+                    }
+                    //store pice_jointe_penalite
+
+                     //store penalite to fiche transmission
+                        $fiche= new FicheTransmission();
+                        $fiche->setConnection('temp');
+                        //num recu cree aujourdhui
+                        $recu_now = FicheTransmission::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")->whereDate('created_at', Carbon::now())
+                        ->get('num_recu')->first();
+                        if ($recu_now!=null) {
+                            $fiche->num_recu= $recu_now->num_recu;
+
+                        } else {
+                            //num recu cree != aujourdhui
+                            $rec_not_now= FicheTransmission::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")->whereDate('created_at','!=', Carbon::now())
+                            ->get('num_recu')->first();
+                            if($rec_not_now!=null){
+                                $pp = $rec_not_now->num_recu + 1;
+                                $fiche->num_recu = '00' . $pp . '';
+                            }
+                            else{
+                                $fiche->num_recu = '001';
+                            }
+
+                        }
+                        $fiche->avance_id=null;
+                        $fiche->penalite_id=$pen->id;
+                        $fiche->user_id=$userAuth->value('id');
+                        if($request->mode_paiement_pen==2||$request->mode_paiement_pen==3||$request->mode_paiement_pen==4){
+                            $fiche->date = $pen->echeance;
+                        }
+                        else{
+                            $fiche->date = Carbon::now();
+                        }
+                        if($fiche->save()){
+                           // if (RoleHelper::Com()) {
+                                  //notifiction to admin de valider penalite
+                                        NotificationHelper::storeNotification(
+                                            'desistements/penalites/show/' . $pen->id, null, 6, 'DEMANDE VALIDATION Pénalité', null, RoleEnum::ADMIN->value, null, null, $pen->desistement->projet_id, null, $pen->desistement->reservation_id
+                                        );
+                                        broadcast(new NotificationEvent($pen->id));
+                            // }
+                        }
+
+                }
+
+                //archivé ancien penalité
+                $old_penalite=PenaliteDesistement::on('temp')->findorfail($request->penalite_id);
+                $old_penalite->archive=1;
+                $old_penalite->save();
+
+        }
+        else  return response()->json(['error' => 'Unauthorized'], 401);
+
+
+    }
+    public function get_all_penalites(Request $request, $projet_id,$statut)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage'));
+            $page = $request->input('page', 1);
+
+             //att de validation(admin)==>encours(commercial)
+            if($statut==5){
+                $statut=0;
+            }
+            if(RoleHelper::AdminSup()){
+                DatabaseHelper::Config();
+                $penalites = PenaliteDesistement::on('temp')->select('penalites_desistements.*')
+                    ->with('banque')
+                    ->join('desistements', 'desistements.id', '=', 'penalites_desistements.desistement_id')
+                    ->orderBy('created_at', 'desc')
+                    ->where('penalites_desistements.statut',$statut)
+                    ->where('desistements.projet_id',$projet_id)
+                    ->where('desistements.archive',0)
+                    ->where('penalites_desistements.archive',0)
+                    ->paginate($perPage, ['*'], 'page', $page);
+                    return response()->json(['penalites' => $penalites],200);
+
+            }elseif(RoleHelper::Com()){
+                    DatabaseHelper::Config();
+                    $user = Auth::user();
+                    $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+                    $penalites = PenaliteDesistement::on('temp')->select('penalites_desistements.*')
+                    ->with('banque')
+                    ->join('desistements', 'desistements.id', '=', 'penalites_desistements.desistement_id')
+                    ->orderBy('created_at', 'desc')
+                    ->where('penalites_desistements.statut',$statut)
+                    ->where('desistements.projet_id',$projet_id)
+                    ->where('desistements.archive',0)
+                    ->where('penalites_desistements.archive',0)
+                    ->where('user_id', $userAuth->value('id'))
+                    ->paginate($perPage, ['*'], 'page', $page);
+                    return response()->json(['penalites' => $penalites],200);
+            }
+            return response()->json(['penalites' => $penalites], 200);
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+    public function show_penalite($id)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $penalite = PenaliteDesistement::on('temp')->with('banque')->findOrFail($id);
+            $reservation_ancien=Reservation::on('temp')->findorfail($penalite->desistement->reservation_id);
+            $sum_avances_valides=0;
+            //si dossier desiste
+            if($reservation_ancien->etat>1){
+               foreach($reservation_ancien->avances_desist as $av){
+                   //avance validé
+                   if($av->statut==StatutReservationEnum::Validé->value){
+                       $sum_avances_valides+=$av->montant;
+                   }
+                }
+
+            }else{
+               foreach($reservation_ancien->avances as $av){
+                   //avance validé
+                   if($av->statut==StatutReservationEnum::Validé->value){
+                       $sum_avances_valides+=$av->montant;
+                   }
+                }
+            }
+            return response()->json(['penalite' => $penalite,'sum_avances_valides'=>$sum_avances_valides], 200);
+        } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+    public static function traiter_penalite($id,Request $request)
+    {
+        if(RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            Config::set('broadcasting.default', 'pusher_3');
+            $user = Auth::user();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $penalite = PenaliteDesistement::on('temp')->findOrFail($id);
+            $penalite->statut=$request->etat;
+            if($request->etat==1){
+                $penalite->num_remise=$request->num_remise;
+                $penalite->date_encaissement=$request->date_encaissement;
+                $penalite->user_id_valider=$userAuth->value('id');
+                $penalite->date_validation=Carbon::now();
+                $penalite->save();
+
+            }else{
+                $penalite->commentaire_validation=$request->commentaire;
+                $penalite->save();
+            }
+                if($request->etat==1){
+                    //store new notification validé
+                    NotificationHelper::storeNotification(
+                        '/desistements/penalites/show/'.$penalite->id, Carbon::now(),13,'penalité validé',Auth::guard('api')->user()->id,null,null,null,$penalite->desistement->projet_id,null,null
+                        );
+                        broadcast(new NotificationEvent($id));
+                }else{
+                    //store new notification rejeté
+                    NotificationHelper::storeNotification(
+                        '/desistements/penalites/show/'.$penalite->id, Carbon::now(),13,'penalité rejeté',Auth::guard('api')->user()->id,null,null,null,$penalite->desistement->projet_id,null,null
+                        );
+                        broadcast(new NotificationEvent($id));
+                }
+
+            return response()->json(['message' => 'données enregistrés avec succès.'], 200);
+
+
+
+       } else {
+           return response()->json(['error' => 'Unauthorized'], 401);
+       }
+
+    }
     public function destroy(string $id)
     {
         if(RoleHelper::AdminSup()){
-            DatabaseHelper::Config();
+            /*DatabaseHelper::Config();
             $vue=Vue::on('temp')->findOrFail($id);
             if($vue->delete())
             {
@@ -1210,7 +2168,7 @@ class DesistementController extends Controller
             }
             else{
                 return response()->json(['error'=>"La vue n'a pas été supprimée."],404);
-            }
+            }*/
         }
         else{
             return response()->json(['error' => 'Unauthorized'], 401);
