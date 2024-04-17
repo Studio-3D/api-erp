@@ -40,8 +40,9 @@ class ExcelDataController extends Controller
         set_time_limit(0);
         ini_set('memory_limit', '-1');
     
-        $data = $request->input('data');
-        $blocs = []; // Initialize an array to store blocs
+         $data = $request->input('data');
+        //  $blocs = [];
+        // Initialize an array to store blocs
     
         // Iterate through each element in the $data array
         // loping data from  data intm  item  from front end 
@@ -53,6 +54,8 @@ class ExcelDataController extends Controller
             ->where('projet_id', $projet_id)
             ->get();
 
+            log::info($tranche);
+
             //
             if($tranche)
             {
@@ -60,11 +63,16 @@ class ExcelDataController extends Controller
 
                 foreach($tranche as $tranches)
                 {
+                    
+                    Log::info($tranches->id);
+                    
                     $bloc = Bloc::on('temp')
                     ->where('nom', $item['Bloc'])
                     ->where('tranche_id', $tranches->id)
                     ->where('projet_id', $projet_id)
                     ->get();
+
+               Log::info($bloc);
 
                     if($bloc)
                     {
@@ -72,35 +80,54 @@ class ExcelDataController extends Controller
            
                         foreach($bloc as $blocs)
                         {
-                            $immeuble = Immeuble::where('nom', $item['immeuble'])->where('tranche_id',  $tranches->id)->where('project_id', $projet_id)->where('bloc_id', $blocs->id)->get(['id']);
+                            
+                            Log::info($blocs->id);
+                            
+                            $immeuble = Immeuble::on('temp')
+                            ->where('nom', $item['immeuble'])
+                            ->where('tranche_id',  $tranches->id)
+                            ->where('projet_id', $projet_id)->get();
+                            // ->where('bloc_id', $blocs->id)->get();
+                            
+                              
+                            
+                            Log::info($immeuble);
+                            
                             if($immeuble)
                             {
                                 Log::info('immeuble exist ');
                                foreach($immeuble as $immeubles)
                                {
+                                
+                                Log::info($immeubles->id);
+                                
 
                                 $nv=0;
                                 $bien_exist=Bien::on('temp')->where(function ($query) use ($item){
-                                    $query->where('propriete_dite_bien',$item['appt_num'])->orwhere('propriete_dite_bien',$item['magasin_num']);
-                                })->where('tranche_id', $tranches->id)->where('project_id', $projet_id)->where('bloc_id', $blocs->id)->get();
+                                    $query->where('propriete_dite_bien',$item['Appt_Num']);
+                                    //->orwhere('propriete_dite_bien',$item['MAGASIN_Num']);
+                                })->where('tranche_id', $tranches->id)->where('projet_id', $projet_id)->where('bloc_id', $blocs->id)->count();
 
-
+                                log::info('uts done here 1');
                                 if($bien_exist==0)
                                 {
+                                    log::info('uts done here 2');
+
                                     $bien= new  Bien();
                                     $bien->setConnection('temp');
                                     $bien->bloc_id=$blocs->id;
                                     $bien->immeuble_id = $immeubles->id;
 
-                                    if (array_key_exists("appt_num",$item->toArray()) && $item['appt_num']!=null ){
-                                      
-                                            $explode_numero = explode("Appt", $item['appt_num']);
-                                            $bien->numero=$explode_numero[1];
-                                            $bien->propriete_dite_bien=$item['appt_num'];
-                                       
+                                    if (array_key_exists("Appt_Num",$item) && $item['Appt_Num']!=null ){
+                                        log::info('uts done here 3');
 
+                                            $explode_numero = explode("Appt", $item['Appt_Num']);
+                                            $bien->numero=$explode_numero[1];
+                                            $bien->propriete_dite_bien=$item['Appt_Num'];
+                                       
+;
                                     }
-                                    if (array_key_exists("magasin_num",$item->toArray()) && $item['magasin_num']!=null){
+                                    if (array_key_exists("magasin_num",$item) && $item['magasin_num']!=null){
                                        
                                              $bien->numero=$item['magasin_num'];
                                              $bien->propriete_dite_bien=$item['magasin_num'];
@@ -108,7 +135,7 @@ class ExcelDataController extends Controller
                                         
                                     }
 
-                                    if (array_key_exists("niveau",$item->toArray()) && array_key_exists("etage",$item->toArray())){
+                                    if (array_key_exists("niveau",$item) && array_key_exists("etage",$item)){
 
                                         if($item['niveau']!=null){
 
@@ -169,6 +196,7 @@ class ExcelDataController extends Controller
                                         $bien->type_id=$type->id;
 
                                     }
+
                                     elseif ($item['type_local']=='LOCAL COMMERCIAL') {
                                         $type=TypeBien::on('temp')->where('type','Magasin')->get()->first();
                                         $bien->type_id=$type->id;
@@ -177,7 +205,7 @@ class ExcelDataController extends Controller
 
                                     $bien->partie_p = $item['partie_p'];
 
-                                    if (array_key_exists("parking",$item->toArray())){
+                                    if (array_key_exists("parking",$item)){
                                         if ($item['parking'] == NULL) {
 
                                              $bien->prix_parking = 0;
@@ -185,11 +213,12 @@ class ExcelDataController extends Controller
                                              $bien->prix_parking = $item['parking'];
                                         }
                                     }
+
                                     else{
                                         $bien->superficie_balcon = 0;
                                    }
 
-                                   if (array_key_exists("balcon",$item->toArray())){
+                                   if (array_key_exists("balcon",$item)){
                                     if ($item['balcon'] == NULL || $item['balcon'] == 'SYNDIC PROPOSE'||$item['balcon']=='SYNDIC PLAN') {
                                         $sup_balcon=0;
                                          $bien->superficie_balcon = 0;
@@ -198,11 +227,12 @@ class ExcelDataController extends Controller
                                         $bien->superficie_balcon = $item['balcon'];
 
                                     }
+                                    
                                   }else{
                                     $bien->superficie_balcon = 0;
 
                                   }
-                                  if (array_key_exists("terrasse",$item->toArray())){
+                                  if (array_key_exists("terrasse",$item)){
                                     if ($item['terrasse'] == NULL) {
                                         $bien->superficie_terasse = 0;
 
@@ -219,7 +249,7 @@ class ExcelDataController extends Controller
                                 $bien->superficie_terasse_calculee=$bien->superficie_terasse;
                                 $bien->superficie_balcon_calculee= $bien->superficie_balcon;
 
-                                if (array_key_exists("superficie_architect",$item->toArray())){
+                                if (array_key_exists("superficie_architect",$item)){
                                     if ($item['superficie_architect'] == NULL) {
                                         $bien->superficie =0;
 
@@ -234,7 +264,7 @@ class ExcelDataController extends Controller
                                 }
                                 $bien->superficie_architecte = 0;
 
-                                if (array_key_exists("pu",$item->toArray())){
+                                if (array_key_exists("pu",$item)){
                                     if ($item['pu'] == NULL) {
                                     
                                         if($nv==0){
@@ -256,7 +286,7 @@ class ExcelDataController extends Controller
                                         $bien->prix_unitaire=0;
                                     }
                                 }
-                                if (array_key_exists("prix_box",$item->toArray())){
+                                if (array_key_exists("prix_box",$item)){
                                     if ($item['prix_box'] == NULL) {
                                         $bien->prix_box = 0;
 
@@ -276,10 +306,10 @@ class ExcelDataController extends Controller
                                                     $bien->orientation = null;
                                                     $bien->conventionne = 0;
                                                     $bien->tranche_id = $tranches->id;
-                                                    $bien->project_id = $projet_id;
+                                                    $bien->projet_id = $projet_id;
                                                     $bien->avance_min = 0;
                                                     if($bien->save()){
-                                                        if (array_key_exists("categorie",$item->toArray())){
+                                                        if (array_key_exists("categorie",$item)){
                                                             $pattern = "/[,\s.]/";
                                                             $exp=preg_split($pattern, $item['categorie']);
 
@@ -326,7 +356,7 @@ class ExcelDataController extends Controller
 
                                                             }
                                                             $compo=new CompositionBien();
-                                                            $compou->setConnection('temp');
+                                                            $compo->setConnection('temp');
                                                             $compo->bien_id=$bien->id;
                                                             $compo->nbre_chambre=$chambre;
                                                             $compo->nbre_salon=$salon;
@@ -351,14 +381,14 @@ class ExcelDataController extends Controller
                                $immeuble=new Immeuble();
                                $immeuble->setConnection('temp');
                                $immeuble->nom=$item['immeuble'];
-                               $immeuble->project_id=$projet_id;
+                               $immeuble->projet_id=$projet_id;
                                $immeuble->tranche_id=$tranches->id;
                                $immeuble->bloc_id=$blocs->id;
                                if($immeuble->save()){
                                 $nv=0;
                                 $bien_exist=Bien::on('temp')->where(function ($query) use ($item){
-                                    $query->where('propriete_dite_bien',$item['appt_num'])->orwhere('propriete_dite_bien',$item['magasin_num']);
-                                })->where('tranche_id', $tranches->id)->where('project_id', $projet_id)->where('bloc_id', $blocs->id)->where('immeuble_id', $immeubles->id)->count();
+                                    $query->where('propriete_dite_bien',$item['Appt_Num'])->orwhere('propriete_dite_bien',$item['magasin_num']);
+                                })->where('tranche_id', $tranches->id)->where('projet_id', $projet_id)->where('bloc_id', $blocs->id)->where('immeuble_id', $immeubles->id)->count();
                                 if($bien_exist==0)
                                 {
                                     $bien = new Bien();
@@ -366,14 +396,14 @@ class ExcelDataController extends Controller
                                     $bien->bloc_id = $blocs->id;
                                     $bien->immeuble_id = $immeubles->id;
                                 }
-                                if (array_key_exists("appt_num",$item->toArray())){
-                                    if($item['appt_num']!=null){
-                                    $explode_numero = explode("Appt", $item['appt_num']);
+                                if (array_key_exists("Appt_Num",$item)){
+                                    if($item['Appt_Num']!=null){
+                                    $explode_numero = explode("Appt", $item['Appt_Num']);
                                     $bien->numero=$explode_numero[1];
-                                     $bien->propriete_dite_bien=$item['appt_num'];
+                                     $bien->propriete_dite_bien=$item['Appt_Num'];
                                     }
                                 }
-                                if (array_key_exists("magasin_num",$item->toArray())){
+                                if (array_key_exists("magasin_num",$item)){
                                     if($item['magasin_num']!=null){
                                          $bien->numero=$item['magasin_num'];
                                         $bien->propriete_dite_bien=$item['magasin_num'];
@@ -381,7 +411,7 @@ class ExcelDataController extends Controller
                                     }
                                 }
 
-                                if (array_key_exists("niveau",$item->toArray()) && array_key_exists("etage",$item->toArray())){
+                                if (array_key_exists("niveau",$item) && array_key_exists("etage",$item)){
 
                                     if($item['niveau']!=null){
 
@@ -447,7 +477,7 @@ class ExcelDataController extends Controller
                                 }
                                 $bien->partie_p = $item['partie_p'];
 
-                                if (array_key_exists("parking",$item->toArray())){
+                                if (array_key_exists("parking",$item)){
                                     if ($item['parking'] == NULL) {
 
                                          $bien->prix_parking = 0;
@@ -458,7 +488,7 @@ class ExcelDataController extends Controller
                                 else{
                                     $bien->prix_parking = 0;
                                     }
-                                    if (array_key_exists("balcon",$item->toArray())){
+                                    if (array_key_exists("balcon",$item)){
                                         if ($item['balcon'] == NULL||$item['balcon'] == 'SYNDIC PROPOSE'||$item['balcon']=='SYNDIC PLAN') {
                                             $sup_balcon=0;
                                              $bien->superficie_balcon = 0;
@@ -471,7 +501,7 @@ class ExcelDataController extends Controller
                                         $bien->superficie_balcon = 0;
                                     }
 
-                                    if (array_key_exists("terrasse",$item->toArray())){
+                                    if (array_key_exists("terrasse",$item)){
                                         if ($item['terrasse'] == NULL) {
                                             $bien->superficie_terasse = 0;
 
@@ -488,7 +518,7 @@ class ExcelDataController extends Controller
                                     $bien->superficie_terasse_calculee=$bien->superficie_terasse;
                                     $bien->superficie_balcon_calculee= $bien->superficie_balcon;
 
-                                    if (array_key_exists("superficie_architect",$item->toArray())){
+                                    if (array_key_exists("superficie_architect",$item)){
                                         if ($item['superficie_architect'] == NULL) {
                                             $bien->superficie =0;
 
@@ -502,7 +532,7 @@ class ExcelDataController extends Controller
                                     }
                                     $bien->superficie_architecte = 0;
 
-                                    if (array_key_exists("pu",$item->toArray())){
+                                    if (array_key_exists("pu",$item)){
                                         if ($item['pu'] == NULL) {
                                             //rdc
                                             if($nv==0){
@@ -526,7 +556,7 @@ class ExcelDataController extends Controller
 
                                     }
 
-                                    if (array_key_exists("prix_box",$item->toArray())){
+                                    if (array_key_exists("prix_box",$item)){
                                         if ($item['prix_box'] == NULL) {
                                             $bien->prix_box = 0;
 
@@ -547,11 +577,11 @@ class ExcelDataController extends Controller
                                         $bien->orientation = null;
                                         $bien->conventionne = 0;
                                         $bien->tranche_id = $tranches->id;
-                                        $bien->project_id = $projet_id;
+                                        $bien->projet_id = $projet_id;
                                         $bien->avance_min = 0;
                                         if($bien->save()){
 
-                                            if (array_key_exists("categorie",$item->toArray())){
+                                            if (array_key_exists("categorie",$item)){
                                                 $pattern = "/[,\s.]/";
                                                 $exp=preg_split($pattern, $item['categorie']);
 
@@ -627,38 +657,37 @@ class ExcelDataController extends Controller
                     else{
                         $nv=null;
                         // bloc not exist 
-                      $blocc=new Bloc();
-                      $blocc->setConnetion('temp');
-                      $blocc->nom=$item['bloc'];
-                      $blocc->project_id=$projet_id;
-                      $blocc->tranche_id=$tranches->id;
-                      if($bloc->id){
-
+                      $bloc=new Bloc();
+                      $bloc->setConnetion('temp');
+                      $bloc->nom=$item['bloc'];
+                      $bloc->projet_id=$projet_id;
+                      $bloc->tranche_id=$tranches->id;
+                      if($bloc->save()){
                         $immeuble=new Immeuble();
                         $immeuble->setConnetion('temp');
                         $immeuble->nom=$item['immeuble'];
-                        $immeuble->project_id=$projet_id;
+                        $immeuble->projet_id=$projet_id;
                         $immeuble->tranche_id=$tranches->id;
-                        $immeuble->bloc_id=$blocc->id;
+                        $immeuble->bloc_id=$bloc->id;
                         if($immeuble->save()){
                             $bien_exist=Bien::on('temp')->where(function ($query ) use ($item){
-                                $query->where('propriete_dite_bien',$item['appt_num'])->orwhere('propriete_dite_bien',$item['magasin_num']);
-                            })->where('tranche_id', $tranches->id)->where('project_id', $projet_id)->where('bloc_id', $blocc->id)->where('immeuble_id',$immeuble->id)->count();
+                                $query->where('propriete_dite_bien',$item['Appt_Num'])->orwhere('propriete_dite_bien',$item['magasin_num']);
+                            })->where('tranche_id', $tranches->id)->where('projet_id', $projet_id)->where('bloc_id', $bloc->id)->where('immeuble_id',$immeuble->id)->count();
 
                             if($bien_exist==0)
                             {
                                 $bien = new Bien();
                                 $bien->setConnetion('temp');
-                                $bien->bloc_id = $blocc->id;
+                                $bien->bloc_id = $bloc->id;
                                 $bien->immeuble_id = $immeuble->id;
-                                if (array_key_exists("appt_num",$item->toArray())){
-                                    if($item['appt_num']!=null){
-                                    $explode_numero = explode("Appt", $item['appt_num']);
+                                if (array_key_exists("Appt_Num",$item)){
+                                    if($item['Appt_Num']!=null){
+                                    $explode_numero = explode("Appt", $item['Appt_Num']);
                                     $bien->numero=$explode_numero[1];
-                                     $bien->propriete_dite_bien=$item['appt_num'];
+                                     $bien->propriete_dite_bien=$item['Appt_Num'];
                                     }
                                 }
-                                if (array_key_exists("magasin_num",$item->toArray())){
+                                if (array_key_exists("magasin_num",$item)){
                                     if($item['magasin_num']!=null){
                                          $bien->numero=$item['magasin_num'];
                                         $bien->propriete_dite_bien=$item['magasin_num'];
@@ -666,7 +695,7 @@ class ExcelDataController extends Controller
                                     }
                                 }
 
-                                if (array_key_exists("niveau",$item->toArray()) && array_key_exists("etage",$item->toArray())){
+                                if (array_key_exists("niveau",$item) && array_key_exists("etage",$item)){
                                     if($item['niveau']!=null){
                                        if (str_contains($item['niveau'], 'er etage')) {
                                               $explode_niveau_1 = explode("er etage", $item['niveau']);
@@ -724,7 +753,7 @@ class ExcelDataController extends Controller
                                         }
                                         $bien->partie_p = $item['partie_p'];
 
-                                        if (array_key_exists("balcon",$item->toArray())){
+                                        if (array_key_exists("balcon",$item)){
                                             if ($item['balcon'] == NULL||$item['balcon'] == 'SYNDIC PROPOSE'||$item['balcon']=='SYNDIC PLAN') {
 
                                                  $bien->superficie_balcon = 0;
@@ -737,7 +766,7 @@ class ExcelDataController extends Controller
                                             $bien->superficie_terasse = 0;
                                         }
 
-                                        if (array_key_exists("parking",$item->toArray())){
+                                        if (array_key_exists("parking",$item)){
                                             if ($item['parking'] == NULL) {
 
                                                  $bien->prix_parking = 0;
@@ -752,7 +781,7 @@ class ExcelDataController extends Controller
                                         
                                         $bien->superficie_terasse_calculee=$bien->superficie_terasse;
                                         $bien->superficie_balcon_calculee= $bien->superficie_balcon;
-                                        if (array_key_exists("superficie_architect",$item->toArray())){
+                                        if (array_key_exists("superficie_architect",$item)){
                                             if ($item['superficie_architect'] == NULL) {
                                                 $bien->superficie =0;
 
@@ -767,7 +796,7 @@ class ExcelDataController extends Controller
                                         }
                                         $bien->superficie_architecte = 0;
 
-                                        if (array_key_exists("pu",$item->toArray())){
+                                        if (array_key_exists("pu",$item)){
                                             if ($item['pu'] == NULL) {
                                                 //rdc
                                                 if($nv==0){
@@ -789,7 +818,7 @@ class ExcelDataController extends Controller
                                                 $bien->prix_unitaire=0;
                                             }
                                         }
-                                        if (array_key_exists("prix_box",$item->toArray())){
+                                        if (array_key_exists("prix_box",$item)){
                                             if ($item['prix_box'] == NULL) {
                                                 $bien->prix_box = 0;
 
@@ -810,12 +839,12 @@ class ExcelDataController extends Controller
                                         $bien->orientation = null;
                                         $bien->conventionne = 0;
                                         $bien->tranche_id = $tranches->id;
-                                        $bien->project_id = $projet_id;
+                                        $bien->projet_id = $projet_id;
                                         $bien->avance_min = 0;
 
                                         if($bien->save())
                                         {
-                                            if (array_key_exists("categorie",$item->toArray())){
+                                            if (array_key_exists("categorie",$item)){
                                                 $pattern = "/[,\s.]/";
                                                 $exp=preg_split($pattern, $item['categorie']);
 
@@ -895,45 +924,45 @@ class ExcelDataController extends Controller
                 // tranche not exist 
 
                 
-                $nv=null;
+              $nv=null;
               $tranche=new Tranche();
               $tranche->setConnection('temp');
               $tranche->nom=$item['tranche'];
-              $tranche->project_id=$projet_id;
+              $tranche->projet_id=$projet_id;
               if($tranche->save){
 
                 $bloc=new Bloc();
                 $bloc->setConnection('temp');
                 $bloc->nom=$item['bloc'];
-                $bloc->project_id=$projet_id;
+                $bloc->projet_id=$projet_id;
                 $bloc->tranche_id=$tranche->id;
                 if($bloc->save())
                 {
                     $immeuble=new Immeuble();
                     $immeuble->setConnection('temp');
                     $immeuble->nom=$row['immeuble'];
-                    $immeuble->project_id=$projet_id;
+                    $immeuble->projet_id=$projet_id;
                     $immeuble->tranche_id=$tranche->id;
                     $immeuble->bloc_id=$bloc->id;
                 }
                 if($immeuble->save()){
                     $bien_exist=Bien::on('temp')->where(function ($query ) use ($item){
-                        $query->where('propriete_dite_bien',$item['appt_num'])->orwhere('propriete_dite_bien',$item['magasin_num']);
-                    })->where('tranche_id', $tranche->id)->where('project_id', $projet_id)->where('bloc_id', $bloc->id)->where('immeuble_id',$immeuble->id)->count();
+                        $query->where('propriete_dite_bien',$item['Appt_Num'])->orwhere('propriete_dite_bien',$item['magasin_num']);
+                    })->where('tranche_id', $tranche->id)->where('projet_id', $projet_id)->where('bloc_id', $bloc->id)->where('immeuble_id',$immeuble->id)->count();
                     if($bien_exist==0)
                     {
                         $bien = new Bien();
                         $bien->setConnection('temp');
                         $bien->bloc_id = $bloc->id;
                         $bien->immeuble_id = $immeuble->id;
-                        if (array_key_exists("appt_num",$item->toArray())){
-                            if($item['appt_num']!=null){
-                            $explode_numero = explode("Appt", $item['appt_num']);
+                        if (array_key_exists("Appt_Num",$item)){
+                            if($item['Appt_Num']!=null){
+                            $explode_numero = explode("Appt", $item['Appt_Num']);
                             $bien->numero=$explode_numero[1];
-                             $bien->propriete_dite_bien=$item['appt_num'];
+                             $bien->propriete_dite_bien=$item['Appt_Num'];
                             }
                         }
-                        if (array_key_exists("magasin_num",$item->toArray())){
+                        if (array_key_exists("magasin_num",$item)){
                             if($item['magasin_num']!=null){
                                  $bien->numero=$item['magasin_num'];
                                 $bien->propriete_dite_bien=$item['magasin_num'];
@@ -941,7 +970,7 @@ class ExcelDataController extends Controller
                             }
                         }
 
-                        if (array_key_exists("niveau",$item->toArray()) && array_key_exists("etage",$item->toArray())){
+                        if (array_key_exists("niveau",$item) && array_key_exists("etage",$item)){
                             if($item['niveau']!=null){
                                if (str_contains($item['niveau'], 'er etage')) {
                                       $explode_niveau_1 = explode("er etage", $item['niveau']);
@@ -999,7 +1028,7 @@ class ExcelDataController extends Controller
                                 }
                                 $bien->partie_p = $item['partie_p'];
 
-                                if (array_key_exists("balcon",$item->toArray())){
+                                if (array_key_exists("balcon",$item)){
                                     if ($item['balcon'] == NULL||$item['balcon'] == 'SYNDIC PROPOSE'||$item['balcon']=='SYNDIC PLAN') {
 
                                          $bien->superficie_balcon = 0;
@@ -1012,7 +1041,7 @@ class ExcelDataController extends Controller
                                     $bien->superficie_terasse = 0;
                                 }
 
-                                if (array_key_exists("parking",$item->toArray())){
+                                if (array_key_exists("parking",$item)){
                                     if ($item['parking'] == NULL) {
 
                                          $bien->prix_parking = 0;
@@ -1027,7 +1056,7 @@ class ExcelDataController extends Controller
                                 
                                 $bien->superficie_terasse_calculee=$bien->superficie_terasse;
                                 $bien->superficie_balcon_calculee= $bien->superficie_balcon;
-                                if (array_key_exists("superficie_architect",$item->toArray())){
+                                if (array_key_exists("superficie_architect",$item)){
                                     if ($item['superficie_architect'] == NULL) {
                                         $bien->superficie =0;
 
@@ -1042,7 +1071,7 @@ class ExcelDataController extends Controller
                                 }
                                 $bien->superficie_architecte = 0;
 
-                                if (array_key_exists("pu",$item->toArray())){
+                                if (array_key_exists("pu",$item)){
                                     if ($item['pu'] == NULL) {
                                         //rdc
                                         if($nv==0){
@@ -1064,7 +1093,7 @@ class ExcelDataController extends Controller
                                         $bien->prix_unitaire=0;
                                     }
                                 }
-                                if (array_key_exists("prix_box",$item->toArray())){
+                                if (array_key_exists("prix_box",$item)){
                                     if ($item['prix_box'] == NULL) {
                                         $bien->prix_box = 0;
 
@@ -1085,12 +1114,12 @@ class ExcelDataController extends Controller
                                 $bien->orientation = null;
                                 $bien->conventionne = 0;
                                 $bien->tranche_id = $tranches->id;
-                                $bien->project_id = $projet_id;
+                                $bien->projet_id = $projet_id;
                                 $bien->avance_min = 0;
 
                                 if($bien->save())
                                 {
-                                    if (array_key_exists("categorie",$item->toArray())){
+                                    if (array_key_exists("categorie",$item)){
                                         $pattern = "/[,\s.]/";
                                         $exp=preg_split($pattern, $item['categorie']);
 
@@ -1171,6 +1200,11 @@ class ExcelDataController extends Controller
     
         Log::info('blocs: ',$blocs);
     }
+
+    private function get_imoo()
+    {
+        
+    }
     
 
     public function testfunction( Request $request)
@@ -1178,15 +1212,17 @@ class ExcelDataController extends Controller
         $data = $request->input('data');
         foreach($data as $item)
         {
-            $explode_numero = explode("Appt", $item['Appt_Num']);
+            if(array_key_exists('NUM',$item))
             
-            Log::info($item['Appt_Num']);
+            // $explode_numero = explode("Appt", $item['Appt_Num']);
+            
+            Log::info($item);
             
             // log::info($explode_numero);
 
         }
         
-        // $explode_numero = explode("Appt", $data['appt_Num']);
+        // $explode_numero = explode("Appt", $data['Appt_Num']);
        
     }
  
@@ -1224,4 +1260,6 @@ class ExcelDataController extends Controller
 //     // Log the retrieved blocs
 //     Log::info('blocs: ' . json_encode($blocs));
 // }
+
+
 }
