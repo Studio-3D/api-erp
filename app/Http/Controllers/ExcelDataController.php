@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Tranche;
 use App\Models\Bien;
 use App\Models\Bloc;
-use App\CompositionBien;
+use App\Models\CompositionBien; 
 use App\Models\TypeBien;
 use App\Models\Immeuble;
 use Illuminate\Support\Collection;
@@ -110,7 +110,7 @@ class ExcelDataController extends Controller
                                foreach($immeuble as $immeubles)
                                {
                                 
-                                Log::info(' loop immeu');
+                                Log::info(' lop immeu');
                                 
                                 
                                 Log::info($immeubles->id);
@@ -338,9 +338,10 @@ class ExcelDataController extends Controller
 
 
 
-                                                        if (array_key_exists("categorie",$column)){
+                                                        if (array_key_exists("Categorie",$column)){
+                                                            log::info('category here');
                                                             $pattern = "/[,\s.]/";
-                                                            $exp=preg_split($pattern, $column['categorie']);
+                                                            $exp=preg_split($pattern, $column['Categorie']);
 
                                                             $balcon=0;
                                                             $chambre=0;
@@ -387,13 +388,13 @@ class ExcelDataController extends Controller
                                                             $compo=new CompositionBien();
                                                             $compo->setConnection('temp');
                                                             $compo->bien_id=$bien->id;
-                                                            $compo->nbre_chambre=$chambre;
-                                                            $compo->nbre_salon=$salon;
+                                                            $compo->nbre_chambres=$chambre;
+                                                            $compo->nbre_salons=$salon;
                                                             $compo->nbre_sdb=$sdb;
-                                                            $compo->nbre_cuisine=$cuisin;
-                                                            $compo->nbre_balcon=$balcon;
-                                                            $compo->nbre_terasse=$terasse;
-                                                            $compo->nbre_placard=$placard;
+                                                            $compo->nbre_cuisines=$cuisin;
+                                                            $compo->nbre_balcons=$balcon;
+                                                            $compo->nbre_terasses=$terasse;
+                                                            $compo->nbre_placards=$placard;
                                                             $compo->save();
 
                                                         }
@@ -615,9 +616,9 @@ class ExcelDataController extends Controller
                                         $bien->avance_minimale = 0;
                                         if($bien->save()){
 
-                                            if (array_key_exists("categorie",$column)){
+                                            if (array_key_exists("Categorie",$column)){
                                                 $pattern = "/[,\s.]/";
-                                                $exp=preg_split($pattern, $column['categorie']);
+                                                $exp=preg_split($pattern, $column['Categorie']);
 
                                                 $balcon=0;
                                                 $chambre=0;
@@ -664,13 +665,13 @@ class ExcelDataController extends Controller
                                                 $compo=new CompositionBien();
                                                 $compo->setConnetion('temp');
                                                 $compo->bien_id=$bien->id;
-                                                $compo->nbre_chambre=$chambre;
-                                                $compo->nbre_salon=$salon;
+                                                $compo->nbre_chambres=$chambre;
+                                                $compo->nbre_salons=$salon;
                                                 $compo->nbre_sdb=$sdb;
-                                                $compo->nbre_cuisine=$cuisin;
-                                                $compo->nbre_balcon=$balcon;
-                                                $compo->nbre_terasse=$terasse;
-                                                $compo->nbre_placard=$placard;
+                                                $compo->nbre_cuisiness=$cuisin;
+                                                $compo->nbre_balconss=$balcon;
+                                                $compo->nbre_terasses=$terasse;
+                                                $compo->nbre_placardss=$placard;
                                                 $compo->save();
 
                                             }
@@ -881,9 +882,9 @@ class ExcelDataController extends Controller
 
                                         if($bien->save())
                                         {
-                                            if (array_key_exists("categorie",$column)){
+                                            if (array_key_exists("Categorie",$column)){
                                                 $pattern = "/[,\s.]/";
-                                                $exp=preg_split($pattern, $column['categorie']);
+                                                $exp=preg_split($pattern, $column['Categorie']);
 
                                                 $balcon=0;
                                                 $chambre=0;
@@ -930,13 +931,13 @@ class ExcelDataController extends Controller
                                                 $compo=new CompositionBien();
                                                 $compo->on('temp');
                                                 $compo->bien_id=$bien->id;
-                                                $compo->nbre_chambre=$chambre;
-                                                $compo->nbre_salon=$salon;
+                                                $compo->nbre_chambres=$chambre;
+                                                $compo->nbre_salons=$salon;
                                                 $compo->nbre_sdb=$sdb;
-                                                $compo->nbre_cuisine=$cuisin;
-                                                $compo->nbre_balcon=$balcon;
-                                                $compo->nbre_terasse=$terasse;
-                                                $compo->nbre_placard=$placard;
+                                                $compo->nbre_cuisines=$cuisin;
+                                                $compo->nbre_balcons=$balcon;
+                                                $compo->nbre_terasses=$terasse;
+                                                $compo->nbre_placards=$placard;
                                                 $compo->save();
 
                                             }
@@ -1158,9 +1159,9 @@ class ExcelDataController extends Controller
 
                                 if($bien->save())
                                 {
-                                    if (array_key_exists("categorie",$column)){
+                                    if (array_key_exists("Categorie",$column)){
                                         $pattern = "/[,\s.]/";
-                                        $exp=preg_split($pattern, $column['categorie']);
+                                        $exp=preg_split($pattern, $column['Categorie']);
 
                                         $balcon=0;
                                         $chambre=0;
@@ -1207,13 +1208,13 @@ class ExcelDataController extends Controller
                                         $compo=new CompositionBien();
                                         $compo->setConnection('temp');
                                         $compo->bien_id=$bien->id;
-                                        $compo->nbre_chambre=$chambre;
-                                        $compo->nbre_salon=$salon;
+                                        $compo->nbre_chambres=$chambre;
+                                        $compo->nbre_salons=$salon;
                                         $compo->nbre_sdb=$sdb;
-                                        $compo->nbre_cuisine=$cuisin;
-                                        $compo->nbre_balcon=$balcon;
-                                        $compo->nbre_terasse=$terasse;
-                                        $compo->nbre_placard=$placard;
+                                        $compo->nbre_cuisines=$cuisin;
+                                        $compo->nbre_balcons=$balcon;
+                                        $compo->nbre_terasses=$terasse;
+                                        $compo->nbre_placards=$placard;
                                         $compo->save();
 
                                     }
