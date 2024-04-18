@@ -17,7 +17,9 @@ return new class extends Migration
             $table->foreignId('desistement_id')->nullable()->constrained('desistements')->onDelete('cascade');
             $table->foreignId('avance_id')->nullable()->constrained('avances')->onDelete('cascade');
             $table->foreignId('penalite_id')->nullable()->constrained('penalites_desistements')->onDelete('cascade');
-            $table->string('piece_jointe');
+            $table->string('fichier');
+            $table->string('type');
+            $table->integer('pj_scanner')->default(0);
             $table->softDeletes();
             $table->timestamps();
         });
