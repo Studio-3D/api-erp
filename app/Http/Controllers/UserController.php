@@ -94,23 +94,14 @@ class UserController extends Controller
     }
     public function index(Request $request)
     {
-        if (RoleHelper::Superadmin()) {
-            if (Auth::guard('api')->user()->societe_id == 1) {
-                $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
-                $page = $request->input('page', 1);
-                $users = User::orderBy('created_at', 'desc')
-                    ->paginate($perPage, ['*'], 'page', $page);
-                return response()->json(['users' => $users]);
-            } else {
-                $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
-                $page = $request->input('page', 1);
-                $users = User::where('societe_id', Auth::guard('api')->user()->societe_id)
-                    ->orderBy('created_at', 'desc')
-                    ->paginate($perPage, ['*'], 'page', $page);
-                return response()->json(['users' => $users]);
-            }
+        if (RoleHelper::Superadmin() && Auth::guard('api')->user()->societe_id == 1) {
 
-        } else if (RoleHelper::Admin()) {
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
+            $page = $request->input('page', 1);
+            $users = User::orderBy('created_at', 'desc')
+                ->paginate($perPage, ['*'], 'page', $page);
+            return response()->json(['users' => $users]);
+        } else if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
