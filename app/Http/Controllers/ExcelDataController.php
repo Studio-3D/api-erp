@@ -117,13 +117,35 @@ class ExcelDataController extends Controller
                                 
 
                                 $nv=0;
-                                $bien_exist=Bien::on('temp')->where(function ($query) use ($column){
-                                    $query->where('propriete_dite_bien',$column['Appt_Num']);
-                                    //->orwhere('propriete_dite_bien',$column['MAGASIN_Num']);
-                                })->where('tranche_id', $tranches->id)->where('projet_id', $projet_id)->where('bloc_id', $blocs->id)->count();
+                               
+                                // $bien_exist = Bien::on('temp')->where(function ($query) use ($column) {
+                                //     $query->where('propriete_dite_bien', $column['Appt_Num'])
+                                //           ->orWhere('propriete_dite_bien', $column['magasin_num']);
+                                // })->where('tranche_id', $tranches->id)
+                                //   ->where('projet_id', $projet_id)
+                                //   ->where('bloc_id', $blocs->id)
+                                //   ->count();
 
+                                // in this case we  check if the  one of thatt columns  is  empty  not  have check itt   (med)
+                                
+
+                                $bien_exist = Bien::on('temp')->where(function ($query) use ($column) {
+                                    if (!empty($column['Appt_Num'])) {
+                                        log::info('appt num  not empty  ');
+                                        $query->where('propriete_dite_bien', $column['Appt_Num']);
+                                        
+                                    } elseif (!empty($column['magasin_num'])) { 
+                                        log::info('magasin num  not empty  ');
+
+                                        $query->where('propriete_dite_bien', $column['magasin_num']);
+                                    }
+                                })->where('tranche_id', $tranches->id)
+                                  ->where('projet_id', $projet_id)
+                                  ->where('bloc_id', $blocs->id)
+                                  ->count();
+                                
                                 log::info('uts done here 1');
-                                if($bien_exist==0)
+                                if( $bien_exist == 0 )
                                 {
                                     log::info('uts done here 2');
 
@@ -134,7 +156,6 @@ class ExcelDataController extends Controller
 
                                     if (array_key_exists("Appt_Num",$column) && $column['Appt_Num']!=null ){
                                         log::info('uts done here 3');
-
                                             $explode_numero = explode("Appt", $column['Appt_Num']);
                                             $bien->numero=$explode_numero[1];
                                             $bien->propriete_dite_bien=$column['Appt_Num'];
@@ -421,9 +442,27 @@ class ExcelDataController extends Controller
                                $immeuble->bloc_id=$blocs->id;
                                if($immeuble->save()){
                                 $nv=0;
-                                $bien_exist=Bien::on('temp')->where(function ($query) use ($column){
-                                    $query->where('propriete_dite_bien',$column['Appt_Num'])->orwhere('propriete_dite_bien',$column['magasin_num']);
-                                })->where('tranche_id', $tranches->id)->where('projet_id', $projet_id)->where('bloc_id', $blocs->id)->where('immeuble_id', $immeubles->id)->count();
+                                // $bien_exist=Bien::on('temp')->where(function ($query) use ($column){
+                                //     $query->where('propriete_dite_bien',$column['Appt_Num'])->orwhere('propriete_dite_bien',$column['magasin_num']);
+                                // })->where('tranche_id', $tranches->id)->where('projet_id', $projet_id)->where('bloc_id', $blocs->id)->where('immeuble_id', $immeubles->id)->count();
+                                
+                                // in this case we  check if the  one of thatt columns  is  empty  not  have check itt   (med)
+                                
+
+                                $bien_exist = Bien::on('temp')->where(function ($query) use ($column) {
+                                    if (!empty($column['Appt_Num'])) {
+                                        log::info('appt num  not empty  ');
+                                        $query->where('propriete_dite_bien', $column['Appt_Num']);
+                                        
+                                    } elseif (!empty($column['magasin_num'])) { 
+                                        log::info('magasin num  not empty  ');
+
+                                        $query->where('propriete_dite_bien', $column['magasin_num']);
+                                    }
+                                })->where('tranche_id', $tranches->id)
+                                  ->where('projet_id', $projet_id)
+                                  ->where('bloc_id', $blocs->id)
+                                  ->count();
                                 if($bien_exist==0)
                                 {
                                     $bien = new Bien();
@@ -708,9 +747,27 @@ class ExcelDataController extends Controller
                         $immeuble->tranche_id=$tranches->id;
                         $immeuble->bloc_id=$bloc->id;
                         if($immeuble->save()){
-                            $bien_exist=Bien::on('temp')->where(function ($query ) use ($column){
-                                $query->where('propriete_dite_bien',$column['Appt_Num'])->orwhere('propriete_dite_bien',$column['magasin_num']);
-                            })->where('tranche_id', $tranches->id)->where('projet_id', $projet_id)->where('bloc_id', $bloc->id)->where('immeuble_id',$immeuble->id)->count();
+                            // $bien_exist=Bien::on('temp')->where(function ($query ) use ($column){
+                            //     $query->where('propriete_dite_bien',$column['Appt_Num'])->orwhere('propriete_dite_bien',$column['magasin_num']);
+                            // })->where('tranche_id', $tranches->id)->where('projet_id', $projet_id)->where('bloc_id', $bloc->id)->where('immeuble_id',$immeuble->id)->count();
+
+                            // in this case we  check if the  one of thatt columns  is  empty  not  have check itt   (med)
+                                
+
+                            $bien_exist = Bien::on('temp')->where(function ($query) use ($column) {
+                                if (!empty($column['Appt_Num'])) {
+                                    log::info('appt num  not empty  ');
+                                    $query->where('propriete_dite_bien', $column['Appt_Num']);
+                                    
+                                } elseif (!empty($column['magasin_num'])) { 
+                                    log::info('magasin num  not empty  ');
+
+                                    $query->where('propriete_dite_bien', $column['magasin_num']);
+                                }
+                            })->where('tranche_id', $tranches->id)
+                              ->where('projet_id', $projet_id)
+                              ->where('bloc_id', $blocs->id)
+                              ->count();
 
                             if($bien_exist==0)
                             {
@@ -986,9 +1043,27 @@ class ExcelDataController extends Controller
                     $immeuble->bloc_id=$bloc->id;
                 }
                 if($immeuble->save()){
-                    $bien_exist=Bien::on('temp')->where(function ($query ) use ($column){
-                        $query->where('propriete_dite_bien',$column['Appt_Num'])->orwhere('propriete_dite_bien',$column['magasin_num']);
-                    })->where('tranche_id', $tranche->id)->where('projet_id', $projet_id)->where('bloc_id', $bloc->id)->where('immeuble_id',$immeuble->id)->count();
+                    // $bien_exist=Bien::on('temp')->where(function ($query ) use ($column){
+                    //     $query->where('propriete_dite_bien',$column['Appt_Num'])->orwhere('propriete_dite_bien',$column['magasin_num']);
+                    // })->where('tranche_id', $tranche->id)->where('projet_id', $projet_id)->where('bloc_id', $bloc->id)->where('immeuble_id',$immeuble->id)->count();
+
+                    // in this case we  check if the  one of thatt columns  is  empty  not  have check itt   (med)
+                                
+
+                    $bien_exist = Bien::on('temp')->where(function ($query) use ($column) {
+                        if (!empty($column['Appt_Num'])) {
+                            log::info('appt num  not empty  ');
+                            $query->where('propriete_dite_bien', $column['Appt_Num']);
+                            
+                        } elseif (!empty($column['magasin_num'])) { 
+                            log::info('magasin num  not empty  ');
+
+                            $query->where('propriete_dite_bien', $column['magasin_num']);
+                        }
+                    })->where('tranche_id', $tranches->id)
+                      ->where('projet_id', $projet_id)
+                      ->where('bloc_id', $blocs->id)
+                      ->count();
                     if($bien_exist==0)
                     {
                         $bien = new Bien();
