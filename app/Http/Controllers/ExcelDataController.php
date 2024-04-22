@@ -151,6 +151,7 @@ class ExcelDataController extends Controller
 
                             // in this case we  check if the  one of thatt columns  is  empty  not  have check itt   (med)
                             Bien_Helper::checkAndCreateBien($tranches, $projet_id, $blocs, $immeubles, $column);
+                            
 
                         }
                         
@@ -205,6 +206,7 @@ class ExcelDataController extends Controller
                 ->where('nom', $column['Bloc'])
                 ->where('projet_id', $projet_id)
                 ->get();
+               
 
            Log::info($bloc);
            
@@ -237,8 +239,8 @@ class ExcelDataController extends Controller
                             Log::info(' lop immeu');
                             Log::info($immeubles->id);
                             $nv=0;
-                            $tranches=Null;
-                            Bien_Helper::checkAndCreateBien($tranches, $projet_id, $blocs, $immeubles, $column);
+                          
+                            Bien_Helper::checkAndCreateBien2( $projet_id, $blocs, $immeubles, $column);
                             log::info(' bien  exist ');
                            }
                            
@@ -252,7 +254,7 @@ class ExcelDataController extends Controller
                            $immeuble->setConnection('temp');
                            $immeuble->nom=$column['immeuble'];
                            $immeuble->projet_id=$projet_id;
-                           $immeuble->tranche_id=$tranches;
+                        //    $immeuble->tranche_id=$tranches;
                            $immeuble->bloc_id=$blocs->id;
                            if($immeuble->save()){
                             $nv=0;
@@ -262,7 +264,7 @@ class ExcelDataController extends Controller
                             
                             // in this case we  check if the  one of thatt columns  is  empty  not  have check itt   (med)
                             
-                            Bien_Helper::checkAndCreateBien($tranches, $projet_id, $blocs, $immeubles, $column);
+                            Bien_Helper::checkAndCreateBien2($projet_id, $blocs, $immeubles, $column);
                             }
 
                         }
@@ -280,13 +282,11 @@ class ExcelDataController extends Controller
                   $bloc->setConnetion('temp');
                   $bloc->nom=$column['bloc'];
                   $bloc->projet_id=$projet_id;
-                  $bloc->tranche_id=$tranches->id;
                   if($bloc->save()){
                     $immeuble=new Immeuble();
                     $immeuble->setConnetion('temp');
                     $immeuble->nom=$column['immeuble'];
                     $immeuble->projet_id=$projet_id;
-                    $immeuble->tranche_id=$tranches->id;
                     $immeuble->bloc_id=$bloc->id;
                     if($immeuble->save()){
                         // $bien_exist=Bien::on('temp')->where(function ($query ) use ($column){
@@ -294,7 +294,7 @@ class ExcelDataController extends Controller
                         // })->where('tranche_id', $tranches->id)->where('projet_id', $projet_id)->where('bloc_id', $bloc->id)->where('immeuble_id',$immeuble->id)->count();
 
                         // in this case we  check if the  one of thatt columns  is  empty  not  have check itt   (med)
-                        Bien_Helper::checkAndCreateBien($tranches, $projet_id, $blocs, $immeubles, $column);
+                        Bien_Helper::checkAndCreateBien2( $projet_id, $blocs, $immeubles, $column);
 
                     }
                     
