@@ -1,0 +1,68 @@
+public function store(Request $request)
+    {
+        $stock_exist = Stock::where('reference_id', $request->get('reference_id'))
+            ->where('choix', $request->get('choix'))
+            ->count();
+        if ($stock_exist) {
+
+            $stock = Stock::where('reference_id', $request->get('reference_id'))
+                ->where('choix', $request->get('choix'))
+                ->get();
+
+            foreach ($stock as $st) {
+                $nv_quantite = $st->quantite + $request->get('quantite');
+                $nv_pu = (($st->quantite * $st->prix_unitaire) + ($request->get('quantite') * $request->get('prix_unitaire'))) / ($request->get('quantite') + $st->quantite);
+                $st->update([
+                    'quantite' => $nv_quantite,
+                    'prix_unitaire' => $nv_pu,
+                ]);
+                
+
+            }
+            $stock_detail = StockDetail::create([
+                //'stock_id' =>  ???,
+                'reference_id' =>  $request->get('reference_id'),
+                'fournisseur_id' =>  $request->get('fournisseur_id'),
+                'prix_unitaire' =>$request->get('prix_unitaire'),
+                'date' => $request->get('date'),
+                'quantite' => $request->get('quantite'),
+            ]);
+            $fr = Fournisseur::findOrFail($request->get('fournisseur_id'));
+            $fr->total_dettes += $request->get('quantite') * $request->get('prix_unitaire');
+            $fr->save();
+            Session::flash('success', 'stock de  \'' . $st->reference->ref . '\' ajouté avec succès');
+
+            return redirect()->route('stock.index');
+
+        } else {
+            $stock = Stock::create([
+
+                'reference_id' => $request->get('reference_id'),
+                'fournisseur_id' => $request->get('fournisseur_id'),
+                'choix' => $request->get('choix'),
+                'quantite' => $request->get('quantite'),
+                'prix_unitaire' => $request->get('prix_unitaire'),
+                'commentaire' => $request->get('commentaire'),
+
+            ]);
+            Session::flash('success', 'stock de  \'' . $stock->reference->ref . '\' ajouté avec succès');
+            if ($stock) {
+                $stock_detail = StockDetail::create([
+                    'stock_id' => $stock->id,
+                    'reference_id' => $stock->reference_id,
+                    'fournisseur_id' => $stock->fournisseur_id,
+                    'prix_unitaire' => $stock->prix_unitaire,
+                    'date' => $request->get('date'),
+                    'quantite' => $stock->quantite,
+                ]);
+                $fr = Fournisseur::findOrFail($stock->fournisseur_id);
+                $fr->total_dettes += $stock->quantite * $stock->prix_unitaire;
+                $fr->save();
+        }
+
+            Session::flash('success', 'stock de  \'' . $stock->reference->ref . '\' ajouté avec succès');
+
+            return redirect()->route('stock.index');
+
+        }
+    }

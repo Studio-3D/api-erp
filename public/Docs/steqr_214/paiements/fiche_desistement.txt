@@ -1,0 +1,39 @@
+pj_desistement==> //store piece jointe (desistement_id) mutliple
+/****************************************************************************/
+
+pj_penalite==> //store pice_jointe_penalite    multiple
+
+/*********************************************************************************/
+table remboursement==> search new Remboursement();
+			 /*if($request->fichier_autorisation_transfere!=null){
+                                    //store_fichier ==>cheque
+                                    remboursement->fichier_autorization=$request->fichier_autorisation_transfere;
+                                }
+                                if($request->cheque_recu_transferer!=null){
+                                    remboursement->cheque=$request->cheque_recu_transferer;
+
+                                    }
+                                */
+ /*if($request->fichier_autorisation!=null){
+                                    //store_fichier
+                                    remboursement->fichier_autorisation=$request->fichier_autorisation;
+
+                                    }
+                                    if($request->cheque_recu!=null){
+                                    //store_cheque
+                                    remboursement->cheque=$request->cheque_recu;
+
+                                    }
+
+                                */
+/***************************************************************************/
+
+=>desistement change de bien ==>si Montant à Ajouter !=0
+search==>//if(montant_a_ajouter >0)
+                                if($request->montant_a_ajouter>0){
+
+					send piece jointe
+
+
+
+		

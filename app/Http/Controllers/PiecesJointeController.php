@@ -59,7 +59,10 @@ class PiecesJointeController extends Controller
             $pJ->type = $request->type;
             $pJ->avance_id = $request->avance_id;
             $pJ->reservation_id = $request->reservation_id;
-            $pJ->pj_scanner = $request->pj_scanner;
+            $pJ->desistement_id = $request->desistement_id;
+            if($request->pj_scanner){
+                $pJ->pj_scanner = $request->pj_scanner;
+            }
 
             if ($pJ->save()) {
                 return response()->json(['PJ' => $pJ], 200);
@@ -201,7 +204,7 @@ class PiecesJointeController extends Controller
                     // Récupérer le nom du fichier
                     $fileName = $file->getClientOriginalName();
                     $Myfile = $fileName;
-                    $directory = public_path('files/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements');
+                    $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements');
                     File::makeDirectory($directory, 0755, true, true);
                     $file->move($directory, $Myfile);
                     $pJ->fichier = $Myfile;

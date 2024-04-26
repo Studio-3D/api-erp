@@ -10,11 +10,16 @@ use App\Models\Reservation;
 use App\Models\Remboursement;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use App\Http\Requests\StorePiecesJointeRequest;
+
 use Illuminate\Http\Request;
 use App\Enum\TypeDesistement;
 use App\Enum\TypeDesistementProfit;
 use App\Http\Helpers\PaginationHelper;
 use App\Enum\StatutReservationEnum;
+use App\Models\Societe;
+
+use Illuminate\Support\Facades\File;
 
 use App\Events\NotificationEvent;
 
@@ -117,9 +122,8 @@ class DesistementController extends Controller
                     $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
                     $mont_lettre = $inWords->format($request->montant_a_ajouter);
                     $desistement->montant_a_ajouter_par_lettre=$request->mont_lettre;
-
                     $desistement->sr= (bool)$request->sr;
-                    $desistement->mode_paiement=$request->mode_paiement;
+                    $desistement->mode_paiement=$request->input("mode_paiement");
                     //cheque cheque-banque cheque cetifice
                     if($request->mode_paiement==2||$request->mode_paiement==3||$request->mode_paiement==4){
                         $desistement->numero_paiement=$request->numero_paiement;
@@ -155,7 +159,9 @@ class DesistementController extends Controller
             if($desistement->save()){
 
                 //DD
-
+                    $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+                    $societe = Societe::findOrfail($user_societes->societe_id);
+                        
                     if($request->type==TypeDesistement::Désistement_Définitif->value){
                             //store Remboursement
                         //si sum_avances >0
@@ -181,10 +187,10 @@ class DesistementController extends Controller
                                 }
                                 $remboursement->etat=1;
                             }
-                            elseif($request->type_remb=='transfert_remb'){
+                            elseif($request->input('type_remb')=='transfert_remb'){
                                 $remboursement->date_rembourse=$request->date_remboursement;
                                 $remboursement->mode_rembourse_client=$request->mode_remboursement_transfere;
-                                $remboursement->pour_le_compte=$request->pour_le_compte_transfere;
+                                $remboursement->pour_le_compte=$request->input('pour_le_compte_transfere');
                                 $remboursement->num_paiement=$request->num_paiement_transfere;
                                 /*if($request->fichier_autorisation_transfere!=null){
                                     //store_fichier
@@ -193,6 +199,18 @@ class DesistementController extends Controller
                                     //store_cheque_recu
                                     }
                                 */
+                                if ($request->hasFile('fichier_autorisation_transfere')) { 
+                                    $remboursement->fichier_autorisation =$request->file('fichier_autorisation_transfere')->getClientOriginalName();
+                                    $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements/fichiers_autorisation');
+                                    File::makeDirectory($directory, 0755, true, true);
+                                    $request->file('fichier_autorisation_transfere')->move($directory,$request->file('fichier_autorisation_transfere')->getClientOriginalName());                            
+                                }
+                                if ($request->hasFile('cheque_recu_transfere')) {
+                                    $remboursement->cheque =$request->file('cheque_recu_transfere')->getClientOriginalName();
+                                    $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements/cheques_reçus');
+                                    File::makeDirectory($directory, 0755, true, true);
+                                    $request->file('cheque_recu_transfere')->move($directory,$request->file('cheque_recu_transfere')->getClientOriginalName());                            
+                                }
                                 //montant rembourse lettre
                                 $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
                                 $mont_remb_lettre = $inWords->format($request->reste_a_rembourse);
@@ -226,20 +244,20 @@ class DesistementController extends Controller
                                 $remboursement->montant_a_rembourser_par_lettre=$mont_remb_lettre;
 
                             }
-                            elseif($request->type_remb=='direct'){
+                            elseif($request->input('type_remb')=='direct'){
                                 $remboursement->date_rembourse=$request->date_remboursement;
                                 $remboursement->mode_rembourse=$request->type_remb;
                                 $remboursement->mode_rembourse_client=$request->mode_remboursement;
-                                $remboursement->pour_le_compte=$request->pour_le_compte;
+                                $remboursement->pour_le_compte=$request->input('pour_le_compte');
                                 $remboursement->num_paiement=$request->num_paiement;
                                 if (RoleHelper::AdminSup()) {
                                     $remboursement->statut=1;
                                 }
                                 $remboursement->user_id_valider=$userAuth->value('id');
                                 $remboursement->etat =1;
-                                $remboursement->montant_a_rembourser=$request->sum_avances_valides-$request->penalite_montant;
+                                $remboursement->montant_a_rembourser=floatval($request->input('sum_avances_valides'))-floatval($request->input('penalite_montant'));
                                 $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
-                                $mont_remb_lettre = $inWords->format($request->sum_avances_valides-$request->penalite_montant);
+                                $mont_remb_lettre = $inWords->format(floatval($request->input('sum_avances_valides'))-floatval($request->input('penalite_montant')));
                                 $remboursement->montant_a_rembourser_par_lettre=$mont_remb_lettre;
                                 /*if($request->fichier_autorisation!=null){
                                     //store_fichier
@@ -249,6 +267,19 @@ class DesistementController extends Controller
                                     }
 
                                 */
+                                if ($request->hasFile('fichier_autorisation')) { 
+                                    $remboursement->fichier_autorisation =$request->file('fichier_autorisation')->getClientOriginalName();
+                                    $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements/fichiers_autorisation');
+                                    File::makeDirectory($directory, 0755, true, true);
+                                    $request->file('fichier_autorisation')->move($directory,$request->file('fichier_autorisation')->getClientOriginalName());                            
+                                }
+                                if ($request->hasFile('cheque_recu')) {
+                                    $remboursement->cheque =$request->file('cheque_recu')->getClientOriginalName();
+                                    $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements/cheques_reçus');
+                                    File::makeDirectory($directory, 0755, true, true);
+                                    $request->file('cheque_recu')->move($directory,$request->file('cheque_recu')->getClientOriginalName());                            
+                                }
+                                
                             }
 
                                 if($remboursement->save()){
@@ -265,11 +296,16 @@ class DesistementController extends Controller
 
                         if($request->type_dp==TypeDesistementProfit::Désistement_AU_PROFIT_UN_PROCHE->value){
                             //push les aqu_id=>pour storer les non desiteurs
+
                              $array_aq_id=array();
                             //store les aquerures desisteur
                             $aqu_desit_Controller = new AquereurController();
-                            if ($request->desisteur_dp_proche_co) {
-                                foreach ($request->desisteur_dp_proche_co as $aq_nfo) {
+                            $data_desisteur_dp_proche_co= $request->input('desisteur_dp_proche_co', '[]');
+
+                            $dataArray_desisteur_dp_proche_co = json_decode($data_desisteur_dp_proche_co, true); // Ensure it's an array
+
+                            if ($dataArray_desisteur_dp_proche_co) {
+                                foreach ($dataArray_desisteur_dp_proche_co as $aq_nfo) {
                                     array_push($array_aq_id,$aq_nfo['id']);
                                     $dataAquereur = [
                                         'pourcentage' => $aq_nfo['pourcentage'],
@@ -281,6 +317,7 @@ class DesistementController extends Controller
                                     $aqu_desit_Controller->store_aquereurs_desistement($request->merge($dataAquereur));
                                 }
                             }
+
                             //store les non desisteurs
                             $aquereurs_non_desisteurs=Aquereur::on('temp')->where('reservation_id',$request->reservation_id)->whereNotIn('id', $array_aq_id)->get();
                             if(count($aquereurs_non_desisteurs)>0){
@@ -300,8 +337,12 @@ class DesistementController extends Controller
 
                             //store les nouveau_aqu_desistement
                             $nv_aqu_desit_Controller = new AquereurController();
-                            if ($request->new_clients_dp_proche) {
-                                foreach ($request->new_clients_dp_proche as $nv_aq_nfo) {
+                            $data_new_clients_dp_proche = $request->input('new_clients_dp_proche', '[]');
+
+                            $dataArray_new_clients_dp_proche= json_decode($data_new_clients_dp_proche, true); // Ensure it's an array
+
+                            if ($dataArray_new_clients_dp_proche) {
+                                foreach ($dataArray_new_clients_dp_proche as $nv_aq_nfo) {
                                     $dataAquereur_nv = [
                                         'cin' => $nv_aq_nfo['cin'],
                                         'nom' => $nv_aq_nfo['nom'],
@@ -322,8 +363,11 @@ class DesistementController extends Controller
                             $array_aq_id=array();
                             //store les aquerures desisteur
                             $aqu_desit_Controller = new AquereurController();
-                            if ($request->desisteur_dp_proche_co) {
-                                foreach ($request->desisteur_dp_proche_co as $aq_nfo) {
+                            $data_desisteur_dp_proche_co = $request->input('desisteur_dp_proche_co', '[]');
+                            $dataArray_desisteur_dp_proche_co = json_decode($data_desisteur_dp_proche_co, true); // Ensure it's an array
+
+                            if ($dataArray_desisteur_dp_proche_co) {
+                                foreach ($dataArray_desisteur_dp_proche_co as $aq_nfo) {
                                     array_push($array_aq_id,$aq_nfo['id']);
                                     $dataAquereur = [
                                         'pourcentage' => $aq_nfo['pourcentage'],
@@ -335,10 +379,15 @@ class DesistementController extends Controller
                                     $aqu_desit_Controller->store_aquereurs_desistement($request->merge($dataAquereur));
                                 }
                             }
+
                             //store au profit
                             $profit_Controller = new AquereurController();
-                            if ($request->profit_dp_co_reser) {
-                                foreach ($request->profit_dp_co_reser as $prof) {
+                            $data_profit_dp_co_reser = $request->input('profit_dp_co_reser', '[]');
+
+                            $dataArray_profit_dp_co_reser = json_decode($data_profit_dp_co_reser, true); // Ensure it's an array
+        
+                            if ($dataArray_profit_dp_co_reser) {
+                                foreach ($dataArray_profit_dp_co_reser as $prof) {
                                     array_push($array_aq_id,$prof['id']);
                                     $dataAquereur = [
                                         'pourcentage' => $prof['new_pourcentage'],
@@ -371,8 +420,11 @@ class DesistementController extends Controller
                         }elseif($request->type_dp==TypeDesistementProfit::Désistement_Partiel->value){
                             //store les desisteur partiel
                             $aqu_desit_part_Controller = new AquereurController();
-                            if ($request->desisteutrs_profit_dp_partiel) {
-                                foreach ($request->desisteutrs_profit_dp_partiel as $aq_nfo) {
+                            $data_desisteutrs_profit_dp_partiel = $request->input('desisteutrs_profit_dp_partiel', '[]');
+                            $dataArray_desisteutrs_profit_dp_partiel = json_decode($data_desisteutrs_profit_dp_partiel, true); // Ensure it's an array
+
+                            if ($dataArray_desisteutrs_profit_dp_partiel) {
+                                foreach ($dataArray_desisteutrs_profit_dp_partiel as $aq_nfo) {
                                     $dataAquereur = [
                                         'pourcentage' => $aq_nfo['pourcentage_'],
                                         'client_id' => $aq_nfo['cl_id'],
@@ -385,8 +437,11 @@ class DesistementController extends Controller
                             }
                             //store les nouvel_aq_partiel
                              $nv_aqu_part_Controller = new AquereurController();
-                             if ($request->new_clients_dp_partiel) {
-                                 foreach ($request->new_clients_dp_partiel as $nv_aq_nfo) {
+                             $data_new_clients_dp_partiel = $request->input('new_clients_dp_partiel', '[]');
+                            $dataArray_new_clients_dp_partiel = json_decode($data_new_clients_dp_partiel, true); // Ensure it's an array
+
+                             if ($dataArray_new_clients_dp_partiel) {
+                                 foreach ($dataArray_new_clients_dp_partiel as $nv_aq_nfo) {
                                      $dataAquereur_nv = [
                                          'cin' => $nv_aq_nfo['cin'],
                                          'nom' => $nv_aq_nfo['nom'],
@@ -402,8 +457,10 @@ class DesistementController extends Controller
                     }
 
                     //store Pénalité
-                        if($request->checked_penalite==true){
-                            $num_recu=null;
+
+                    if($request->input('checked_penalite') =='true') {
+
+                        $num_recu=null;
                             $last_num_recu = PenaliteDesistement::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")
                             ->get('num_recu')->first();
                             if ($last_num_recu!=null) {
@@ -430,7 +487,7 @@ class DesistementController extends Controller
                             $pen->penalite_par=$request->penalite_par;
                             $pen->mode_penalite=$request->mode_penalite;
                             $pen->sr= (bool)$request->sr_pen;
-                            $pen->mode_paiement=$request->mode_paiement_pen;
+                            $pen->mode_paiement=$request->input("mode_paiement_pen");
                             //cheque cheque-banque cheque cetifice
                             if($request->mode_paiement_pen==2||$request->mode_paiement_pen==3||$request->mode_paiement_pen==4){
                                 $pen->numero_paiement=$request->numero_paiement_pen;
@@ -454,8 +511,30 @@ class DesistementController extends Controller
                                     broadcast(new NotificationEvent($pen->id));
                                    }
                                 }
-                                //store pice_jointe_penalite
 
+                                //store pice_jointe_penalite
+                                if ($request->file('files_penalite')) {
+                                    foreach ($request->file('files_penalite') as $file) {
+                                        $piecesJointeController = new PiecesJointeController();
+                                        $pieceJointeRequest = new StorePiecesJointeRequest();
+                                        
+                                        // Récupérer le nom du fichier
+                                        $fileName = $file->getClientOriginalName();
+                                        $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/penalites');
+                                        File::makeDirectory($directory, 0755, true, true);
+                                        $file->move($directory, $fileName);
+                                        $fileType = $file->getClientOriginalExtension();
+                                        $datapieceJointe = [
+                                            'fichier' => $fileName,
+                                            'type' => $fileType,
+                                            'penalite_id' => $pen->id,
+            
+                                        ];
+            
+                                        $pieceJointeRequest->merge($datapieceJointe);
+                                        $piecesJointeController->store($pieceJointeRequest);
+                                    }
+                                }
                                  //store penalite to fiche transmission
                                     $fiche= new FicheTransmission();
                                     $fiche->setConnection('temp');
@@ -502,7 +581,28 @@ class DesistementController extends Controller
                         }
 
                     //store piece jointe
+                    if ($request->file('files_desistement')) {
+                        foreach ($request->file('files_desistement') as $file) {
+                            $piecesJointeController = new PiecesJointeController();
+                            $pieceJointeRequest = new StorePiecesJointeRequest();
+                            
+                            // Récupérer le nom du fichier
+                            $fileName = $file->getClientOriginalName();
+                            $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/desistement');
+                            File::makeDirectory($directory, 0755, true, true);
+                            $file->move($directory, $fileName);
+                            $fileType = $file->getClientOriginalExtension();
+                            $datapieceJointe = [
+                                'fichier' => $fileName,
+                                'type' => $fileType,
+                                'desistement_id' => $desistement->id,
 
+                            ];
+
+                            $pieceJointeRequest->merge($datapieceJointe);
+                            $piecesJointeController->store($pieceJointeRequest);
+                        }
+                    }
 
 
 
@@ -510,11 +610,13 @@ class DesistementController extends Controller
                     if (RoleHelper::AdminSup()) {
 
                         if($request->type==TypeDesistement::Désistement_Définitif->value){
+
                                 //update eta de reservation
                                 $reservation->setConnection('temp');
                                 $reservation->etat=EtatReservationEnum::desist_definitif->value ;
                                 $reservation->code_desistement=$code_desist_reservation;
                                 if($reservation->save()){
+                                    
                                     //soft_delete_avances
                                     $avanceController = new AvanceController();
                                     $avanceController->soft_destroy_avances_by_reservationId($request->reservation_id);
@@ -525,7 +627,9 @@ class DesistementController extends Controller
                                     $pjController = new PiecesJointeController();
                                     $pjController->soft_destroy_pj_by_reservationId($request->reservation_id);
                                     //set bien disponible et desistement_id
+
                                     Bien_Helper::libererBien($request->bien_id_ancien,null,$desistement->id);
+
                                     //si sum_avances >0
                                     if($request->type_remb!=null){
                                             if($remboursement->mode_rembourse=='transfert' || $remboursement->mode_rembourse=='transfert_rem_direct'||$remboursement->mode_rembourse=='transfert_rem_apres_vente' ){
@@ -569,11 +673,15 @@ class DesistementController extends Controller
                                                     'commentaireAvance' => null,
                                                     'num_remise' => null,
                                                     'date_encaissement' =>null,
+                                                    //send piece jointes
+
+                                                    'files_avance' => $request->file('files_avance'),
+
 
                                                 ];
                                                 $avanceRequest->merge($dataAvance);
                                                 $avanceController->store($avanceRequest);
-                                                 //send piece jointes
+                                                 
                                             }
                                     }
                                      //validation desistement
@@ -985,7 +1093,7 @@ class DesistementController extends Controller
                                         'sr' => (bool)$request->sr,
                                         'type_encaissement' => 1,
                                         'montant' => $montant,
-                                        'mode_paiement' => $request->mode_paiement,
+                                        'mode_paiement' => $request->input("mode_paiement"),
                                         'numero_paiement' => $request->numero_paiement,
                                         'date_reglement' => Carbon::now(),
                                         'echeance' => $request->echeance,
@@ -1049,6 +1157,8 @@ class DesistementController extends Controller
                     }
                 }
              }
+
+             
 
 
 
@@ -1961,7 +2071,7 @@ class DesistementController extends Controller
                 $pen->penalite_par=$request->penalite_par;
                 $pen->mode_penalite=$request->mode_penalite;
                 $pen->sr= (bool)$request->sr_pen;
-                $pen->mode_paiement=$request->mode_paiement_pen;
+                $pen->mode_paiement= $request->input("mode_paiement_pen");
                 //cheque cheque-banque cheque cetifice
                 if($request->mode_paiement_pen==2||$request->mode_paiement_pen==3||$request->mode_paiement_pen==4){
                     $pen->numero_paiement=$request->numero_paiement_pen;

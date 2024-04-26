@@ -276,7 +276,7 @@ class ReservationController extends Controller
                         // Récupérer le nom du fichier
                         $fileName = $file->getClientOriginalName();
                         $Myfile = $fileName;
-                        $directory = public_path('files/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations');
+                        $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations');
                         File::makeDirectory($directory, 0755, true, true);
                         $file->move($directory, $Myfile);
                         $fileType = $file->getClientOriginalExtension();
@@ -284,7 +284,6 @@ class ReservationController extends Controller
                             'fichier' => $Myfile,
                             'type' => $fileType,
                             'reservation_id' => $reservation->id,
-                            'pj_scanner'=> 0,
 
                         ];
 
@@ -562,7 +561,7 @@ class ReservationController extends Controller
                             // Récupérer le nom du fichier
                             $Myfile = $file->getClientOriginalName();
 
-                            $directory = public_path('files/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations');
+                            $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations');
                             File::makeDirectory($directory, 0755, true, true);
                             if(!file_exists($directory . '/' . $Myfile)){
                                 $file->move($directory, $Myfile);
@@ -572,7 +571,6 @@ class ReservationController extends Controller
                                 'fichier' => $Myfile,
                                 'type' => $fileType,
                                 'reservation_id' => $reservation->id,
-                                'pj_scanner'=> 0,
 
                             ];
 
