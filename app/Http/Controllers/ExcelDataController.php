@@ -31,35 +31,40 @@ class ExcelDataController extends Controller
        
         foreach ($data as $column) {
 
-        if(array_key_exists('tranche',$column))
+        if(array_key_exists('tranche',$column) )
         {        
           
             
+            Log::info($column['tranche']);
+            
             Log::info('tranche  colum n here ');
+            
             
             $tranche =Tranche::on('temp')
             ->where('nom', $column['tranche'])
             ->where('projet_id', $projet_id)
             ->get();
             
-            $tranchee =Tranche::on('temp')
+            $count_tranche =Tranche::on('temp')
             ->where('nom', $column['tranche'])
             ->where('projet_id', $projet_id)
             ->count();
-            log::info($tranche);
+            log::info($column['tranche']);
 
             //   we have  check  if tranche exist  into file excel 
           
-            if($tranchee>0)
+            if($count_tranche>0)
             {
-                
+            
               
                 
                 Log::info('tranche from table db where  column  tranche here  exist');
 
                 foreach($tranche as $tranches)
-                {
+               {
                     
+                
+                Log::info('tranche column here ');
                 
                     Log::info($tranches->id);
                     
@@ -69,16 +74,16 @@ class ExcelDataController extends Controller
                     ->where('projet_id', $projet_id)
                     ->get();
 
-                    $blocc = Bloc::on('temp')
+                    $count_bloc = Bloc::on('temp')
                     ->where('nom', $column['Bloc'])
                     ->where('tranche_id', $tranches->id)
                     ->where('projet_id', $projet_id)
                     ->count();
 
-                    Log::info($blocc);
+               
                
 
-                    if($blocc>0)
+                    if($count_bloc>0)
                     {
                         Log::info('bloc exist from db  here where  column  tranche  here  exist');
            
@@ -96,14 +101,14 @@ class ExcelDataController extends Controller
                             ->where('projet_id', $projet_id)
                             ->where('bloc_id', $blocs->id)->get();
 
-                            $immeublee = Immeuble::on('temp')
+                            $count_immeuble = Immeuble::on('temp')
                             ->where('nom', $column['immeuble'])
                             ->where('tranche_id',  $tranches->id)
                             ->where('projet_id', $projet_id)
                             ->where('bloc_id', $blocs->id)->count();
                         
                             
-                            if($immeublee>0)
+                            if($count_immeuble>0)
                             {
                                 Log::info('immeuble from db here  e where  column  tranche    exist ');
                                foreach($immeuble as $immeubles)
@@ -139,7 +144,7 @@ class ExcelDataController extends Controller
                     else{
                         
                         Log::info('im  i   else bloc  where column  tranche exist');
-                        $nv=null;
+                        // $nv=null;
                         // bloc not exist 
                       $bloc=new Bloc();
                       $bloc->setConnection('temp');
@@ -172,11 +177,14 @@ class ExcelDataController extends Controller
             // tranche else
             else{
 
+
                 // tranche not exist   in database
                 
                 Log::info('tranche  not exist into  db start  create one   where column  tranche exist');
                 
-                
+                log::info($column['tranche']);
+                log::info($column['immeuble']);
+
           
               $new_tranche=new Tranche();
               $new_tranche->setConnection('temp');
@@ -190,7 +198,7 @@ class ExcelDataController extends Controller
                 $new_bloc->nom=$column['Bloc'];
                 $new_bloc->projet_id=$projet_id;
                 $new_bloc->tranche_id=$new_tranche->id;
-                if($new_bloc->save())
+                if($new_bloc->save() && $column['immeuble']!=null)
                 log::info('after  bloc save succ  where column  tranche exist');
 
                 {
@@ -212,25 +220,27 @@ class ExcelDataController extends Controller
         }
 
         
-        else
+             elseif($column['tranche']!=null && $column['immeuble'])
             {
                 
                 log::info('messing column tranche');
+
                 $bloc = Bloc::on('temp')
                 ->where('nom', $column['Bloc'])
                 ->where('projet_id', $projet_id)
                 ->get();
 
-                $blocc = Bloc::on('temp')
+
+                $count_bloc = Bloc::on('temp')
                 ->where('nom', $column['Bloc'])
                 ->where('projet_id', $projet_id)
                 ->count();
                
 
-                 Log::info($bloc);
+                //  Log::info($bloc);
            
 
-                if($blocc>0)
+                if($count_bloc>0)
                 {
                     Log::info('bloc from db  where column  tranche  nottt exist ');
        
@@ -247,21 +257,21 @@ class ExcelDataController extends Controller
                         ->where('projet_id', $projet_id)
                         ->where('bloc_id', $blocs->id)->get();
 
-                        $immeublee = Immeuble::on('temp')
+                        $immeuble_count = Immeuble::on('temp')
                         ->where('nom', $column['immeuble'])
                         ->where('projet_id', $projet_id)
                         ->where('bloc_id', $blocs->id)->count();
                     
                         Log::info($immeuble);
                         
-                        if($immeublee>0)
+                        if($immeuble_count>0)
                         {
                             Log::info('immeuble exist  from  db  where column  tranche  nottt exist');
                            foreach($immeuble as $immeubles)
                            {
                             
                    
-                            Log::info($immeubles->id);
+                            // Log::info($immeubles->id);
                             $nv=0;
                           
                             Bien_Helper::checkAndCreateBien2( $projet_id, $blocs, $immeubles, $column);
@@ -299,7 +309,7 @@ class ExcelDataController extends Controller
                     
                     Log::info('im  i   else bloc   where column  tranche  nottt exist');
                     
-                    $nv=null;
+                    // $nv=null;
                     // bloc not exist 
                   $bloc=new Bloc();
                   $bloc->setConnection('temp');
