@@ -88,7 +88,7 @@ class SocieteController extends Controller
             }
             $societe->save();
             if ($request->hasFile('logo')) {
-                $request->logo->move(public_path('img/'. $raison_sociale_concatene.'_'.$societe->id.'/logos'), $logo);
+                $request->logo->move(public_path('Docs/'. $raison_sociale_concatene.'_'.$societe->id.'/logos'), $logo);
                 $societe->logo = $logo;
                 $societe->save();
             }
@@ -158,14 +158,14 @@ class SocieteController extends Controller
             if ($request->hasFile('logo')) {
 
                 if($societe->logo!=null){
-                    $image_path = public_path('img/'.$societe->raison_sociale_concatene.'_'.$id.'/logos'.$societe->logo);
+                    $image_path = public_path('Docs/'.$societe->raison_sociale_concatene.'_'.$id.'/logos'.$societe->logo);
                     if(file_exists($image_path)){
                       //unlink(C:\Users\HP\Desktop\20190513_174204.jpg);
                       File::delete('C:\Users\HP\Desktop\20190513_174204.jpg');
                     }
                 }
                 $logo = time() . '.' . $raison_sociale_concatene . '.' . $request->logo->extension();
-                $request->logo->move(public_path('img/'. $raison_sociale_concatene.'_'.$societe->id.'/logos'), $logo);
+                $request->logo->move(public_path('Docs/'. $raison_sociale_concatene.'_'.$societe->id.'/logos'), $logo);
                 $societe->logo = $logo;
             }
             $societe->save();

@@ -296,8 +296,7 @@ class AvanceController extends Controller
 
                         // Récupérer le nom du fichier
                         $fileName = $file->getClientOriginalName();
-                        //$Myfile = time() . '.' .$fileName;
-                        $directory = public_path('files/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements');
+                        $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements');
                         File::makeDirectory($directory, 0755, true, true);
                         $file->move($directory, $fileName);
                         $fileType = $file->getClientOriginalExtension();
@@ -305,7 +304,6 @@ class AvanceController extends Controller
                             'fichier' => $fileName,
                             'type' => $fileType,
                             'avance_id' => $avance->id,
-                            'pj_scanner'=> 0,
                         ];
 
                         $pieceJointeRequest->merge($datapieceJointe);
@@ -450,7 +448,7 @@ class AvanceController extends Controller
                         // Récupérer le nom du fichier
                         $Myfile = $file->getClientOriginalName();
 
-                        $directory = public_path('files/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements');
+                        $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements');
                         File::makeDirectory($directory, 0755, true, true);
                         if (!file_exists($directory . '/' . $Myfile)) {
                             $file->move($directory, $Myfile);
@@ -460,7 +458,6 @@ class AvanceController extends Controller
                             'fichier' => $Myfile,
                             'type' => $fileType,
                             'avance_id' => $avance->id,
-                            'pj_scanner'=> 0,
 
                         ];
 
