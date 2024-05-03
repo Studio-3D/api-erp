@@ -7,8 +7,6 @@ use App\Models\Frein;
 use App\Models\Tranche;
 use App\Models\Bien;
 use App\Models\Bloc;
-use App\Models\Projet;
-
 use App\Models\CompositionBien; 
 use App\Models\TypeBien;
 use App\Models\Immeuble;
@@ -16,9 +14,6 @@ use App\Http\Helpers\Bien_Helper;
 use Illuminate\Support\Facades\Log;
 
 class ImportExcelHelper
-
-
-
 {
 
     public static function ImportStockByProjetWithoutTrancheAndBlocAndImmeuble($data,$projet_id)
@@ -39,6 +34,215 @@ class ImportExcelHelper
         }
         
     }
+
+    public static function ImportStockByProjetWithoutTrancheAndBloc($data, $projet_id)
+    {
+        $projet=Projet::findOrfail($projet_id);
+
+        if($projet->nbre_blocs==0 && $projet->nbre_tranches==0)
+        {
+           foreach($data  as $column)
+           {
+            $immeuble = Immeuble::on('temp')
+            ->where('nom', $column['immeuble'])
+            ->where('projet_id', $projet_id)
+            ->first();
+
+           
+            if($immeuble)
+            {
+                Log::info(' immeuble exist where tranche and bloc not exist ');
+           
+                Log::info($immeuble->id);
+                Bien_Helper::checkAndCreateBien(null, $projet_id, null, $immeuble, $column);
+        
+            }
+            else{
+               
+                    log::info('im  in  else immeu  where column  tranche exist');
+                       $immeuble=new Immeuble();
+                       $immeuble->setConnection('temp');
+                       $immeuble->nom=$column['immeuble'];
+                       $immeuble->projet_id=$projet_id;
+                       if($immeuble->save()){
+                        Bien_Helper::checkAndCreateBien(null, $projet_id, null, $immeuble, $column);
+                        }
+
+            }
+           }
+        }else{
+            return response()->json(['error' => 'Project does not meet the required conditions.'], 400);
+
+        }
+    }
+
+    public static function ImportStockByProjetWithoutBloc($data,$projet_id)
+    {
+        $projet=Projet::findOrfail($projet_id);
+        if($projet->nbre_blocs==0)
+        {
+            foreach($data  as  $column)
+            {
+                $tranche =Tranche::on('temp')
+                ->where('nom', $column['tranche'])
+                ->where('projet_id', $projet_id)
+                ->first();
+                if($tranche)
+                {
+                    $immeuble = Immeuble::on('temp')
+                    ->where('nom', $column['immeuble'])
+                    ->where('tranche_id',  $tranche->id)
+                    ->where('projet_id', $projet_id)->first();
+                    if($immeuble)
+                    {
+                    Bien_Helper::checkAndCreateBien($tranche, $projet_id, null, $immeuble, $column);
+
+                    }else{
+                        $immeuble=new Immeuble();
+                        $immeuble->setConnection('temp');
+                        $immeuble->nom=$column['immeuble'];
+                        $immeuble->projet_id=$projet_id;
+                        $immeuble->tranche_id=$tranche->id;
+                      
+                        if($immeuble->save()){
+                         $nv=0;
+                         Bien_Helper::checkAndCreateBien($tranche, $projet_id, null, $immeuble, $column);
+                         }
+
+                    }
+
+                }else{
+                    $new_tranche=new Tranche();
+                    $new_tranche->setConnection('temp');
+                    $new_tranche->nom=$column['tranche'];
+                    $new_tranche->projet_id=$projet_id;
+                    if($new_tranche->save())
+                    {
+                        $new_immeuble=new Immeuble();
+                        $new_immeuble->setConnection('temp');
+                        $new_immeuble->nom=$column['immeuble'];
+                        $new_immeuble->projet_id=$projet_id;
+                        $new_immeuble->tranche_id=$new_tranche->id;
+                        if($new_immeuble->save())
+                        {
+                            Bien_Helper::checkAndCreateBien($new_tranche, $projet_id, null, $new_immeuble, $column);
+
+                        }
+                       
+                    }
+
+                }
+            }
+
+        }else{
+            return response()->json(['error' => 'Project does not meet the required conditions.'], 400);
+
+        }
+    }
+
+    public  static function ImportStockByProjetWithoutImmeuble($data ,$projet_id)
+    {
+        $projet=Projet::findOrfail($projet_id);
+        if($projet->nbre_immeubles==0)
+        {
+            foreach($data as $column)
+            {
+                $tranche =Tranche::on('temp')
+                ->where('nom', $column['tranche'])
+                ->where('projet_id', $projet_id)
+                ->first();
+                if($tranche)
+                {
+                    $bloc = Bloc::on('temp')
+                    ->where('nom', $column['Bloc'])
+                    ->where('tranche_id', $tranche->id)
+                    ->where('projet_id', $projet_id)
+                    ->first();
+                    if($bloc)
+                    {
+                        Bien_Helper::checkAndCreateBien($tranche, $projet_id, $bloc, null, $column);
+
+                    }else{
+                        $bloc=new Bloc();
+                        $bloc->setConnection('temp');
+                        $bloc->nom=$column['Bloc'];
+                        $bloc->projet_id=$projet_id;
+                        $bloc->tranche_id=$tranche->id;
+                        if($bloc->save())
+                        {
+                            Bien_Helper::checkAndCreateBien($tranche, $projet_id, $bloc, null, $column);
+
+                        }
+
+                    }
+                }else{
+                    $new_tranche=new Tranche();
+                    $new_tranche->setConnection('temp');
+                    $new_tranche->nom=$column['tranche'];
+                    $new_tranche->projet_id=$projet_id;
+                    if($new_tranche->save())
+                    {
+                        $new_bloc=new Bloc();
+                        $new_bloc->setConnection('temp');
+                        $new_bloc->nom=$column['Bloc'];
+                        $new_bloc->projet_id=$projet_id;
+                        $new_bloc->tranche_id=$new_tranche->id;
+                        if($new_bloc->save())
+                        {
+                            Bien_Helper::checkAndCreateBien($new_tranche, $projet_id, $new_bloc, null, $column);
+
+                        }
+                    }
+                    
+                }
+            }
+
+        }else{
+            return response()->json(['error' => 'Project does not meet the required conditions.'], 400);
+
+        }
+
+
+    }
+
+ public static function ImportStockByProjetWithoutBlocAndImmeuble($data,$projet_id)
+
+{
+    
+    $projet=Projet::findOrfail($projet_id);
+
+    if($projet->nbre_blocs==0 && $projet->nbre_immeubles==0)
+    {
+        foreach($data as  $column)
+        {
+            $tranche =Tranche::on('temp')
+            ->where('nom', $column['tranche'])
+            ->where('projet_id', $projet_id)
+            ->first();
+            if($tranche){
+                Bien_Helper::checkAndCreateBien($tranche, $projet_id, null, null, $column);
+
+            }else{
+                $new_tranche=new Tranche();
+                $new_tranche->setConnection('temp');
+                $new_tranche->nom=$column['tranche'];
+                $new_tranche->projet_id=$projet_id;
+                if($new_tranche->save()){
+                    Bien_Helper::checkAndCreateBien($new_tranche, $projet_id, null, null, $column);
+
+                }
+
+            }
+        }
+
+    }else{
+        return response()->json(['error' => 'Project does not meet the required conditions.'], 400);
+
+    }
+
+
+}
+
     public static function ImportStockByProjet($column, $projet_id)
     {
       
@@ -59,9 +263,8 @@ class ImportExcelHelper
                 Log::info('tranche column here ');
                 Log::info($tranche->id);
                 
-            if(array_key_exists('Bloc',$column))   
-            {
-
+            
+           
                 $bloc = Bloc::on('temp')
                 ->where('nom', $column['Bloc'])
                 ->where('tranche_id', $tranche->id)
@@ -141,45 +344,8 @@ class ImportExcelHelper
                   }
 
                 }
-            }
-            // ELSE  BLOC COLUMN NOT E EXIST
-             else{
-                log::info('messing  column bloc  where  tranche  exist');
-                
-                $immeuble = Immeuble::on('temp')
-                ->where('nom', $column['immeuble'])
-                ->where('tranche_id',  $tranche->id)
-                ->where('projet_id', $projet_id)->first();
-
-               
-                if($immeuble )
-                {
-                    Log::info('immeuble from db here  e where  column  tranche    exist ');
-                //    foreach($immeuble as $immeubles)
-                //    {
-                    Log::info($immeuble->id);
-                    Bien_Helper::checkAndCreateBien($tranche, $projet_id, null, $immeuble, $column);
-                //    }
-                }
-                //  immeuble else
-
-                else{
-
-                log::info('im  in  else immeu  where column  tranche exist');
-                   $immeuble=new Immeuble();
-                   $immeuble->setConnection('temp');
-                   $immeuble->nom=$column['immeuble'];
-                   $immeuble->projet_id=$projet_id;
-                   $immeuble->tranche_id=$tranche->id;
-                   
-                //    $immeuble->bloc_id=$bloc->id;
-                   if($immeuble->save() ){
-                    $nv=0;
-                    Bien_Helper::checkAndCreateBien($tranche, $projet_id, null, $immeuble, $column);
-                    }
-                }
-
-            }
+         
+          
             
         }
         // tranche else
@@ -200,8 +366,6 @@ class ImportExcelHelper
           $new_tranche->projet_id=$projet_id;
           if($new_tranche->save()){
             log::info('store tranche succ  where column  tranche exist');
-     if(array_key_exists('Bloc',$column))
-       {
             $new_bloc=new Bloc();
             $new_bloc->setConnection('temp');
             $new_bloc->nom=$column['Bloc'];
@@ -219,36 +383,24 @@ class ImportExcelHelper
                 $new_immeuble->bloc_id=$new_bloc->id;
             }
             if($new_immeuble->save()){
-                log::info('after  imeeuble s save succ  where column  ty ');
+                log::info('after  imeeuble s save succ  where column  tranche exist');
                 Bien_Helper::checkAndCreateBien($new_tranche, $projet_id, $new_bloc, $new_immeuble, $column);
                 }
                   
+            }
         }
-}    
- else{
 
-log::info('messing  column bloc whene   ');
-    $new_immeuble=new Immeuble();
-    $new_immeuble->setConnection('temp');
-    $new_immeuble->nom=$column['immeuble'];
-    $new_immeuble->projet_id=$projet_id;
-    $new_immeuble->tranche_id=$new_tranche->id;
-
-    if($new_immeuble->save()){
-    log::info('after  imeeuble s save succ  where column  tranche exist and  ');
-    Bien_Helper::checkAndCreateBien($new_tranche, $projet_id, null, $new_immeuble, $column);
     }
 
-}   
-}
-
-}
 
 
-
-    public static function ImportStockByProjetWithoutTranche($column, $projet_id)
+    public static function ImportStockByProjetWithoutTranche($data, $projet_id)
     {
-          
+        $projet=Projet::findOrfail($projet_id);
+        if($projet->nbre_tranches==0)
+        {
+        foreach($data  as $column)
+        {
         log::info('messing column tranche');
 
         $bloc = Bloc::on('temp')
@@ -342,7 +494,12 @@ log::info('messing  column bloc whene   ');
             
           }
 
-        
+        }
     }
+}else{
+    return response()->json(['error' => 'Project does not meet the required conditions.'], 400);
+
+}
+
     }
 }
