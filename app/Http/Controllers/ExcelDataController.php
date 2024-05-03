@@ -23,31 +23,64 @@ class ExcelDataController extends Controller
 
     public function UploadDataExcel(Request $request)
     {
+        
         $projet_id = $request->projetId;
         DatabaseHelper::Config();
         set_time_limit(0);
         ini_set('memory_limit', '-1');
     
          $data = $request->input('data');
+         
+         Log::info($data);
+         if(array_key_exists('tranche',$data[0]))
+         {
+             if(array_key_exists('bloc',$data[0]))
+             {
+                if(array_key_exists('immeuble',$data[0]))
+                {
+                    ImportExcelHelper::ImportStockByProjet($data, $projet_id);
+                }else{
+                    ImportExcelHelper::ImportStockByProjetWithoutImmeuble($data, $projet_id);
+                }
+                 // else  bloc in  tranche 
+             }else{
+                if(array_key_exists('immeuble',$data[0]))
+                {
+                    ImportExcelHelper::ImportStockByProjetWithoutBloc($data, $projet_id);
+                }else{
+                    ImportExcelHelper::ImportStockByProjetWithoutBlocAndImmeuble($data, $projet_id);
+                }
+
+
+             }
+             Log::info('its here');
+             
+         }
+         else{
+            // else  tranche 
+            if(array_key_exists('bloc',$data[0]))
+             {
+                if(array_key_exists('immeuble',$data[0]))
+                {
+                    ImportExcelHelper::ImportStockByProjetWithoutTranche($data, $projet_id);
+                }else{
+                    ImportExcelHelper::ImportStockByProjetWithoutTrancheAndImmeuble($data, $projet_id);
+                }
+
+             }else{
+                if(array_key_exists('immeuble',$data[0]))
+                {
+                    ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBloc($data, $projet_id);
+                }else{
+                    ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBlocAndImmeuble($data, $projet_id);
+                }
+            Log::info('its not here ');
+            
+         }
+
+         
+        }
        
-        foreach ($data as $column) {
-
-        if(array_key_exists('tranche',$column) )
-        {
-            ImportExcelHelper::ImportStockByProjet($column, $projet_id);
-
-        }
-        else
-            {
-            
-               
-               
-                    ImportExcelHelper::ImportStockByProjetWithoutTranche($column, $projet_id);
-
-            
-            }
-
-        }
     
     }
    
