@@ -17,7 +17,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use \Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -97,35 +96,51 @@ class UserController extends Controller
         $size = $request->input('size', config('app.default_item_number_perpage'));
         $page = $request->input('page', 1);
 
-        if (RoleHelper::Superadmin()) {
-            if (Auth::guard('api')->user()->societe_id == 1) {
-                $users = User::orderBy('created_at', 'desc')
-                    ->paginate($size, ['*'], 'page', $page);
-            } else {
-                $users = User::where('societe_id', Auth::guard('api')->user()->societe_id)
-                    ->where('role', '!=', 1)
-                    ->orderBy('created_at', 'desc')
-                    ->paginate($size, ['*'], 'page', $page);
-            }
-        } else if (RoleHelper::Admin()) {
-            DatabaseHelper::Config();
-            $users = User::on('temp')->orderBy('created_at', 'desc')
-                ->paginate($size, ['*'], 'page', $page);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        $query = User::query();
+        // Filtre par nom si le nom est spécifié
+        if ($request->filled('nom')) {
+            $query->where('name', 'like', '%' . $request->input('nom') . '%');
+        }
+        // Filtre par prénom si le prénom est spécifié
+        if ($request->filled('prenom')) {
+            $query->where('prenom', 'like', '%' . $request->input('prenom') . '%');
+        }
+        // Filtre par prénom si l'email est spécifié
+        if ($request->filled('email')) {
+            $query->where('email', 'like', '%' . $request->input('email') . '%');
+        }
+        // Filtre par téléphone
+        if ($request->filled('telephone')) {
+            $query->where('phone', 'like', '%' . $request->input('telephone') . '%');
         }
 
-        // Extract pagination properties from the paginator
+        // Si l'utilisateur est superadmin
+        if (RoleHelper::Superadmin()) {
+            // Filtre par société si la société est spécifiée
+            if ($request->filled('societe'))
+                $query->whereHas('societe', function ($subQuery) use ($request) {
+                    $subQuery->where('raison_sociale', 'like', '%' . $request->input('societe') . '%');
+                });
+            // Filtre par rôle si le rôle est spécifié
+            if ($request->filled('role')) {
+                $query->where('role', $request->input('role'));
+            }
+        }
+        // Récupérer les utilisateurs avec pagination en fonction des filtres appliqués
+        $users = $query->orderBy('created_at', 'desc')
+            ->paginate($size, ['*'], 'page', $page);
+
+        // Extraire les propriétés de pagination du paginateur
         $pagination = [
             'currentPage' => $users->currentPage(),
             'totalItems' => $users->total(),
             'totalPages' => $users->lastPage(),
         ];
 
-        // Extract user items from paginator
+        // Extraire les éléments d'utilisateur du paginateur
         $users = $users->items();
 
-        // Return simplified response
+        // Retourner la réponse simplifiée
         return response()->json([
             'users' => $users,
             'pagination' => $pagination
