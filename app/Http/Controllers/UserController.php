@@ -93,38 +93,51 @@ class UserController extends Controller
     }
     public function getAll(Request $request)
     {
+        // Vérifier si l'utilisateur est authentifié
+        if (!Auth::guard('api')->check()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Identifier l'utilisateur authentifié
+        $user = Auth::guard('api')->user();
+
+        // Définir la taille de pagination par défaut
         $size = $request->input('size', config('app.default_item_number_perpage'));
         $page = $request->input('page', 1);
 
         $query = User::query();
-        // Filtre par nom si le nom est spécifié
+        // Filtrer par nom si le nom est spécifié
         if ($request->filled('nom')) {
             $query->where('name', 'like', '%' . $request->input('nom') . '%');
         }
-        // Filtre par prénom si le prénom est spécifié
+        // Filtrer par prénom si le prénom est spécifié
         if ($request->filled('prenom')) {
             $query->where('prenom', 'like', '%' . $request->input('prenom') . '%');
         }
-        // Filtre par prénom si l'email est spécifié
+        // Filtrer par prénom si l'email est spécifié
         if ($request->filled('email')) {
             $query->where('email', 'like', '%' . $request->input('email') . '%');
         }
-        // Filtre par téléphone
+        // Filtrer par téléphone
         if ($request->filled('telephone')) {
             $query->where('phone', 'like', '%' . $request->input('telephone') . '%');
         }
 
-        // Si l'utilisateur est superadmin
+        // Si l'utilisateur s'agit d'un 'superadmin'
         if (RoleHelper::Superadmin()) {
-            // Filtre par société si la société est spécifiée
+            // Filtrer par société si la société est spécifiée
             if ($request->filled('societe'))
                 $query->whereHas('societe', function ($subQuery) use ($request) {
                     $subQuery->where('raison_sociale', 'like', '%' . $request->input('societe') . '%');
                 });
-            // Filtre par rôle si le rôle est spécifié
+            // Filtrer par rôle si le rôle est spécifié
             if ($request->filled('role')) {
                 $query->where('role', $request->input('role'));
             }
+        } // Sinon, si l'utilisateur est 'admin'
+        else if (RoleHelper::Admin()) {
+            // Filtrer avec l'id de la société et exclure les utilisateurs ayant le role superAdmin
+            $query->where('societe_id', $user->societe_id)->where('role', '!=', 1);
         }
         // Récupérer les utilisateurs avec pagination en fonction des filtres appliqués
         $users = $query->orderBy('created_at', 'desc')
