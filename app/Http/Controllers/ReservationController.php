@@ -2,33 +2,34 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
+use App\Models\Bien;
+use App\Models\User;
+use \NumberFormatter;
 use App\Enum\RoleEnum;
-use App\Enum\StatutReservationEnum;
-use App\Http\Helpers\Bien_Helper;
-use App\Http\Helpers\DatabaseHelper;
-use App\Http\Helpers\NotificationHelper;
+use App\Models\Avance;
+use App\Models\Client;
+use App\Models\Societe;
+use App\Models\Aquereur;
+use App\Models\Reservation;
+use App\Models\PiecesJointe;
+use Illuminate\Http\Request;
 use App\Http\Helpers\RoleHelper;
-use App\Http\Requests\StoreAquereurRequest;
+use App\Models\HistoReservation;
+use App\Http\Helpers\Bien_Helper;
+use Illuminate\Support\Facades\DB;
+use App\Enum\StatutReservationEnum;
+use App\Http\Helpers\DatabaseHelper;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
+use App\Http\Helpers\NotificationHelper;
 use App\Http\Requests\StoreAvanceRequest;
 use App\Http\Requests\StoreClientRequest;
-use App\Http\Requests\StorePiecesJointeRequest;
+use App\Http\Requests\StoreAquereurRequest;
 use App\Http\Requests\StoreReservationRequest;
+use App\Http\Requests\StorePiecesJointeRequest;
 use App\Http\Requests\UpdateReservationRequest;
-use App\Models\Aquereur;
-use App\Models\Avance;
-use App\Models\Bien;
-use App\Models\Client;
-use App\Models\HistoReservation;
-use App\Models\PiecesJointe;
-use App\Models\Reservation;
-use App\Models\Societe;
-use App\Models\User;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
-use \NumberFormatter;
 
 class ReservationController extends Controller
 {
@@ -259,7 +260,6 @@ class ReservationController extends Controller
                     'num_remise' => $request->num_remise,
                     'date_encaissement' => $request->date_encaissement,
                     'files_avance' => $request->file('files_avance'),
-                    'user_connecter' => $userAuth->value('user_id_origin'),
                 ];
                 $avanceRequest->merge($dataAvance);
                 $avanceController->store($avanceRequest);
@@ -547,26 +547,35 @@ class ReservationController extends Controller
 
 
                     //****edit piece jointe***
+                    $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+                    $societe = Societe::findOrfail($user_societes->societe_id);
+
+                   if (!$request->file('files_reservation')) {
+                        $pjController = new PiecesJointeController();
+                        $pjController->destoryFileUsingReservationId($id,$societe);
+                    }
                     if ($request->file('files_reservation')) {
+                        
                             //****delete old piece jointe***
 
                             $pjController = new PiecesJointeController();
-                            $pjController->destoryFileUsingReservationId($id);
+                            $pjController->destoryFileUsingReservationId($id,$societe);
                             foreach ($request->file('files_reservation') as $file) {
                             $piecesJointeController = new PiecesJointeController();
                             $pieceJointeRequest = new StorePiecesJointeRequest();
-                            $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
-                            $societe = Societe::findOrfail($user_societes->societe_id);
-
+                           
                             // Récupérer le nom du fichier
                             $Myfile = $file->getClientOriginalName();
 
+                           
+                            $fileType = $file->getClientOriginalExtension();
+                            
+                            // Déplacer le fichier vers le répertoire de destination
                             $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations');
                             File::makeDirectory($directory, 0755, true, true);
-                            if(!file_exists($directory . '/' . $Myfile)){
-                                $file->move($directory, $Myfile);
-                            }
-                            $fileType = $file->getClientOriginalExtension();
+
+                            $file->move($directory, $Myfile);
+                            
                             $datapieceJointe = [
                                 'fichier' => $Myfile,
                                 'type' => $fileType,
@@ -596,6 +605,11 @@ class ReservationController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $reservation = Reservation::on('temp')->findOrFail($id);
+            $user = Auth::user();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+            $societe = Societe::findOrfail($user_societes->societe_id);
+
             //bien disponible
             Bien_Helper::libererBien($reservation->bien_id, null, null);
             $avanceController = new AvanceController();
@@ -603,7 +617,7 @@ class ReservationController extends Controller
             $aquereurController = new AquereurController();
             $aquereurController->destroyAquerreursByReservationId($id);
             $pjController = new PiecesJointeController();
-            $pjController->destoryFileUsingReservationId($id);
+            $pjController->destoryFileUsingReservationId($id,$user_societes,$societe);
             $notif = new NotificationController();
             $notif->destory_force_by_column_id('reservation', $id);
             if ($reservation->delete()) {
