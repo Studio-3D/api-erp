@@ -15,6 +15,10 @@ use App\Enum\StatutVisiteEnum;
 use App\Enum\InteretEnum;
 use App\Models\User;
 use Carbon\Carbon;
+use App\Models\TypeBien;
+use App\Models\CompositionBien; 
+use Illuminate\Support\Facades\Log;
+
 
 
 
@@ -23,9 +27,173 @@ use Carbon\Carbon;
 class Bien_Helper
 {
 
-    public static function libererBien($id,$text,$dst_id)
 
-    {
+    public static function checkAndCreateBien( $projet_id, $tranche_id, $bloc_id, $immeuble_id, $row){
+        
+        $bien_count = Bien::on('temp')->where(function ($query) use ($row, $projet_id, $tranche_id, $bloc_id, $immeuble_id) {
+            if (!empty($row['Appt_Num'])) {
+                $query->where('propriete_dite_bien', $row['Appt_Num']);
+            } elseif (!empty($row['magasin_num'])) {
+                $query->where('propriete_dite_bien', $row['magasin_num']);
+            }
+            if ($immeuble_id !== null) {
+                $query->where('immeuble_id', $immeuble_id);  
+            }elseif ($bloc_id !== null) {
+                    $query->where('bloc_id', $bloc_id);               
+            }elseif ($tranche_id !== null) {
+                $query->where('tranche_id', $tranche_id);
+            }
+            $query->where('projet_id', $projet_id);
+        })->count();
+        
+        if ($bien_count == 0) {
+            $bien= new  Bien();
+            $bien->setConnection('temp');
+            $bien->immeuble_id = $immeuble_id ?? null;
+            $bien->bloc_id=$bloc_id ?? null;
+            $bien->tranche_id = $tranche_id ?? null;
+            $bien->projet_id = $projet_id;
+
+            if (array_key_exists("Appt_Num",$row) && $row['Appt_Num']!=null ){
+                    $bien->numero=$row['Appt_Num'];
+                    $bien->propriete_dite_bien=$row['Appt_Num'];
+            }
+            else if (array_key_exists("magasin_num",$row) && $row['magasin_num']!=null){
+            
+                    $bien->numero=$row['magasin_num'];
+                    $bien->propriete_dite_bien=$row['magasin_num'];
+            }
+            if (array_key_exists("etage",$row) && $row['etage']!=null){
+                    $bien->Niveau=$row['etage'];
+            }
+
+            if (array_key_exists("type_bien",$row) && $row['type_bien']!=null){
+                $type=TypeBien::on('temp')->where('projet_id',$projet_id)->get();
+                foreach ($type as $key => $value) {
+                    if ($value->type == $row['type_bien']) {
+                        $bien->type_id=$value->id;
+                    }
+                }
+            }
+            if (array_key_exists("parking",$row) && $row['parking'] != NULL) {
+                    $bien->prix_parking = $row['parking'];
+            }else{
+                $bien->prix_parking = 0;
+            }
+            if (array_key_exists("box",$row) && $row['box']!= NULL){
+                $bien->prix_box = $row['box'];
+            } else {
+                $bien->prix_box = 0;
+            }
+            if (array_key_exists("balcon",$row)){
+                if ($row['balcon'] == NULL || $row['balcon'] == 'SYNDIC PROPOSE'||$row['balcon']=='SYNDIC PLAN') {
+                    $bien->superficie_balcon = 0;
+                    $bien-> superficie_balcon_calculer=0;
+                } else {
+                    $bien->superficie_balcon = $row['balcon'];
+                    $bien-> superficie_balcon_calculer=$row['balcon'];
+                }
+            }   
+            if (array_key_exists("terrasse",$row) && $row['terrasse'] != NULL) {
+                    $bien->superficie_terrasse = $row['terrasse'];
+                    $bien->superficie_terrasse_calculer= $row['terrasse'];
+            }else{
+                $bien->superficie_terrasse = 0;
+                $bien->superficie_terrasse_calculer=0;
+            }
+            if (array_key_exists("superficie_architecte",$row) && $row['superficie_architecte'] != NULL) {
+            $bien->superficie_architecte =$row['superficie_architecte'];
+            }else{
+                $bien->superficie_architecte = 0;
+            }
+            if(array_key_exists("superficie_habitable",$row) && $row['superficie_habitable'] != NULL) {
+                $bien->superficie_habitable =$row['superficie_habitable'];
+            }else{
+                $bien->superficie_habitable = 0;
+            }
+            if (array_key_exists("pu",$row) && $row['pu'] != NULL) {
+                $bien->prix_unitaire=$row['pu'];
+            }else{
+                $bien->prix_unitaire=0;
+            }
+            if (array_key_exists("orientation",$row) && $row['orientation'] != NULL) {
+                $bien->orientation=$row['orientation'];
+            }else{
+                $bien->orientation='N';
+            }
+            if (array_key_exists("avance_minimale",$row) && $row['avance_minimale'] != NULL) {
+                $bien->avance_minimale=$row['avance_minimale'];
+            }else{
+                $bien->avance_minimale=0;
+            }
+            if (array_key_exists("nbre_facades",$row) && $row['nbre_facades'] != NULL) {
+                $bien->nbre_facades=$row['nbre_facades'];
+            }else{
+                $bien->nbre_facades=0;
+            }
+            $bien->superficie_total=$bien->superficie_habitable+$bien->superficie_balcon+$bien->superficie_terrasse;
+            $bien->superficie_vendable=$bien->superficie_habitable+$bien->superficie_balcon_calculer+$bien->superficie_terrasse_calculer;
+            $bien->prix=($bien->prix_unitaire* $bien->superficie_vendable)+$bien->prix_parking+ $bien->prix_box;
+            $bien->etat='disponible';
+            if($bien->save()){
+                if (array_key_exists("composition",$row)){
+                    $pattern = "/[,\s.]/";
+                    $exp=preg_split($pattern, $row['composition']);
+                    $balcon=0;
+                    $chambre=0;
+                    $salon=0;
+                    $cuisin=0;
+                    $sdb=0;
+                    $placard=0;
+                    $terasse=0;
+                    for($i=0;$i<=count($exp)-1;$i++){
+                        if (str_contains($exp[$i], 'CHAMBRES')) {
+                            $chambre=explode("CHAMBRES",$exp[$i]);
+                            $chambre=$chambre[0];
+                        }elseif (str_contains($exp[$i], 'PLACARDS')) {
+                            $placard=explode("PLACARDS",$exp[$i]);
+                            $placard=$placard[0];
+                        }
+                        elseif (str_contains($exp[$i], 'SALON')) {
+                            $salon=explode("SALON",$exp[$i]);
+                            $salon=$salon[0];
+                        }
+                        elseif (str_contains($exp[$i], 'CUISINE')) {
+                            $cuisin=explode("CUISINE",$exp[$i]);
+                            $cuisin=$cuisin[0];
+                        }
+                        elseif (str_contains($exp[$i], 'SDB')) {
+                            $sdb=explode("SDB",$exp[$i]);
+                            $sdb=$sdb[0];
+                        }
+                        elseif (str_contains($exp[$i], 'TERRASSE')) {
+                            $terassse=explode("TERRASSE",$exp[$i]);
+                            $terassse=$terassse[0];
+                        }
+                        elseif (str_contains($exp[$i], 'BALCON')) {
+                            $balcon=explode("BALCON",$exp[$i]);
+                            $balcon=$balcon[0];
+                        }
+
+                    }
+                                    $compo=new CompositionBien();
+                                    $compo->setConnection('temp');
+                                    $compo->bien_id=$bien->id;
+                                    $compo->nbre_chambres=$chambre;
+                                    $compo->nbre_salons=$salon;
+                                    $compo->nbre_sdb=$sdb;
+                                    $compo->nbre_cuisines=$cuisin;
+                                    $compo->nbre_balcons=$balcon;
+                                    $compo->nbre_terasses=$terasse;
+                                    $compo->nbre_placards=$placard;
+                                    $compo->save();
+
+                }
+            }    
+        } 
+    }
+
+    public static function libererBien($id,$text,$dst_id){
         $user = Auth::user();
         $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
         $bien = Bien::on('temp')->findOrfail($id);
