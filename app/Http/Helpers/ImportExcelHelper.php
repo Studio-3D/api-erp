@@ -8,7 +8,7 @@ use App\Models\Tranche;
 use App\Models\Bien;
 use App\Models\Bloc;
 use App\Models\Projet;
-
+use App\Http\Helpers\DatabaseHelper;
 use App\Models\CompositionBien; 
 use App\Models\TypeBien;
 use App\Models\Immeuble;
@@ -19,8 +19,11 @@ use Illuminate\Support\Facades\Log;
 class ImportExcelHelper {
 
     public static function ImportStockByProjetWithoutTrancheAndBlocAndImmeuble($data,$projet_id){
+        DatabaseHelper::Config();
 
-        $projet=Projet::findOrfail($projet_id);
+        $projet=Projet::on('temp')->findOrfail($projet_id);
+
+        
         if($projet->nbre_tranches==0 && $projet->nbre_blocs==0 && $projet->nbre_immeubles==0)
         {
             foreach($data as $row)
@@ -36,7 +39,8 @@ class ImportExcelHelper {
 
 
     public static function ImportStockByProjetWithoutTrancheAndBloc($data, $projet_id){
-        $projet=Projet::findOrfail($projet_id);
+        DatabaseHelper::Config();
+        $projet = Projet::on('temp')->findOrfail($projet_id);
         if($projet->nbre_blocs==0 && $projet->nbre_tranches==0 && $projet->nbre_immeubles>0){
             foreach($data  as $row){
                 $immeuble = Immeuble::on('temp')
@@ -59,7 +63,8 @@ class ImportExcelHelper {
     }
 
     public function ImportStockByProjetWithoutTrancheAndImmeuble($data, $projet_id){
-        $projet=Projet::findOrfail($projet_id);
+        DatabaseHelper::Config();
+        $projet = Projet::on('temp')->findOrfail($projet_id);
         if($projet->nbre_tranches==0 && $projet->nbre_immeubles==0 && $projet->nbre_blocs>0){
             foreach($data as $row){
                 $bloc = Bloc::on('temp')
@@ -82,7 +87,10 @@ class ImportExcelHelper {
     }
 
     public static function ImportStockByProjetWithoutTranche($data, $projet_id){
-        $projet=Projet::findOrfail($projet_id);
+        DatabaseHelper::Config();
+
+        $projet = Projet::on('temp')->findOrfail($projet_id);
+        log::info($projet);
         if($projet->nbre_tranches==0 && $projet->nbre_blocs>0 && $projet->nbre_immeubles>0){
             foreach($data as $row){
                 $bloc = Bloc::on('temp')
@@ -118,7 +126,10 @@ class ImportExcelHelper {
     }
     
     public static function ImportStockByProjetWithoutBlocAndImmeuble($data,$projet_id){
-        $projet=Projet::findOrfail($projet_id);
+        DatabaseHelper::Config();
+
+        $projet = Projet::on('temp')->findOrfail($projet_id);
+
         if($projet->nbre_blocs==0 && $projet->nbre_immeubles==0 && $projet->nbre_tranches>0){
             foreach($data as $row){
                 $tranche =Tranche::on('temp')
@@ -141,7 +152,9 @@ class ImportExcelHelper {
     }
 
     public static function ImportStockByProjetWithoutBloc($data,$projet_id){
-        $projet=Projet::findOrfail($projet_id);
+        DatabaseHelper::Config();
+
+        $projet = Projet::on('temp')->findOrfail($projet_id);
         if($projet->nbre_blocs==0 && $projet->nbre_tranches>0 && $projet->nbre_immeubles>0){
             foreach($data as $row){
                 $tranche =Tranche::on('temp')
@@ -180,7 +193,9 @@ class ImportExcelHelper {
     }
         
     public static function ImportStockByProjetWithoutImmeuble($data,$projet_id){
-        $projet=Projet::findOrfail($projet_id);
+        DatabaseHelper::Config();
+
+        $projet = Projet::on('temp')->findOrfail($projet_id);
         if($projet->nbre_immeubles==0 && $projet->nbre_tranches>0 && $projet->nbre_blocs>0){
             foreach($data as $row){
                 $tranche =Tranche::on('temp')
@@ -216,7 +231,9 @@ class ImportExcelHelper {
     }
    
     public static function ImportStockByProjet($data, $projet_id){
-        $projet=Projet::findOrfail($projet_id);
+        DatabaseHelper::Config();
+
+        $projet = Projet::on('temp')->findOrfail($projet_id);
         if($projet->nbre_tranches>0 && $projet->nbre_blocs>0 && $projet->nbre_immeubles>0){
             foreach($data as $row){
                 $tranche =Tranche::on('temp')
