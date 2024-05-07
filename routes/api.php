@@ -22,12 +22,10 @@ use App\Http\Controllers\TypeFreinController;
 use App\Http\Controllers\TypeProjetController;
 use App\Http\Controllers\TypologieController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\UserControllerV1;
 use App\Http\Controllers\VisiteController;
 use App\Http\Controllers\PartenaireController;
 use App\Http\Controllers\VueController;
 use App\Http\Controllers\NotificationController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\EnumController;
 use App\Http\Controllers\Facebook\FacebookController;
@@ -37,6 +35,8 @@ use App\Http\Controllers\DesistementController;
 use App\Http\Controllers\RemboursementController;
 use App\Http\Controllers\ExcelDataController;
 
+use App\Http\Controllers\Api\V1\UserController as V1UserController;
+use App\Http\Controllers\Api\V1\SocieteController as V1SocieteController;
 
 /*
 |--------------------------------------------------------------------------
@@ -64,6 +64,15 @@ Route::post('/send_landing_page', [Landing_pageController::class, 'send_landing_
 
 
 Route::middleware('auth:api')->group(function () {
+    //Il est nécessaire de versionner l'API pour garantir son évolutivité et une gestion efficace des modifications futures.
+    Route::prefix('v1')->group(function () {
+        // Routes de la version numero 1
+        // l'API utilisateurs
+        Route::resource('/utilisateurs', V1UserController::class);
+        // l'API societes
+        Route::resource('societes', V1SocieteController::class);
+        // ici, vous pouvez ajouter les autres APIs...
+    });
 
     Route::post('upload-excel-data', [ExcelDataController::class, 'UploadDataExcel'])->name('upload-excel-data');
     Route::post('testfunction', [ExcelDataController::class, 'testfunction'])->name('upload-excel-data');
@@ -72,7 +81,7 @@ Route::middleware('auth:api')->group(function () {
 
     /*************************************Société***************************** */
     Route::resource('societe', SocieteController::class);
-    Route::resource('societes', SocieteControllerV1::class);
+
     Route::post('restoreSociete/{id}', [SocieteController::class, 'restoreSociete'])->name('restoreSociete');
     Route::get('getTrashedSocietes', [SocieteController::class, 'getTrashedSocietes'])->name('getTrashedSocietes');
     Route::put('Switch_Societes', [SocieteController::class, 'Switch_Societes'])->name('Switch_Societes');
@@ -81,7 +90,6 @@ Route::middleware('auth:api')->group(function () {
 
     /*************************************User***************************** */
     Route::resource('user', UserController::class);
-    Route::resource('users', UserControllerV1::class);
 
     Route::get('getUsersBySocieteId/{id}', [UserController::class, 'getUsersBySocieteId'])->name('getUsersBySocieteId');
     Route::put('activateUser/{id}', [UserController::class, 'activateUser'])->name('activateUser');

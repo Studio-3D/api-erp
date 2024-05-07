@@ -1,6 +1,8 @@
 <?php
-namespace App\Http\Controllers;
 
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreSocieteRequest;
@@ -13,9 +15,15 @@ use App\Events\NewSocieteEvent;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Config;
 
-class SocieteControllerV1 extends Controller
+class SocieteController extends Controller
 {
-
+    /**
+     * GET    /       index
+     * POST   /       store
+     * GET    /{id}   show
+     * PUT    /{id}   update
+     * DELETE /{id}   destroy
+     */
     public function index(Request $request)
     {
         if (RoleHelper::Superadmin()) {
@@ -50,21 +58,6 @@ class SocieteControllerV1 extends Controller
 
         return response()->json(['error' => 'Unauthorized'], 401);
     }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-
-
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreSocieteRequest $request)
     {
         if (RoleHelper::Superadmin()) {
@@ -109,10 +102,6 @@ class SocieteControllerV1 extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-
-    /**
-     * Display the specified resource.
-     */
     public function show($id)
     {
         if (RoleHelper::Superadmin()) {
@@ -123,10 +112,6 @@ class SocieteControllerV1 extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit($id)
     {
         if (RoleHelper::Superadmin()) {
@@ -136,7 +121,6 @@ class SocieteControllerV1 extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-
     public function update(UpdateSocieteRequest $request, $id)
     {
         if (RoleHelper::Superadmin()) {
@@ -184,9 +168,6 @@ class SocieteControllerV1 extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy($id)
     {
         if (RoleHelper::Superadmin()) {

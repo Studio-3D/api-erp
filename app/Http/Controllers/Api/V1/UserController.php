@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Controller;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreUserRequest;
@@ -11,15 +12,15 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class UserControllerV1 extends Controller
+class UserController extends Controller
 {
 
     /**
-     * GET    /users              index    users.index
-     * POST   /users              store    users.store
-     * GET    /users/{user}       show     users.show
-     * PUT    /users/{user}       update   users.update
-     * DELETE /users/{user}       destroy  users.destroy
+     * GET    /       index
+     * POST   /       store
+     * GET    /{id}   show
+     * PUT    /{id}   update
+     * DELETE /{id}   destroy
      */
     public function index(Request $request)
     {
@@ -89,10 +90,6 @@ class UserControllerV1 extends Controller
             'pagination' => $pagination
         ], 200);
     }
-
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreUserRequest $request)
     {
         /*  if ($request->cin != null) {
@@ -140,10 +137,6 @@ class UserControllerV1 extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-
-    /**
-     * Display the specified resource.
-     */
     public function show($id)
     {
         $user = null;
@@ -158,7 +151,6 @@ class UserControllerV1 extends Controller
         }
         return response()->json(['user' => $user], 200);
     }
-
     public function update(UpdateUserRequest $request, $id)
     {
         /* if ($request->cin != null) {
@@ -307,10 +299,6 @@ class UserControllerV1 extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public static function destroy($id)
     {
         if (RoleHelper::SuperAdmin()) {
@@ -339,7 +327,7 @@ class UserControllerV1 extends Controller
         }
     }
 
-    /** UTILITY FUNCTIONS */
+    // Methodes utilitaires (partie invisible a l'exterieur de la classe)
     private function createSubUser($request, $user_id, $user_photo)
     {
 
