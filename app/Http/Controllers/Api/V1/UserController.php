@@ -8,7 +8,7 @@ use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Societe;
-use App\Models\User;
+use App\Models\V1\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
