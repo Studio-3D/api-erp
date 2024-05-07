@@ -2,28 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Enum\ModePaiement;
+use Carbon\Carbon;
+use App\Models\User;
+use \NumberFormatter;
 use App\Enum\RoleEnum;
+use App\Models\Avance;
+use App\Models\Societe;
+use App\Enum\ModePaiement;
+use App\Models\Reservation;
+use App\Models\Encaissement;
+use App\Models\Notification;
+use App\Models\PiecesJointe;
+use Illuminate\Http\Request;
+use App\Http\Helpers\RoleHelper;
+use App\Models\HistoriqueAvance;
+use App\Models\FicheTransmission;
 use App\Enum\StatutReservationEnum;
 use App\Http\Helpers\DatabaseHelper;
-use App\Http\Helpers\NotificationHelper;
-use App\Http\Helpers\PaginationHelper;
-use App\Http\Helpers\RoleHelper;
-use App\Http\Requests\StoreAvanceRequest;
-use App\Http\Requests\StorePiecesJointeRequest;
-use App\Http\Requests\UpdateAvanceRequest;
-use App\Models\Avance;
-use App\Models\Encaissement;
-use App\Models\FicheTransmission;
-use App\Models\HistoriqueAvance;
-use App\Models\Notification;
-use App\Models\Reservation;
-use App\Models\Societe;
-use App\Models\User;
-use Carbon\Carbon;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
+use App\Http\Helpers\PaginationHelper;
+use App\Http\Helpers\NotificationHelper;
+use App\Http\Requests\StoreAvanceRequest;
+use App\Http\Requests\UpdateAvanceRequest;
+use App\Http\Requests\StorePiecesJointeRequest;
 use \NumberFormatter;
 use App\Models\StatutAvancePenalite;
 use DB;
@@ -288,10 +290,13 @@ class AvanceController extends Controller
                 ////storer les pieces jointe de paiement
 
                 {if ($request->files_avance) {
+
                     foreach ($request->files_avance as $file) {
                         $piecesJointeController = new PiecesJointeController();
                         $pieceJointeRequest = new StorePiecesJointeRequest();
-                        $user_societes = User::where('id', $request->user_connecter)->first();
+                        $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+                        $user_connecter = $userAuth->value('user_id_origin');
+                        $user_societes = User::where('id', $user_connecter)->first();
                         $societe = Societe::findOrfail($user_societes->societe_id);
 
                         // Récupérer le nom du fichier
@@ -433,26 +438,33 @@ class AvanceController extends Controller
             $histo->fichier = $request->fichier;
 
             if ($histo->save()) {
+                $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+                 $societe = Societe::findOrfail($user_societes->societe_id);
+
                 //****edit piece jointe***
+                if (!$request->file('files_avance')) {
+                    $pjController = new PiecesJointeController();
+                    $pjController->destoryFileUsingAvanceId($id,$societe);
+                    
+                }
                 if ($request->file('files_avance')) {
+                    
                     //****delete old piece jointe***
 
                     $pjController = new PiecesJointeController();
-                    $pjController->destoryFileUsingAvanceId($id);
+                    $pjController->destoryFileUsingAvanceId($id,$societe);
+                    
                     foreach ($request->file('files_avance') as $file) {
+
                         $piecesJointeController = new PiecesJointeController();
                         $pieceJointeRequest = new StorePiecesJointeRequest();
-                        $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
-                        $societe = Societe::findOrfail($user_societes->societe_id);
-
+                        
                         // Récupérer le nom du fichier
                         $Myfile = $file->getClientOriginalName();
-
+                        
                         $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements');
                         File::makeDirectory($directory, 0755, true, true);
-                        if (!file_exists($directory . '/' . $Myfile)) {
-                            $file->move($directory, $Myfile);
-                        }
+                        $file->move($directory, $Myfile);
                         $fileType = $file->getClientOriginalExtension();
                         $datapieceJointe = [
                             'fichier' => $Myfile,
@@ -561,7 +573,8 @@ class AvanceController extends Controller
                             foreach ($encaiss as $en) {
                                 $en->delete();
                             }
-                        }}
+                        }
+                    }
                 }
             }
 
