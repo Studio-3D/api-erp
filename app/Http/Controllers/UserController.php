@@ -17,7 +17,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
-use \Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -29,15 +28,17 @@ class UserController extends Controller
             'password' => 'required',
         ]);
         $User = User::where('email', $request->email)->first();
-        if ($User->is_actif == 1) {if (Auth::attempt($credentials)) {
-            $user = Auth::user();
-            $user->is_connected = 1;
-            $user->save();
-            $accessToken = $user->createToken('API Token')->accessToken;
+        if ($User->is_actif == 1) {
+            if (Auth::attempt($credentials)) {
+                $user = Auth::user();
+                $user->is_connected = 1;
+                $user->save();
+                $accessToken = $user->createToken('API Token')->accessToken;
 
-            return response()->json(['access_token' => $accessToken], 200);
+                return response()->json(['access_token' => $accessToken], 200);
+            }
+            return response()->json(['error' => 'email ou mot de passe incorrect'], 422);
         }
-            return response()->json(['error' => 'email ou mot de passe incorrect'], 422);}
 
         return response()->json(['error' => 'utilisateur non actif'], 422);
     }
@@ -90,6 +91,7 @@ class UserController extends Controller
 
         return response()->json(['error' => 'Unauthorized'], 401);
     }
+
     public function index(Request $request)
     {
         if (RoleHelper::Superadmin()) {
