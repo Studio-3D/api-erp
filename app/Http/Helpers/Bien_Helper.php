@@ -24,12 +24,14 @@ use Illuminate\Support\Facades\Log;
 
 
 
+
 class Bien_Helper
 {
 
 
     public static function checkAndCreateBien( $projet_id, $tranche_id, $bloc_id, $immeuble_id, $row){
         
+        DatabaseHelper::Config();
         $bien_count = Bien::on('temp')->where(function ($query) use ($row, $projet_id, $tranche_id, $bloc_id, $immeuble_id) {
             if (!empty($row['Appt_Num'])) {
                 $query->where('propriete_dite_bien', $row['Appt_Num']);
@@ -64,7 +66,8 @@ class Bien_Helper
                     $bien->propriete_dite_bien=$row['magasin_num'];
             }
             if (array_key_exists("etage",$row) && $row['etage']!=null){
-                    $bien->Niveau=$row['etage'];
+                    $bien->niveau=$row['etage'];
+                   
             }
 
             if (array_key_exists("type_bien",$row) && $row['type_bien']!=null){

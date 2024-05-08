@@ -17,50 +17,77 @@ use Illuminate\Support\Str;
 use App\Http\Helpers\Bien_Helper;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\ImportExcelHelper;
+use App\Models\Projet;
+
 
 class ExcelDataController extends Controller{
 
+   
+        
+        
+        
+        
+
+       
     public function UploadDataExcel(Request $request){
         
+        
         $projet_id = $request->projetId;
+
         DatabaseHelper::Config();
+
+        $projet = Projet::on('temp')->findOrFail($projet_id);
+
         set_time_limit(0);
         ini_set('memory_limit', '-1');
+
         $data = $request->input('data');
-        if(array_key_exists('tranche',$data[0])){
-            if(array_key_exists('bloc',$data[0])){
-                if(array_key_exists('immeuble',$data[0])){
-                    ImportExcelHelper::ImportStockByProjet($data, $projet_id);
-                }else{
-                    ImportExcelHelper::ImportStockByProjetWithoutImmeuble($data, $projet_id);
-                }
-            }else{
-                if(array_key_exists('immeuble',$data[0])){
-                    ImportExcelHelper::ImportStockByProjetWithoutBloc($data, $projet_id);
-                }else{
-                    ImportExcelHelper::ImportStockByProjetWithoutBlocAndImmeuble($data, $projet_id);
-                }
-            }
-        }
-        else{
-            if(array_key_exists('bloc',$data[0])){
-                if(array_key_exists('immeuble',$data[0])){
-                    ImportExcelHelper::ImportStockByProjetWithoutTranche($data, $projet_id);
-                }else{
-                    ImportExcelHelper::ImportStockByProjetWithoutTrancheAndImmeuble($data, $projet_id);
-                }
-            }else{
-                if(array_key_exists('immeuble',$data[0])){
-                    ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBloc($data, $projet_id);
-                }else{
-                    ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBlocAndImmeuble($data, $projet_id);
-                }      
+
+        $keys = array_keys($data[0]);
+        
+   
+        
+
+        $importMethod = $this->determineImportMethod($keys);
+
+        return ImportExcelHelper::$importMethod($data, $projet_id);
+    }
+    
+        
+        private function determineImportMethod($keys) {
+            $hasTranche = in_array('tranche', $keys);
+            $hasBloc = in_array('Bloc', $keys);
+            $hasImmeuble = in_array('immeuble', $keys);
+        
+            if ($hasTranche && $hasBloc && $hasImmeuble) {
+                return 'ImportStockByProjet';
+           
+
+            } elseif ($hasTranche && $hasBloc && !$hasImmeuble) {
+         
+
+                return 'ImportStockByProjetWithoutImmeuble';
+            } elseif ($hasTranche && !$hasBloc && $hasImmeuble) {
+          
+
+                return 'ImportStockByProjetWithoutBloc';
+            } elseif ($hasTranche && !$hasBloc && !$hasImmeuble) {
+
+                return 'ImportStockByProjetWithoutBlocAndImmeuble';
+            } elseif (!$hasTranche && $hasBloc && $hasImmeuble) {
+
+                return 'ImportStockByProjetWithoutTranche';
+            } elseif (!$hasTranche && $hasBloc && !$hasImmeuble) {
+
+                return 'ImportStockByProjetWithoutTrancheAndImmeuble';
+            } elseif (!$hasTranche && !$hasBloc && $hasImmeuble) {
+
+                return 'ImportStockByProjetWithoutTrancheAndBloc';
+            } else {
+                return 'ImportStockByProjetWithoutTrancheAndBlocAndImmeuble';
             }
         }
     }
-   
-
-}
 
            
 
