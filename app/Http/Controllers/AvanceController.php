@@ -12,11 +12,7 @@ use App\Enum\ModePaiement;
 use App\Models\Reservation;
 use App\Models\Encaissement;
 use App\Models\Notification;
-use App\Models\Reservation;
-use App\Models\Societe;
-use App\Models\User;
 use App\Models\Bien;
-use Carbon\Carbon;
 use App\Models\Remboursement;
 use App\Models\PiecesJointe;
 use Illuminate\Http\Request;
@@ -32,7 +28,6 @@ use App\Http\Helpers\NotificationHelper;
 use App\Http\Requests\StoreAvanceRequest;
 use App\Http\Requests\UpdateAvanceRequest;
 use App\Http\Requests\StorePiecesJointeRequest;
-use \NumberFormatter;
 use App\Models\StatutAvancePenalite;
 use DB;
 use Illuminate\Support\Facades\Config;
@@ -250,12 +245,12 @@ class AvanceController extends Controller
                 $avance->num_recu = '001';
             }
            // $avance->sr = (bool) $request->sr;
-           if($request->sr=='false'){
-            $avance->sr=0;
-            }
-            else{
-                $avance->sr=1;
-         }
+            if($request->sr=='false'){
+                $avance->sr=0;
+                }
+                else{
+                    $avance->sr=1;
+                }
 
             $avance->mode_paiement = $request->mode_paiement;
             //cheque cheque-banque cheque cetifice
@@ -434,7 +429,7 @@ class AvanceController extends Controller
 
                     //store commission a voir
                 }
-
+            }
             }
             return $avance;
 
