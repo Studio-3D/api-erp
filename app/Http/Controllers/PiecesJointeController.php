@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Helpers\DatabaseHelper;
-use App\Http\Helpers\RoleHelper;
-use App\Http\Requests\StorePiecesJointeRequest;
-use App\Http\Requests\UpdatePiecesJointeRequest;
-use App\Models\PiecesJointe;
-use App\Models\Societe;
 use App\Models\User;
+use App\Models\Avance;
+use App\Models\Societe;
+use App\Models\PiecesJointe;
 use Illuminate\Http\Request;
+use App\Http\Helpers\RoleHelper;
+use App\Http\Helpers\DatabaseHelper;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use App\Http\Requests\StorePiecesJointeRequest;
+use App\Http\Requests\UpdatePiecesJointeRequest;
 
 class PiecesJointeController extends Controller
 {
@@ -59,7 +60,10 @@ class PiecesJointeController extends Controller
             $pJ->type = $request->type;
             $pJ->avance_id = $request->avance_id;
             $pJ->reservation_id = $request->reservation_id;
-            $pJ->pj_scanner = $request->pj_scanner;
+            $pJ->desistement_id = $request->desistement_id;
+            if($request->pj_scanner){
+                $pJ->pj_scanner = $request->pj_scanner;
+            }
 
             if ($pJ->save()) {
                 return response()->json(['PJ' => $pJ], 200);
@@ -158,12 +162,16 @@ class PiecesJointeController extends Controller
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
-    public function destoryFileUsingReservationId($reservation_id)
+    public function destoryFileUsingReservationId($reservation_id,$societe)
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $pj = PiecesJointe::on('temp')->where('reservation_id', $reservation_id)->get();
             foreach ($pj as $p) {
+
+                if (File::exists(public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations'.'/'.$p->fichier))) {
+                    File::delete(public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations'.'/'.$p->fichier));
+                }
                 $p->delete();
             }
             return response()->json(['message' => 'PJ deleted successfully'], 200);
@@ -171,12 +179,16 @@ class PiecesJointeController extends Controller
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
-    public function destoryFileUsingAvanceId($avance_id)
+    public function destoryFileUsingAvanceId($avance_id,$societe)
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $pj = PiecesJointe::on('temp')->where('avance_id', $avance_id)->get();
             foreach ($pj as $p) {
+
+                if (File::exists(public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements'.'/'.$p->fichier))) {
+                    File::delete(public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements'.'/'.$p->fichier));
+                }
                 $p->delete();
             }
             return response()->json(['message' => 'PJ deleted successfully'], 200);
@@ -191,25 +203,21 @@ class PiecesJointeController extends Controller
                 DatabaseHelper::Config();
                 $user = Auth::user();
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+                if ($request->hasFile('fichier_scanner')) {
 
-                foreach ($request->file('files_avance') as $file) {
-                    $pJ = new PiecesJointe();
-                    $pJ->setConnection('temp');
                     $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
                     $societe = Societe::findOrfail($user_societes->societe_id);
+                    $avance = Avance::on('temp')->findOrfail($request->input("avance_id"));
+                    $avance->setConnection('temp');
 
                     // Récupérer le nom du fichier
-                    $fileName = $file->getClientOriginalName();
-                    $Myfile = $fileName;
-                    $directory = public_path('files/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements');
+                    $avance->recu_scanne = $request->file('fichier_scanner')->getClientOriginalName();
+                    $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements');
                     File::makeDirectory($directory, 0755, true, true);
-                    $file->move($directory, $Myfile);
-                    $pJ->fichier = $Myfile;
-                    $pJ->type = $file->getClientOriginalExtension();
-                    $pJ->avance_id = $request->input("avance_id");
-                    $pJ->pj_scanner = 1;
+                    $request->file('fichier_scanner')->move($directory, $request->file('fichier_scanner')->getClientOriginalName());
 
-                    if (!$pJ->save()) {
+
+                    if (!$avance->save()) {
                         return response()->json(['error' => 'Échec de scanner les fichiers'], 500);
                     }
                 }
