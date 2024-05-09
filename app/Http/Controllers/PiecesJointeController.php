@@ -168,7 +168,7 @@ class PiecesJointeController extends Controller
             DatabaseHelper::Config();
             $pj = PiecesJointe::on('temp')->where('reservation_id', $reservation_id)->get();
             foreach ($pj as $p) {
-                
+
                 if (File::exists(public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations'.'/'.$p->fichier))) {
                     File::delete(public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations'.'/'.$p->fichier));
                 }
@@ -185,7 +185,7 @@ class PiecesJointeController extends Controller
             DatabaseHelper::Config();
             $pj = PiecesJointe::on('temp')->where('avance_id', $avance_id)->get();
             foreach ($pj as $p) {
-                
+
                 if (File::exists(public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements'.'/'.$p->fichier))) {
                     File::delete(public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements'.'/'.$p->fichier));
                 }
@@ -204,18 +204,18 @@ class PiecesJointeController extends Controller
                 $user = Auth::user();
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
                 if ($request->hasFile('fichier_scanner')) {
-                    
+
                     $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
                     $societe = Societe::findOrfail($user_societes->societe_id);
                     $avance = Avance::on('temp')->findOrfail($request->input("avance_id"));
                     $avance->setConnection('temp');
-                    
+
                     // Récupérer le nom du fichier
                     $avance->recu_scanne = $request->file('fichier_scanner')->getClientOriginalName();
                     $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements');
                     File::makeDirectory($directory, 0755, true, true);
                     $request->file('fichier_scanner')->move($directory, $request->file('fichier_scanner')->getClientOriginalName());
-                    
+
 
                     if (!$avance->save()) {
                         return response()->json(['error' => 'Échec de scanner les fichiers'], 500);

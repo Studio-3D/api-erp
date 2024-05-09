@@ -10,7 +10,6 @@ use App\Enum\RoleEnum;
 use App\Models\Avance;
 use App\Models\Client;
 use App\Models\Societe;
-use App\Models\Aquereur;
 use App\Models\Reservation;
 use App\Models\PiecesJointe;
 use Illuminate\Http\Request;
@@ -30,6 +29,11 @@ use App\Http\Requests\StoreAquereurRequest;
 use App\Http\Requests\StoreReservationRequest;
 use App\Http\Requests\StorePiecesJointeRequest;
 use App\Http\Requests\UpdateReservationRequest;
+use App\Models\Aquereur;
+use App\Models\StatutReservation;
+use Illuminate\Support\Facades\Config;
+use App\Events\NotificationEvent;
+
 
 class ReservationController extends Controller
 {
@@ -46,7 +50,7 @@ class ReservationController extends Controller
             $avances = Avance::on('temp')->select('reservation_id', DB::raw('SUM(avances.montant) as sum_avances'))
                 ->groupby('reservation_id');
 
-            $reservations = Reservation::on('temp')->with('desistement_att_validation_rejete')
+            $reservations = Reservation::on('temp')->with('desistement_att_validation_rejete','last_statut','first_avance')
                 ->joinSub($avances, 'avances_req', function ($join) {
                     $join->on('avances_req.reservation_id', '=', 'reservations.id');
                 })
@@ -85,6 +89,50 @@ class ReservationController extends Controller
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+    public function get_reservations_rejets(Request $request, $projet_id)
+    {
+
+        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
+            $page = $request->input('page', 1);
+            $avances = Avance::on('temp')->select('reservation_id', DB::raw('SUM(avances.montant) as sum_avances'))
+            ->groupby('reservation_id');
+
+            /*if (RoleHelper::AdminSup()) {
+                //ADMIN
+                $reservations = Reservation::on('temp')->with('last_statut')
+                ->joinSub($avances, 'avances_req', function ($join) {
+                    $join->on('avances_req.reservation_id', '=', 'reservations.id');
+                })
+                ->select('reservations.*', 'avances_req.sum_avances')
+                ->orderBy('reservations.created_at', 'desc')
+                ->where('reservations.etat', 1)
+                ->where('reservations.statut', 2)
+                ->where('reservations.projet_id', $projet_id)
+                ->paginate($perPage, ['*'], 'page', $page);
+
+            }else*/
+            if(RoleHelper::Com()){
+                $user = Auth::user();
+                $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+                $reservations = Reservation::on('temp')->with('last_statut')
+                ->joinSub($avances, 'avances_req', function ($join) {
+                    $join->on('avances_req.reservation_id', '=', 'reservations.id');
+                })
+                ->select('reservations.*', 'avances_req.sum_avances')
+                ->orderBy('reservations.created_at', 'desc')
+                ->where('reservations.etat', 1)
+                ->where('reservations.statut', 2)
+                ->where('reservations.user_id',  $userAuth->value('id'))
+                ->where('reservations.projet_id', $projet_id)
+                ->paginate($perPage, ['*'], 'page', $page);
+                return response()->json(['reservations' => $reservations], 200);
+            }
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
     /**
      * Show the form for creating a new resource.
      */
@@ -105,11 +153,9 @@ class ReservationController extends Controller
             //test si le user connecte celui qui a  fait la proposition /etat du bien
             if ($request->bien_id != null) {
                 $bien_prop = Bien::on('temp')->findorfail($request->bien_id);
-                /* if($bien_prop->etat!=EtatBien::DISPONIBLE->name){
-                return response()->json(['error' => 'Ce bien n\'est pas disponible'], 422);
-                }*/
-                if ($bien_prop->etat == 'ENCOURS_DE_PROPOSITION' && $bien_prop->is_proposed->user_id != Auth::guard('api')->user()->id) {
-                    return response()->json(['error' => 'le bien choisi :' . $bien_prop->propriete_dite_bien . ' est en cours de proposition  par : ' . $bien_prop->is_proposed->user->name . ' ' . $bien_prop->is_proposed->user->prenom]);
+
+                if ($bien_prop->etat == 'ENCOURS_DE_PROPOSITION' && $bien_prop->is_proposed->user_id != $userAuth->value('user_id_origin')) {
+                    return response()->json(['error_33' => 'le bien choisi :' . $bien_prop->propriete_dite_bien . ' est en cours de proposition  par : ' . $bien_prop->is_proposed->user->name . ' ' . $bien_prop->is_proposed->user->prenom], 333);
                 }
 
             }
@@ -120,7 +166,7 @@ class ReservationController extends Controller
             $reservation->prix = $request->prix;
             $reservation->mode_financement = $request->mode_financement;
             $reservation->date_reservation = $request->date_reservation;
-            $reservation->commentaire = $request->commentaire;
+            $reservation->commentaire=$request->input('commentaire')=="null"?null:$request->input('commentaire');
             $reservation->visite_id = $request->visite_id;
             $reservation->prix_remise = $request->prix_remise;
             $numberToWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
@@ -140,6 +186,16 @@ class ReservationController extends Controller
             }
 
             if ($reservation->save()) {
+                //si statut=1 ==>store it to table statutReservation
+                if($reservation->statut==StatutReservationEnum::Validé->value){
+                    $statut_R = new StatutReservation();
+                    $statut_R->setConnection('temp');
+                    $statut_R->reservation_id=$reservation->id;
+                    $statut_R->statut= StatutReservationEnum::Validé->value;
+                    $statut_R->date_validation=Carbon::now();
+                    $statut_R->user_id_valider=$userAuth->value('id');
+                    $statut_R->save();
+                }
                 if (RoleHelper::Com()) {
                     //notifiction to admin de valider dossier d reservation user_id=>null
                     NotificationHelper::storeNotification(
@@ -182,28 +238,6 @@ class ReservationController extends Controller
                     $aquereurRequest->merge($dataAquereur);
                     $aquereurController->store($aquereurRequest);
                 } else {
-                    /* if ($request->clients) {
-                    foreach ($request->clients as $clientInfo) {
-                    $clientRequest->merge($clientInfo);
-                    $clientData = $clientController->store($clientRequest);
-                    $dataAquereur = [
-                    'pourcentage' => $clientInfo['pourcentage'],
-                    'client_id' => $clientData->id,
-                    'reservation_id' => $reservation->id,
-                    ];
-                    $aquereurRequest->merge($dataAquereur);
-                    $aquereurController->store($aquereurRequest);
-                    }}
-                    if ($request->oldClients) {
-                    foreach ($request->oldClients as $clientInfo) {
-                    $dataAquereur = [
-                    'pourcentage' => $clientInfo['pourcentage1'],
-                    'client_id' => $clientInfo['id'],
-                    'reservation_id' => $reservation->id,
-                    ];
-                    $aquereurRequest->merge($dataAquereur);
-                    $aquereurController->store($aquereurRequest);
-                    }} */
                     // Parse the string back to an array
                     $dataArray_clients = json_decode($request->input('clients'), true);
                     $dataArrayString = $request->input('oldClients', '[]');
@@ -318,10 +352,12 @@ class ReservationController extends Controller
          if (RoleHelper::ACSup()) {
              DatabaseHelper::Config();
              $reservation = Reservation::on('temp')->with('remboursement_dd_with_transfert')->findOrFail($id);
+             $statut=$reservation->statut;
              $etat=$reservation->etat;
              $code=$reservation->code_reservation;
              $code_desistement=$reservation->code_desistement;
              $prix=$reservation->prix;
+             $user_id=$reservation->user_id;
              if($reservation->etat>1){
                 $nb_aq=count($reservation->aquereurs_ancien);
                 $nb_pj=count($reservation->piece_jointe_desiste);
@@ -330,7 +366,7 @@ class ReservationController extends Controller
                 $nb_pj=count($reservation->piece_jointe);
              }
              $nb_histo=count($reservation->historiques);
-             return response()->json(['code_res' => $code,'code_desistement' => $code_desistement,'prix'=>$prix,'nb_aquer'=>$nb_aq,'nb_histo'=>$nb_histo,'nb_pj'=>$nb_pj,'etat'=>$etat,'transfert'=>$reservation->remboursement_dd_with_transfert], 200);
+             return response()->json(['code_res' => $code,'code_desistement' => $code_desistement,'prix'=>$prix,'nb_aquer'=>$nb_aq,'nb_histo'=>$nb_histo,'nb_pj'=>$nb_pj,'etat'=>$etat,'transfert'=>$reservation->remboursement_dd_with_transfert,'statut'=>$statut,'user_id'=>$user_id], 200);
          } else {
              return response()->json(['error' => 'Unauthorized'], 401);
          }
@@ -422,8 +458,10 @@ class ReservationController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateReservationRequest $request, $id)
+  public function update(UpdateReservationRequest $request, $id)
     {
+
+
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $user = Auth::user();
@@ -433,22 +471,19 @@ class ReservationController extends Controller
             //test si le user connecte celui qui a  fait la proposition /etat du bien
             if ($old_bien_id != $request->input('bien_id')) {
                 $bien_prop = Bien::on('temp')->findorfail($request->input('bien_id'));
-                /*if($bien_prop->etat!=EtatBien::DISPONIBLE->name){
-                return response()->json(['error' => 'Ce bien n\'est pas disponible'], 422);
-                }*/
-                if ($bien_prop->etat == 'ENCOURS_DE_PROPOSITION' && $bien_prop->is_proposed->user_id != $userAuth->value('id')) {
-                    return response()->json(['error' => 'le bien choisi :' . $bien_prop->propriete_dite_bien . ' est en cours de proposition  par : ' . $bien_prop->is_proposed->user->name . ' ' . $bien_prop->is_proposed->user->prenom]);
+
+                if ($bien_prop->etat == 'ENCOURS_DE_PROPOSITION' && $bien_prop->is_proposed->user_id != $userAuth->value('user_id_origin')) {
+                    return response()->json(['error_33' => 'le bien choisi :' . $bien_prop->propriete_dite_bien . ' est en cours de proposition  par : ' . $bien_prop->is_proposed->user->name . ' ' . $bien_prop->is_proposed->user->prenom], 333);
                 }
 
             }
-
             $reservation->setConnection('temp');
             $reservation->nb_acquereurs = $request->input('nb_acquereurs');
             $reservation->code_reservation = $request->input('code_reservation');
             $reservation->prix = $request->input('prix');
             $reservation->mode_financement = $request->input('mode_financement');
             $reservation->date_reservation = $request->input('date_reservation');
-            $reservation->commentaire = $request->input('commentaire');
+            $reservation->commentaire=$request->input('commentaire')=="null"?null:$request->input('commentaire');
             $reservation->prix_remise = $request->input('prix_remise');
             $numberToWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
             $prix_remise_lettre = $numberToWords->format($request->input('prix_remise'));
@@ -495,28 +530,6 @@ class ReservationController extends Controller
                     $clientRequest = new StoreClientRequest();
                     $aquereurController = new AquereurController();
                     $aquereurRequest = new StoreAquereurRequest();
-                    /* if ($request->clients) {
-                        foreach ($request->clients as $clientInfo) {
-                            $clientRequest->merge($clientInfo);
-                            $clientData = $clientController->store($clientRequest);
-                            $dataAquereur = [
-                                'pourcentage' => $clientInfo['pourcentage'],
-                                'client_id' => $clientData->id,
-                                'reservation_id' => $reservation->id,
-                            ];
-                            $aquereurRequest->merge($dataAquereur);
-                            $aquereurController->store($aquereurRequest);
-                        }}
-                    if ($request->oldClients) {
-                        foreach ($request->oldClients as $clientInfo) {
-                            $dataAquereur = [
-                                'pourcentage' => $clientInfo['pourcentage1'],
-                                'client_id' => $clientInfo['id'],
-                                'reservation_id' => $reservation->id,
-                            ];
-                            $aquereurRequest->merge($dataAquereur);
-                            $aquereurController->store($aquereurRequest);
-                        }} */
                         $dataArray_clients = json_decode($request->input('clients'), true);
                         $dataArrayString = $request->input('oldClients', '[]');
 
@@ -555,27 +568,27 @@ class ReservationController extends Controller
                         $pjController->destoryFileUsingReservationId($id,$societe);
                     }
                     if ($request->file('files_reservation')) {
-                        
-                            //****delete old piece jointe***
+
+                            //*delete old piece jointe**
 
                             $pjController = new PiecesJointeController();
                             $pjController->destoryFileUsingReservationId($id,$societe);
                             foreach ($request->file('files_reservation') as $file) {
                             $piecesJointeController = new PiecesJointeController();
                             $pieceJointeRequest = new StorePiecesJointeRequest();
-                           
+
                             // Récupérer le nom du fichier
                             $Myfile = $file->getClientOriginalName();
 
-                           
+
                             $fileType = $file->getClientOriginalExtension();
-                            
+
                             // Déplacer le fichier vers le répertoire de destination
                             $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations');
                             File::makeDirectory($directory, 0755, true, true);
 
                             $file->move($directory, $Myfile);
-                            
+
                             $datapieceJointe = [
                                 'fichier' => $Myfile,
                                 'type' => $fileType,
@@ -591,12 +604,21 @@ class ReservationController extends Controller
                     //store new pieces jointes
                 }
                 return response()->json(['reservation' => $reservation], 200);
-
-            //return response()->json(['reservation' => $reservation], 200);
         }
         return response()->json(['error', 'Unauthorized'], 401);
     }
 
+    public function relancer_reservation($id)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $reservation = Reservation::on('temp')->findOrFail($id);
+            $reservation->statut=StatutReservationEnum::En_Attente->value;
+            $reservation->save();
+            return response()->json(['message' => 'reservation relancé avec succès.'], 200);
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
     /**
      * Remove the specified resource from storage.
      */
@@ -649,7 +671,7 @@ class ReservationController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-  
+
 
     public function get_Historiques_by_reservation($id, Request $request)
     {
@@ -665,6 +687,124 @@ class ReservationController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
 
         }
+
+    }
+
+    public function get_reservations_by_etat($projet_id, $statut,Request $request)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
+            $page = $request->input('page', 1);
+            $avances = Avance::on('temp')->select('reservation_id', DB::raw('SUM(avances.montant) as sum_avances'))
+            ->groupby('reservation_id');
+            if(RoleHelper::AdminSup()){
+            $reservations = Reservation::on('temp')->with('last_statut','first_avance')
+                ->joinSub($avances, 'avances_req', function ($join) {
+                    $join->on('avances_req.reservation_id', '=', 'reservations.id');
+                })
+                ->select('reservations.*', 'avances_req.sum_avances')
+                ->orderBy('reservations.created_at', 'desc')
+                ->where('reservations.projet_id', $projet_id)
+                ->where('reservations.statut', $statut)
+                ->where('reservations.etat', 1)
+                ->paginate($perPage, ['*'], 'page', $page);
+
+            }elseif(RoleHelper::Com()){
+                $user = Auth::user();
+                $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+                $reservations = Reservation::on('temp')->with('last_statut')
+                ->joinSub($avances, 'avances_req', function ($join) {
+                    $join->on('avances_req.reservation_id', '=', 'reservations.id');
+                })
+                ->select('reservations.*', 'avances_req.sum_avances')
+                ->orderBy('reservations.created_at', 'desc')
+                ->where('reservations.projet_id', $projet_id)
+                ->where('reservations.statut', $statut)
+                ->where('reservations.etat', 1)
+                ->where('reservations.user_id', $userAuth->value('id'))
+                ->paginate($perPage, ['*'], 'page', $page);
+
+            }
+            return response()->json(['reservations' => $reservations]);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+
+    }
+
+
+    public function get_notif_reservation_att_validation($projet_id){
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $avances = Avance::on('temp')->select('reservation_id', DB::raw('SUM(avances.montant) as sum_avances'))
+            ->groupby('reservation_id');
+            $nb_att_validation = Reservation::on('temp')->with('last_statut')
+            ->joinSub($avances, 'avances_req', function ($join) {
+                $join->on('avances_req.reservation_id', '=', 'reservations.id');
+            })
+            ->where('reservations.projet_id', $projet_id)
+            ->where('reservations.statut', 3)
+            ->where('reservations.etat', 1)->count();
+            return response()->json(['nb_att_valide'=>$nb_att_validation]);
+        } else  return response()->json(['error'=>'Unauthorized'], 401);
+    }
+    public function traiter_reservation($id,Request $request)
+    {
+        if(RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            Config::set('broadcasting.default', 'pusher_3');
+            $user = Auth::user();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $reservation = Reservation::on('temp')->findOrFail($id);
+            $reservation->statut=$request->statut_res;
+            if( $reservation->save()){
+                $res_statut = new statutReservation();
+                $res_statut->setConnection('temp');
+                $res_statut->reservation_id=$id;
+                $res_statut->user_id_valider=$userAuth->value('id');
+                $res_statut->date_validation=Carbon::now();
+                if($request->statut_res==2){
+                    $res_statut->commentaire=$request->commentaire_res;
+                }
+                $res_statut->save();
+            }
+
+                if($request->statut_res==1){
+                    //store new notification validé
+                    NotificationHelper::storeNotification(
+                        '/reservations/show/'.$id, Carbon::now(),15,'reservation validé',$reservation->user->user_id_origin,null,null,null,$reservation->projet_id,null,null
+                        );
+                        broadcast(new NotificationEvent($id));
+                }else{
+                    //store new notification rejeté
+                    NotificationHelper::storeNotification(
+                        '/reservations/show/'.$id, Carbon::now(),16,'reservation rejeté',$reservation->user->user_id_origin,null,null,null,$reservation->projet_id,null,null
+                        );
+                        broadcast(new NotificationEvent($id));
+                }
+                //traiter reservation with avance
+                if($request->with_avance==1){
+                    $avanceController = new AvanceController();
+
+                    $data_avance = [
+                        'etat'=>$request->statut_av,
+                        'n_remise'=>$request->n_remise,
+                        'date_encaiss'=>$request->date_encaiss,
+                        'commentaire'=>$request->commentaire_av,
+                    ];
+                    $avanceController->traiter_avance($request->av_id,$request->merge($data_avance));
+                }
+
+            return response()->json(['message' => 'données enregistrés avec succès.'], 200);
+
+
+
+       } else {
+           return response()->json(['error' => 'Unauthorized'], 401);
+       }
 
     }
 

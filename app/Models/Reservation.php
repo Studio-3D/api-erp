@@ -49,6 +49,10 @@ class Reservation extends Model
     {
         return $this->hasMany(Avance::class,'reservation_id');
     }
+    public function first_avance()
+    {
+        return $this->hasOne(Avance::class,'reservation_id')->orderby('created_at','asc')->latest();
+    }
     public function avances_desist()
     {
         return $this->hasMany(Avance::class,'reservation_id')->onlyTrashed();
@@ -79,6 +83,10 @@ class Reservation extends Model
 
     public function remboursement_dd_with_transfert(){
         return $this->hasOne(Remboursement::class)->where('statut',1)->where('mode_rembourse','transfert_rem_apres_vente')->orwhere('mode_rembourse','transfert_rem_direct')->orwhere('mode_rembourse','transfert')->latest();
+    }
+    public function last_statut()
+    {
+        return $this->hasOne(StatutReservation::class,'reservation_id')->latest();
     }
 
 }

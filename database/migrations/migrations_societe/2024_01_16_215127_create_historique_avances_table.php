@@ -20,11 +20,12 @@ return new class extends Migration
             $table->string('num_recu');
             $table->bigInteger('numero_paiement')->nullable();
             $table->date('date_reglement');
-            $table->enum('mode_paiement',[ModePaiement::Espèce->value,ModePaiement::Chèque->value,ModePaiement::Chèque_Banque->value,ModePaiement::Chèque_Certifié->value,ModePaiement::Virement->value,ModePaiement::Versement->value]);
+            $table->enum('mode_paiement',[ModePaiement::Espèce->value,ModePaiement::Chèque->value,ModePaiement::Chèque_Banque->value,ModePaiement::Chèque_Certifié->value,ModePaiement::Virement->value,ModePaiement::Versement->value,ModePaiement::transfert_dossier->value]);
             $table->date('echeance')->nullable();
             $table->string('fichier')->nullable();
             $table->boolean('sr')->default(false);
             $table->string('commentaireAvance')->nullable();
+            $table->string('commentaire_rejete')->nullable();
             $table->enum('statut',[StatutReservationEnum::Validé->value,StatutReservationEnum::Refusé->value,StatutReservationEnum::En_Attente->value]);
             $table->foreignId('banque_id')->nullable()->constrained('banques')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
