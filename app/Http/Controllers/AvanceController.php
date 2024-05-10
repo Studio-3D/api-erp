@@ -294,6 +294,9 @@ class AvanceController extends Controller
                     $avance->statut = StatutReservationEnum::Validé->value;
                 }
             }
+            if($request->montant==0){
+                $avance->statut = StatutReservationEnum::Validé->value;
+            }
 
             if ($avance->save()) {
                 //store statut_avances table=>si validé

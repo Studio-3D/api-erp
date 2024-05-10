@@ -84,6 +84,7 @@ class DesistementController extends Controller
 
     {
 
+
         $user = Auth::user();
         Config::set('broadcasting.default', 'pusher_3');
         if(RoleHelper::AC()){
@@ -608,8 +609,6 @@ class DesistementController extends Controller
                         }
                     }
 
-
-
                     //Validation /Notification
                     if (RoleHelper::AdminSup()) {
 
@@ -1060,9 +1059,32 @@ class DesistementController extends Controller
                                             if($av_new->save()){
                                                 $av_old->delete();
                                             }
+                                            //replicate statut
+                                            $av_last_statut = StatutAvancePenalite::on('temp')->where('avance_id',$av_old->id)->orderby('created_at','desc')->firstorfail();
+                                            if($av_last_statut!=null){
+                                                $st_av_new = $av_last_statut->replicate();
+                                                $st_av_new->setConnection('temp');
+                                                if($st_av_new->save()){
+                                                    $av_last_statut->delete();
+                                                }
+                                             }
+                                            //replicate pice jointe
+
+                                             $av_old_pj = PiecesJointe::on('temp')->where('avance_id',$av_old->id)->orderby('created_at','desc')->firstorfail();
+                                             if($av_old_pj!=null){
+                                                 $pj_new = $av_old_pj->replicate();
+                                                 $pj_new->setConnection('temp');
+                                                 if($pj_new->save()){
+                                                     $av_old_pj->delete();
+                                                 }
+                                              }
+
+
                                         }
+
+
                                     }
-                                  //replicate piece jointe
+                                  //replicate Aquereur
                                   $old_aqu_s = Aquereur::on('temp')->where('reservation_id',$request->reservation_id)->get();
                                   if(count($old_aqu_s)>0){
                                       foreach($old_aqu_s as $aq_old){
@@ -1106,10 +1128,12 @@ class DesistementController extends Controller
                                         'commentaireAvance' => null,
                                         'num_remise' => null,
                                         'date_encaissement' =>null,
+                                        'files_avance' => $request->file('files_avance'),
 
                                     ];
                                     $avanceRequest->merge($dataAvance);
                                     $avanceController->store($avanceRequest);
+
                                     }
                                     //send piece jointes
                                 }
