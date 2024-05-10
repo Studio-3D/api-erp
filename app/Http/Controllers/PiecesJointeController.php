@@ -226,5 +226,36 @@ class PiecesJointeController extends Controller
             }
             return response()->json(['error' => 'Unauthorized'], 401);
         }
+    public function files_docs($doss)
+    {
+        $user = Auth::user();
+        DatabaseHelper::Config();
+        $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+        $user_connecter = $userAuth->value('user_id_origin');
+        $user_societes = User::where('id', $user_connecter)->first();
+        $societe = Societe::findOrfail($user_societes->societe_id);
+        // Récupérer le chemin vers le dossier public
+        $publicPath = public_path();
+    
+        // Déterminer le sous-dossier en fonction de la variable $doss
+        $subdirectory = $doss == 'rsv' ? 'reservations' : ($doss == 'avc' ? 'paiements' : 'desistement');
+    
+        // Chemin complet vers le dossier
+        $directory = $publicPath . '/Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/' . $subdirectory;
+    
+        // Vérifier si le dossier existe
+        if (!is_dir($directory)) {
+            return response()->json(['error' => 'Le dossier spécifié n\'existe pas'], 404);
+        }
+    
+        // Obtenir la liste des fichiers dans le dossier
+        $files = scandir($directory);
+    
+        // Supprimer les entrées représentant les répertoires . et ..
+        $files = array_diff($files, ['.', '..']);
+    
+        // Retourner la liste des fichiers en tant que JSON
+        return response()->json($files);
+    }
 
 }

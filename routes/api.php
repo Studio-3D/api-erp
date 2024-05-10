@@ -270,11 +270,14 @@ Route::middleware('auth:api')->group(function () {
 
 
     /*************************************PiecesJointe***************************** */
-    Route::resource('piecesjointe', PiecesJointeController::class);
-    Route::get('piecesjointes/{projet_id}', [PiecesJointeController::class, 'index'])->name('piecesjointes');
-    Route::delete('destoryFileUsingReservationId/{reservation_id}', [PiecesJointeController::class, 'destoryFileUsingReservationId'])->name('destoryFileUsingReservationId');
-    Route::get('getFileUsingReservationId/{reservation_id}', [PiecesJointeController::class, 'getFileUsingReservationId'])->name('getFileUsingReservationId');
-    Route::post('scanner_file', [PiecesJointeController::class, 'scanner_file'])->name('scanner_file');
+    Route::resource('piecesjointe',PiecesJointeController::class);
+    Route::get('piecesjointes/{projet_id}', [PiecesJointeController::class,'index'])->name('piecesjointes');
+    Route::delete('destoryFileUsingReservationId/{reservation_id}',[PiecesJointeController::class,'destoryFileUsingReservationId'])->name('destoryFileUsingReservationId');
+    Route::get('getFileUsingReservationId/{reservation_id}',[PiecesJointeController::class,'getFileUsingReservationId'])->name('getFileUsingReservationId');
+    Route::post('scanner_file',[PiecesJointeController::class,'scanner_file'])->name('scanner_file');
+    Route::get('files_docs/{docs}',[PiecesJointeController::class,'files_docs'])->name('files_docs');
+    
+
     /*************************************Reservation***************************** */
     Route::resource('reservation', ReservationController::class);
     Route::get('info_reservation/{projet_id}', [ReservationController::class, 'info_reservation'])->name('');
