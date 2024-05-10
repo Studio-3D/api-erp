@@ -61,6 +61,8 @@ class PiecesJointeController extends Controller
             $pJ->avance_id = $request->avance_id;
             $pJ->reservation_id = $request->reservation_id;
             $pJ->desistement_id = $request->desistement_id;
+            $pJ->penalite_id = $request->penalite_id;
+
             if($request->pj_scanner){
                 $pJ->pj_scanner = $request->pj_scanner;
             }
@@ -238,7 +240,7 @@ class PiecesJointeController extends Controller
         $publicPath = public_path();
     
         // Déterminer le sous-dossier en fonction de la variable $doss
-        $subdirectory = $doss == 'rsv' ? 'reservations' : ($doss == 'avc' ? 'paiements' : 'desistement');
+        $subdirectory = $doss == 'rsv' ? 'reservations' : ($doss == 'avc' ? 'paiements' : ($doss == 'plt' ? 'penalites' : 'desistement'));
     
         // Chemin complet vers le dossier
         $directory = $publicPath . '/Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/' . $subdirectory;
