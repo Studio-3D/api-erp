@@ -463,7 +463,7 @@ class AvanceController extends Controller
     /**
      * Update the specified resource in storage.
      */
- public function update(UpdateAvanceRequest $request, $id)
+    public function update(UpdateAvanceRequest $request, $id)
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
@@ -478,7 +478,7 @@ class AvanceController extends Controller
             $old_date_valid=null;
 
             if($avance->statut==StatutReservationEnum::Validé->value||$avance->statut==StatutReservationEnum::Refusé->value  ){
-                $old_st_avance = StatutAvancePenalite::on('temp')->where('avance_id',$id)->orderBy('created_at','desc')->firstorfail();
+                $old_st_avance = StatutAvancePenalite::on('temp')->where('avance_id',$id)->orderBy('created_at','desc')->first();
                 if($old_st_avance!=null){
                     $old_date_encaisse=$old_st_avance->date_encaissement;
                     $old_n_remise=$old_st_avance->num_remise;
@@ -576,7 +576,7 @@ class AvanceController extends Controller
                     $avance->echeance = null;
                 }
                 $avance->user_id = $userAuth->value('id');
-                $avance->commentaireAvance = $request->commentaireAvance;
+                $avance->commentaireAvance = $request->commentaireAvance=='null'?null:$request->commentaireAvance;
                 $avance->montant = $request->montant;
                 $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
                 $mnt_lettre = $inWords->format($request->montant);
@@ -609,7 +609,7 @@ class AvanceController extends Controller
 
                 if ($avance->save()) {
                        // remodifier fiche transmission
-                $fiche = FicheTransmission::on('temp')->where('avance_id', $avance->id)->orderby('created_at', 'desc')->firstOrFail();
+                $fiche = FicheTransmission::on('temp')->where('avance_id', $avance->id)->orderby('created_at', 'desc')->first();
                 if ($fiche != null) {
                     $fiche->setConnection('temp');
                     if ($request->mode_paiement == 2 || $request->mode_paiement == 3 || $request->mode_paiement == 4) {
@@ -623,7 +623,7 @@ class AvanceController extends Controller
                     if(RoleHelper::AdminSup()){
                         if($request->date_encaissement!=null && ($request->num_remise!=null || $request->num_remise!="null")  ){
                             if($avance->statut==StatutReservationEnum::Validé->value ){
-                                $st_avance = StatutAvancePenalite::on('temp')->where('avance_id',$avance->id)->orderBy('created_at','desc')->firstOrFail();
+                                $st_avance = StatutAvancePenalite::on('temp')->where('avance_id',$avance->id)->orderBy('created_at','desc')->first();
                                 if($st_avance!=null){
                                     $st_avance->setConnection('temp');
                                     $st_avance->avance_id=$avance->id;
@@ -646,6 +646,29 @@ class AvanceController extends Controller
                             }
                         }
 
+                        //remodifier encaissement
+                        $encaiss = Encaissement::on('temp')->where('avance_id', $avance->id)->orderby('created_at', 'desc')->first();
+
+                            if ($encaiss != null) {
+                                $encaiss->setConnection('temp');
+                                $encaiss->montant = $avance->montant;
+                                $encaiss->avance_id = $avance->id;
+                                $encaiss->date_reglement = $avance->updated_at;
+                                $encaiss->date_encaissement = $request->date_encaissement;
+                                $encaiss->user_id_valider = $userAuth->value('id');
+                            }else{
+                                $encaiss = new Encaissement();
+                                $encaiss->setConnection('temp');
+                                $encaiss->reservation_id = $avance->reservation_id;
+                                $encaiss->type_encaissement = 1; //Avances
+                                $encaiss->montant = $avance->montant;
+                                $encaiss->avance_id = $avance->id;
+                                $encaiss->date_reglement = $avance->created_at;
+                                $encaiss->date_encaissement =$request->date_encaissement;
+                                $encaiss->user_id_valider = $userAuth->value('id');
+                                $encaiss->save();
+                            }
+
                     }
 
                     //delete old notificcation
@@ -667,15 +690,7 @@ class AvanceController extends Controller
                             '/reservations/show/' . $avance->reservation_id, Carbon::now(), 7, 'Validation paiement', null, RoleEnum::ADMIN->value, null, null, $avance->reservation->projet_id, $avance->id, $avance->reservation_id
                         );
                     }
-                    //Encaisseùment
-                    /* (RoleHelper::AdminSup()) {
-                        //store encaissement
-                        if ($request->date_encaissement != null || $request->num_remise != null) {
-                            $encaiss = Encaissement::on('temp')->where('avance_id', $id)->get();
-                            foreach ($encaiss as $en) {
-                                $en->delete();
-                            }
-                        }}*/
+
                 }
             }
 
