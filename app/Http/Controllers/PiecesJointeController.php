@@ -62,6 +62,7 @@ class PiecesJointeController extends Controller
             $pJ->reservation_id = $request->reservation_id;
             $pJ->desistement_id = $request->desistement_id;
             $pJ->penalite_id = $request->penalite_id;
+            $pJ->active = $request->active;
             if($request->pj_scanner){
                 $pJ->pj_scanner = $request->pj_scanner;
             }

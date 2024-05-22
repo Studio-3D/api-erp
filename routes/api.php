@@ -267,6 +267,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('avances_by_etat/{projet_id}/{etat}', [AvanceController::class, 'get_avances_by_etat'])->name('');
     Route::put('traiter_avance/{id}', [AvanceController::class, 'traiter_avance'])->name('');
     Route::get('avances_rejets/{projet_id}', [AvanceController::class, 'get_avances_rejets'])->name('');
+    Route::get('get_echeances/{projet_id}', [AvanceController::class, 'get_echeances'])->name('');
 
 
     /*************************************PiecesJointe***************************** */
@@ -331,6 +332,7 @@ Route::middleware('auth:api')->group(function () {
     Route::put('validation_desistement/{id}', [DesistementController::class, 'validation_desitement'])->name('');
     Route::get('get_notif_dst_commercial/{projet_id}', [DesistementController::class, 'get_notif_dst_commercial'])->name('');
     Route::get('get_notif_dst_admin/{projet_id}', [DesistementController::class, 'get_notif_dst_admin'])->name('');
+    Route::get('get_notif_dst_att_validation_par_type/{projet_id}', [DesistementController::class, 'get_notif_dst_att_validation_par_type'])->name('');
     Route::get('get_desistements/{projet_id}/{type}/{etat}', [DesistementController::class, 'get_desistements'])->name('');
     Route::post('desistement/corriger_desistement', [DesistementController::class, 'store'])->name('');
     Route::get('get_dossiers_by_bien/{bien_id}', [DesistementController::class, 'get_dossiers_by_bien'])->name('');

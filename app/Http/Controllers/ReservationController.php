@@ -321,6 +321,7 @@ class ReservationController extends Controller
                             'fichier' => $Myfile,
                             'type' => $fileType,
                             'reservation_id' => $reservation->id,
+                            'active' => 1,
 
                         ];
 
@@ -368,8 +369,8 @@ class ReservationController extends Controller
                 $nb_aq=count($reservation->aquereurs);
                 $nb_pj=count($reservation->piece_jointe);
              }
-             $nb_histo=count($reservation->historiques);
-             return response()->json(['code_res' => $code,'code_desistement' => $code_desistement,'prix'=>$prix,'nb_aquer'=>$nb_aq,'nb_histo'=>$nb_histo,'nb_pj'=>$nb_pj,'etat'=>$etat,'transfert'=>$reservation->remboursement_dd_with_transfert,'statut'=>$statut,'user_id'=>$user_id], 200);
+             $nb_av=count($reservation->avances);
+             return response()->json(['code_res' => $code,'code_desistement' => $code_desistement,'prix'=>$prix,'nb_aquer'=>$nb_aq,'nb_av'=>$nb_av,'nb_pj'=>$nb_pj,'etat'=>$etat,'transfert'=>$reservation->remboursement_dd_with_transfert,'statut'=>$statut,'user_id'=>$user_id], 200);
          } else {
              return response()->json(['error' => 'Unauthorized'], 401);
          }
@@ -596,6 +597,7 @@ class ReservationController extends Controller
                                 'fichier' => $Myfile,
                                 'type' => $fileType,
                                 'reservation_id' => $reservation->id,
+                                'active' => 1,
 
                             ];
 

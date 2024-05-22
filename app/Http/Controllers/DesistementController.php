@@ -75,8 +75,6 @@ class DesistementController extends Controller
     public function store(StoreDesistementRequest $request)
 
     {
-
-
         $user = Auth::user();
         Config::set('broadcasting.default', 'pusher_3');
         if(RoleHelper::AC()){
@@ -98,7 +96,6 @@ class DesistementController extends Controller
                 }
 
             }
-
             $desistement = new Desistement();
             $desistement->setConnection('temp');
             $desistement->reservation_id=$request->reservation_id;
@@ -157,6 +154,7 @@ class DesistementController extends Controller
                 //validé
                 $desistement->statut = 1;
                 $desistement->date_validation=Carbon::now();
+                $desistement->user_id_valider=intval($userAuth->value('id'));
             }
 
             if($desistement->save()){
@@ -208,8 +206,8 @@ class DesistementController extends Controller
                                         if ($request->hasFile('cheque_recu_' . $index)) {
 
                                             $remboursement->cheque = $request->file('cheque_recu_' . $index)->getClientOriginalName();
-                                            File::makeDirectory(public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements'.'/'.'cheques'), 0755, true, true);
-                                            $request->file('cheque_recu_' . $index)->move(public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements'.'/'.'cheques'),  $request->file('cheque_recu_' . $index)->getClientOriginalName());
+                                            File::makeDirectory(public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements'.'/'.'cheques_reçus'), 0755, true, true);
+                                            $request->file('cheque_recu_' . $index)->move(public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements'.'/'.'cheques_reçus'),  $request->file('cheque_recu_' . $index)->getClientOriginalName());
 
                                         }
                                         //montant rembourse lettre
@@ -229,20 +227,6 @@ class DesistementController extends Controller
                                             $remboursement->mode_rembourse_client=$cl_remb['mode_rembourse'];
                                             $remboursement->pour_le_compte=$cl_remb['pour_le_compte'];
                                             $remboursement->num_paiement=$cl_remb['num_paiement'];
-
-
-                                            /*if ($request->hasFile($cl_remb['fichier_autorisation']) ) {
-                                                $remboursement->fichier_autorisation =$request->file('fichier_autorisation')->getClientOriginalName();
-                                                $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements/fichiers_autorisation');
-                                                File::makeDirectory($directory, 0755, true, true);
-                                                $request->file('fichier_autorisation')->move($directory,$request->file('fichier_autorisation')->getClientOriginalName());
-                                            }
-                                            if ($request->hasFile($cl_remb['cheque_recu'])) {
-                                                $remboursement->cheque =$request->file('cheque_recu')->getClientOriginalName();
-                                                $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements/cheques_reçus');
-                                                File::makeDirectory($directory, 0755, true, true);
-                                                $request->file('cheque_recu')->move($directory,$request->file('cheque_recu')->getClientOriginalName());
-                                            }*/
                                             $remboursement->montant_transfert=$request->montant_transferer;
                                             $remboursement->montant_a_rembourser=$mont_a_rembourser;
                                             $remboursement->montant_a_rembourser_par_lettre=$mont_remb_lettre;
@@ -453,7 +437,34 @@ class DesistementController extends Controller
                              }
                         }
                     }
+                    //changement de bien store avance with pieces jointes
+                    elseif($request->type==TypeDesistement::Changement_De_Bien->value){
+                        if($request->montant_a_ajouter>0){
 
+                            if ($request->file('files_avance')) {
+                                foreach ($request->file('files_avance') as $file) {
+                                    $piecesJointeController = new PiecesJointeController();
+                                    $pieceJointeRequest = new StorePiecesJointeRequest();
+
+                                    // Récupérer le nom du fichier
+                                    $fileName = $file->getClientOriginalName();
+                                    $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements');
+                                    File::makeDirectory($directory, 0755, true, true);
+                                    $file->move($directory, $fileName);
+                                    $fileType = $file->getClientOriginalExtension();
+                                    $datapieceJointe = [
+                                        'fichier' => $fileName,
+                                        'type' => $fileType,
+                                        'desistement_id' => $desistement->id,
+                                        'active' => 0,
+                                    ];
+
+                                    $pieceJointeRequest->merge($datapieceJointe);
+                                    $piecesJointeController->store($pieceJointeRequest);
+                                }
+                            }
+                        }
+                    }
                     //store Pénalité
 
                     if($request->input('checked_penalite') =='true') {
@@ -482,8 +493,13 @@ class DesistementController extends Controller
                             }*/
                             $pen->montant=$request->penalite_montant;
                             $pen->montant_par_lettre=$pen_mnt_lettre;
-                            $pen->penalite_par=$request->penalite_par;
-                            $pen->mode_penalite=$request->mode_penalite;
+                            if($request->mode_penalite=='Montant'){
+                                $pen->penalite_par='Montant';
+                                $pen->mode_penalite='Montant';
+                            }else{
+                                $pen->penalite_par=$request->penalite_par;
+                                $pen->mode_penalite=$request->mode_penalite;
+                            }
                             //$pen->sr= (bool)$request->sr_pen;
                             if($request->sr_pen=='false'){
                                 $pen->sr=0;
@@ -531,6 +547,7 @@ class DesistementController extends Controller
                                             'fichier' => $fileName,
                                             'type' => $fileType,
                                             'penalite_id' => $pen->id,
+                                            'active' => 1,
 
                                         ];
 
@@ -599,6 +616,7 @@ class DesistementController extends Controller
                                 'fichier' => $fileName,
                                 'type' => $fileType,
                                 'desistement_id' => $desistement->id,
+                                'active' => 1,
 
                             ];
 
@@ -674,11 +692,6 @@ class DesistementController extends Controller
                                                     'commentaireAvance' => null,
                                                     'num_remise' => null,
                                                     'date_encaissement' =>null,
-                                                    //send piece jointes
-
-                                                    'files_avance' => $request->file('files_avance'),
-
-
                                                 ];
                                                 $avanceRequest->merge($dataAvance);
                                                 $avanceController->store($avanceRequest);
@@ -1233,7 +1246,7 @@ class DesistementController extends Controller
 
                     }
                     else{
-                        //VALIDATION DU CHANGEMENT DE BIEN
+
                         //notif to admin pour valider desistement
                         NotificationHelper::storeNotification(
                             '/desistements/show/'.$desistement->id, Carbon::now(),9,'Demande Validation desistement',null,RoleEnum::ADMIN->value,null,null,$desistement->projet_id,null,$desistement->reservation_id
@@ -1482,7 +1495,7 @@ class DesistementController extends Controller
         if (Auth::guard('api')->check()) {
             Config::set('broadcasting.default', 'pusher_3');
             DatabaseHelper::Config();
-            $desistement = Desistement::on('temp')->with('aquereurs_desisteurs','aquereurs_non_desisteurs','aquereurs_profits','remboursement','nouvel_aquereurs_desistements','aquereurs_partiel','Bien_nouveau','banque','penalite_desistement')->findOrFail($id);
+            $desistement = Desistement::on('temp')->with('aquereurs_desisteurs','aquereurs_non_desisteurs','aquereurs_profits','remboursement','nouvel_aquereurs_desistements','aquereurs_partiel','Bien_nouveau','banque','penalite_desistement','Piece_jointes','Avance','Piece_jointes_des_montant_a_ajouter')->findOrFail($id);
             $reservation_ancien=Reservation::on('temp')->findorfail($desistement->reservation_id);
             $sum_avances_valides_ancien=0;
             //si dossier desiste
@@ -1598,7 +1611,6 @@ class DesistementController extends Controller
                                         ];
                                         $avanceRequest->merge($dataAvance);
                                         $avanceController->store($avanceRequest);
-                                        //send piece jointes
                                     }
                             //validation desistement
                             $desistement->reservation_id_new=$desistement->reservation_id;
@@ -2111,8 +2123,23 @@ class DesistementController extends Controller
                                 ];
                                 $avanceRequest->merge($dataAvance);
                                 $avanceController->store($avanceRequest);
+                                //get avance id creé==> pour lieé pice jointe cree avant avec avance_id
+                                $avance_des=Avance::on('temp')->where('desistement_id',$desistement->id)->first();
+                                if($avance_des!=null){
+                                    $piece_jointe=PiecesJointe::on('temp')->where('desistement_id',$desistement->id)->where('active',0)->get();
+                                    if(count($piece_jointe)>0){
+                                        foreach($piece_jointe as $pj){
+                                            $pj->setConnection('temp');
+                                            $pj->desistement_id=null;
+                                            $pj->avance_id=$avance_des->id;
+                                            $pj->active=1;
+                                            $pj->save();
+                                        }
+                                    }
                                 }
-                                //send piece jointes
+
+                                }
+
                             }
 
                             //libration de l'ancien bien
@@ -2201,12 +2228,45 @@ class DesistementController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $nb_desistement_att_valide = Desistement::on('temp')->where('archive',0)->where('projet_id',$projet_id)->where('statut',0)->count();
-            //nb_des desistement par type
-          /*  $nb_desistement_att_valide_par_type =Desistement::on('temp')->select(DB::raw('count(id) as nb_dst,type,type_dp'))
-            ->where('projet_id',$projet_id)->where('archive',0)->where('statut',0)->groupBy('type','type_dp')->get();*/
-
-        return response()->json(['nb_dst_att_valide'=>$nb_desistement_att_valide/*,'nb_dst_att_valide_par_type'=>$nb_desistement_att_valide_par_type*/]);
+        /* //nb_des desistement par type
+                        $nb_desistement_att_valide_par_type =Desistement::on('temp')->select(DB::raw('count(id) as nb_dst,type,type_dp'))
+                        ->where('projet_id',$projet_id)->where('archive',0)->where('statut',0)->groupBy('type','type_dp')->get();
+            */
+            return response()->json(['nb_dst_att_valide'=>$nb_desistement_att_valide]);
         } else  return response()->json(['error'=>'Unauthorized'], 401);
+    }
+
+    public function get_notif_dst_att_validation_par_type($projet_id){
+        if(RoleHelper::AdminSup()){
+             DatabaseHelper::Config();
+            //nb_des desistement par type
+            $nb_dd =Desistement::on('temp')
+            ->where('projet_id',$projet_id)->where('type',1)->where('archive',0)->where('statut',0)->count();
+            $nb_dp_proche =Desistement::on('temp')
+            ->where('projet_id',$projet_id)->where('type',2)->where('type_dp',1)->where('archive',0)->where('statut',0)->count();
+            $nb_dp_partiel =Desistement::on('temp')
+            ->where('projet_id',$projet_id)->where('type',2)->where('type_dp',3)->where('archive',0)->where('statut',0)->count();
+            $nb_dp_co =Desistement::on('temp')
+            ->where('projet_id',$projet_id)->where('type',2)->where('type_dp',2)->where('archive',0)->where('statut',0)->count();
+            $nb_change =Desistement::on('temp')
+            ->where('projet_id',$projet_id)->where('type',3)->where('archive',0)->where('statut',0)->count();
+        }elseif(RoleHelper::Com()){
+            DatabaseHelper::Config();
+            $user = Auth::user();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            //nb_des desistement par type
+            $nb_dd =Desistement::on('temp')
+            ->where('projet_id',$projet_id)->where('type',1)->where('archive',0)->where('user_id', $userAuth->value('id'))->where('statut',0)->count();
+            $nb_dp_proche =Desistement::on('temp')
+            ->where('projet_id',$projet_id)->where('type',2)->where('type_dp',1)->where('user_id', $userAuth->value('id'))->where('archive',0)->where('statut',0)->count();
+            $nb_dp_partiel =Desistement::on('temp')
+            ->where('projet_id',$projet_id)->where('type',2)->where('type_dp',3)->where('user_id', $userAuth->value('id'))->where('archive',0)->where('statut',0)->count();
+            $nb_dp_co =Desistement::on('temp')
+            ->where('projet_id',$projet_id)->where('type',2)->where('type_dp',2)->where('user_id', $userAuth->value('id'))->where('archive',0)->where('statut',0)->count();
+            $nb_change =Desistement::on('temp')
+            ->where('projet_id',$projet_id)->where('type',3)->where('archive',0)->where('user_id', $userAuth->value('id'))->where('statut',0)->count();
+        }
+        return response()->json(['nb_dd'=>$nb_dd,'nb_dp_proche'=>$nb_dp_proche,'nb_dp_partiel'=>$nb_dp_partiel,'nb_dp_co'=>$nb_dp_co,'nb_change'=>$nb_change]);
     }
 
 
