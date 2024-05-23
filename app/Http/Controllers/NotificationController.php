@@ -151,11 +151,11 @@ class NotificationController extends Controller
             $i=0;
             if(RoleHelper::AdminSup()){
 
-               $all_notifications=Notification::on('temp')->with('prospect','user')->where('projet_id',$projet_id)->withTrashed()->whereDate('date', '<=', Carbon::now())->orderBy('id','desc')->get();
+               $all_notifications=Notification::on('temp')->with('prospect','user','reservation','avance')->where('projet_id',$projet_id)->withTrashed()->whereDate('date', '<=', Carbon::now())->orderBy('id','desc')->get();
                $new_notifications_count=Notification::on('temp')->where('projet_id',$projet_id)->where('deleted_at',null)->count();
 
             }else{
-                $all_notifications=Notification::on('temp')->with('prospect','user')->where('projet_id',$projet_id)->where('user_id',Auth::guard('api')->user()->id)->withTrashed()->whereDate('date', '<=', Carbon::now())->orderBy('date','desc')->get();
+                $all_notifications=Notification::on('temp')->with('prospect','user','reservation','avance')->where('projet_id',$projet_id)->where('user_id',Auth::guard('api')->user()->id)->withTrashed()->whereDate('date', '<=', Carbon::now())->orderBy('date','desc')->get();
                 $new_notifications_count=Notification::on('temp')->where('projet_id',$projet_id)->where('deleted_at',null)->where('user_id',Auth::guard('api')->user()->id)->count();
                 }
            return response()->json(['all_notifications' => $all_notifications,'new_notifications_count'=>$new_notifications_count]);
@@ -250,8 +250,15 @@ class NotificationController extends Controller
                     $query->where('remboursements.mode_rembourse', 'apres_vente')
                         ->orwhere('remboursements.mode_rembourse', 'transfert_rem_apres_vente')
                     ;})->count();
+
+                $nb_echeance = Avance::on('temp')
+                    ->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
+                    ->where('reservations.projet_id', $projet_id)
+                    ->where('avances.sr', 1)
+                    ->whereDate('avances.echeance', '<=', Carbon::now())
+                    ->where('reservations.etat', 1)->count();
             }
-           return response()->json(['nb_dst_att_valide' => $nb_desistement_att_valide,'nb_pen_att_valide'=>$nb_pen_att_valide,'nb_av_att_validation'=>$nb_av_att_validation,'nb_res_att_validation'=>$nb_res_att_validation,'nb_demande_pre_remourse'=>$nb_demande]);
+           return response()->json(['nb_dst_att_valide' => $nb_desistement_att_valide,'nb_pen_att_valide'=>$nb_pen_att_valide,'nb_av_att_validation'=>$nb_av_att_validation,'nb_res_att_validation'=>$nb_res_att_validation,'nb_demande_pre_remourse'=>$nb_demande,'nb_echeance'=>$nb_echeance]);
         }
          else{
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -283,7 +290,7 @@ class NotificationController extends Controller
                 ->where('projet_id', $projet_id)
                 ->where('statut', 3)
                 ->where('etat', 1)->where('user_id',  $userAuth->value('id'))->count();
-               
+
                  $nb_demande = Remboursement::on('temp')->join('desistements', 'desistements.id', '=', 'remboursements.desistement_id')
                 ->where('desistements.projet_id',$projet_id)->where('remboursements.statut',0)->where('remboursements.etat',1)
                 ->where('desistements.user_id', $userAuth->value('id'))
@@ -291,8 +298,16 @@ class NotificationController extends Controller
                     $query->where('remboursements.mode_rembourse', 'apres_vente')
                         ->orwhere('remboursements.mode_rembourse', 'transfert_rem_apres_vente')
                     ;})->count();
+
+                $nb_echeance = Avance::on('temp')
+                    ->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
+                    ->where('reservations.projet_id', $projet_id)
+                    ->where('avances.sr', 1)
+                    ->whereDate('avances.echeance', '<=', Carbon::now())
+                    ->where('reservations.etat', 1)->where('avances.user_id',  $userAuth->value('id'))->count();
+
             }
-           return response()->json(['nb_dst_en_cours' => $nb_desistement_encours,'nb_pen_en_cours'=>$nb_pen_en_cours,'nb_av_en_cours'=>$nb_av_en_cours,'nb_res_en_cours'=>$nb_res_en_cours,'nb_demande_pre_remourse'=>$nb_demande]);
+           return response()->json(['nb_dst_en_cours' => $nb_desistement_encours,'nb_pen_en_cours'=>$nb_pen_en_cours,'nb_av_en_cours'=>$nb_av_en_cours,'nb_res_en_cours'=>$nb_res_en_cours,'nb_demande_pre_remourse'=>$nb_demande,'nb_echeance'=>$nb_echeance]);
         }
          else{
             return response()->json(['error' => 'Unauthorized'], 401);
