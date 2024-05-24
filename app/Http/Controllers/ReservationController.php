@@ -768,7 +768,7 @@ class ReservationController extends Controller
         if(RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             Config::set('broadcasting.default', 'pusher_5');
-            // Config::set('broadcasting.default', 'pusher_3');
+
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $reservation = Reservation::on('temp')->findOrFail($id);
@@ -791,17 +791,20 @@ class ReservationController extends Controller
                     NotificationHelper::storeNotification(
                         '/reservations/show/'.$id, Carbon::now(),15,'reservation validé',$reservation->user->user_id_origin,null,null,null,$reservation->projet_id,null,null
                         );
-                       // broadcast(new NotificationEvent($id));
-                         //1 traitement reservation
+
                         broadcast(new NotifMenuEvent(1));
+                             Config::set('broadcasting.default', 'pusher_3');
+                             broadcast(new NotificationEvent(1));
+
                 }else{
                     //store new notification rejeté
                     NotificationHelper::storeNotification(
                         '/reservations/show/'.$id, Carbon::now(),16,'reservation rejeté',$reservation->user->user_id_origin,null,null,null,$reservation->projet_id,null,null
                         );
-                       // broadcast(new NotificationEvent($id));
-                         //1 traitement reservation
+
                         broadcast(new NotifMenuEvent(1));
+                        Config::set('broadcasting.default', 'pusher_3');
+                        broadcast(new NotificationEvent(1));
 
                 }
                 //traiter reservation with avance
