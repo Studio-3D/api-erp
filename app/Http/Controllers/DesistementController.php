@@ -524,9 +524,21 @@ class DesistementController extends Controller
                                 //store notification echeance
                                 if($request->penalite_par=='prix'){
                                    if($pen->echeance!=null){
-                                    NotificationHelper::storeNotification(
-                                        '/desistements/penalite/show/'.$pen->id, $pen->echeance,5,'ECHEANCE Pénalité',Auth::guard('api')->user()->id,null,null,null,$desistement->projet_id,null,$desistement->reservation_id
-                                    );
+                                    $data_notif = [
+                                        'lien' => '/desistements/penalite/show/'.$pen->id,
+                                        'date' => $pen->echeance,
+                                        'type' => 5,
+                                        'description' => 'ECHEANCE Pénalité',
+                                        'role'=>null,
+                                        'user_id'=>Auth::guard('api')->user()->id,
+                                        'projet_id'=>$desistement->projet_id,
+                                        'reservation_id'=>$desistement->reservation_id
+
+                                    ];
+                                    $notif_helper = new NotificationHelper();
+                                    $notif_helper->storeNotification($request->merge($data_notif));
+
+
                                     broadcast(new NotificationEvent($pen->id));
                                    }
                                 }
@@ -589,9 +601,20 @@ class DesistementController extends Controller
                                     if($fiche->save()){
                                         //if (RoleHelper::Com()) {
                                               //notifiction to admin de valider penalite
-                                                    NotificationHelper::storeNotification(
-                                                        'desistements/penalites/show/' . $pen->id, null, 6, 'DEMANDE VALIDATION Pénalité', null, RoleEnum::ADMIN->value, null, null, $desistement->projet_id, null, $desistement->reservation_id
-                                                    );
+                                              $data_notif = [
+                                                'lien' => '/desistements/penalite/show/'.$pen->id,
+                                                'date' => Carbon::now(),
+                                                'type' =>22,
+                                                'description' => 'DEMANDE VALIDATION Pénalité',
+                                                'role'=>RoleEnum::ADMIN->value,
+                                                'projet_id'=>$desistement->projet_id,
+                                                'reservation_id'=>$desistement->reservation_id
+
+                                            ];
+                                            $notif_helper = new NotificationHelper();
+                                            $notif_helper->storeNotification($request->merge($data_notif));
+
+
                                                     broadcast(new NotificationEvent($pen->id));
                                         // }
                                     }
@@ -674,6 +697,7 @@ class DesistementController extends Controller
                                                      $mode_transfert='transfert depuis le dossier :'.$reservation->code_reservation;
                                                 }*/
                                                 $dataAvance = [
+                                                    'avance_with_reservation'=>false,
                                                     //addedd
                                                     'desistement_id'=>$desistement->id,
                                                     'dossier_id_transfert'=>$request->reservation_id,
@@ -1194,6 +1218,7 @@ class DesistementController extends Controller
                                     $montant=$request->montant_a_ajouter;
                                     $mnt_lettre = $inWords->format($montant);
                                     $dataAvance = [
+                                        'avance_with_reservation'=>false,
                                         //addedd
                                         'desistement_id'=>$desistement->id,
                                         'dossier_id_transfert'=>null,
@@ -1248,9 +1273,20 @@ class DesistementController extends Controller
                     else{
 
                         //notif to admin pour valider desistement
-                        NotificationHelper::storeNotification(
-                            '/desistements/show/'.$desistement->id, Carbon::now(),9,'Demande Validation desistement',null,RoleEnum::ADMIN->value,null,null,$desistement->projet_id,null,$desistement->reservation_id
-                        );
+
+                        $data_notif = [
+                            'lien' => '/desistements/show/'.$desistement->id,
+                            'date' => Carbon::now(),
+                            'type' =>9,
+                            'description' => 'DEMANDE VALIDATION desistement',
+                            'role'=>RoleEnum::ADMIN->value,
+                            'projet_id'=>$desistement->projet_id,
+                            'reservation_id'=>$desistement->reservation_id
+
+                        ];
+                        $notif_helper = new NotificationHelper();
+                        $notif_helper->storeNotification($request->merge($data_notif));
+
                         broadcast(new NotificationEvent($desistement->id));
 
                     }
@@ -1589,6 +1625,7 @@ class DesistementController extends Controller
                                             $mnt_lettre = $inWords->format($montant);
                                         }
                                         $dataAvance = [
+                                            'avance_with_reservation'=>false,
                                             //addedd
                                             'desistement_id'=>$id,
                                             'dossier_id_transfert'=>$desistement->reservation_id,
@@ -2102,6 +2139,7 @@ class DesistementController extends Controller
                                 $montant=$desistement->montant_a_ajouter;
                                 $mnt_lettre = $inWords->format($montant);
                                 $dataAvance = [
+                                    'avance_with_reservation'=>false,
                                     //addedd
                                     'desistement_id'=>$desistement->id,
                                     'dossier_id_transfert'=>null,
@@ -2169,9 +2207,19 @@ class DesistementController extends Controller
 
                     if( $desistement->save()){
                             //desistement validé
-                            NotificationHelper::storeNotification(
-                                '/desistements/show/'.$desistement->id, Carbon::now(),11,'desistement validé',null,RoleEnum::ADMIN->value,null,null,$desistement->projet_id,null,$desistement->reservation_id
-                            );
+                            $data_notif = [
+                                'lien' => '/desistements/show/'.$desistement->id,
+                                'date' => Carbon::now(),
+                                'type' =>11,
+                                'description' => 'Désistement Validé',
+                                'user_id'=>$desistement->user->user_id_origin,
+                                'projet_id'=>$desistement->projet_id,
+                                'reservation_id'=>$desistement->reservation_id
+
+                            ];
+                            $notif_helper = new NotificationHelper();
+                            $notif_helper->storeNotification($request->merge($data_notif));
+
                             broadcast(new NotificationEvent($desistement->id));
                     }
 
@@ -2183,10 +2231,19 @@ class DesistementController extends Controller
                 $desistement->user_id_valider=intval($userAuth->value('id'));
 
                 if($desistement->save()){
-                     //desistement validé
-                     NotificationHelper::storeNotification(
-                        '/desistements/corriger_desistement/'.$desistement->id, Carbon::now(),11,'desistement rejeté',null,RoleEnum::ADMIN->value,null,null,$desistement->projet_id,null,$desistement->reservation_id
-                    );
+                     //desistement rejete
+                     $data_notif = [
+                        'lien' => '/desistements/corriger_desistement/'.$desistement->id,
+                        'date' => Carbon::now(),
+                        'type' =>12,
+                        'user_id'=>$desistement->user->user_id_origin,
+                        'description' => 'Désistement Rejeté',
+                        'projet_id'=>$desistement->projet_id,
+                        'reservation_id'=>$desistement->reservation_id
+
+                    ];
+                    $notif_helper = new NotificationHelper();
+                    $notif_helper->storeNotification($request->merge($data_notif));
                     broadcast(new NotificationEvent($desistement->id));
                 }
             }
@@ -2379,7 +2436,7 @@ class DesistementController extends Controller
             ->where('desistements.archive',0)
             ->where('desistements.deleted_at',NULL)
             ->where('desistements.projet_id',$projet_id)->where('penalites_desistements.statut',0)->count();
-            return response()->json(['nb_att_valide'=>$nb_pen_att_valide]);
+            return response()->json(['nb'=>$nb_pen_att_valide]);
         } else  return response()->json(['error'=>'Unauthorized'], 401);
     }
 
@@ -2441,9 +2498,19 @@ class DesistementController extends Controller
                     //store notification echeance
                     if($request->penalite_par=='prix'){
                        if($pen->echeance!=null){
-                        NotificationHelper::storeNotification(
-                            '/desistements/penalite/show/'.$pen->id, $pen->echeance,5,'ECHEANCE Pénalité',Auth::guard('api')->user()->id,null,null,null,$desistement->projet_id,null,$desistement->reservation_id
-                        );
+
+                        $data_notif = [
+                            'lien' => '/desistements/penalite/show/'.$pen->id,
+                            'date' => $pen->echeance,
+                            'type' =>5,
+                            'user_id'=>Auth::guard('api')->user()->id,
+                            'description' => 'ECHEANCE Pénalité',
+                            'projet_id'=>$desistement->projet_id,
+                            'reservation_id'=>$desistement->reservation_id
+
+                        ];
+                        $notif_helper = new NotificationHelper();
+                        $notif_helper->storeNotification($request->merge($data_notif));
                         broadcast(new NotificationEvent($pen->id));
                        }
                     }
@@ -2483,9 +2550,20 @@ class DesistementController extends Controller
                         if($fiche->save()){
                            // if (RoleHelper::Com()) {
                                   //notifiction to admin de valider penalite
-                                        NotificationHelper::storeNotification(
-                                            'desistements/penalites/show/' . $pen->id, null, 6, 'DEMANDE VALIDATION Pénalité', null, RoleEnum::ADMIN->value, null, null, $pen->desistement->projet_id, null, $pen->desistement->reservation_id
-                                        );
+                                   $data_notif = [
+                                    'lien' => '/desistements/penalite/show/'.$pen->id,
+                                    'date' => Carbon::now(),
+                                    'type' =>22,
+                                    'role'=>Auth::guard('api')->user()->id,
+                                    'description' => 'DEMANDE VALIDATION Pénalité',
+                                    'projet_id'=>$pen->desistement->projet_id,
+                                    'reservation_id'=>$pen->desistement->reservation_id
+
+                                ];
+                                $notif_helper = new NotificationHelper();
+                                $notif_helper->storeNotification($request->merge($data_notif));
+
+
                                         broadcast(new NotificationEvent($pen->id));
                             // }
                         }
@@ -2580,8 +2658,6 @@ class DesistementController extends Controller
     {
         if(RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-           // Config::set('broadcasting.default', 'pusher_3');
-           Config::set('broadcasting.default', 'pusher_5');
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $penalite = PenaliteDesistement::on('temp')->findOrFail($id);
@@ -2606,6 +2682,28 @@ class DesistementController extends Controller
                     $st_pen->save();
                 }
                 if($request->etat==1){
+                 Config::set('broadcasting.default', 'pusher_5');
+                 //3 traitement  penalite
+                 broadcast(new NotifMenuEvent(3));
+                 if($penalite->desistement->user->role==RoleEnum::COMMERCIAL->value){
+                    Config::set('broadcasting.default', 'pusher_3');
+                    $data_notif = [
+                       'lien' => '/desistements/penalite/show/'.$penalite->id,
+                       'date' => Carbon::now(),
+                       'type' =>13,
+                       'user_id'=>$penalite->desistement->user->user_id_origin,
+                       'description' => 'Pénalité Validé',
+                       'projet_id'=>$penalite->desistement->projet_id,
+                       'reservation_id'=>$penalite->desistement->reservation_ancien->id,
+
+
+                   ];
+                   $notif_helper = new NotificationHelper();
+                   $notif_helper->storeNotification($request->merge($data_notif));
+                   broadcast(new NotificationEvent($id));
+                 }
+
+
                 //store new notification validé
                  $encaiss = new Encaissement();
                  $encaiss->setConnection('temp');
@@ -2618,20 +2716,30 @@ class DesistementController extends Controller
                  $encaiss->user_id_valider = $userAuth->value('id');
                  $encaiss->save();
 
-                NotificationHelper::storeNotification(
-                    '/desistements/penalites/show/'.$penalite->id, Carbon::now(),13,'penalité validé',$penalite->desistement->user->user_id_origin,null,null,null,$penalite->desistement->projet_id,null,null
-                    );
-                      //3 traitement  penalite
-                     broadcast(new NotifMenuEvent(3));
-                   // broadcast(new NotificationEvent($id));
+
                 }else{
-                    //store new notification rejeté
-                    NotificationHelper::storeNotification(
-                        '/desistements/penalites/show/'.$penalite->id, Carbon::now(),14,'penalité rejeté',$penalite->desistement->user->user_id_origin,null,null,null,$penalite->desistement->projet_id,null,null
-                        );
-                          //3 traitement  penalite
-                         broadcast(new NotifMenuEvent(3));
-                       // broadcast(new NotificationEvent($id));
+                        //store new notification rejeté
+                        Config::set('broadcasting.default', 'pusher_5');
+                        //3 traitement  penalite
+                        broadcast(new NotifMenuEvent(3));
+                        if($penalite->desistement->user->role==RoleEnum::COMMERCIAL->value){
+                            $data_notif = [
+                                'lien' => '/desistements/penalite/show/'.$penalite->id,
+                                'date' => Carbon::now(),
+                                'type' =>14,
+                                'user_id'=>$penalite->desistement->user->user_id_origin,
+                                'description' => 'Pénalité rejeté',
+                                'projet_id'=>$penalite->desistement->projet_id,
+                                'reservation_id'=>$penalite->desistement->reservation_ancien->id,
+
+                            ];
+                            $notif_helper = new NotificationHelper();
+                            $notif_helper->storeNotification($request->merge($data_notif));
+                            //3 traitement  penalite
+                            Config::set('broadcasting.default', 'pusher_3');
+
+                            broadcast(new NotificationEvent($id));
+                        }
                 }
 
             return response()->json(['message' => 'données enregistrés avec succès.'], 200);

@@ -54,7 +54,7 @@ return new class extends Migration
         $table->date('date_validation')->nullable();
         $table->foreignId('user_id_valider')->nullable()->constrained('users')->onDelete('cascade');
         $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
-        $table->foreignId('user_id_valider')->nullable()->constrained('users')->onDelete('cascade');        $table->timestamps();
+        $table->timestamps();
         $table->softDeletes();
     });
     }

@@ -6,6 +6,7 @@ use App\Http\Helpers\HistoriqueBienHelper;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Bien;
 use App\Models\Frein_Bien;
+use App\Http\Helpers\FreinBienHelper;
 use App\Models\Frein;
 use App\Models\Notification;
 use App\Models\Relance_Rdv_visite;
@@ -16,7 +17,7 @@ use App\Enum\InteretEnum;
 use App\Models\User;
 use Carbon\Carbon;
 use App\Models\TypeBien;
-use App\Models\CompositionBien; 
+use App\Models\CompositionBien;
 use Illuminate\Support\Facades\Log;
 
 
@@ -30,7 +31,7 @@ class Bien_Helper
 
 
     public static function checkAndCreateBien( $projet_id, $tranche_id, $bloc_id, $immeuble_id, $row){
-        
+
         DatabaseHelper::Config();
         $bien_count = Bien::on('temp')->where(function ($query) use ($row, $projet_id, $tranche_id, $bloc_id, $immeuble_id) {
             if (!empty($row['Appt_Num'])) {
@@ -39,15 +40,15 @@ class Bien_Helper
                 $query->where('propriete_dite_bien', $row['magasin_num']);
             }
             if ($immeuble_id !== null) {
-                $query->where('immeuble_id', $immeuble_id);  
+                $query->where('immeuble_id', $immeuble_id);
             }elseif ($bloc_id !== null) {
-                    $query->where('bloc_id', $bloc_id);               
+                    $query->where('bloc_id', $bloc_id);
             }elseif ($tranche_id !== null) {
                 $query->where('tranche_id', $tranche_id);
             }
             $query->where('projet_id', $projet_id);
         })->count();
-        
+
         if ($bien_count == 0) {
             $bien= new  Bien();
             $bien->setConnection('temp');
@@ -61,13 +62,13 @@ class Bien_Helper
                     $bien->propriete_dite_bien=$row['Appt_Num'];
             }
             else if (array_key_exists("magasin_num",$row) && $row['magasin_num']!=null){
-            
+
                     $bien->numero=$row['magasin_num'];
                     $bien->propriete_dite_bien=$row['magasin_num'];
             }
             if (array_key_exists("etage",$row) && $row['etage']!=null){
                     $bien->niveau=$row['etage'];
-                   
+
             }
 
             if (array_key_exists("type_bien",$row) && $row['type_bien']!=null){
@@ -96,7 +97,7 @@ class Bien_Helper
                     $bien->superficie_balcon = $row['balcon'];
                     $bien-> superficie_balcon_calculer=$row['balcon'];
                 }
-            }   
+            }
             if (array_key_exists("terrasse",$row) && $row['terrasse'] != NULL) {
                     $bien->superficie_terrasse = $row['terrasse'];
                     $bien->superficie_terrasse_calculer= $row['terrasse'];
@@ -192,8 +193,8 @@ class Bien_Helper
                                     $compo->save();
 
                 }
-            }    
-        } 
+            }
+        }
     }
 
     public static function libererBien($id,$text,$dst_id){
@@ -263,7 +264,7 @@ class Bien_Helper
     }
     public static function store_bien_frein($id)
     {
-
+        DatabaseHelper::Config();
         $bien=Bien::on('temp')->findorfail($id);
         $array_fr_id=array();
         $freins= Frein::on('temp')
@@ -287,15 +288,15 @@ class Bien_Helper
 
         foreach($freins as $fr){
             if( ($fr->fr_tranche==1 && $fr->tranche_id==$bien->tranche_id)
-            && ($fr->fr_etage==1 && $fr->etage==$bien->niveau)
-            && ($fr->fr_orientation==1 && $fr->orientation==$bien->orientation)
-            && ($fr->fr_typologie==1 && $fr->typologie_id==$bien->typologie_id)
-            && ($fr->fr_vue==1 && $fr->vue_id==$bien->vue_id)
-            && ($fr->fr_prix_min!=null && $fr->fr_prix_min<=$bien->prix)
-            && ($fr->fr_prix_max!=null && $fr->fr_prix_max>=$bien->prix)
-            && ($fr->fr_superficie_min!=null && $fr->fr_superficie_min<=$bien->superficie_habitable)
-            && ($fr->fr_superficie_max!=null && $fr->fr_superficie_max>=$bien->superficie_habitable)
-            && (($fr->fr_avance!=null ||$fr->fr_avance!=0 ) && $fr->fr_avance<=$bien->avance_minimale)
+           || ($fr->fr_etage==1 && $fr->etage==$bien->niveau)
+           || ($fr->fr_orientation==1 && $fr->orientation==$bien->orientation)
+           || ($fr->fr_typologie==1 && $fr->typologie_id==$bien->typologie_id)
+           || ($fr->fr_vue==1 && $fr->vue_id==$bien->vue_id)
+           || ($fr->fr_prix_min!=null && $fr->fr_prix_min<=$bien->prix)
+           || ($fr->fr_prix_max!=null && $fr->fr_prix_max>=$bien->prix)
+           || ($fr->fr_superficie_min!=null && $fr->fr_superficie_min<=$bien->superficie_habitable)
+           || ($fr->fr_superficie_max!=null && $fr->fr_superficie_max>=$bien->superficie_habitable)
+           ||(($fr->fr_avance!=null ||$fr->fr_avance!=0 ) && $fr->fr_avance<=$bien->avance_minimale)
             ){
                 $exist=0;
                      //test si id du frein exist dans array

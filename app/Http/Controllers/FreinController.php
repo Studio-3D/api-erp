@@ -27,6 +27,8 @@ use Illuminate\Http\Request;
 use App\Http\Helpers\PaginationHelper;
 use App\Models\Notification;
 use App\Http\Helpers\NotificationHelper;
+use App\Events\NotifMenuEvent;
+use Illuminate\Support\Facades\Config;
 
 
 
@@ -347,52 +349,46 @@ class FreinController extends Controller
         else{
 
             $frein=Frein::on('temp')->withTrashed()->where('visite_id',$id)->first();
-         if($frein){
+            if($frein){
 
-                $frein_tranches=FreinTranche::on('temp')->withTrashed()->where('frein_id',$frein->id)->get();
-                if(count($frein_tranches)>0){
-                    $frein['frein_tranches']=$frein_tranches;
-                }
+                    $frein_tranches=FreinTranche::on('temp')->withTrashed()->where('frein_id',$frein->id)->get();
+                    if(count($frein_tranches)>0){
+                        $frein['frein_tranches']=$frein_tranches;
+                    }
 
-                $frein_etages=FreinEtage::on('temp')->withTrashed()->where('frein_id',$frein->id)->get();
-                if(count($frein_etages)){
-                    $frein['frein_etages']=$frein_etages;
-                }
-
-
-                $frein_vues=FreinVue::on('temp')->withTrashed()->where('frein_id',$frein->id)->get();
-                if(count($frein_vues)){
-                    $frein['frein_vues']=$frein_vues;
-                }
+                    $frein_etages=FreinEtage::on('temp')->withTrashed()->where('frein_id',$frein->id)->get();
+                    if(count($frein_etages)){
+                        $frein['frein_etages']=$frein_etages;
+                    }
 
 
-
-                $frein_typologies=FreinTypologie::on('temp')->withTrashed()->where('frein_id',$frein->id)->get();
-                if(count($frein_typologies)){
-                    $frein['frein_typologies']=$frein_typologies;
-                }
-
-                $frein_orientations=FreinOrientation::on('temp')->withTrashed()->where('frein_id',$frein->id)->get();
-                if(count($frein_orientations)){
-                    $frein['frein_orientations']=$frein_orientations;
-                }
+                    $frein_vues=FreinVue::on('temp')->withTrashed()->where('frein_id',$frein->id)->get();
+                    if(count($frein_vues)){
+                        $frein['frein_vues']=$frein_vues;
+                    }
 
 
-            return $frein;
+
+                    $frein_typologies=FreinTypologie::on('temp')->withTrashed()->where('frein_id',$frein->id)->get();
+                    if(count($frein_typologies)){
+                        $frein['frein_typologies']=$frein_typologies;
+                    }
+
+                    $frein_orientations=FreinOrientation::on('temp')->withTrashed()->where('frein_id',$frein->id)->get();
+                    if(count($frein_orientations)){
+                        $frein['frein_orientations']=$frein_orientations;
+                    }
+
+
+                return $frein;
+            }
+            else
+            {
+                return null;
+            }
+
         }
-        else
-        {
-            return null;
-        }
-
-        }
-
-
-
-
     }
-
-
 
     public function get_clients_freins($projet_id,Request $request)
     {
@@ -540,6 +536,9 @@ class FreinController extends Controller
                 //notification des biens disponible pour ce frein
                 NotificationHelper::destroy_notif_bien_dispo_frein($frein->visite_id);
             }
+            Config::set('broadcasting.default', 'pusher_5');
+            broadcast(new NotifMenuEvent('C'));
+
 
          return response()->json(['message' => $frein], 200);
 
@@ -548,13 +547,6 @@ class FreinController extends Controller
         }
 
     }
-
-
-
-
-
-
-
 
 
 }

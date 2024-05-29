@@ -22,9 +22,24 @@ class FreinBienHelper
                 //store notification bien disponible
                 $notifications_bien_count=Notification::on('temp')->where('visite_id',$frein->visite_id)->where('type',3)->count();
                 if($notifications_bien_count==0){
-                NotificationHelper::storeNotification(
-                    '/relances/visites/freins', Carbon::now(),3,'Bien Disponible Frein',$frein->visite->user->user_id_origin,$frein->visite_id,$frein->visite->prospect_id,$frein->visite->projet_id
-                );
+
+
+                $data_notif = [
+                    'lien' =>  '/relances/visites/freins',
+                    'date' => Carbon::now(),
+                    'type' => 3,
+                    'description' => 'Bien Disponible Frein',
+                    'role'=>$frein->visite->user->role,
+                    'user_id'=>$frein->visite->user->user_id_origin,
+                    'visite_id'=>$frein->visite_id,
+                    'prospect_id'=>$frein->visite->prospect_id,
+                    'projet_id'=>$frein->visite->projet_id
+
+                ];
+                $notif_helper = new NotificationHelper();
+                $request = new \Illuminate\Http\Request();
+                $notif_helper->storeNotification($request->merge($data_notif));
+
 
                 }
             }
