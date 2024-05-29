@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('statut_avances_penalites', function (Blueprint $table) {
             $table->id();
+
             $table->foreignId('penalite_id')->nullable()->constrained('penalites_desistements')->onDelete('cascade');
             $table->foreignId('avance_id')->nullable()->constrained('avances')->nullable()->onDelete('cascade');
             $table->enum('statut',[StatutReservationEnum::Validé->value,StatutReservationEnum::Refusé->value]);
