@@ -200,11 +200,25 @@ class ReservationController extends Controller
                     $statut_R->save();
                 }
                 if (RoleHelper::Com()) {
+                    Config::set('broadcasting.default', 'pusher_3');
                     //notifiction to admin de valider dossier d reservation user_id=>null
-                    NotificationHelper::storeNotification(
-                        '/reservations/show/' . $reservation->id, null, 6, 'DEMANDE VALIDATION RESERVATION', null, RoleEnum::ADMIN->value, null, null, $reservation->projet_id, null, $reservation->id
-                    );
+                    $data_notif = [
+                        //'lien' => '/reservations/show/' . $reservation->id,
+                        'lien'=>'/validation/reservations/attente',
+                        'date' => Carbon::now(),
+                        'type' =>6,
+                        'role'=>RoleEnum::ADMIN->value,
+                        'description' => 'DEMANDE VALIDATION RESERVATION',
+                        'projet_id'=>$reservation->projet_id,
+                        'reservation_id'=>$reservation->id
 
+                    ];
+                    $notif_helper = new NotificationHelper();
+                    $notif_helper->storeNotification($request->merge($data_notif));
+                    broadcast(new NotificationEvent($reservation->id));
+                    Config::set('broadcasting.default', 'pusher_5');
+                     //1 traitement reservation
+                     broadcast(new NotifMenuEvent(1));
                 }
                 $bienController = new BienController();
                 $bienController->reserverBien($reservation->bien_id, null, $reservation->id);
@@ -279,6 +293,7 @@ class ReservationController extends Controller
                 $mnt_lettre = $inWords->format($request->avance);
                 $dataAvance = [
                     //addedd
+                    'avance_with_reservation'=>true,
                     'desistement_id' => null,
                     'dossier_id_transfert' => null,
                     /////
@@ -516,9 +531,23 @@ class ReservationController extends Controller
                             //store notif to all commerciaux
                             $commerciaux = User::on('temp')->where('role', 3)->get();
                             foreach ($commerciaux as $comm) {
-                                NotificationHelper::storeNotification(
-                                    '/reservations/show/' . $id, Carbon::now(), 8, 'admin a changé le bien du reservation', $comm->user_id_origin, null, null, null, $reservation->projet_id, null, $reservation->id
-                                );
+                                Config::set('broadcasting.default', 'pusher_3');
+                                $data_notif = [
+                                    'lien' => '/reservations/show/' . $id,
+                                    'date' => Carbon::now(),
+                                    'type' =>8,
+                                    'user_id'=>$comm->user_id_origin,
+                                    'description' => 'admin a changé le bien du reservation',
+                                    'projet_id'=>$reservation->projet_id,
+                                    'reservation_id'=>$reservation->id
+
+                                ];
+                                $notif_helper = new NotificationHelper();
+                                $notif_helper->storeNotification($request->merge($data_notif));
+                                broadcast(new NotificationEvent($id));
+                                 //4 traitement rembour
+                                Config::set('broadcasting.default', 'pusher_5');
+                                broadcast(new NotifMenuEvent(4));
                             }
 
                         }
@@ -742,23 +771,36 @@ class ReservationController extends Controller
 
 
     public function get_notif_reservation_att_validation($projet_id){
+
         if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
               DatabaseHelper::Config();
+
+              $avances = Avance::on('temp')->select('reservation_id', DB::raw('SUM(avances.montant) as sum_avances'))
+              ->groupby('reservation_id');
+
             if (RoleHelper::AdminSup()) {
 
                 $nb_att_validation = Reservation::on('temp')->with('last_statut')
-                ->where('projet_id', $projet_id)
-                ->where('statut', 3)
-                ->where('etat', 1)->count();
+                ->joinSub($avances, 'avances_req', function ($join) {
+                    $join->on('avances_req.reservation_id', '=', 'reservations.id');
+                })
+                ->where('reservations.projet_id', $projet_id)
+                ->where('reservations.statut', 3)
+                ->where('reservations.etat', 1)->count();
+
+
             }else if(RoleHelper::Com()){
                 $user = Auth::user();
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
                 $nb_att_validation = Reservation::on('temp')->with('last_statut')
-                ->where('projet_id', $projet_id)
-                ->where('statut', 3)
-                ->where('etat', 1)->where('user_id',  $userAuth->value('id'))->count();
+                ->joinSub($avances, 'avances_req', function ($join) {
+                    $join->on('avances_req.reservation_id', '=', 'reservations.id');
+                })
+                ->where('reservations.projet_id', $projet_id)
+                ->where('reservations.statut', 3)
+                ->where('reservations.etat', 1)->where('reservations.user_id',  $userAuth->value('id'))->count();
             }
-            return response()->json(['nb_att_valide'=>$nb_att_validation]);
+            return response()->json(['nb'=>$nb_att_validation]);
 
         }
         else  return response()->json(['error'=>'Unauthorized'], 401);
@@ -767,8 +809,6 @@ class ReservationController extends Controller
     {
         if(RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            Config::set('broadcasting.default', 'pusher_5');
-
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $reservation = Reservation::on('temp')->findOrFail($id);
@@ -788,23 +828,46 @@ class ReservationController extends Controller
 
                 if($request->statut_res==1){
                     //store new notification validé
-                    NotificationHelper::storeNotification(
-                        '/reservations/show/'.$id, Carbon::now(),15,'reservation validé',$reservation->user->user_id_origin,null,null,null,$reservation->projet_id,null,null
-                        );
+                    Config::set('broadcasting.default', 'pusher_3');
+                    $data_notif = [
+                        'lien' => '/reservations/show/' . $id,
+                        'date' => Carbon::now(),
+                        'type' =>15,
+                        'user_id'=>$reservation->user->user_id_origin,
+                        'description' => 'reservation validé',
+                        'projet_id'=>$reservation->projet_id,
+                        'reservation_id'=>$reservation->id
 
-                        broadcast(new NotifMenuEvent(1));
-                             Config::set('broadcasting.default', 'pusher_3');
-                             broadcast(new NotificationEvent(1));
+                    ];
+                    $notif_helper = new NotificationHelper();
+                    $notif_helper->storeNotification($request->merge($data_notif));
+                    
+                    broadcast(new NotificationEvent($id));
+                    Config::set('broadcasting.default', 'pusher_5');
+                         //1 traitement reservation
+                    broadcast(new NotifMenuEvent(1));
+
 
                 }else{
                     //store new notification rejeté
-                    NotificationHelper::storeNotification(
-                        '/reservations/show/'.$id, Carbon::now(),16,'reservation rejeté',$reservation->user->user_id_origin,null,null,null,$reservation->projet_id,null,null
-                        );
+                    Config::set('broadcasting.default', 'pusher_3');
+                        $data_notif = [
+                            'lien' => '/reservations/show/' . $id,
+                            'date' => Carbon::now(),
+                            'type' =>16,
+                            'user_id'=>$reservation->user->user_id_origin,
+                            'description' => 'reservation rejeté',
+                            'projet_id'=>$reservation->projet_id,
+                            'reservation_id'=>$reservation->id
 
+                        ];
+                        $notif_helper = new NotificationHelper();
+                        $notif_helper->storeNotification($request->merge($data_notif));
+                        broadcast(new NotificationEvent($id));
+                        Config::set('broadcasting.default', 'pusher_5');
+                         //1 traitement reservation
                         broadcast(new NotifMenuEvent(1));
-                        Config::set('broadcasting.default', 'pusher_3');
-                        broadcast(new NotificationEvent(1));
+
 
                 }
                 //traiter reservation with avance

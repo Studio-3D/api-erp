@@ -277,6 +277,7 @@ Route::middleware('auth:api')->group(function () {
     Route::put('traiter_avance/{id}', [AvanceController::class, 'traiter_avance'])->name('');
     Route::get('avances_rejets/{projet_id}', [AvanceController::class, 'get_avances_rejets'])->name('');
     Route::get('get_echeances/{projet_id}', [AvanceController::class, 'get_echeances'])->name('');
+    Route::get('get_echeances_menu/{projet_id}', [AvanceController::class, 'get_echeances_menu'])->name('');
 
     /*************************************PiecesJointe***************************** */
     Route::resource('piecesjointe', PiecesJointeController::class);
@@ -323,9 +324,12 @@ Route::middleware('auth:api')->group(function () {
 
     /************************NotificationController********************* */
     Route::get('get_relances_visites/{projet_id}', [NotificationController::class, 'get_relances_visites'])->name('');
+    Route::get('get_nb_relances_visites/{projet_id}', [NotificationController::class, 'get_nb_relances_visites'])->name('');
     Route::get('get_rdv_visites/{projet_id}', [NotificationController::class, 'get_rdv_visites'])->name('');
-    Route::get('get_relances_menu/{projet_id}', [NotificationController::class, 'get_relances_menu'])->name('');
-    Route::get('get_relances_visites/{projet_id}', [NotificationController::class, 'get_relances_visites'])->name('');
+    Route::get('get_nb_rdv_visites/{projet_id}', [NotificationController::class, 'get_nb_rdv_visites'])->name('');
+    Route::get('get_nb_frein_client_visite/{projet_id}', [NotificationController::class, 'get_nb_frein_client_visite'])->name('');
+
+    Route::get('notifications_menu_horizontal_crm/{projet_id}', [NotificationController::class, 'get_notifications_menu_horizontal_crm'])->name('');
     Route::get('get_notifications/{projet_id}', [NotificationController::class, 'get_notifications'])->name('');
     Route::get('DestroyNotif/{id}', [NotificationController::class, 'DestroyNotif'])->name('');
     Route::get('notifications/{projet_id}', [NotificationController::class, 'index'])->name('');

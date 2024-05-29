@@ -53,7 +53,7 @@ return new class extends Migration
         $table->String('commentaire_rejete')->nullable();
         $table->date('date_validation')->nullable();
         $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
-        $table->foreignId('user_id_valider')->nullable()->constrained('users')->onDelete('cascade');        $table->timestamps();
+        $table->timestamps();
         $table->softDeletes();
     });
     }

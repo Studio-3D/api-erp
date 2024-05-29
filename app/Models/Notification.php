@@ -32,5 +32,8 @@ class Notification extends Model
     public function avance(){
         return $this->belongsTo(Avance::class,'avance_id');
     }
+    public function bien(){
+        return $this->belongsTo(Bien::class,'bien_id');
+    }
 
 }
