@@ -173,6 +173,7 @@ class RemboursementController extends Controller
             }
             if ($request->hasFile('cheque_recu')) {
                 $remboursement->cheque =$request->file('cheque_recu')->getClientOriginalName();
+                $remboursement->cheque_client_signe =$request->file('cheque_recu')->getClientOriginalName();
                 $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements/cheques_reçus');
                 File::makeDirectory($directory, 0755, true, true);
                 $request->file('cheque_recu')->move($directory,$request->file('cheque_recu')->getClientOriginalName());
