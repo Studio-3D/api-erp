@@ -164,9 +164,10 @@ class BienController extends Controller
                 }
             }
             if ($bien->save()) {
+
+
                 if ($bien->etat == 'disponible') {
                     Bien_Helper::store_bien_frein($bien->id);
-
                 }
 
             }
@@ -232,7 +233,7 @@ class BienController extends Controller
                 $bien->$key = $value;
             }
             if ($bien->save()) {
-                if ($bien->etat == 1) {
+                if ($bien->etat == 'DISPONIBLE') {
                     Bien_Helper::libererBien($bien->id, null,null);
                 }
             }

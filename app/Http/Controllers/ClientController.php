@@ -179,6 +179,7 @@ class ClientController extends Controller
             $page = $request->input('page', 1);
             $clients = Client::on('temp')->join('aquereurs', 'aquereurs.client_id', '=', 'clients.id')
                 ->join('reservations', 'reservations.id', '=', 'aquereurs.reservation_id')
+                ->whereNull('reservations.deleted_at')
                 ->where('reservations.projet_id', $projet_id)
                 ->select('clients.*')
                 ->distinct()

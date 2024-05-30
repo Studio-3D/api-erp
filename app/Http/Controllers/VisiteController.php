@@ -48,6 +48,7 @@ use App\Events\NotificationEvent;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use App\Events\NotifMenuEvent;
+use App\Models\Frein_Bien;
 
 
 
@@ -58,44 +59,45 @@ class VisiteController extends Controller
      * Display a listing of the resource.
      */
 
-    public function index(Request $request,$projet_id)
-    {
-        if (Auth::guard('api')->check()) {
-            DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
-            $page = $request->input('page', 1);
+     public function index(Request $request,$projet_id)
+     {
+         if (Auth::guard('api')->check()) {
+             DatabaseHelper::Config();
+             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
+             $page = $request->input('page', 1);
 
-            $visites = Visite::on('temp')->latest('created_at')->where('projet_id',$projet_id)->where('etat',1)
-            ->get()
-            ->groupby('origin_id');
-          $visites = $visites->map(function ($visite) {
-            return [
-                'id' => $visite->first()->id,
-                'origin_id' => $visite->first()->origin_id,
-                'nom_cc' => $visite->first()->user->name,
-                'prenom_cc' => $visite->first()->user->prenom,
-                'date' => $visite->first()->created_at,
-                'cin' => $visite->first()->prospect->cin,
-                'nom' => $visite->first()->prospect->nom,
-                'prenom' => $visite->first()->prospect->prenom,
-                'telephone' => $visite->first()->prospect->telephone,
-                'telephone2' => $visite->first()->prospect->telephone_num2,
-                'prospect_id' => $visite->first()->prospect->id,
-                'interet' => $visite->first()->interet,
-                'statut' => $visite->first()->statut,
-                'propriete_dite_bien' => $visite->first()->bien_id?$visite->first()->bien->propriete_dite_bien:'',
-                'etat_bien' => $visite->first()->bien_id?$visite->first()->bien->etat:'',
-                'bien_id' => $visite->first()->bien_id?$visite->first()->bien_id:'',
-                'visit_count' => count($visite),
-                'reservation' => $visite->first()->reservation,
+             $visites = Visite::on('temp')->latest('created_at')->where('projet_id',$projet_id)->where('etat',1)
+             ->get()
+             ->groupby('origin_id');
+           $visites = $visites->map(function ($visite) {
+             return [
+                 'id' => $visite->first()->id,
+                 'origin_id' => $visite->first()->origin_id,
+                 'nom_cc' => $visite->first()->user->name,
+                 'prenom_cc' => $visite->first()->user->prenom,
+                 'date' => $visite->first()->created_at,
+                 'cin' => $visite->first()->prospect->cin,
+                 'nom' => $visite->first()->prospect->nom,
+                 'prenom' => $visite->first()->prospect->prenom,
+                 'telephone' => $visite->first()->prospect->telephone,
+                 'telephone2' => $visite->first()->prospect->telephone_num2,
+                 'prospect_id' => $visite->first()->prospect->id,
+                 'interet' => $visite->first()->interet,
+                 'statut' => $visite->first()->statut,
+                 'propriete_dite_bien' => $visite->first()->bien_id?$visite->first()->bien->propriete_dite_bien:'',
+                 'etat_bien' => $visite->first()->bien_id?$visite->first()->bien->etat:'',
+                 'bien_id' => $visite->first()->bien_id?$visite->first()->bien_id:'',
+                 'visit_count' => count($visite),
+                 'reservation' => $visite->first()->reservation,
 
-            ];});
+             ];});
 
-          $data = PaginationHelper::paginate_array($visites->toArray(),$perPage,$page,$request->url());
-            return response()->json(['visites' => $data]);
-        }
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
+           $data = PaginationHelper::paginate_array($visites->toArray(),$perPage,$page,$request->url());
+             return response()->json(['visites' => $data]);
+         }
+         return response()->json(['error' => 'Unauthorized'], 401);
+     }
+
 
     public function get_historiques($origin_id){
         if (Auth::guard('api')->check()) {
@@ -117,7 +119,7 @@ class VisiteController extends Controller
     public function get_oldBien_visite_pre_reserve($origin_id){
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $biens_visite=Visite::on('temp')->where('origin_id',$origin_id)->where('interet',InteretEnum::Intéressé->value)->where('statut',StatutVisiteEnum::Pré_Réservation->value)->orderby('created_at', 'desc')->get(['bien_id','id']);
+            $biens_visite=Visite::on('temp')->where('origin_id',$origin_id)->where('interet',InteretEnum::Intéressé->value)->where('etat',1)->where('statut',StatutVisiteEnum::Pré_Réservation->value)->orderby('created_at', 'desc')->get(['bien_id','id']);
             return response()->json(['biens_visite' => $biens_visite], 200);
          }
     }
@@ -257,9 +259,20 @@ class VisiteController extends Controller
                                         //store relances et rdv et notifications
                                     if($visite->interet==InteretEnum::Réceptif->value){
                                         if ($request->date_relance != null) {
-                                            NotificationHelper::storeNotification(
-                                                '/visites/show/'.$visite->origin_id, $request->date_relance,1,'RELANCE VISITE',Auth::guard('api')->user()->id,null,$visite->getAttribute('id'),$visite->prospect_id,$visite->projet_id,null,null
-                                            );
+                                            $data_notif = [
+                                                'lien' => '/visites/show/'.$visite->origin_id,
+                                                'date' => $request->date_relance,
+                                                'type' => 1,
+                                                'description' => 'RELANCE VISITE',
+                                                'user_id' => Auth::guard('api')->user()->id,
+                                                'role'=>null,
+                                                'visite_id'=>$visite->getAttribute('id'),
+                                                'prospect_id'=>$visite->prospect_id,
+                                                'projet_id'=>$visite->projet_id,
+
+                                            ];
+                                            $notif_helper = new NotificationHelper();
+                                            $notif_helper->storeNotification($request->merge($data_notif));
                                             broadcast(new NotificationEvent($visite->id));
 
                                             $relance=new Relance_Rdv_visite();
@@ -273,9 +286,23 @@ class VisiteController extends Controller
                                             $relance->save();
                                         }
                                         if($request->rdv != null){
-                                            NotificationHelper::storeNotification(
-                                                '/visites/show/'.$visite->origin_id, $request->rdv,2,'RDV VISITE',Auth::guard('api')->user()->id,null,$visite->getAttribute('id'),$visite->prospect_id,$visite->projet_id,null,null
-                                            );
+                                            $data_notif = [
+                                                'lien' => '/visites/show/'.$visite->origin_id,
+                                                'date' => $request->rdv,
+                                                'type' => 2,
+                                                'description' => 'RDV VISITE',
+                                                'user_id' => Auth::guard('api')->user()->id,
+                                                'role'=>null,
+                                                'visite_id'=>$visite->getAttribute('id'),
+                                                'prospect_id'=>$visite->prospect_id,
+                                                'projet_id'=>$visite->projet_id,
+
+                                            ];
+                                            $notif_helper = new NotificationHelper();
+                                            $notif_helper->storeNotification($request->merge($data_notif));
+
+
+
                                             broadcast(new NotificationEvent($visite->id));
                                             $rdv=new Relance_Rdv_visite();
                                             $rdv->setConnection('temp');
@@ -441,9 +468,22 @@ class VisiteController extends Controller
                                             //store relances et rdv et notifications
                                             if($visite->statut==StatutVisiteEnum::Pré_Réservation->value){
                                                 if ($list_biens['date_relance']!= null) {
-                                                    NotificationHelper::storeNotification(
-                                                        '/visites/show/'.$visite->origin_id,$list_biens['date_relance'],1,'RELANCE VISITE',Auth::guard('api')->user()->id,null,$visite->getAttribute('id'),$visite->prospect_id,$visite->projet_id,null,null
-                                                    );
+                                                    $data_notif = [
+                                                        'lien' => '/visites/show/'.$visite->origin_id,
+                                                        'date' => $list_biens['date_relance'],
+                                                        'type' => 1,
+                                                        'description' => 'RELANCE VISITE',
+                                                        'user_id' => Auth::guard('api')->user()->id,
+                                                        'role'=>null,
+                                                        'visite_id'=>$visite->getAttribute('id'),
+                                                        'prospect_id'=>$visite->prospect_id,
+                                                        'projet_id'=>$visite->projet_id,
+
+                                                    ];
+                                                    $notif_helper = new NotificationHelper();
+                                                    $notif_helper->storeNotification($request->merge($data_notif));
+
+
                                                     broadcast(new NotificationEvent($visite->id));
                                                     $relance=new Relance_Rdv_visite();
                                                     $relance->setConnection('temp');
@@ -456,9 +496,22 @@ class VisiteController extends Controller
                                                     $relance->save();
                                                 }
                                                 if($list_biens['rdv']!= null){
-                                                    NotificationHelper::storeNotification(
-                                                        '/visites/show/'.$visite->origin_id,$list_biens['rdv'],2,'RDV VISITE',Auth::guard('api')->user()->id,null,$visite->getAttribute('id'),$visite->prospect_id,$visite->projet_id,null,null
-                                                    );
+
+                                                    $data_notif = [
+                                                        'lien' => '/visites/show/'.$visite->origin_id,
+                                                        'date' => $list_biens['rdv'],
+                                                        'type' => 2,
+                                                        'description' => 'RDV VISITE',
+                                                        'user_id' => Auth::guard('api')->user()->id,
+                                                        'role'=>null,
+                                                        'visite_id'=>$visite->getAttribute('id'),
+                                                        'prospect_id'=>$visite->prospect_id,
+                                                        'projet_id'=>$visite->projet_id,
+
+                                                    ];
+                                                    $notif_helper = new NotificationHelper();
+                                                    $notif_helper->storeNotification($request->merge($data_notif));
+
                                                     broadcast(new NotificationEvent($visite->id));
                                                     $rdv=new Relance_Rdv_visite();
                                                     $rdv->setConnection('temp');
@@ -599,9 +652,22 @@ class VisiteController extends Controller
                                    //store relances et rdv et notifications
                                    if($visite->statut==StatutVisiteEnum::Pré_Réservation->value){
                                        if ($list_biens['date_relance']!= null) {
-                                           NotificationHelper::storeNotification(
-                                               '/visites/show/'.$visite->origin_id,$list_biens['date_relance'],1,'RELANCE VISITE',Auth::guard('api')->user()->id,null,$visite->getAttribute('id'),$visite->prospect_id,$visite->projet_id,null,null
-                                           );
+                                         $data_notif = [
+                                                        'lien' => '/visites/show/'.$visite->origin_id,
+                                                        'date' => $list_biens['date_relance'],
+                                                        'type' => 1,
+                                                        'description' => 'RELANCE VISITE',
+                                                        'user_id' => Auth::guard('api')->user()->id,
+                                                        'role'=>null,
+                                                        'visite_id'=>$visite->getAttribute('id'),
+                                                        'prospect_id'=>$visite->prospect_id,
+                                                        'projet_id'=>$visite->projet_id,
+
+                                                    ];
+                                                    $notif_helper = new NotificationHelper();
+                                                    $notif_helper->storeNotification($request->merge($data_notif));
+
+
                                            broadcast(new NotificationEvent($visite->id));
                                            $relance=new Relance_Rdv_visite();
                                            $relance->setConnection('temp');
@@ -614,9 +680,22 @@ class VisiteController extends Controller
                                            $relance->save();
                                        }
                                        if($list_biens['rdv']!= null){
-                                           NotificationHelper::storeNotification(
-                                               '/visites/show/'.$visite->origin_id,$list_biens['rdv'],2,'RDV VISITE',Auth::guard('api')->user()->id,null,$visite->getAttribute('id'),$visite->prospect_id,$visite->projet_id,null,null
-                                           );
+                                            $data_notif = [
+                                                'lien' => '/visites/show/'.$visite->origin_id,
+                                                'date' => $list_biens['rdv'],
+                                                'type' => 2,
+                                                'description' => 'RDV VISITE',
+                                                'user_id' => Auth::guard('api')->user()->id,
+                                                'role'=>null,
+                                                'visite_id'=>$visite->getAttribute('id'),
+                                                'prospect_id'=>$visite->prospect_id,
+                                                'projet_id'=>$visite->projet_id,
+
+                                            ];
+                                            $notif_helper = new NotificationHelper();
+                                            $notif_helper->storeNotification($request->merge($data_notif));
+
+
                                            broadcast(new NotificationEvent($visite->id));
                                            $rdv=new Relance_Rdv_visite();
                                            $rdv->setConnection('temp');
@@ -835,7 +914,6 @@ class VisiteController extends Controller
  public static function traiter_relance_rdv_visite($id,UpdateDate_relance_Rdv $request)
     {
         if(RoleHelper::ACSup()) {
-           Config::set('broadcasting.default', 'pusher_3');
            // Config::set('broadcasting.default', 'pusher_5');
             DatabaseHelper::Config();
             $user = Auth::user();
@@ -881,20 +959,47 @@ class VisiteController extends Controller
 
                             if($relance->type==1){
                             //store new notification
-                            NotificationHelper::storeNotification(
-                                '/visites/show/'.$new_relance->visite->origin_id, $request->date,1,'RELANCE VISITE',Auth::guard('api')->user()->id,null,$visite_id,$prospect_id,$new_relance->visite->projet_id,null,null
-                            );
-                            broadcast(new NotificationEvent($new_relance->id));
-                           // broadcast(new NotifMenuEvent(10));
+                            Config::set('broadcasting.default', 'pusher_3');
 
+                            $data_notif = [
+                                'lien' => '/visites/show/'.$new_relance->visite->origin_id,
+                                'date' => $request->date,
+                                'type' => 1,
+                                'description' => 'RELANCE VISITE',
+                                'user_id' => Auth::guard('api')->user()->id,
+                                'role'=>null,
+                                'visite_id'=>$visite_id,
+                                'prospect_id'=>$prospect_id,
+                                'projet_id'=>$new_relance->visite->projet_id,
+
+                            ];
+                            $notif_helper = new NotificationHelper();
+                            $notif_helper->storeNotification($request->merge($data_notif));
+                            broadcast(new NotificationEvent($new_relance->id));
+                            Config::set('broadcasting.default', 'pusher_5');
+                             broadcast(new NotifMenuEvent('A'));
                             }
                             else{
                                 //store new notification
-                            NotificationHelper::storeNotification(
-                                '/visites/show/'.$new_relance->visite->origin_id, $request->date,2,'RDV VISITE',Auth::guard('api')->user()->id,null,$visite_id,$prospect_id,$new_relance->visite->projet_id,null,null
-                            );
+                                Config::set('broadcasting.default', 'pusher_3');
+
+                            $data_notif = [
+                                'lien' => '/visites/show/'.$new_relance->visite->origin_id,
+                                'date' => $request->date,
+                                'type' => 2,
+                                'description' => 'RDV VISITE',
+                                'user_id' => Auth::guard('api')->user()->id,
+                                'role'=>null,
+                                'visite_id'=>$visite_id,
+                                'prospect_id'=>$prospect_id,
+                                'projet_id'=>$new_relance->visite->projet_id,
+
+                            ];
+                            $notif_helper = new NotificationHelper();
+                            $notif_helper->storeNotification($request->merge($data_notif));
                             broadcast(new NotificationEvent($new_relance->id));
-                          //  broadcast(new NotifMenuEvent(10));
+                            Config::set('broadcasting.default', 'pusher_5');
+                            broadcast(new NotifMenuEvent('B'));
 
                             }
                             return response()->json(['message' => $new_relance], 200);
@@ -916,7 +1021,14 @@ class VisiteController extends Controller
                                 }
                             }
                            // broadcast(new NotificationEvent($relance->id));
-
+                           Config::set('broadcasting.default', 'pusher_5');
+                           if($relance->type==1){
+                            //relance
+                           broadcast(new NotifMenuEvent('A'));
+                           }else{
+                            //rdv
+                            broadcast(new NotifMenuEvent('B'));
+                           }
                             return response()->json(['message' => 'Validé avec succès.'], 200);
                         }
 
@@ -1073,9 +1185,22 @@ class VisiteController extends Controller
                     if($old_visite->relance_relation!=null){
                         $old_visite->relance_relation->delete();
                     }
-                    NotificationHelper::storeNotification(
-                        '/visites/show/'.$visite->origin_id, $request->date_relance,1,'RELANCE VISITE',Auth::guard('api')->user()->id,null,$visite->id,$visite->prospect_id,$visite->projet_id,null,null
-                    );
+                    $data_notif = [
+                        'lien' => '/visites/show/'.$visite->origin_id,
+                        'date' => $request->date_relance,
+                        'type' => 1,
+                        'description' => 'RELANCE VISITE',
+                        'user_id' => Auth::guard('api')->user()->id,
+                        'role'=>null,
+                        'visite_id'=>$visite->id,
+                        'prospect_id'=>$visite->prospect_id,
+                        'projet_id'=>$visite->projet_id,
+
+                    ];
+
+                    $notif_helper = new NotificationHelper();
+                    $notif_helper->storeNotification($request->merge($data_notif));
+
                     broadcast(new NotificationEvent($visite->id));
                     $relance=new Relance_Rdv_visite();
                     $relance->setConnection('temp');
@@ -1091,9 +1216,21 @@ class VisiteController extends Controller
                     if($old_visite->rdv_relation!=null){
                         $old_visite->rdv_relation->delete();
                     }
-                    NotificationHelper::storeNotification(
-                        '/visites/show/'.$visite->origin_id, $request->rdv,2,'RDV VISITE',Auth::guard('api')->user()->id,null,$visite->getAttribute('id'),$visite->prospect_id,$visite->projet_id,null,null
-                    );
+                    $data_notif = [
+                        'lien' => '/visites/show/'.$visite->origin_id,
+                        'date' => $request->rdv,
+                        'type' => 2,
+                        'description' => 'RDV VISITE',
+                        'user_id' => Auth::guard('api')->user()->id,
+                        'role'=>null,
+                        'visite_id'=>$visite->getAttribute('id'),
+                        'prospect_id'=>$visite->prospect_id,
+                        'projet_id'=>$visite->projet_id,
+
+                    ];
+                    $notif_helper = new NotificationHelper();
+                    $notif_helper->storeNotification($request->merge($data_notif));
+
                     broadcast(new NotificationEvent($visite->id));
                     $rdv=new Relance_Rdv_visite();
                     $rdv->setConnection('temp');
@@ -1292,7 +1429,7 @@ class VisiteController extends Controller
                     }
                     if ($request->list_bien_transfere_vendu) {
                         foreach ($request->list_bien_transfere_vendu as $key => $list_biens_ve) {
-                            if($list_biens['bien_id']){
+                            if($list_biens_ve['bien_id']){
                                     Bien_Helper::libererBien($list_biens_ve['bien_id'],null,null);
                             }
                         }
@@ -1312,112 +1449,142 @@ class VisiteController extends Controller
                 if($newVisit->save()){
                     $newVisit->related_show_id = $newVisit->id;
                     //store relances et rdv et notifications du new visite
-                    if($newVisit->interet==InteretEnum::Réceptif->value){
-                        if ($request->date_relance != null) {
-                            NotificationHelper::storeNotification(
-                                '/visites/show/'.$newVisit->origin_id, $request->date_relance,1,'RELANCE VISITE',Auth::guard('api')->user()->id,null,$newVisit->getAttribute('id'),$newVisit->prospect_id,$newVisit->projet_id,null,null
-                            );
-                            broadcast(new NotificationEvent($newVisit->id));
+                    if($newVisit->save()){
+                        if($newVisit->interet==InteretEnum::Réceptif->value){
+                            if ($request->date_relance != null) {
+
+                                $data_notif = [
+                                    'lien' => '/visites/show/'.$newVisit->origin_id,
+                                    'date' => $request->date_relance,
+                                    'type' => 1,
+                                    'description' => 'RELANCE VISITE',
+                                    'user_id' => Auth::guard('api')->user()->id,
+                                    'role'=>null,
+                                    'visite_id'=>$newVisit->getAttribute('id'),
+                                    'prospect_id'=>$newVisit->prospect_id,
+                                    'projet_id'=>$newVisit->projet_id,
+
+                                ];
+                                $notif_helper = new NotificationHelper();
+                                $notif_helper->storeNotification($request->merge($data_notif));
 
 
-                            $relance=new Relance_Rdv_visite();
-                            $relance->setConnection('temp');
-                            $relance->type=1;//relance
-                            $relance->mode_relance=$request->mode_relance;
-                            $relance->date_relance=$request->date_relance;
-                            $relance->type_traitement=0;//0 non_traite 1//mnuelle 2// auto //3 nouvel relance_rdv
-                            $relance->user_id=$userAuth->value('id') ;
-                            $relance->visite_id=$newVisit->id;
-                            $relance->save();
+                                broadcast(new NotificationEvent($newVisit->id));
+
+
+                                $relance=new Relance_Rdv_visite();
+                                $relance->setConnection('temp');
+                                $relance->type=1;//relance
+                                $relance->mode_relance=$request->mode_relance;
+                                $relance->date_relance=$request->date_relance;
+                                $relance->type_traitement=0;//0 non_traite 1//mnuelle 2// auto //3 nouvel relance_rdv
+                                $relance->user_id=$userAuth->value('id') ;
+                                $relance->visite_id=$newVisit->id;
+                                $relance->save();
+                            }
+                            if($request->rdv != null){
+                                $data_notif = [
+                                    'lien' => '/visites/show/'.$newVisit->origin_id,
+                                    'date' => $request->rdv,
+                                    'type' => 2,
+                                    'description' => 'RDV VISITE',
+                                    'user_id' => Auth::guard('api')->user()->id,
+                                    'role'=>null,
+                                    'visite_id'=>$newVisit->id,
+                                    'prospect_id'=>$newVisit->prospect_id,
+                                    'projet_id'=>$newVisit->projet_id,
+
+                                ];
+                                $notif_helper = new NotificationHelper();
+                                $notif_helper->storeNotification($request->merge($data_notif));
+
+
+                                broadcast(new NotificationEvent($newVisit->id));
+
+                                $rdv=new Relance_Rdv_visite();
+                                $rdv->setConnection('temp');
+                                $rdv->type=2;//rdv
+                                $rdv->rdv=$request->rdv;
+                                $rdv->type_traitement=0;//0 non_traite 1//mnuelle 2// auto //3 nouvel relance_rdv
+                                $rdv->user_id=$userAuth->value('id');
+                                $rdv->visite_id=$newVisit->id;
+                                $rdv->save();
+                            }
                         }
-                        if($request->rdv != null){
-                            NotificationHelper::storeNotification(
-                                '/visites/show/'.$newVisit->origin_id, $request->rdv,2,'RDV VISITE',Auth::guard('api')->user()->id,null,$newVisit->id,$newVisit->prospect_id,$newVisit->projet_id,null,null
-                            );
-                            broadcast(new NotificationEvent($newVisit->id));
-
-                            $rdv=new Relance_Rdv_visite();
-                            $rdv->setConnection('temp');
-                            $rdv->type=2;//rdv
-                            $rdv->rdv=$request->rdv;
-                            $rdv->type_traitement=0;//0 non_traite 1//mnuelle 2// auto //3 nouvel relance_rdv
-                            $rdv->user_id=$userAuth->value('id');
-                            $rdv->visite_id=$newVisit->id;
-                            $rdv->save();
-                        }
-                    }
-                    $old_visites = Visite::on('temp')->where('origin_id', $id)->where('id','!=',$newVisit->id)->orderBy('created_at', 'DESC')->get();
-                    if(count($old_visites)>0){
-                        foreach($old_visites as $old_visite){
-                            //si le n visite receptif || perdu
-                            if($newVisit->interet==InteretEnum::Réceptif->value||$newVisit->interet==InteretEnum::Perdu->value){
-                                //Si lors de l'ancienne visite le client a préreservé==>libérer le bien et supprimer les relances
-                                if ($old_visite->statut == StatutVisiteEnum::Pré_Réservation->value ) {
-                                    $oldBien = Bien::on('temp')->find($old_visite->bien_id);
-                                    if ($oldBien->etat == 'Pré_Réservation' && $oldBien->historique_bien_pre_reserve->visite_id==$old_visite->id) {
-                                        Bien_Helper::libererBien($old_visite->bien_id,null,null);
-                                        if($old_visite->statut==StatutVisiteEnum::Pré_Réservation->value){
-                                            $old_visite->statut=StatutVisiteEnum::Pré_Réservation_Perdu->value;
-                                        }elseif($old_visite->statut==StatutVisiteEnum::Vendu->value){
-                                            $old_visite->statut=StatutVisiteEnum::Réservation_Perdu->value;
+                        $old_visites = Visite::on('temp')->where('origin_id', $id)->where('id','!=',$newVisit->id)->orderBy('created_at', 'DESC')->get();
+                        if(count($old_visites)>0){
+                            foreach($old_visites as $old_visite){
+                                //si le n visite receptif || perdu
+                                if($newVisit->interet==InteretEnum::Réceptif->value||$newVisit->interet==InteretEnum::Perdu->value){
+                                    //Si lors de l'ancienne visite le client a préreservé==>libérer le bien et supprimer les relances
+                                    if ($old_visite->statut == StatutVisiteEnum::Pré_Réservation->value ) {
+                                        $oldBien = Bien::on('temp')->find($old_visite->bien_id);
+                                        if ($oldBien->etat == 'Pré_Réservation' && $oldBien->historique_bien_pre_reserve->visite_id==$old_visite->id) {
+                                            Bien_Helper::libererBien($old_visite->bien_id,null,null);
+                                            if($old_visite->statut==StatutVisiteEnum::Pré_Réservation->value){
+                                                $old_visite->statut=StatutVisiteEnum::Pré_Réservation_Perdu->value;
+                                            }elseif($old_visite->statut==StatutVisiteEnum::Vendu->value){
+                                                $old_visite->statut=StatutVisiteEnum::Réservation_Perdu->value;
+                                            }
+                                            $old_visite->save();
                                         }
-                                        $old_visite->save();
                                     }
                                 }
-                            }
 
-                            //SUPPRIMER LES OLDS NOTIF
-                             $notif_old_relance=Notification::on('temp')->where(function ($query){
-                                $query->where('type',1)
-                                    ->orwhere('type',2);})
-                                ->where(function ($query_2) use($old_visite){
-                                        $query_2->where('visite_id',$old_visite->id);})
-                                ->get();
-                                if(($notif_old_relance->count())>0){
-                                foreach($notif_old_relance as $nt_r){
-                                    $nt_r->delete();
-                                }
-                                }
-                            /***RENDRE LES OLD RELANCES ET OLD RDV EN TRAITE AUTOMATIQUE****/
-                                $old_relances_rdv=Relance_Rdv_visite::on('temp')->where('visite_id',$old_visite->id)->where('type_traitement',0)->get();
-                                if(count($old_relances_rdv)>0){
-                                    foreach($old_relances_rdv as $old){
-                                        $old->type_traitement=2;//auto
-                                        $old->date_traitement=Carbon::now();
-                                        //si old visite pre reserve en suite n visite Vendu ==>user_id_traite(l'ancien user)
-                                        if($old->visite->statut==StatutVisiteEnum::Pré_Réservation->value){
-                                            if($newVisit->statut==StatutVisiteEnum::Vendu->value){
-                                                $old->user_id_traite=$old_visite->user_id;
+                                //SUPPRIMER LES OLDS NOTIF
+                                 $notif_old_relance=Notification::on('temp')->where(function ($query){
+                                    $query->where('type',1)
+                                        ->orwhere('type',2);})
+                                    ->where(function ($query_2) use($old_visite){
+                                            $query_2->where('visite_id',$old_visite->id);})
+                                    ->get();
+                                    if(($notif_old_relance->count())>0){
+                                    foreach($notif_old_relance as $nt_r){
+                                        $nt_r->delete();
+                                    }
+                                    }
+                                /***RENDRE LES OLD RELANCES ET OLD RDV EN TRAITE AUTOMATIQUE****/
+                                    $old_relances_rdv=Relance_Rdv_visite::on('temp')->where('visite_id',$old_visite->id)->where('type_traitement',0)->get();
+                                    if(count($old_relances_rdv)>0){
+                                        foreach($old_relances_rdv as $old){
+                                            $old->type_traitement=2;//auto
+                                            $old->date_traitement=Carbon::now();
+                                            //si old visite pre reserve en suite n visite Vendu ==>user_id_traite(l'ancien user)
+                                            if($old->visite->statut==StatutVisiteEnum::Pré_Réservation->value){
+                                                if($newVisit->statut==StatutVisiteEnum::Vendu->value){
+                                                    $old->user_id_traite=$old_visite->user_id;
+                                                }
+                                                else{
+                                                    $old->user_id_traite=$userAuth->value('id');
+                                                }
                                             }
                                             else{
                                                 $old->user_id_traite=$userAuth->value('id');
                                             }
+                                            $old->save();
                                         }
-                                        else{
-                                            $old->user_id_traite=$userAuth->value('id');
-                                        }
-                                        $old->save();
-                                    }
 
-                                }
-                          }
+                                    }
+                              }
+                        }
+                        if ($newVisit->interet == InteretEnum::Perdu->value) {
+                            $freinRequest['visite_id']=$newVisit->getAttribute('id');
+                            $freinRequest['prix_min']=$request->prix_min;
+                            $freinRequest['prix_max']=$request->prix_max;
+                            $freinRequest['sup_min']=$request->sup_min;
+                            $freinRequest['sup_max']=$request->sup_max;
+                            $freinRequest['etat']=1;
+                            $freinRequest['avance']=$request->avance;
+                            $freinRequest['selectedTranches']=$request->tranches_id;
+                            $freinRequest['selectedEtages']=$request->etages;
+                            $freinRequest['selectedOrientations']=$request->orientations;
+                            $freinRequest['selectedTypologies']=$request->typologies;
+                            $freinRequest['selectedVues']=$request->vues;
+                            $freinController = new FreinController();
+                            $freinController->store(new StoreFreinRequest($freinRequest));
+                        }
                     }
-                    if ($newVisit->interet == InteretEnum::Perdu->value) {
-                        $freinRequest['visite_id']=$newVisit->getAttribute('id');
-                        $freinRequest['prix_min']=$request->prix_min;
-                        $freinRequest['prix_max']=$request->prix_max;
-                        $freinRequest['sup_min']=$request->sup_min;
-                        $freinRequest['sup_max']=$request->sup_max;
-                        $freinRequest['etat']=1;
-                        $freinRequest['avance']=$request->avance;
-                        $freinRequest['selectedTranches']=$request->tranches_id;
-                        $freinRequest['selectedEtages']=$request->etages;
-                        $freinRequest['selectedOrientations']=$request->orientations;
-                        $freinRequest['selectedTypologies']=$request->typologies;
-                        $freinRequest['selectedVues']=$request->vues;
-                        $freinController = new FreinController();
-                        $freinController->store(new StoreFreinRequest($freinRequest));
-                    }
+
                 }
             }
             else{
@@ -1484,9 +1651,22 @@ class VisiteController extends Controller
                                 //store relances et rdv et notifications
                                 if($newVisit->statut==StatutVisiteEnum::Pré_Réservation->value){
                                     if ($list_biens['date_relance']!= null) {
-                                        NotificationHelper::storeNotification(
-                                            '/visites/show/'.$newVisit->origin_id,$list_biens['date_relance'],1,'RELANCE VISITE',Auth::guard('api')->user()->id,null,$newVisit->getAttribute('id'),$newVisit->prospect_id,$newVisit->projet_id,null,null
-                                        );
+                                        $data_notif = [
+                                            'lien' => '/visites/show/'.$newVisit->origin_id,
+                                            'date' => $list_biens['date_relance'],
+                                            'type' => 1,
+                                            'description' => 'RELANCE VISITE',
+                                            'user_id' => Auth::guard('api')->user()->id,
+                                            'role'=>null,
+                                            'visite_id'=>$newVisit->getAttribute('id'),
+                                            'prospect_id'=>$newVisit->prospect_id,
+                                            'projet_id'=>$newVisit->projet_id,
+
+                                        ];
+                                        $notif_helper = new NotificationHelper();
+                                        $notif_helper->storeNotification($request->merge($data_notif));
+
+
                                         broadcast(new NotificationEvent($newVisit->id));
                                         $relance=new Relance_Rdv_visite();
                                         $relance->setConnection('temp');
@@ -1499,9 +1679,21 @@ class VisiteController extends Controller
                                         $relance->save();
                                     }
                                     if($list_biens['rdv']!= null){
-                                        NotificationHelper::storeNotification(
-                                            '/visites/show/'.$newVisit->origin_id,$list_biens['rdv'],2,'RDV VISITE',Auth::guard('api')->user()->id,null,$newVisit->getAttribute('id'),$newVisit->prospect_id,$newVisit->projet_id,null,null
-                                        );
+                                        $data_notif = [
+                                            'lien' => '/visites/show/'.$newVisit->origin_id,
+                                            'date' => $list_biens['rdv'],
+                                            'type' => 2,
+                                            'description' => 'RDV VISITE',
+                                            'user_id' => Auth::guard('api')->user()->id,
+                                            'role'=>null,
+                                            'visite_id'=>$newVisit->getAttribute('id'),
+                                            'prospect_id'=>$newVisit->prospect_id,
+                                            'projet_id'=>$newVisit->projet_id,
+
+                                        ];
+                                        $notif_helper = new NotificationHelper();
+                                        $notif_helper->storeNotification($request->merge($data_notif));
+
                                         broadcast(new NotificationEvent($newVisit->id));
 
                                         $rdv=new Relance_Rdv_visite();

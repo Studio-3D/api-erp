@@ -223,9 +223,22 @@ class RemboursementController extends Controller
             if($remboursement->save()){
                 if(RoleHelper::Com()){
                     //si commercial ==> envoi notif au admin que client a pris le cheque de remboursement
-                    NotificationHelper::storeNotification(
-                        '/remboursements/att_decaissement', Carbon::now(),21,'client a pris le chéque du remboursement',null,RoleEnum::ADMIN->value,null,null,$remboursement->reservation->projet_id,null,$remboursement->reservation_id
-                        );
+
+                    $data_notif = [
+                        'lien' =>  '/remboursements/att_decaissement',
+                        'date' => Carbon::now(),
+                        'type' =>21,
+                        'role'=>RoleEnum::ADMIN->value,
+                        'description' => 'client a pris le chéque du remboursement',
+                        'projet_id'=>$remboursement->reservation->projet_id,
+                        'reservation_id'=>$remboursement->reservation_id
+
+                    ];
+                    $notif_helper = new NotificationHelper();
+                    $notif_helper->storeNotification($request->merge($data_notif));
+
+
+
                         broadcast(new NotificationEvent($id));
                 }
             }
@@ -302,7 +315,7 @@ class RemboursementController extends Controller
                 $query->where('remboursements.mode_rembourse', 'apres_vente')
                     ->orwhere('remboursements.mode_rembourse', 'transfert_rem_apres_vente')
                 ;})->count();
-                return response()->json(['nb_att_valide'=>$nb_demande]);
+                return response()->json(['nb'=>$nb_demande]);
         }elseif(RoleHelper::Com()){
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -313,7 +326,7 @@ class RemboursementController extends Controller
                 $query->where('remboursements.mode_rembourse', 'apres_vente')
                     ->orwhere('remboursements.mode_rembourse', 'transfert_rem_apres_vente')
                 ;})->count();
-            return response()->json(['nb_att_valide'=>$nb_demande]);
+            return response()->json(['nb'=>$nb_demande]);
 
         } else  return response()->json(['error'=>'Unauthorized'], 401);
     }

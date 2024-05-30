@@ -28,6 +28,7 @@ class PiecesJointeController extends Controller
             $page = $request->input('page', 1);
             $pjs = PiecesJointe::on('temp')
                 ->join('reservations', 'reservations.projet_id', '=', 'aqeureurs.reservation_id')
+                ->whereNull('reservations.deleted_at')
                 ->join('projets', 'reservations.projet_id', '=', 'projets.id')
                 ->where('projets.id', $projet_id)
                 ->select('pieces_jointes.*')

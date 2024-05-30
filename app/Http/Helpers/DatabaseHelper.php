@@ -231,9 +231,21 @@ class DatabaseHelper
 
                                 //if diff==2 notif to commercial
                                 if($bien->last_pre_reservation->visite_id!=null){
-                                    NotificationHelper::storeNotification(
-                                        '/visites/show/'.$bien->last_pre_reservation->visite->origin_id,Carbon::now(),4,'Régler situation du bien pre reservé',$bien->last_pre_reservation->visite->user->user_id_origin,$bien->last_pre_reservation->visite->id,$bien->last_pre_reservation->visite->prospect_id,$bien->last_pre_reservation->visite->projet_id
-                                    );
+                                    $data_notif = [
+                                        'lien' =>  '/visites/show/'.$bien->last_pre_reservation->visite->origin_id,
+                                        'date' => Carbon::now(),
+                                        'type' => 4,
+                                        'description' => 'Régler situation du bien pre reservé',
+                                        'user_id'=>$bien->last_pre_reservation->visite->user->user_id_origin,
+                                        'visite_id'=>$bien->last_pre_reservation->visite->id,
+                                        'prospect_id'=>$bien->last_pre_reservation->visite->prospect_id,
+                                        'projet_id'=>$bien->last_pre_reservation->visite->projet_id
+
+                                    ];
+                                    $notif_helper = new NotificationHelper();
+                                    $notif_helper->storeNotification($request->merge($data_notif));
+
+
                                 }
                                /* else{
                                     //appel_id!=null notification au detail appel ==>pas ecnours
