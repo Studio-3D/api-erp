@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\TypologieController as V1TypologieController;
 use App\Http\Controllers\Api\V1\TypeFreinController as V1TypeFreinController;
 use App\Http\Controllers\Api\V1\SourceController as V1SourceController;
 use App\Http\Controllers\Api\V1\PartenaireController as V1PartenaireController;
+use App\Http\Controllers\Api\V1\ProjetController as V1ProjetController;
 use App\Http\Controllers\AquereurController;
 use App\Http\Controllers\AvanceController;
 use App\Http\Controllers\BanqueController;
@@ -83,12 +84,14 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('vues', V1VueController::class);
         //l'API Typologie
         Route::resource('typologies', V1TypologieController::class);
-        //l'API Typologie
+        //l'API Typefrins
         Route::resource('typefreins', V1TypeFreinController::class);
-        //l'API Typologie
+        //l'API source
         Route::resource('sources', V1SourceController::class);
-        //l'API Typologie
+        //l'API partenaire
         Route::resource('partenaires', V1PartenaireController::class);
+        //l'API partenare
+        Route::resource('projets', V1ProjetController::class);
 
     });
 
