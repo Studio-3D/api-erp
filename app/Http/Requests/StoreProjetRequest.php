@@ -4,10 +4,9 @@ namespace App\Http\Requests;
 
 use App\Http\Helpers\DatabaseHelper;
 use App\Models\Societe;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
-
 
 class StoreProjetRequest extends FormRequest
 {
@@ -27,10 +26,11 @@ class StoreProjetRequest extends FormRequest
     public function rules(): array
     {
         $societe_id = Auth::guard('api')->user()->societe_id;
-        $societe=Societe::findOrfail( $societe_id);
-        $DatabaseName='Erp_'.$societe->raison_sociale_concatene.'_'.$societe_id;
+        $societe = Societe::findOrfail($societe_id);
+        $DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
         DatabaseHelper::Config();
         return [
+            'nom' => ['required', Rule::unique('temp.' . $DatabaseName . '.projets', 'nom')],
             'code' => 'required|string',
             'adresse' => 'required|string',
             'date_autorisation_construction' => 'required|date',
@@ -46,7 +46,6 @@ class StoreProjetRequest extends FormRequest
             'nbr_biens' => 'integer',
             'max_etages' => 'integer',
             'selectedUsers' => 'required',
-            'nom' => ['required', Rule::unique('temp.'.$DatabaseName.'.projets','nom')],
         ];
     }
 
