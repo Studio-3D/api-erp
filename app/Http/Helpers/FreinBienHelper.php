@@ -7,6 +7,7 @@ use App\Models\Frein;
 use App\Models\Notification;
 use App\Http\Helpers\NotificationHelper;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Config;
 
 class FreinBienHelper
 {
@@ -23,7 +24,7 @@ class FreinBienHelper
                 $notifications_bien_count=Notification::on('temp')->where('visite_id',$frein->visite_id)->where('type',3)->count();
                 if($notifications_bien_count==0){
 
-
+                Config::set('broadcasting.default', 'pusher_3');
                 $data_notif = [
                     'lien' =>  '/relances/visites/freins',
                     'date' => Carbon::now(),
@@ -39,8 +40,10 @@ class FreinBienHelper
                 $notif_helper = new NotificationHelper();
                 $request = new \Illuminate\Http\Request();
                 $notif_helper->storeNotification($request->merge($data_notif));
-
-
+                broadcast(new NotificationEvent(frein_id));
+                    Config::set('broadcasting.default', 'pusher_5');
+                         //1 traitement reservation
+                broadcast(new NotifMenuEvent('C'));
                 }
             }
 

@@ -345,6 +345,7 @@ class ReservationController extends Controller
                     }
                 }
 
+
             }
             return response()->json(['reservation' => $reservation], 200);
 
@@ -372,6 +373,7 @@ class ReservationController extends Controller
              DatabaseHelper::Config();
              $reservation = Reservation::on('temp')->with('remboursement_dd_with_transfert')->findOrFail($id);
              $statut=$reservation->statut;
+             $nb_histo=count($reservation->historiques);
              $etat=$reservation->etat;
              $code=$reservation->code_reservation;
              $code_desistement=$reservation->code_desistement;
@@ -385,7 +387,7 @@ class ReservationController extends Controller
                 $nb_pj=count($reservation->piece_jointe);
              }
              $nb_av=count($reservation->avances);
-             return response()->json(['code_res' => $code,'code_desistement' => $code_desistement,'prix'=>$prix,'nb_aquer'=>$nb_aq,'nb_av'=>$nb_av,'nb_pj'=>$nb_pj,'etat'=>$etat,'transfert'=>$reservation->remboursement_dd_with_transfert,'statut'=>$statut,'user_id'=>$user_id], 200);
+             return response()->json(['code_res' => $code,'code_desistement' => $code_desistement,'prix'=>$prix,'nb_aquer'=>$nb_aq,'nb_av'=>$nb_av,'nb_pj'=>$nb_pj,'etat'=>$etat,'transfert'=>$reservation->remboursement_dd_with_transfert,'statut'=>$statut,'user_id'=>$user_id,'nb_histo'=>$nb_histo], 200);
          } else {
              return response()->json(['error' => 'Unauthorized'], 401);
          }
@@ -642,13 +644,31 @@ class ReservationController extends Controller
         return response()->json(['error', 'Unauthorized'], 401);
     }
 
-    public function relancer_reservation($id)
+    public function relancer_reservation($id,Request $request)
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $reservation = Reservation::on('temp')->findOrFail($id);
             $reservation->statut=StatutReservationEnum::En_Attente->value;
             $reservation->save();
+            Config::set('broadcasting.default', 'pusher_3');
+            //notifiction to admin de valider dossier d reservation user_id=>null
+            $data_notif = [
+                'lien'=>'/validation/reservations/attente',
+                'date' => Carbon::now(),
+                'type' =>6,
+                'role'=>RoleEnum::ADMIN->value,
+                'description' => 'DEMANDE VALIDATION RESERVATION',
+                'projet_id'=>$reservation->projet_id,
+                'reservation_id'=>$reservation->id
+
+            ];
+            $notif_helper = new NotificationHelper();
+            $notif_helper->storeNotification($request->merge($data_notif));
+            broadcast(new NotificationEvent($reservation->id));
+            Config::set('broadcasting.default', 'pusher_5');
+             //1 traitement reservation
+             broadcast(new NotifMenuEvent(1));
             return response()->json(['message' => 'reservation relancé avec succès.'], 200);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -841,7 +861,7 @@ class ReservationController extends Controller
                     ];
                     $notif_helper = new NotificationHelper();
                     $notif_helper->storeNotification($request->merge($data_notif));
-                    
+
                     broadcast(new NotificationEvent($id));
                     Config::set('broadcasting.default', 'pusher_5');
                          //1 traitement reservation
