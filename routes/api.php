@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\TypeFreinController as V1TypeFreinController;
 use App\Http\Controllers\Api\V1\SourceController as V1SourceController;
 use App\Http\Controllers\Api\V1\PartenaireController as V1PartenaireController;
 use App\Http\Controllers\Api\V1\ProjetController as V1ProjetController;
+use App\Http\Controllers\Api\V1\TrancheController as V1TrancheController;
 use App\Http\Controllers\AquereurController;
 use App\Http\Controllers\AvanceController;
 use App\Http\Controllers\BanqueController;
@@ -92,6 +93,8 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('partenaires', V1PartenaireController::class);
         //l'API partenare
         Route::resource('projets', V1ProjetController::class);
+        //l'API tranches
+        Route::resource('tranches', V1TrancheController::class);
 
     });
 

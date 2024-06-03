@@ -34,7 +34,7 @@ class StorePartenaireRequest extends FormRequest
             'description'=>['required',Rule::unique('temp.'.$DatabaseName.'.partenaires','description')
                 ->where('projet_id',$this->projet_id)
                 ],
-            'remise'=>'integer',
+            'remise'=>'integer|nullable',
             'projet_id'=>'integer',
         ];
     }
