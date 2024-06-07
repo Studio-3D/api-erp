@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\Config;
 use App\Http\Requests\StoreSocieteRequest;
 use App\Http\Requests\UpdateSocieteRequest;
 
+use App\Services\V1\SocieteService;
+
 class SocieteController extends Controller
 {
     /**
@@ -25,6 +27,27 @@ class SocieteController extends Controller
      * PUT    /{id}   update
      * DELETE /{id}   destroy
      */
+    private $societeService;
+    public function __construct(SocieteService $societeService)
+    {
+        $this->societeService = $societeService;
+    }
+    public function store(StoreSocieteRequest $request)
+    {
+        if (!RoleHelper::Superadmin()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        $response = $this->societeService->createSociete($request->all());
+        return response()->json(['message' => $response->getOriginalContent()['message']], $response->getStatusCode());
+    }
+    public function show($id)
+    {
+        if (!RoleHelper::Superadmin()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+        $societe = $this->societeService->getSocieteById($id);
+        return response()->json(['societe' => $societe], 200);
+    }
     public function index(Request $request)
     {
         if (RoleHelper::Superadmin()) {
@@ -49,7 +72,7 @@ class SocieteController extends Controller
             }
 
             $societes = $query->orderBy('created_at', 'desc')
-            ->paginate($size, ['*'], 'page', $page);
+                ->paginate($size, ['*'], 'page', $page);
 
             // Extraire les propriétés du paginateur
             $pagination = [
@@ -70,62 +93,7 @@ class SocieteController extends Controller
 
         return response()->json(['error' => 'Unauthorized'], 401);
     }
-    public function store(StoreSocieteRequest $request)
-    {
-        if (RoleHelper::Superadmin()) {
-            $societe = new Societe();
-            $raison_sociale_concatene = str_replace(' ', '', $request->raison_sociale);
-            $societe->raison_sociale_concatene = $raison_sociale_concatene;
-            $societe->raison_sociale = $request->raison_sociale;
-            $societe->adresse = $request->adresse;
-            $societe->nom_contact = $request->nom_contact;
-            $societe->prenom_contact = $request->prenom_contact;
-            $societe->tel = $request->tel;
-            $societe->email = $request->email;
-            if ($request->hasFile('logo')) {
-                $logo = time() . '.' . $raison_sociale_concatene . '.' . $request->logo->extension();
 
-            }
-            $societe->save();
-            if ($request->hasFile('logo')) {
-                FichierHelper::ajouter_fichier($request->logo,$raison_sociale_concatene,$societe->id,'logos',$logo);
-                //$request->logo->move(public_path('img/' . $raison_sociale_concatene . '_' . $societe->id . '/logos'), $logo);
-                $societe->logo = $logo;
-                $societe->save();
-            }
-            
-
-            // $societes = Societe::whereNull('adresse')->get();
-            // $societes=Societe::all();
-            // broadcast(new NewSocieteEvent($societes));
-
-            $databaseSociete = new DatabaseHelper();
-            $response = $databaseSociete->createNewClientDatabase($raison_sociale_concatene, $societe->id);
-            Config::set('broadcasting.default', 'pusher_1');
-            // $societes = Societe::all();
-            broadcast(new NewSocieteEvent($societe->id));
-            if ($response->getStatusCode() == 200) {
-                return response()->json(['message' => $response->getOriginalContent()['message']]);
-            } else {
-                return response()->json(['message' => $response->getOriginalContent()['message']]);
-            }
-
-
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-    }
-    public function show($id)
-    {
-        if (RoleHelper::Superadmin()) {
-            $societe = Societe::findOrfail($id);
-
-            return response()->json(['societe' => $societe], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-    }
     public function edit($id)
     {
         if (RoleHelper::Superadmin()) {
@@ -158,7 +126,7 @@ class SocieteController extends Controller
                     }
                 }
                 $logo = time() . '.' . $raison_sociale_concatene . '.' . $request->logo->extension();
-                FichierHelper::ajouter_fichier($request->logo,$raison_sociale_concatene,$societe->id,'logos',$logo);
+                FichierHelper::ajouter_fichier($request->logo, $raison_sociale_concatene, $societe->id, 'logos', $logo);
                 $societe->logo = $logo;
             }
             $societe->save();
