@@ -42,6 +42,7 @@ use App\Http\Controllers\TypologieController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VisiteController;
 use App\Http\Controllers\VueController;
+use App\Http\Controllers\ActualiteController;
 use App\Http\Controllers\WhatsApp\WhatsAppController;
 use Illuminate\Support\Facades\Route;
 
@@ -119,6 +120,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('logout', [UserController::class, 'logout'])->name('logout');
     Route::post('addUserProjet/{id}', [UserController::class, 'addUserProjet'])->name('addUserProjet');
     Route::get('get_users', [UserController::class, 'get_users'])->name('get_users');
+    Route::get('get_commerciaux', [UserController::class, 'get_commerciaux'])->name('get_users');
     Route::post('sendEmail', [UserController::class, 'sendEmail']);
     Route::post('resendEmail', [UserController::class, 'resendEmail']);
 
@@ -369,6 +371,9 @@ Route::middleware('auth:api')->group(function () {
     Route::get('get_notif_demande_pre_remboursement/{projet_id}', [RemboursementController::class, 'get_notif_demande_pre_remboursement'])->name('');
     Route::post('traiter_accuse/{id}', [RemboursementController::class, 'traiter_accuse'])->name('');
     Route::post('traiter_decaissement/{id}', [RemboursementController::class, 'traiter_decaissement'])->name('');
+    Route::get('historique/{date}/{type}', [ActualiteController::class, 'get_historique'])->name('');
 
-});
+     /*************************************Actualites***************************** */
+     Route::get('actualites/{projet_id}/{user_id}/{date}', [ActualiteController::class, 'index'])->name('');
+    });
 Route::get('sendResetPasswordEmail', [UserController::class, 'sendResetPasswordEmail']);

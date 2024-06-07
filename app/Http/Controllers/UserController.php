@@ -93,6 +93,18 @@ class UserController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
+    public function get_commerciaux()
+    {
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            //->where('role',3)
+            $users = User::on('temp')->get();
+            return response()->json(['users' => $users], 200);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
     public function index(Request $request)
     {
         if (RoleHelper::Superadmin()) {
@@ -137,7 +149,7 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request)
     {
-        
+
         if (RoleHelper::SuperAdmin()) {
             $user = new User();
             $user->name = $request->name;
