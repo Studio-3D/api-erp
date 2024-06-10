@@ -25,16 +25,22 @@ class ActualiteController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request, $projet_id,$user_id,$date)
+    public function index(Request $request, $projet_id,$user_id,$de_date,$a_date)
     {
         DatabaseHelper::Config();
-        if($date=='null'){
-            $dt=Carbon::now();
+        if($de_date=='null' && $a_date=='null' ){
+            $dt_now=date('Y-m-d');
+            $dt = Carbon::createFromFormat('Y-m-d', $dt_now)->startOfDay();
+            $a_dt = Carbon::createFromFormat('Y-m-d', $dt_now)->endOfDay();
         }else{
-            $dt=$date;
+
+            $dt = Carbon::createFromFormat('Y-m-d', $de_date)->startOfDay();
+            $a_dt = Carbon::createFromFormat('Y-m-d', $a_date)->endOfDay();
+
+
         }
          //si est un commercial ou admin fait actualite par commercial
-        if (RoleHelper::Com()||$user_id!='tous') {
+        if (RoleHelper::Com()||($user_id!='tous'&&$user_id!='tout')) {
 
             if($user_id!='tous'){
                 $us_id=$user_id;
@@ -47,7 +53,8 @@ class ActualiteController extends Controller
             $data_v_pre_reserve = [
                 'par_commercial' =>  1,
                 'user_id' =>  $us_id,
-                'date' => $dt,
+                'de_date' => $dt,
+                'a_date' => $a_dt,
                 'statut' => StatutVisiteEnum::Pré_Réservation->value,
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
@@ -55,7 +62,8 @@ class ActualiteController extends Controller
             $data_v_pre_reserve_perdu = [
                 'par_commercial' =>  1,
                 'user_id' =>  $us_id,
-                'date' => $dt,
+                'de_date' => $dt,
+                'a_date' => $a_dt,
                 'statut' => StatutVisiteEnum::Pré_Réservation_Perdu->value,
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
@@ -63,7 +71,8 @@ class ActualiteController extends Controller
             $data_v_pre_reserve_vendu = [
                 'par_commercial' =>  1,
                 'user_id' =>  $us_id,
-                'date' => $dt,
+                'de_date' => $dt,
+                'a_date' => $a_dt,
                 'statut' => StatutVisiteEnum::Pré_Réservation_Vendu->value,
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
@@ -71,7 +80,8 @@ class ActualiteController extends Controller
             $data_v_reserve_perdu = [
                 'par_commercial' =>  1,
                 'user_id' =>  $us_id,
-                'date' => $dt,
+                'de_date' => $dt,
+                'a_date' => $a_dt,
                 'statut' => StatutVisiteEnum::Réservation_Perdu->value,
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
@@ -79,7 +89,8 @@ class ActualiteController extends Controller
             $data_v_receptif = [
                 'par_commercial' =>  1,
                 'user_id' =>  $us_id,
-                'date' => $dt,
+                'de_date' => $dt,
+                'a_date' => $a_dt,
                 'statut' => null,
                 'order'=>null,
                 'interet' => InteretEnum::Réceptif->value,
@@ -88,7 +99,8 @@ class ActualiteController extends Controller
             $data_v_perdu = [
                 'par_commercial' =>  1,
                 'user_id' =>  $us_id,
-                'date' => $dt,
+                'de_date' => $dt,
+                'a_date' => $a_dt,
                 'statut' => null,
                 'order' => null,
                 'interet' => InteretEnum::Perdu->value,
@@ -96,7 +108,8 @@ class ActualiteController extends Controller
             ];
             $data_v_vente_direct = [
                 'user_id' =>  $us_id,
-                'date' => $dt,
+                'de_date' => $dt,
+                'a_date' => $a_dt,
                 'order' => 1,
                 'statut' => StatutVisiteEnum::Vendu->value,
                 'interet' => InteretEnum::Intéressé->value,
@@ -105,30 +118,33 @@ class ActualiteController extends Controller
             $data_v_vente = [
                 'par_commercial' =>  1,
                 'user_id' =>  $us_id,
-                'date' => $dt,
+                'de_date' => $dt,
+                'a_date' => $a_dt,
                 'order' => null,
                 'statut' => StatutVisiteEnum::Vendu->value,
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
             ];
 
-            $nb_visite_rec=$this->get_visites($request->merge($data_v_receptif));
-            $nb_visite_perdu=$this->get_visites($request->merge($data_v_perdu));
-            $nb_visite_vente_direct=$this->get_visites($request->merge($data_v_vente_direct));
-            $nb_visite_vente=$this->get_visites($request->merge($data_v_vente));
-            $nb_visite_pre_reserve=$this->get_visites($request->merge($data_v_pre_reserve));
-            $nb_visite_pre_reserve_perdu=$this->get_visites($request->merge($data_v_pre_reserve_perdu));
-            $nb_visite_pre_reserve_vendu=$this->get_visites($request->merge($data_v_pre_reserve_vendu));
-            $nb_visite_reserve_perdu=$this->get_visites($request->merge($data_v_reserve_perdu));
+            $Array_visite = [];
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_receptif))->original['nb_v']);
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve))->original['nb_v']);
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve_perdu))->original['nb_v']);
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve_vendu))->original['nb_v']);
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_vente_direct))->original['nb_v']);
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_vente))->original['nb_v']);
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_reserve_perdu))->original['nb_v']);
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_perdu))->original['nb_v']);
 
             $rdv_relances=Relance_Rdv_visite::on('temp')->join('visites', 'visites.id', '=', 'relances_rdv_visites.visite_id')
             ->select('relances_rdv_visites.*')
-            ->whereDate('relances_rdv_visites.date_traitement',$dt)
+            ->whereBetween('relances_rdv_visites.date_traitement', [$dt, $a_dt])
             ->whereIN('relances_rdv_visites.type_traitement',[2,3])
             ->where('relances_rdv_visites.user_id',$us_id)
             ->where('visites.projet_id', $request->projet_id)->get();
 
-            $nb_visite_last_5_days=Visite::on('temp')->whereDate('created_at',Carbon::parse($dt)->subDays(5))
+            $nb_visite_last_5_days=Visite::on('temp')
+            ->whereBetween('created_at', [Carbon::parse($dt)->subDays(5), Carbon::parse($a_dt)->subDays(5)])
             ->where('projet_id', $request->projet_id)-> where('user_id',$us_id)->count();
 
             $avances_bien=Avance::on('temp')
@@ -140,13 +156,22 @@ class ActualiteController extends Controller
             ->select('avances.montant','biens.propriete_dite_bien','tranches.nom as tranche_nom','blocs.nom as bloc_nom','immeubles.nom as immeuble_nom')
             ->where('avances.user_id',$us_id)
             ->where('reservations.projet_id', $request->projet_id)
-            ->whereDate('avances.created_at',$dt)->get();
+            ->whereBetween('avances.created_at', [$dt, $a_dt])
+            ->get();
             $sum_avances=0;
             if(count($avances_bien)>0){
             foreach($avances_bien as $av){
                 $sum_avances+=$av->montant;
             }
             }
+            $avances_bien_last_days=Avance::on('temp')
+            ->join('reservations', 'reservations.id', '=', 'avances.reservation_id')
+            ->join('biens', 'biens.id', '=', 'reservations.bien_id')
+            ->where('avances.user_id',$us_id)
+            ->where('reservations.projet_id', $request->projet_id)
+            ->whereBetween('avances.created_at', [Carbon::parse($dt)->subDays(5), Carbon::parse($a_dt)->subDays(5)])
+            ->sum('avances.montant');
+
             $remboursements=Remboursement::on('temp')
             ->join('desistements', 'desistements.id', '=', 'remboursements.desistement_id')
             ->join('reservations', 'reservations.id', '=', 'remboursements.reservation_id')
@@ -158,7 +183,7 @@ class ActualiteController extends Controller
             ->where('desistements.user_id',$us_id)
             ->where('reservations.projet_id',$request->projet_id)
             ->whereIN('remboursements.statut',[1,3])
-            ->whereDate('remboursements.date_rembourse',$dt)
+            ->whereBetween('remboursements.date_rembourse', [$dt, $a_dt])
             ->get();
             $sum_remb=0;
             if(count($remboursements)>0){
@@ -175,108 +200,115 @@ class ActualiteController extends Controller
             ->select('biens.propriete_dite_bien as bien','reservations.code_reservation','desistements.motif','penalites_desistements.montant as penalite','desistements.lien_parente','new_biens.propriete_dite_bien as new_bien','desistements.montant_a_ajouter','desistements.type','desistements.type_dp')
             ->where('desistements.projet_id',$request->projet_id)
             ->where('desistements.user_id',$us_id)
-            ->whereDate('desistements.created_at',$dt)
+            ->whereBetween('desistements.created_at', [$dt, $a_dt])
              ->get();
 
-            $sum_penalites=0;
-            if(count($desistements)>0){
-                foreach($desistements as $ds){
-                    $sum_penalites+=$ds->penalite;
-                }
-                }
-
+             $sum_penalites=0;
+             $sum_mont_a_ajouter=0;
+             if(count($desistements)>0){
+                 foreach($desistements as $ds){
+                     $sum_penalites+=$ds->penalite;
+                     $sum_mont_a_ajouter+=$ds->montant_a_ajouter;
+                 }
+                 }
             return response()->json([
-                'ana_admin'=>0,
-                'nb_visite_rec'=>$nb_visite_rec,
-                'nb_visite_perdu'=>$nb_visite_perdu,
-                'nb_visite_vente_direct'=>$nb_visite_vente_direct,
-                'nb_visite_vente'=>$nb_visite_vente,
-                'nb_visite_pre'=>$nb_visite_pre_reserve,
-                'nb_visite_pre_perdu'=>$nb_visite_pre_reserve_perdu,
-                'nb_visite_pre_vendu'=>$nb_visite_pre_reserve_vendu,
-                'nb_visite_reserve_perdu'=>$nb_visite_reserve_perdu,
+                'admin'=>0,
+                'visites'=>$Array_visite,
+                'sum_visites'=>$sum = array_sum($Array_visite),
                 'rdv_relances'=>$rdv_relances,
                 'nb_visite_last_5_days'=>$nb_visite_last_5_days,
+                'avances_last_5_days'=>$avances_bien_last_days,
                 'avances_bien'=>$avances_bien,
                 'sum_avances'=>$sum_avances,
                 'remboursements'=>$remboursements,
                 'sum_remb'=>$sum_remb,
                 'desistements'=>$desistements,
-                'sum_penalites'=>$sum_penalites
+                'sum_penalites'=>$sum_penalites,
+                'sum_mont_a_ajouter'=>$sum_mont_a_ajouter
             ], 200);
 
         } else{
             //admin
 
             $data_v_pre_reserve = [
-                'date' => $dt,
+                'de_date' => $dt,
+                'a_date' => $a_dt,
                 'statut' => StatutVisiteEnum::Pré_Réservation->value,
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
             ];
             $data_v_pre_reserve_perdu = [
-                'date' => $dt,
+                'de_date' => $dt,
+                'a_date' => $a_dt,
                 'statut' => StatutVisiteEnum::Pré_Réservation_Perdu->value,
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
             ];
             $data_v_pre_reserve_vendu = [
-                'date' => $dt,
+                'de_date' => $dt,
+                'a_date' => $a_dt,
                 'statut' => StatutVisiteEnum::Pré_Réservation_Vendu->value,
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
             ];
             $data_v_reserve_perdu = [
-                'date' => $dt,
+                'de_date' => $dt,
+                'a_date' => $a_dt,
                 'statut' => StatutVisiteEnum::Réservation_Perdu->value,
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
             ];
             $data_v_receptif = [
-                'date' => $dt,
+                'de_date' => $dt,
+                'a_date' => $a_dt,
                 'statut' => null,
                 'order'=>null,
                 'interet' => InteretEnum::Réceptif->value,
                 'projet_id' =>$projet_id,
             ];
             $data_v_perdu = [
-                'date' => $dt,
+               'de_date' => $dt,
+                'a_date' => $a_dt,
                 'statut' => null,
                 'order' => null,
                 'interet' => InteretEnum::Perdu->value,
                 'projet_id' =>$projet_id,
             ];
             $data_v_vente_direct = [
-                'date' => $dt,
+                'de_date' => $dt,
+                'a_date' => $a_dt,
                 'order' => 1,
                 'statut' => StatutVisiteEnum::Vendu->value,
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
             ];
             $data_v_vente = [
-                'date' => $dt,
+                'de_date' => $dt,
+                'a_date' => $a_dt,
                 'order' => null,
                 'statut' => StatutVisiteEnum::Vendu->value,
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
             ];
 
-            $nb_visite_rec=$this->get_visites($request->merge($data_v_receptif));
-            $nb_visite_perdu=$this->get_visites($request->merge($data_v_perdu));
-            $nb_visite_vente_direct=$this->get_visites($request->merge($data_v_vente_direct));
-            $nb_visite_vente=$this->get_visites($request->merge($data_v_vente));
-            $nb_visite_pre_reserve=$this->get_visites($request->merge($data_v_pre_reserve));
-            $nb_visite_pre_reserve_perdu=$this->get_visites($request->merge($data_v_pre_reserve_perdu));
-            $nb_visite_pre_reserve_vendu=$this->get_visites($request->merge($data_v_pre_reserve_vendu));
-            $nb_visite_reserve_perdu=$this->get_visites($request->merge($data_v_reserve_perdu));
+            $Array_visite = [];
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_receptif))->original['nb_v']);
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve))->original['nb_v']);
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve_perdu))->original['nb_v']);
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve_vendu))->original['nb_v']);
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_vente_direct))->original['nb_v']);
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_vente))->original['nb_v']);
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_reserve_perdu))->original['nb_v']);
+            array_push($Array_visite,$this->get_visites($request->merge($data_v_perdu))->original['nb_v']);
 
             $rdv_relances=Relance_Rdv_visite::on('temp')->join('visites', 'visites.id', '=', 'relances_rdv_visites.visite_id')
             ->select('relances_rdv_visites.*')
-            ->whereDate('relances_rdv_visites.date_traitement',$dt)
+            ->whereBetween('relances_rdv_visites.created_at', [$dt,$a_dt])
             ->whereIN('relances_rdv_visites.type_traitement',[2,3])
             ->where('visites.projet_id', $request->projet_id)->get();
 
-            $nb_visite_last_5_days=Visite::on('temp')->whereDate('created_at',Carbon::parse($dt)->subDays(5))
+            $nb_visite_last_5_days=Visite::on('temp')
+            ->whereBetween('created_at', [Carbon::parse($dt)->subDays(5),Carbon::parse($a_dt)->subDays(5)])
             ->where('projet_id', $request->projet_id)->count();
 
             $avances_bien=Avance::on('temp')
@@ -287,7 +319,8 @@ class ActualiteController extends Controller
             ->leftjoin('immeubles', 'immeubles.id', '=', 'biens.immeuble_id')
             ->select('avances.montant','biens.propriete_dite_bien','tranches.nom as tranche_nom','blocs.nom as bloc_nom','immeubles.nom as immeuble_nom')
             ->where('reservations.projet_id', $request->projet_id)
-            ->whereDate('avances.created_at',$dt)->get();
+            ->whereBetween('avances.created_at', [$dt, $a_dt])
+            ->get();
             $sum_avances=0;
             if(count($avances_bien)>0){
             foreach($avances_bien as $av){
@@ -304,7 +337,7 @@ class ActualiteController extends Controller
             ->select('biens.propriete_dite_bien','remboursements.montant_a_rembourser','tranches.nom as tranche_nom','blocs.nom as bloc_nom','immeubles.nom as immeuble_nom')
             ->where('reservations.projet_id',$request->projet_id)
             ->whereIN('remboursements.statut',[1,3])
-            ->whereDate('remboursements.date_rembourse',$dt)
+            ->whereBetween('remboursements.date_rembourse', [$dt, $a_dt])
             ->get();
             $sum_remb=0;
             if(count($remboursements)>0){
@@ -318,36 +351,43 @@ class ActualiteController extends Controller
             ->leftJoin('biens as new_biens', 'new_biens.id', '=', 'desistements.bien_id_new')
             ->join('reservations', 'reservations.id', '=', 'desistements.reservation_id')
             ->leftJoin('penalites_desistements','penalites_desistements.desistement_id','desistements.id')
-            ->select('biens.propriete_dite_bien as bien','reservations.code_reservation','desistements.motif','penalites_desistements.montant as penalite','desistements.lien_parente','new_biens.propriete_dite_bien as new_bien','desistements.montant_a_ajouter','desistements.type','desistements.type_dp')
+            ->select('desistements.id','biens.propriete_dite_bien as bien','reservations.code_reservation','desistements.motif','penalites_desistements.montant as penalite','desistements.lien_parente','new_biens.propriete_dite_bien as new_bien','desistements.montant_a_ajouter','desistements.type','desistements.type_dp')
             ->where('desistements.projet_id',$request->projet_id)
-            ->whereDate('desistements.created_at',$dt)
+            ->whereBetween('desistements.created_at', [$dt, $a_dt])
              ->get();
 
             $sum_penalites=0;
+            $sum_mont_a_ajouter=0;
             if(count($desistements)>0){
                 foreach($desistements as $ds){
                     $sum_penalites+=$ds->penalite;
+                    $sum_mont_a_ajouter+=$ds->montant_a_ajouter;
                 }
                 }
 
+            $avances_bien_last_days=Avance::on('temp')
+                ->join('reservations', 'reservations.id', '=', 'avances.reservation_id')
+                ->join('biens', 'biens.id', '=', 'reservations.bien_id')
+                ->where('reservations.projet_id', $request->projet_id)
+                ->whereBetween('avances.created_at', [Carbon::parse($dt)->subDays(5),Carbon::parse($a_dt)->subDays(5)])
+                ->sum('avances.montant');
             return response()->json([
-                'ana_admicn'=>$dt,
-                'nb_visite_rec'=>$nb_visite_rec,
-                'nb_visite_perdu'=>$nb_visite_perdu,
-                'nb_visite_vente_direct'=>$nb_visite_vente_direct,
-                'nb_visite_vente'=>$nb_visite_vente,
-                'nb_visite_pre'=>$nb_visite_pre_reserve,
-                'nb_visite_pre_perdu'=>$nb_visite_pre_reserve_perdu,
-                'nb_visite_pre_vendu'=>$nb_visite_pre_reserve_vendu,
-                'nb_visite_reserve_perdu'=>$nb_visite_reserve_perdu,
+                'admin'=>1,
+                'visites'=>$Array_visite,
+                'sum_visites'=>$sum = array_sum($Array_visite),
                 'rdv_relances'=>$rdv_relances,
                 'nb_visite_last_5_days'=>$nb_visite_last_5_days,
+                'avances_last_5_days'=>$avances_bien_last_days,
                 'avances_bien'=>$avances_bien,
                 'sum_avances'=>$sum_avances,
                 'remboursements'=>$remboursements,
                 'sum_remb'=>$sum_remb,
                 'desistements'=>$desistements,
-                'sum_penalites'=>$sum_penalites
+                'sum_penalites'=>$sum_penalites,
+                'sum_mont_a_ajouter'=>$sum_mont_a_ajouter,
+                'de_date'=>$dt,
+                'a_date'=>$a_dt,
+
             ], 200);
 
 
@@ -363,7 +403,7 @@ class ActualiteController extends Controller
             if($request->order==1){
                 //first visite
                 $nb_visite = Visite::on('temp')
-                ->whereDate('created_at',$request->date)
+                ->whereBetween('created_at', [$request->de_date, $request->a_date])
                 ->where('etat',1)
                 ->where('user_id',$request->user_id)
                 ->where('old_v_id',null)
@@ -374,7 +414,7 @@ class ActualiteController extends Controller
                 if($request->statut<=2){
                     //pre reserve ou vendu
                     $nb_visite = Visite::on('temp')
-                    ->whereDate('created_at',$request->date)
+                    ->whereBetween('created_at', [$request->de_date, $request->a_date])
                     ->where('user_id',$request->user_id)
                     ->where('etat',1)
                     ->where('interet',$request->interet)
@@ -382,7 +422,7 @@ class ActualiteController extends Controller
                     ->where('projet_id', $request->projet_id)->count();
                 }else{
                     $nb_visite = Visite::on('temp')
-                    ->whereDate('updated_at',$request->date)
+                    ->whereBetween('updated_at', [$request->de_date, $request->a_date])
                     ->where('user_id',$request->user_id)
                     ->where('etat',1)
                     ->where('interet',$request->interet)
@@ -397,7 +437,9 @@ class ActualiteController extends Controller
             if($request->order==1){
                 //first visite
                 $nb_visite = Visite::on('temp')
-                ->whereDate('created_at',$request->date)
+                /*->whereDate('created_at','<=',$request->de_date)
+                ->whereDate('created_at','>=',$request->a_date)*/
+                ->whereBetween('created_at', [$request->de_date, $request->a_date])
                 ->where('etat',1)
                 ->where('old_v_id',null)
                 ->where('interet',$request->interet)
@@ -407,14 +449,18 @@ class ActualiteController extends Controller
                 if($request->statut<=2){
                     //pre reserve ou vendu
                     $nb_visite = Visite::on('temp')
-                    ->whereDate('created_at',$request->date)
+                   /* ->whereDate('created_at','<=',$request->de_date)
+                     ->whereDate('created_at','>=',$request->a_date)*/
+                   ->whereBetween('created_at', [$request->de_date, $request->a_date])
                     ->where('etat',1)
                     ->where('interet',$request->interet)
                     ->where('statut',$request->statut)
                     ->where('projet_id', $request->projet_id)->count();
                 }else{
                     $nb_visite = Visite::on('temp')
-                    ->whereDate('updated_at',$request->date)
+                  /*  ->whereDate('updated_at','<=',$request->de_date)
+                ->whereDate('updated_at','>=',$request->a_date)*/
+                    ->whereBetween('updated_at', [$request->de_date, $request->a_date])
                     ->where('etat',1)
                     ->where('interet',$request->interet)
                     ->where('statut',$request->statut)
@@ -427,29 +473,52 @@ class ActualiteController extends Controller
 
     }
 
-    public function get_historique($date,$type,$role,$user)
+    public function get_historique($date,$id,$type)
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $user = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            if($id='tous'){
+                //admin
 
-            $histo=Avance::on('temp')
-            ->join('reservations', 'reservations.id', '=', 'avances.reservation_id')
-            ->join('biens', 'biens.id', '=', 'reservations.bien_id')
-            ->leftjoin('tranches', 'tranches.id', '=', 'biens.tranche_id')
-            ->leftjoin('blocs', 'blocs.id', '=', 'biens.bloc_id')
-            ->leftjoin('immeubles', 'immeubles.id', '=', 'biens.immeuble_id')
-            ->select('avances.montant','biens.propriete_dite_bien','tranches.nom as tranche_nom','blocs.nom as bloc_nom','immeubles.nom as immeuble_nom')
-            ->where('avances.user_id',$userAuth->value('id'))->whereDate('avances.created_at',$date)->get();
-
-            $sum_avances=0;
-                if(count($histo)>0){
-                foreach($histo as $av){
-                    $sum_avances+=$av->montant;
+                $histo=Avance::on('temp')
+                ->join('reservations', 'reservations.id', '=', 'avances.reservation_id')
+                ->join('biens', 'biens.id', '=', 'reservations.bien_id')
+                ->leftjoin('tranches', 'tranches.id', '=', 'biens.tranche_id')
+                ->leftjoin('blocs', 'blocs.id', '=', 'biens.bloc_id')
+                ->leftjoin('immeubles', 'immeubles.id', '=', 'biens.immeuble_id')
+                ->select('avances.montant','biens.propriete_dite_bien','tranches.nom as tranche_nom','blocs.nom as bloc_nom','immeubles.nom as immeuble_nom')
+                ->whereDate('avances.created_at',$date)->get();
+                $sum_avances=0;
+                    if(count($histo)>0){
+                    foreach($histo as $av){
+                        $sum_avances+=$av->montant;
+                    }
                 }
+                return response()->json(['admin' => 0,'historiques' => $histo,'sum_avances'=>$sum_avances], 200);
+
+            }else{
+                //par user_id
+                $user = Auth::user();
+                $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+
+                $histo=Avance::on('temp')
+                ->join('reservations', 'reservations.id', '=', 'avances.reservation_id')
+                ->join('biens', 'biens.id', '=', 'reservations.bien_id')
+                ->leftjoin('tranches', 'tranches.id', '=', 'biens.tranche_id')
+                ->leftjoin('blocs', 'blocs.id', '=', 'biens.bloc_id')
+                ->leftjoin('immeubles', 'immeubles.id', '=', 'biens.immeuble_id')
+                ->select('avances.montant','biens.propriete_dite_bien','tranches.nom as tranche_nom','blocs.nom as bloc_nom','immeubles.nom as immeuble_nom')
+                ->where('avances.user_id',$userAuth->value('id'))->whereDate('avances.created_at',$date)->get();
+
+                $sum_avances=0;
+                    if(count($histo)>0){
+                    foreach($histo as $av){
+                        $sum_avances+=$av->montant;
+                    }
+                }
+                return response()->json(['historiques' => $histo,'sum_avances'=>$sum_avances], 200);
             }
-            return response()->json(['historiques' => $histo,'sum_avances'=>$sum_avances], 200);
+
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

@@ -23,7 +23,7 @@ class Remboursement extends Model
         return $this->belongsTo(Aquereur::class,'aquereur_id')->withTrashed();
     }
     public function desistement(){
-        return $this->belongsTo(Desistement::class,'desistement_id');
+        return $this->belongsTo(Desistement::class,'desistement_id')->withTrashed();
     }
     public function dossier_transfert(){
         return $this->belongsTo(Reservation::class,'dossier_id_transfert');
