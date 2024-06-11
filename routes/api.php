@@ -42,6 +42,7 @@ use App\Http\Controllers\TypologieController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VisiteController;
 use App\Http\Controllers\VueController;
+use App\Http\Controllers\ActualiteController;
 use App\Http\Controllers\WhatsApp\WhatsAppController;
 use Illuminate\Support\Facades\Route;
 
@@ -119,6 +120,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('logout', [UserController::class, 'logout'])->name('logout');
     Route::post('addUserProjet/{id}', [UserController::class, 'addUserProjet'])->name('addUserProjet');
     Route::get('get_users', [UserController::class, 'get_users'])->name('get_users');
+    Route::get('get_commerciaux', [UserController::class, 'get_commerciaux'])->name('get_users');
     Route::post('sendEmail', [UserController::class, 'sendEmail']);
     Route::post('resendEmail', [UserController::class, 'resendEmail']);
 
@@ -274,7 +276,7 @@ Route::middleware('auth:api')->group(function () {
     Route::put('valideAvance/{id}', [AvanceController::class, 'valideAvance'])->name('valideAvance');
     Route::put('refuseAvance/{id}', [AvanceController::class, 'refuseAvance'])->name('refuseAvance');
     Route::get('getAvances_by_Reservation/{reservation_id}', [AvanceController::class, 'getAvances_by_Reservation'])->name('getAvances_by_Reservation');
-    Route::get('historiques_avance/{id}', [AvanceController::class, 'historiques_avance'])->name('');
+    Route::get('historiques_avance/{date}/{id}', [AvanceController::class, 'historiques_avance'])->name('');
     Route::get('get_notif_avances_att_validation/{projet_id}', [AvanceController::class, 'get_notif_avances_att_validation'])->name('');
     Route::get('avances_by_etat/{projet_id}/{etat}', [AvanceController::class, 'get_avances_by_etat'])->name('');
     Route::put('traiter_avance/{id}', [AvanceController::class, 'traiter_avance'])->name('');
@@ -369,6 +371,10 @@ Route::middleware('auth:api')->group(function () {
     Route::get('get_notif_demande_pre_remboursement/{projet_id}', [RemboursementController::class, 'get_notif_demande_pre_remboursement'])->name('');
     Route::post('traiter_accuse/{id}', [RemboursementController::class, 'traiter_accuse'])->name('');
     Route::post('traiter_decaissement/{id}', [RemboursementController::class, 'traiter_decaissement'])->name('');
+    Route::get('get_remboursements_dos_transfert/{projet_id}', [RemboursementController::class, 'get_remboursements_dos_transfert'])->name('');
 
-});
+     /*************************************Actualites***************************** */
+     Route::get('historiques/{date}/{id}/{type}', [ActualiteController::class, 'get_historique'])->name('');
+     Route::get('actualites/{projet_id}/{user_id}/{de_date}/{a_date}', [ActualiteController::class, 'index'])->name('');
+    });
 Route::get('sendResetPasswordEmail', [UserController::class, 'sendResetPasswordEmail']);
