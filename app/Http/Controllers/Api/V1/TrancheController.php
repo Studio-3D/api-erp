@@ -51,7 +51,7 @@ class TrancheController extends Controller
              $tranches = $tranches->items();
  
              return response()->json([
-                 'tranches' => $tranches,
+                 'data' => $tranches,
                  'pagination' => $pagination,
              ], 200);
          }
