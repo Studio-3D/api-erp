@@ -1,0 +1,249 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Controllers\Controller;
+use App\Http\Helpers\DatabaseHelper;
+use App\Http\Helpers\RoleHelper;
+use App\Http\Requests\StoreBlocRequest;
+use App\Http\Requests\UpdateBlocRequest;
+use App\Models\Bloc;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class BlocController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        if (Auth::guard('api')->check()) {
+            $size = $request->input('size', config('app.default_item_number_perpage'));
+            $page = $request->input('page', 1);
+            $projet_id = $request->input('projet_id');
+            DatabaseHelper::Config();
+
+            $query = Bloc::on('temp');
+
+            if ($projet_id) {
+                $query->where('projet_id', $projet_id);
+            }
+
+            if ($request->filled('nom')) {
+                $query->where('nom', 'like', '%' . $request->input('nom') . '%');
+            }
+            if ($request->filled('tranche')) {
+                $query->whereHas('tranche', function ($subQuery) use ($request) {
+                    $subQuery->where('nom', $request->input('tranche'));
+                });
+            }
+
+            $blocs = $query->orderBy('created_at', 'desc')
+                ->paginate($size, ['*'], 'page', $page);
+
+            $pagination = [
+                'currentPage' => $blocs->currentPage(),
+                'totalItems' => $blocs->total(),
+                'totalPages' => $blocs->lastPage(),
+            ];
+
+            $blocs = $blocs->items();
+
+            return response()->json([
+                'data' => $blocs,
+                'pagination' => $pagination,
+            ], 200);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        //
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(StoreBlocRequest $request)
+    {
+        if (RoleHelper::AdminSup()) {
+
+            DatabaseHelper::Config();
+            $bloc = new Bloc();
+            $bloc->setConnection('temp');
+            $bloc->nom = $request->nom;
+            $bloc->titre_foncier = $request->titre_foncier;
+            $bloc->projet_id = $request->projet_id;
+            $bloc->tranche_id = $request->tranche_id;
+            $bloc->nbre_immeubles = $request->nbre_immeubles ? $request->nbre_immeubles : 0;
+            $bloc->nbre_biens = $request->nbre_biens ? $request->nbre_biens : 0;
+            $bloc->save();
+            return response()->json(['message' => $bloc], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show($id)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $bloc = Bloc::on('temp')->with('projet')->with('tranche')->findOrfail($id);
+            return response()->json(['bloc' => $bloc], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit($id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $bloc = Bloc::on('temp')->findOrfail($id);
+            return response()->json(['message' => $bloc], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(UpdateBlocRequest $request, $id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $bloc = Bloc::on('temp')->findOrfail($id);
+            $update = $request->all();
+            foreach ($update as $key => $value) {
+                $bloc->$key = $value;
+            }
+            $bloc->save();
+
+            return response()->json(['message' => $bloc], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy($id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $bloc = Bloc::on('temp')->findOrfail($id);
+            if ($bloc->delete()) {
+                return response()->json(['message' => 'bloc deleted succesfully'], 200);
+            } else {
+                return response()->json(['message' => 'bloc not deleted'], 404);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+
+    }
+    public function restoreBloc($bloc_id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            Bloc::on('temp')->where('id', $bloc_id)->withTrashed()->restore();
+            return response()->json(['message' => 'Bloc restored'], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+    public function getTrashedBlocs()
+    {
+
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $blocs = Bloc::on('temp')->onlyTrashed()->get();
+            return response()->json(['message' => $blocs], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function getBlocsByProjet($projet_id)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $blocs = Bloc::on('temp')->where('projet_id', $projet_id)->get();
+
+            return response()->json(['blocs' => $blocs], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    }
+
+    public function getBlocsByTranche($tranche_id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $blocs = Bloc::on('temp')->where('tranche_id', $tranche_id)->get();
+            return response()->json(['blocs' => $blocs], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    }
+    public function getBlocsByTranchepaginate(Request $request)
+    {
+        if (RoleHelper::ACSup()) {
+            $size = $request->input('size', config('app.default_item_number_perpage'));
+            $page = $request->input('page', 1);
+            $tranche_id = $request->input('tranche_id');
+            DatabaseHelper::Config();
+
+            $query = Bloc::on('temp');
+            if ($tranche_id) {
+                $query->where('tranche_id', $tranche_id);
+            }
+            if ($request->filled('nom')) {
+                $query->where('nom', 'like', '%' . $request->input('nom') . '%');
+            }
+            if ($request->filled('tranche')) {
+                $query->whereHas('tranche', function ($subQuery) use ($request) {
+                    $subQuery->where('nom', $request->input('tranche'));
+                });
+            }
+            $blocs = $query->orderBy('created_at', 'desc')
+            ->paginate($size, ['*'], 'page', $page);
+
+        $pagination = [
+            'currentPage' => $blocs->currentPage(),
+            'totalItems' => $blocs->total(),
+            'totalPages' => $blocs->lastPage(),
+        ];
+
+        $blocs = $blocs->items();
+
+        return response()->json([
+            'data' => $blocs,
+            'pagination' => $pagination,
+        ], 200);
+    }
+
+    return response()->json(['error' => 'Unauthorized'], 401);
+}
+
+}
