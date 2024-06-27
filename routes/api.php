@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\V1\UserController as V1UserController;
 use App\Http\Controllers\Api\V1\VueController as V1VueController;
 use App\Http\Controllers\Api\V1\BienController as V1BienController;
 use App\Http\Controllers\Api\V1\ImmeubleController as V1ImmeubleController;
+use App\Http\Controllers\Api\V1\CompositionBienController as V1CompositionBienController;
 use App\Http\Controllers\AquereurController;
 use App\Http\Controllers\AvanceController;
 use App\Http\Controllers\BanqueController;
@@ -122,7 +123,9 @@ Route::middleware('auth:api')->group(function () {
         Route::get('getBiensByTranchepaginate', [V1BienController::class, 'getBiensByTranchepaginate'])->name('getBiensByTranchepaginate');
         Route::get('getBiensByBlocpaginate', [V1BienController::class, 'getBiensByBlocpaginate'])->name('getBiensByBlocpaginate');
         Route::get('getBiensByImmeublepaginate', [V1BienController::class, 'getBiensByBlocpaginate'])->name('getBiensByBlocpaginate');
-
+        //l'API compositionbiens
+        Route::resource('compositionBiens', V1CompositionBienController::class);
+        
 });
 
     Route::post('upload-excel-data', [ExcelDataController::class, 'UploadDataExcel'])->name('upload-excel-data');
