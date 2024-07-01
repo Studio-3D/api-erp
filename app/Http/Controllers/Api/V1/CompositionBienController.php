@@ -42,26 +42,26 @@ class CompositionBienController extends Controller
             if ($request->filled('nbre_balcons')) {
                 $query->where('nbre_balcons', 'like', '%' . $request->input('nbre_balcons') . '%');
             }
-            
-            $compositionBiens = $query->orderBy('created_at', 'desc')
-            ->paginate($size, ['*'], 'page', $page);
 
-        $pagination = [
-            'currentPage' => $compositionBiens->currentPage(),
-            'totalItems' => $compositionBiens->total(),
-            'totalPages' => $compositionBiens->lastPage(),
-        ];
+            $compositionBiens = $query->orderBy('created_at')
+                ->paginate($size, ['*'], 'page', $page);
 
-        $compositionBiens = $compositionBiens->items();
+            $pagination = [
+                'currentPage' => $compositionBiens->currentPage(),
+                'totalItems' => $compositionBiens->total(),
+                'totalPages' => $compositionBiens->lastPage(),
+            ];
 
-        return response()->json([
-            'compositionBiens' => $compositionBiens,
-            'pagination' => $pagination,
-        ], 200);
+            $compositionBiens = $compositionBiens->items();
+
+            return response()->json([
+                'compositionBiens' => $compositionBiens,
+                'pagination' => $pagination,
+            ], 200);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
-
-    return response()->json(['error' => 'Unauthorized'], 401);
-}
 
     /**
      * Show the form for creating a new resource.
