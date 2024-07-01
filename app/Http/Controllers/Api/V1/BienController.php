@@ -188,6 +188,7 @@ class BienController extends Controller
             DatabaseHelper::Config();
             $bien = new bien();
             $bien->setConnection('temp');
+
             $bien->propriete_dite_bien = $request->propriete_dite_bien;
             $bien->numero = $request->numero;
             $bien->niveau = $request->niveau;
