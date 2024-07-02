@@ -1,12 +1,11 @@
 <?php
 namespace App\Services\V1;
 
+use App\Services\V1\Contracts\SocieteService;
 use App\Events\NewSocieteEvent;
 use App\Http\Helpers\DatabaseHelper;
-use App\Http\Helpers\FichierHelper;
-use App\Repositories\V1\SocieteRepository;
+use App\Repositories\V1\Contracts\SocieteRepository;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Log;
 use App\Utils\FileManager;
 
 class SocieteServiceDefault implements SocieteService
@@ -29,7 +28,7 @@ class SocieteServiceDefault implements SocieteService
         $file = $data['logo'];
         if (isset($file)) {
             $societeName = $raison_sociale_concatene . '_' . $societe->id;
-            $fileName = FileManager::saveOwned($file, $societeName, FileManager::LOGO_TYPE);
+            $fileName = FileManager::saveFile($file, "$societeName/logos");
             $societe->logo = $fileName;
             $societe = $this->societeRepository->update($societe->id, ['logo' => $societe->logo]);
         }
@@ -45,5 +44,10 @@ class SocieteServiceDefault implements SocieteService
     public function getSocieteById(int $id)
     {
         return $this->societeRepository->find($id);
+    }
+
+    public function getSocietes(array $filters, int $size, int $page)
+    {
+        return $this->societeRepository->all($filters, $size, $page);
     }
 }
