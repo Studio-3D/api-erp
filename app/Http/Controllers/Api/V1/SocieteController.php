@@ -2,21 +2,13 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Models\User;
-use App\Models\Societe;
 use App\Utils\FilterUtils;
 use App\Utils\PaginationUtils;
 use Illuminate\Http\Request;
 use App\Events\NewSocieteEvent;
 use App\Http\Helpers\RoleHelper;
-use App\Http\Helpers\FichierHelper;
 use App\Http\Controllers\Controller;
-use App\Http\Helpers\DatabaseHelper;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Config;
 use App\Http\Requests\StoreSocieteRequest;
-use App\Http\Requests\UpdateSocieteRequest;
 
 use App\Services\V1\Contracts\SocieteService;
 
