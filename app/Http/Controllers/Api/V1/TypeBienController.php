@@ -29,22 +29,6 @@ class TypeBienController extends Controller
 
     }
 
-    public function get_typeBiensByProjet($projet_id)
-    {
-        if (Auth::guard('api')->check()) {
-            DatabaseHelper::Config();
-
-            $typebiens = TypeBien::on('temp')
-            ->orderBy('created_at', 'desc')
-            ->where('projet_id', $projet_id)
-            ->get();
-            return response()->json(['typeBiens' => $typebiens]);
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
-
-    }
-
     public function index(Request $request)
     {
         if (Auth::guard('api')->check()) {
@@ -78,6 +62,50 @@ class TypeBienController extends Controller
                 'typeBiens' => $typeBiens,
                 'pagination' => $pagination,
             ], 200);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    public function indexByProjet(Request $request, $projet_id)
+    {
+        if (Auth::guard('api')->check()) {
+            $size = $request->input('size', null);
+            $page = $request->input('page', null);
+
+            DatabaseHelper::Config();
+
+            $query = TypeBien::on('temp')->where('projet_id', $projet_id);
+            
+            if ($request->filled('type')) {
+                $query->where('type', 'like', '%' . $request->input('type') . '%');
+            }
+
+            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+
+                $typeBiens = $query->orderBy('created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
+
+                $pagination = [
+                    'currentPage' => $typeBiens->currentPage(),
+                    'totalItems' => $typeBiens->total(),
+                    'totalPages' => $typeBiens->lastPage(),
+                ];
+
+                $typeBiens = $typeBiens->items();
+
+                return response()->json([
+                    'typeBiens' => $typeBiens,
+                    'pagination' => $pagination,
+                ], 200);
+            } else {
+                // Return all results if pagination parameters are not provided or invalid
+                $typeBiens = $query->orderBy('created_at', 'desc')
+                    ->get();
+
+                return response()->json(['typeBiens' => $typeBiens], 200);
+            }
+
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -222,40 +250,7 @@ class TypeBienController extends Controller
 
     }
 
-    public function indexByProjet(Request $request, $projet_id)
-    {
-        if (Auth::guard('api')->check()) {
-            $size = $request->input('size', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
-            DatabaseHelper::Config();
-
-            $query = TypeBien::on('temp')->where('projet_id', $projet_id);
-
-            
-
-            if ($request->filled('type')) {
-                $query->where('type', 'like', '%' . $request->input('type') . '%');
-            }
-
-            $typeBiens = $query->orderBy('created_at', 'desc')
-                ->paginate($size, ['*'], 'page', $page);
-
-            $pagination = [
-                'currentPage' => $typeBiens->currentPage(),
-                'totalItems' => $typeBiens->total(),
-                'totalPages' => $typeBiens->lastPage(),
-            ];
-
-            $typeBiens = $typeBiens->items();
-
-            return response()->json([
-                'typeBiens' => $typeBiens,
-                'pagination' => $pagination,
-            ], 200);
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
+    
 
     
 

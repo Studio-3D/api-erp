@@ -54,22 +54,54 @@ class VueController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-
-    public function get_vuesByProjet($projet_id)
+    
+    public function indexByProjet(Request $request, $projet_id)
     {
         if (Auth::guard('api')->check()) {
+            // Default values for pagination null si non pas envoyer avec la raquete
+            $size = $request->input('size', null);
+            $page = $request->input('page', null);
+
             DatabaseHelper::Config();
 
-            $vues = Vue::on('temp')
-            ->orderBy('created_at', 'desc')
-            ->where('projet_id', $projet_id)
-            ->get();
-            return response()->json(['vues' => $vues]);
+            $query = Vue::on('temp')->where('projet_id', $projet_id);
+
+            if ($request->filled('vue')) {
+                $query->where('vue', 'like', '%' . $request->input('vue') . '%');
+            }
+
+            // Check if pagination parameters are provided and valid
+            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+                // Paginate the query results
+                $vues = $query->orderBy('created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
+
+                $pagination = [
+                    'currentPage' => $vues->currentPage(),
+                    'totalItems' => $vues->total(),
+                    'totalPages' => $vues->lastPage(),
+                ];
+
+                $vuesItems = $vues->items();
+
+                // Return the response with pagination
+                return response()->json([
+                    'vues' => $vuesItems,
+                    'pagination' => $pagination,
+                ], 200);
+            } else {
+                // Return all results if pagination parameters are not provided or invalid
+                $vues = $query->orderBy('created_at', 'desc')
+                    ->get();
+
+                return response()->json(['vues' => $vues], 200);
+            }
         }
 
+        // Return unauthorized error if user is not authenticated
         return response()->json(['error' => 'Unauthorized'], 401);
-
     }
+
 
     /**
      * Show the form for creating a new resource.
@@ -176,39 +208,7 @@ class VueController extends Controller
        
     }
 
-    public function indexByProjet(Request $request, $projet_id)
-    {
-        if (Auth::guard('api')->check()) {
-            $size = $request->input('size', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
-            DatabaseHelper::Config();
-
-            $query = Vue::on('temp')->where('projet_id', $projet_id);
-
-            
-            if ($request->filled('vue')) {
-                $query->where('vue', 'like', '%' . $request->input('vue') . '%');
-            }
-
-            $vues = $query->orderBy('created_at', 'desc')
-                ->paginate($size, ['*'], 'page', $page);
-
-            $pagination = [
-                'currentPage' => $vues->currentPage(),
-                'totalItems' => $vues->total(),
-                'totalPages' => $vues->lastPage(),
-            ];
-
-            $vues = $vues->items();
-
-            return response()->json([
-                'vues' => $vues,
-                'pagination' => $pagination,
-            ], 200);
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
+    
 
 
 }
