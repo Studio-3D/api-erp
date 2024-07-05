@@ -102,7 +102,6 @@ class VueController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-
     /**
      * Show the form for creating a new resource.
      */
