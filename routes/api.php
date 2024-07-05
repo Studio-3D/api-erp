@@ -1,16 +1,21 @@
 <?php
 
-use App\Http\Controllers\Api\V1\SocieteController as V1SocieteController;
-use App\Http\Controllers\Api\V1\UserController as V1UserController;
 use App\Http\Controllers\Api\V1\BanqueController as V1BanqueController;
-use App\Http\Controllers\Api\V1\TypeProjetController as V1TypeProjetController;
-use App\Http\Controllers\Api\V1\TypeBienController as V1TypeBienController;
-use App\Http\Controllers\Api\V1\VueController as V1VueController;
-use App\Http\Controllers\Api\V1\TypologieController as V1TypologieController;
-use App\Http\Controllers\Api\V1\TypeFreinController as V1TypeFreinController;
-use App\Http\Controllers\Api\V1\SourceController as V1SourceController;
+use App\Http\Controllers\Api\V1\BlocController as V1BlocController;
 use App\Http\Controllers\Api\V1\PartenaireController as V1PartenaireController;
 use App\Http\Controllers\Api\V1\ProjetController as V1ProjetController;
+use App\Http\Controllers\Api\V1\SocieteController as V1SocieteController;
+use App\Http\Controllers\Api\V1\SourceController as V1SourceController;
+use App\Http\Controllers\Api\V1\TrancheController as V1TrancheController;
+use App\Http\Controllers\Api\V1\TypeBienController as V1TypeBienController;
+use App\Http\Controllers\Api\V1\TypeFreinController as V1TypeFreinController;
+use App\Http\Controllers\Api\V1\TypeProjetController as V1TypeProjetController;
+use App\Http\Controllers\Api\V1\TypologieController as V1TypologieController;
+use App\Http\Controllers\Api\V1\UserController as V1UserController;
+use App\Http\Controllers\Api\V1\VueController as V1VueController;
+use App\Http\Controllers\Api\V1\BienController as V1BienController;
+use App\Http\Controllers\Api\V1\ImmeubleController as V1ImmeubleController;
+use App\Http\Controllers\Api\V1\CompositionBienController as V1CompositionBienController;
 use App\Http\Controllers\AquereurController;
 use App\Http\Controllers\AvanceController;
 use App\Http\Controllers\BanqueController;
@@ -42,6 +47,7 @@ use App\Http\Controllers\TypologieController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\VisiteController;
 use App\Http\Controllers\VueController;
+use App\Http\Controllers\ActualiteController;
 use App\Http\Controllers\WhatsApp\WhatsAppController;
 use Illuminate\Support\Facades\Route;
 
@@ -77,13 +83,18 @@ Route::middleware('auth:api')->group(function () {
         // l'API typeProjets
         Route::resource('typeProjets', V1TypeProjetController::class);
         // l'API typeBiens
-        Route::resource('typeBiens',V1TypeBienController::class);
+        Route::resource('typeBiens', V1TypeBienController::class);
+        Route::get('get_typeBiensByProjet/{id}', [V1TypeBienController::class, 'get_typeBiensByProjet'])->name('get_typeBiensByProjet');
+
         //l'API banques
         Route::resource('banques', V1BanqueController::class);
         //l'API VUES
         Route::resource('vues', V1VueController::class);
+        Route::get('get_vuesByProjet/{id}', [V1VueController::class, 'get_vuesByProjet'])->name('get_vuesByProjet');
         //l'API Typologie
         Route::resource('typologies', V1TypologieController::class);
+        Route::get('get_typologiesByProjet/{id}', [V1TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');
+
         //l'API Typefrins
         Route::resource('typefreins', V1TypeFreinController::class);
         //l'API source
@@ -92,8 +103,31 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('partenaires', V1PartenaireController::class);
         //l'API partenare
         Route::resource('projets', V1ProjetController::class);
-
-    });
+        //l'API tranches
+        Route::resource('tranches', V1TrancheController::class);
+        Route::get('getTranchesByProjet/{id}', [V1TrancheController::class, 'getTranchesByProjet'])->name('getTranchesByProjet');
+        //l'API blocs
+        Route::resource('blocs', V1BlocController::class);
+        Route::get('getBlocsByTranchepaginate', [V1BlocController::class, 'getBlocsByTranchepaginate'])->name('getBlocsByTranchepaginate');
+        Route::get('getBlocsByProjet/{id}', [V1BlocController::class, 'getBlocsByProjet'])->name('getBlocsByProjet');
+        Route::get('getBlocsByTranche/{id}', [V1BlocController::class, 'getBlocsByTranche'])->name('getBlocsByTranche');
+        
+        //l'API immeubles
+        Route::resource('immeubles', V1ImmeubleController::class);
+        Route::get('getImmeublesByTranchepaginate', [V1ImmeubleController::class, 'getImmeublesByTranchepaginate'])->name('getImmeublesByTranchepaginate');
+        Route::get('getImmeublesByBlocpaginate', [V1ImmeubleController::class, 'getImmeublesByBlocpaginate'])->name('getImmeublesByBlocpaginate');
+        Route::get('getImmeublesByBloc/{id}', [V1ImmeubleController::class, 'getImmeublesByBloc'])->name('getImmeublesByBloc');
+        Route::get('getImmeublesByProjet/{id}', [V1ImmeubleController::class, 'getImmeublesByProjet'])->name('getImmeublesByProjet');
+        Route::get('getImmeublesByTranche/{id}', [V1ImmeubleController::class, 'getImmeublesByTranche'])->name('getImmeublesByTranche');
+        //l'API biens
+        Route::resource('biens', V1BienController::class);
+        Route::get('getBiensByTranchepaginate', [V1BienController::class, 'getBiensByTranchepaginate'])->name('getBiensByTranchepaginate');
+        Route::get('getBiensByBlocpaginate', [V1BienController::class, 'getBiensByBlocpaginate'])->name('getBiensByBlocpaginate');
+        Route::get('getBiensByImmeublepaginate', [V1BienController::class, 'getBiensByBlocpaginate'])->name('getBiensByBlocpaginate');
+        //l'API compositionbiens
+        Route::resource('compositionBiens', V1CompositionBienController::class);
+        
+});
 
     Route::post('upload-excel-data', [ExcelDataController::class, 'UploadDataExcel'])->name('upload-excel-data');
     Route::post('testfunction', [ExcelDataController::class, 'testfunction'])->name('upload-excel-data');
@@ -119,6 +153,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('logout', [UserController::class, 'logout'])->name('logout');
     Route::post('addUserProjet/{id}', [UserController::class, 'addUserProjet'])->name('addUserProjet');
     Route::get('get_users', [UserController::class, 'get_users'])->name('get_users');
+    Route::get('get_commerciaux', [UserController::class, 'get_commerciaux'])->name('get_users');
     Route::post('sendEmail', [UserController::class, 'sendEmail']);
     Route::post('resendEmail', [UserController::class, 'resendEmail']);
 
@@ -274,7 +309,7 @@ Route::middleware('auth:api')->group(function () {
     Route::put('valideAvance/{id}', [AvanceController::class, 'valideAvance'])->name('valideAvance');
     Route::put('refuseAvance/{id}', [AvanceController::class, 'refuseAvance'])->name('refuseAvance');
     Route::get('getAvances_by_Reservation/{reservation_id}', [AvanceController::class, 'getAvances_by_Reservation'])->name('getAvances_by_Reservation');
-    Route::get('historiques_avance/{id}', [AvanceController::class, 'historiques_avance'])->name('');
+    Route::get('historiques_avance/{date}/{id}', [AvanceController::class, 'historiques_avance'])->name('');
     Route::get('get_notif_avances_att_validation/{projet_id}', [AvanceController::class, 'get_notif_avances_att_validation'])->name('');
     Route::get('avances_by_etat/{projet_id}/{etat}', [AvanceController::class, 'get_avances_by_etat'])->name('');
     Route::put('traiter_avance/{id}', [AvanceController::class, 'traiter_avance'])->name('');
@@ -289,7 +324,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getFileUsingReservationId/{reservation_id}', [PiecesJointeController::class, 'getFileUsingReservationId'])->name('getFileUsingReservationId');
     Route::post('scanner_file', [PiecesJointeController::class, 'scanner_file'])->name('scanner_file');
     Route::get('files_docs/{docs}', [PiecesJointeController::class, 'files_docs'])->name('files_docs');
-
 
     /*************************************Reservation***************************** */
     Route::resource('reservation', ReservationController::class);
@@ -369,6 +403,10 @@ Route::middleware('auth:api')->group(function () {
     Route::get('get_notif_demande_pre_remboursement/{projet_id}', [RemboursementController::class, 'get_notif_demande_pre_remboursement'])->name('');
     Route::post('traiter_accuse/{id}', [RemboursementController::class, 'traiter_accuse'])->name('');
     Route::post('traiter_decaissement/{id}', [RemboursementController::class, 'traiter_decaissement'])->name('');
+    Route::get('get_remboursements_dos_transfert/{projet_id}', [RemboursementController::class, 'get_remboursements_dos_transfert'])->name('');
 
-});
+     /*************************************Actualites***************************** */
+     Route::get('historiques/{date}/{id}/{type}', [ActualiteController::class, 'get_historique'])->name('');
+     Route::get('actualites/{projet_id}/{user_id}/{de_date}/{a_date}', [ActualiteController::class, 'index'])->name('');
+    });
 Route::get('sendResetPasswordEmail', [UserController::class, 'sendResetPasswordEmail']);

@@ -36,10 +36,7 @@ class UpdateTrancheRequest extends FormRequest
             'nbre_blocs' => 'integer ',
             'nbre_immeubles' => 'integer',
             'nbre_biens' => 'integer',
-            'nom' => [Rule::unique('temp.' . $DatabaseName . '.tranches', 'nom')->where(function ($query) {
-                $query->where('nom', $this->nom)
-                    ->where('projet_id', $this->projet_id);})->ignore($this->tranche)],
-        ];
+            ];
     }
 
     public function messages(): array

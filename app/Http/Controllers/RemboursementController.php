@@ -332,6 +332,44 @@ class RemboursementController extends Controller
         } else  return response()->json(['error'=>'Unauthorized'], 401);
     }
 
+    public function get_remboursements_dos_transfert($projet_id,Request $request){
+        DatabaseHelper::Config();
+        $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
+        $page = $request->input('page', 1);
+
+        if (RoleHelper::AdminSup()) {
+            $dossiers= Remboursement::on('temp')->join('desistements', 'desistements.id', '=', 'remboursements.desistement_id')
+            ->join('users', 'users.id', '=', 'desistements.user_id')
+            ->join('reservations as dossier_transfert', 'dossier_transfert.id', '=', 'remboursements.dossier_id_transfert')
+            ->select('remboursements.reservation_id','remboursements.created_at','remboursements.montant_transfert','desistements.user_id','users.name','users.prenom','dossier_transfert.code_reservation','dossier_transfert.id as id_transfer')
+            ->where('desistements.projet_id',$projet_id)->where('remboursements.etat',1)
+            ->where(function ($query) {
+                $query->where('remboursements.mode_rembourse', 'transfert')
+                    ->orwhere('remboursements.mode_rembourse', 'transfert_rem_apres_vente')
+                    ->orwhere('remboursements.mode_rembourse', 'transfert_rem_direct')
+                ;})->paginate($perPage, ['*'], 'page', $page);
+                return response()->json(['dossiers'=>$dossiers]);
+        }elseif(RoleHelper::Com()){
+            $user = Auth::user();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+
+            $dossiers= Remboursement::on('temp')->join('desistements', 'desistements.id', '=', 'remboursements.desistement_id')
+                ->join('users', 'users.id', '=', 'desistements.user_id')
+                ->join('reservations as dossier_transfert', 'dossier_transfert.id', '=', 'remboursements.dossier_id_transfert')
+                ->select('remboursements.reservation_id','remboursements.created_at','remboursements.montant_transfert','desistements.user_id','users.name','users.prenom','dossier_transfert.code_reservation','dossier_transfert.id as id_transfer')
+                ->where('desistements.projet_id',$projet_id) ->where('desistements.user_id', $userAuth->value('id'))->where('remboursements.etat',1)
+                ->where(function ($query) {
+                    $query->where('remboursements.mode_rembourse', 'transfert')
+                        ->orwhere('remboursements.mode_rembourse', 'transfert_rem_apres_vente')
+                        ->orwhere('remboursements.mode_rembourse', 'transfert_rem_direct')
+                    ;})->paginate($perPage, ['*'], 'page', $page);
+                    return response()->json(['dossiers'=>$dossiers]);
+
+
+
+        } else  return response()->json(['error'=>'Unauthorized'], 401);
+    }
+
 
 
     /**

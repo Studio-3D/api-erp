@@ -62,8 +62,8 @@ class StoreBienRequest extends FormRequest
                                 ->where('immeuble_id', $this->immeuble_id);
                         }
                         })],
-            'vue_id' => 'integer',
-            'typologie_id'=> 'integer',
+            'vue_id' => 'integer|nullable',
+            'typologie_id'=> 'integer|nullable',
 
 
         ];
