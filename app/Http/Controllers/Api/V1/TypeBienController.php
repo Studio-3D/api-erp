@@ -83,7 +83,7 @@ class TypeBienController extends Controller
                 $typeBiens = $typeBiens->items();
 
                 return response()->json([
-                    'typeBiens' => $typeBiens,
+                    'data' => $typeBiens,
                     'pagination' => $pagination,
                 ], 200);
             } else {

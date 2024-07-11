@@ -69,9 +69,11 @@ class BlocController extends Controller
 
             $query = Bloc::on('temp')->where('projet_id', $projet_id);
 
-
             if ($request->filled('nom')) {
                 $query->where('nom', 'like', '%' . $request->input('nom') . '%');
+            }
+            if ($request->filled('tranche_id')) {
+                $query->where('tranche_id', $request->input('tranche_id'));
             }
             if ($request->filled('tranche')) {
                 $query->whereHas('tranche', function ($subQuery) use ($request) {
@@ -228,9 +230,5 @@ class BlocController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-
-
-    
-
 
 }

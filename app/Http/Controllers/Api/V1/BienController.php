@@ -165,6 +165,15 @@ class BienController extends Controller
             if ($request->filled('superficie_max')) {
                 $query->where('superficie_habitable', '<=', $request->input('superficie_max'));
             }
+            if ($request->filled('tranche_id')) {
+                $query->where('tranche_id', $request->input('tranche_id'));
+            }
+            if ($request->filled('bloc_id')) {
+                $query->where('bloc_id', $request->input('bloc_id'));
+            }
+            if ($request->filled('immeuble_id')) {
+                $query->where('immeuble_id', $request->input('immeuble_id'));
+            }
             if ($request->filled('tranche')) {
                 $query->whereHas('tranche', function ($subQuery) use ($request) {
                     $subQuery->where('nom', $request->input('tranche'));

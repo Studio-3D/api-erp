@@ -86,7 +86,7 @@ class VueController extends Controller
 
                 // Return the response with pagination
                 return response()->json([
-                    'vues' => $vuesItems,
+                    'data' => $vuesItems,
                     'pagination' => $pagination,
                 ], 200);
             } else {

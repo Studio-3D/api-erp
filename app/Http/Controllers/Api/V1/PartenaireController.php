@@ -91,7 +91,7 @@ class PartenaireController extends Controller
                 $partenaires = $partenaires->items();
 
                 return response()->json([
-                    'partenaires' => $partenaires,
+                    'data' => $partenaires,
                     'pagination' => $pagination,
                 ], 200);
             } else {

@@ -85,7 +85,7 @@ class TypologieController extends Controller
                 $typologies = $typologies->items();
 
                 return response()->json([
-                    'typologies' => $typologies,
+                    'data' => $typologies,
                     'pagination' => $pagination,
                 ], 200);
             } else {
