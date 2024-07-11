@@ -37,6 +37,12 @@ class ImmeubleController extends Controller
             if ($request->filled('nom')) {
                 $query->where('nom', 'like', '%' . $request->input('nom') . '%');
             }
+            if ($request->filled('tranche_id')) {
+                $query->where('tranche_id', $request->input('tranche_id'));
+            }
+            if ($request->filled('bloc_id')) {
+                $query->where('bloc_id', $request->input('bloc_id'));
+            }
             if ($request->filled('tranche')) {
                 $query->whereHas('tranche', function ($subQuery) use ($request) {
                     $subQuery->where('nom', $request->input('tranche'));
@@ -63,6 +69,59 @@ class ImmeubleController extends Controller
                 'data' => $immeubles,
                 'pagination' => $pagination,
             ], 200);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    public function indexByProjet(Request $request, $projet_id)
+    {
+        if (Auth::guard('api')->check()) {
+            $size = $request->input('size', null);
+            $page = $request->input('page', null);
+            DatabaseHelper::Config();
+
+            $query = Immeuble::on('temp')->where('projet_id', $projet_id);
+
+            
+            if ($request->filled('nom')) {
+                $query->where('nom', 'like', '%' . $request->input('nom') . '%');
+            }
+            if ($request->filled('tranche')) {
+                $query->whereHas('tranche', function ($subQuery) use ($request) {
+                    $subQuery->where('nom', $request->input('tranche'));
+                });
+            }
+            if ($request->filled('bloc')) {
+                $query->whereHas('bloc', function ($subQuery) use ($request) {
+                    $subQuery->where('nom', $request->input('bloc'));
+                });
+            }
+            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+
+                $immeuble = $query->orderBy('created_at', 'desc')
+                ->paginate($size, ['*'], 'page', $page);
+
+                $pagination = [
+                    'currentPage' => $immeuble->currentPage(),
+                    'totalItems' => $immeuble->total(),
+                    'totalPages' => $immeuble->lastPage(),
+                ];
+
+                $immeuble = $immeuble->items();
+
+                return response()->json([
+                    'data' => $immeuble,
+                    'pagination' => $pagination,
+                ], 200);
+            } else {
+                // Return all results if pagination parameters are not provided or invalid
+                $immeubles = $query->orderBy('created_at', 'desc')
+                    ->get();
+
+                return response()->json(['immeubles' => $immeubles], 200);
+            }
+            
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -193,180 +252,7 @@ class ImmeubleController extends Controller
         }
     }
 
-    public function getImmeublesByProjet($projet_id){
-        if (RoleHelper::ACSup()) {
-            DatabaseHelper::Config();
-            $immeubles = Immeuble::on('temp')->where('projet_id', $projet_id)->get();
-            return response()->json(['immeubles' => $immeubles], 200);
+    
+    
 
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
     }
-    public function getImmeublesByTranchepaginate(Request $request){
-        if (RoleHelper::ACSup()) {
-            $size = $request->input('size', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
-            $tranche_id = $request->input('tranche_id');
-            DatabaseHelper::Config();
-
-            $query = Immeuble::on('temp');
-
-            if ($tranche_id) {
-                $query->where('tranche_id', $tranche_id);
-            }
-
-            if ($request->filled('nom')) {
-                $query->where('nom', 'like', '%' . $request->input('nom') . '%');
-            }
-            if ($request->filled('tranche')) {
-                $query->whereHas('tranche', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('tranche'));
-                });
-            }
-            if ($request->filled('bloc')) {
-                $query->whereHas('bloc', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('bloc'));
-                });
-            }
-
-            $immeubles = $query->orderBy('created_at', 'desc')
-                ->paginate($size, ['*'], 'page', $page);
-
-            $pagination = [
-                'currentPage' => $immeubles->currentPage(),
-                'totalItems' => $immeubles->total(),
-                'totalPages' => $immeubles->lastPage(),
-            ];
-
-            $immeubles = $immeubles->items();
-
-            return response()->json([
-                'data' => $immeubles,
-                'pagination' => $pagination,
-            ], 200);
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
-
-
-    public function getImmeublesByTranche($tranche_id){
-        if (RoleHelper::ACSup()) {
-            DatabaseHelper::Config();
-            $immeubles = Immeuble::on('temp')->where('tranche_id', $tranche_id)->get();
-            return response()->json(['immeubles' => $immeubles], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-    }
-    public function getImmeublesByBlocpaginate(Request $request){
-        if (RoleHelper::ACSup()) {
-            $size = $request->input('size', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
-            $bloc_id = $request->input('bloc_id');
-            DatabaseHelper::Config();
-
-            $query = Immeuble::on('temp');
-
-            if ($bloc_id) {
-                $query->where('bloc_id', $bloc_id);
-            }
-
-            if ($request->filled('nom')) {
-                $query->where('nom', 'like', '%' . $request->input('nom') . '%');
-            }
-            if ($request->filled('tranche')) {
-                $query->whereHas('tranche', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('tranche'));
-                });
-            }
-            if ($request->filled('bloc')) {
-                $query->whereHas('bloc', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('bloc'));
-                });
-            }
-
-            $immeubles = $query->orderBy('created_at', 'desc')
-                ->paginate($size, ['*'], 'page', $page);
-
-            $pagination = [
-                'currentPage' => $immeubles->currentPage(),
-                'totalItems' => $immeubles->total(),
-                'totalPages' => $immeubles->lastPage(),
-            ];
-
-            $immeubles = $immeubles->items();
-
-            return response()->json([
-                'data' => $immeubles,
-                'pagination' => $pagination,
-            ], 200);
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
-
-
-    public function getImmeublesByBloc($bloc_id){
-        if (RoleHelper::AdminSup()) {
-            DatabaseHelper::Config();
-            $immeubles = Immeuble::on('temp')->where('bloc_id', $bloc_id)->get();
-            return response()->json(['immeubles' => $immeubles], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-    }
-
-    public function indexByProjet(Request $request, $projet_id)
-    {
-        if (Auth::guard('api')->check()) {
-            $size = $request->input('size', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
-            DatabaseHelper::Config();
-
-            $query = Immeuble::on('temp')->where('projet_id', $projet_id);
-
-            
-            if ($request->filled('nom')) {
-                $query->where('nom', 'like', '%' . $request->input('nom') . '%');
-            }
-            if ($request->filled('tranche')) {
-                $query->whereHas('tranche', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('tranche'));
-                });
-            }
-            if ($request->filled('bloc')) {
-                $query->whereHas('bloc', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('bloc'));
-                });
-            }
-
-            $immeuble = $query->orderBy('created_at', 'desc')
-            ->paginate($size, ['*'], 'page', $page);
-
-        // Récupérer et afficher le journal des requêtes
-
-        $pagination = [
-            'currentPage' => $immeuble->currentPage(),
-            'totalItems' => $immeuble->total(),
-            'totalPages' => $immeuble->lastPage(),
-        ];
-
-        $immeuble = $immeuble->items();
-
-        return response()->json([
-            'data' => $immeuble,
-            'pagination' => $pagination,
-        ], 200);
-    }
-
-    return response()->json(['error' => 'Unauthorized'], 401);
-}
-
-}

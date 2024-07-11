@@ -126,6 +126,115 @@ class BienController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
+    public function indexByProjet(Request $request, $projet_id)
+    {
+        if (Auth::guard('api')->check()) {
+            $size = $request->input('size', null);
+            $page = $request->input('page', null);
+            DatabaseHelper::Config();
+
+            $query = Bien::on('temp')->where('projet_id', $projet_id);
+
+            // Appliquer les filtres si présents
+            if ($request->filled('propriete_dite_bien')) {
+                $query->where('propriete_dite_bien', 'like', '%' . $request->input('propriete_dite_bien') . '%');
+            }
+
+            if ($request->filled('niveau')) {
+                $query->where('niveau', 'like', '%' . $request->input('niveau') . '%');
+            }
+            if ($request->filled('orientation')) {
+                $query->where('orientation', 'like', '%' . $request->input('orientation') . '%');
+            }
+
+            if ($request->filled('etat')) {
+                $query->where('etat', 'like', '%' . $request->input('etat') . '%');
+            }
+            if ($request->filled('prix_min')) {
+                $query->where('prix', '>=', $request->input('prix_min'));
+            }
+
+            if ($request->filled('prix_max')) {
+                $query->where('prix', '<=', $request->input('prix_max'));
+            }
+
+            if ($request->filled('superficie_min')) {
+                $query->where('superficie_habitable', '>=', $request->input('superficie_min'));
+            }
+
+            if ($request->filled('superficie_max')) {
+                $query->where('superficie_habitable', '<=', $request->input('superficie_max'));
+            }
+            if ($request->filled('tranche_id')) {
+                $query->where('tranche_id', $request->input('tranche_id'));
+            }
+            if ($request->filled('bloc_id')) {
+                $query->where('bloc_id', $request->input('bloc_id'));
+            }
+            if ($request->filled('immeuble_id')) {
+                $query->where('immeuble_id', $request->input('immeuble_id'));
+            }
+            if ($request->filled('tranche')) {
+                $query->whereHas('tranche', function ($subQuery) use ($request) {
+                    $subQuery->where('nom', $request->input('tranche'));
+                });
+            }
+            if ($request->filled('bloc')) {
+                $query->whereHas('bloc', function ($subQuery) use ($request) {
+                    $subQuery->where('nom', $request->input('bloc'));
+                });
+            }
+            if ($request->filled('immeuble')) {
+                $query->whereHas('immeuble', function ($subQuery) use ($request) {
+                    $subQuery->where('nom', $request->input('immeuble'));
+                });
+            }
+            if ($request->filled('type')) {
+                $query->whereHas('typeBien', function ($subQuery) use ($request) {
+                    $subQuery->where('type', $request->input('type'));
+                });
+            }
+
+            if ($request->filled('vue')) {
+                $query->whereHas('vue', function ($subQuery) use ($request) {
+                    $subQuery->where('vue', $request->input('vue'));
+                });
+            }
+            if ($request->filled('typologie')) {
+                $query->whereHas('typologie', function ($subQuery) use ($request) {
+                    $subQuery->where('typologie', $request->input('typologie'));
+                });
+            }
+            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+
+                $biens = $query->orderBy('created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
+
+
+                $pagination = [
+                    'currentPage' => $biens->currentPage(),
+                    'totalItems' => $biens->total(),
+                    'totalPages' => $biens->lastPage(),
+                ];
+
+                $biens = $biens->items();
+
+                return response()->json([
+                    'data' => $biens,
+                    'pagination' => $pagination,
+                ], 200);
+            } else {
+                // Return all results if pagination parameters are not provided or invalid
+                $biens = $query->orderBy('created_at', 'desc')
+                    ->get();
+
+                return response()->json(['biens' => $biens], 200);
+            }
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
     public function biens_proposition(Request $request, $projet_id)
     {
 
@@ -481,340 +590,7 @@ class BienController extends Controller
         }
     }
 
-    public function getBiensByProjet($projet_id)
-    {
-
-        if (RoleHelper::ACSup()) {
-            DatabaseHelper::Config();
-            $biens = Bien::on('temp')->where('projet_id', $projet_id)->get();
-            return response()->json(['biens' => $biens], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-    }
-    public function getBiensByTranche($tranche_id)
-    {
-        if (RoleHelper::AdminSup()) {
-            DatabaseHelper::Config();
-            $biens = Bien::on('temp')->where('tranche_id', $tranche_id)->get();
-            return response()->json(['biens' => $biens], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-    }
-    public function getBiensByTranchepaginate(Request $request)
-    {
-        if (Auth::guard('api')->check()) {
-            $size = $request->input('size', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
-            $tranche_id = $request->input('tranche_id');
-            DatabaseHelper::Config();
-
-            $query = Bien::on('temp');
-
-            if ($tranche_id) {
-                $query->where('tranche_id', $tranche_id);
-            }
-
-            if ($request->filled('propriete_dite_bien')) {
-                $query->where('propriete_dite_bien', 'like', '%' . $request->input('propriete_dite_bien') . '%');
-            }
-           
-            if ($request->filled('niveau')) {
-                $query->where('niveau', 'like', '%' . $request->input('niveau') . '%');
-            }
-            if ($request->filled('orientation')) {
-                $query->where('orientation', 'like', '%' . $request->input('orientation') . '%');
-            }
-           
-            if ($request->filled('etat')) {
-                $query->where('etat', 'like', '%' . $request->input('etat') . '%');
-            }
-            if ($request->filled('prix_min')) {
-                $query->where('prix', '>=', $request->input('prix_min'));
-            }
-            
-            if ($request->filled('prix_max')) {
-                $query->where('prix', '<=', $request->input('prix_max'));
-            }
-            
-            if ($request->filled('superficie_min')) {
-                $query->where('superficie_habitable', '>=', $request->input('superficie_min'));
-            }
-            
-            if ($request->filled('superficie_max')) {
-                $query->where('superficie_habitable', '<=', $request->input('superficie_max'));
-            }
-            if ($request->filled('tranche')) {
-                $query->whereHas('tranche', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('tranche'));
-                });
-            }
-            if ($request->filled('bloc')) {
-                $query->whereHas('bloc', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('bloc'));
-                });
-            }
-            if ($request->filled('immeuble')) {
-                $query->whereHas('immeuble', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('immeuble'));
-                });
-            }
-            if ($request->filled('type')) {
-                $query->whereHas('typeBien', function ($subQuery) use ($request) {
-                    $subQuery->where('type', $request->input('type'));
-                });
-            }
-            
-            if ($request->filled('vue')) {
-                $query->whereHas('vue', function ($subQuery) use ($request) {
-                    $subQuery->where('vue', $request->input('vue'));
-                });
-            }
-            if ($request->filled('typologie')) {
-                $query->whereHas('typologie', function ($subQuery) use ($request) {
-                    $subQuery->where('typologie', $request->input('typologie'));
-                });
-            }
-
-            $biens = $query->orderBy('created_at', 'desc')
-                ->paginate($size, ['*'], 'page', $page);
-
-            $pagination = [
-                'currentPage' => $biens->currentPage(),
-                'totalItems' => $biens->total(),
-                'totalPages' => $biens->lastPage(),
-            ];
-
-            $biens = $biens->items();
-
-            return response()->json([
-                'data' => $biens,
-                'pagination' => $pagination,
-            ], 200);
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
-
-    public function getBiensByBloc($bloc_id)
-    {
-        if (RoleHelper::AdminSup()) {
-            DatabaseHelper::Config();
-            $biens = Bien::on('temp')->where('bloc_id', $bloc_id)->get();
-            return response()->json(['biens' => $biens], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-    }
-    public function getBiensByBlocpaginate(Request $request)
-    {
-        if (Auth::guard('api')->check()) {
-            $size = $request->input('size', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
-            $bloc_id = $request->input('bloc_id');
-            DatabaseHelper::Config();
-
-            $query = Bien::on('temp');
-
-            if ($bloc_id) {
-                $query->where('bloc_id', $bloc_id);
-            }
-
-            if ($request->filled('propriete_dite_bien')) {
-                $query->where('propriete_dite_bien', 'like', '%' . $request->input('propriete_dite_bien') . '%');
-            }
-           
-            if ($request->filled('niveau')) {
-                $query->where('niveau', 'like', '%' . $request->input('niveau') . '%');
-            }
-            if ($request->filled('orientation')) {
-                $query->where('orientation', 'like', '%' . $request->input('orientation') . '%');
-            }
-           
-            if ($request->filled('etat')) {
-                $query->where('etat', 'like', '%' . $request->input('etat') . '%');
-            }
-            if ($request->filled('prix_min')) {
-                $query->where('prix', '>=', $request->input('prix_min'));
-            }
-            
-            if ($request->filled('prix_max')) {
-                $query->where('prix', '<=', $request->input('prix_max'));
-            }
-            
-            if ($request->filled('superficie_min')) {
-                $query->where('superficie_habitable', '>=', $request->input('superficie_min'));
-            }
-            
-            if ($request->filled('superficie_max')) {
-                $query->where('superficie_habitable', '<=', $request->input('superficie_max'));
-            }
-            if ($request->filled('tranche')) {
-                $query->whereHas('tranche', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('tranche'));
-                });
-            }
-            if ($request->filled('bloc')) {
-                $query->whereHas('bloc', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('bloc'));
-                });
-            }
-            if ($request->filled('immeuble')) {
-                $query->whereHas('immeuble', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('immeuble'));
-                });
-            }
-            if ($request->filled('type')) {
-                $query->whereHas('typeBien', function ($subQuery) use ($request) {
-                    $subQuery->where('type', $request->input('type'));
-                });
-            }
-            
-            if ($request->filled('vue')) {
-                $query->whereHas('vue', function ($subQuery) use ($request) {
-                    $subQuery->where('vue', $request->input('vue'));
-                });
-            }
-            if ($request->filled('typologie')) {
-                $query->whereHas('typologie', function ($subQuery) use ($request) {
-                    $subQuery->where('typologie', $request->input('typologie'));
-                });
-            }
-
-            $biens = $query->orderBy('created_at', 'desc')
-                ->paginate($size, ['*'], 'page', $page);
-
-            $pagination = [
-                'currentPage' => $biens->currentPage(),
-                'totalItems' => $biens->total(),
-                'totalPages' => $biens->lastPage(),
-            ];
-
-            $biens = $biens->items();
-
-            return response()->json([
-                'data' => $biens,
-                'pagination' => $pagination,
-            ], 200);
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
-
-    public function getBiensByImmeuble($immeuble_id)
-    {
-        if (RoleHelper::AdminSup()) {
-            DatabaseHelper::Config();
-            $biens = Bien::on('temp')->where('immeuble_id', $immeuble_id)->get();
-            return response()->json(['biens' => $biens], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-    }
-    public function getBiensByImmeublepaginate(Request $request)
-    {
-        if (Auth::guard('api')->check()) {
-            $size = $request->input('size', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
-            $immeuble_id = $request->input('immeuble_id');
-            DatabaseHelper::Config();
-
-            $query = Bien::on('temp');
-
-            if ($immeuble_id) {
-                $query->where('immeuble_id', $immeuble_id);
-            }
-
-            if ($request->filled('propriete_dite_bien')) {
-                $query->where('propriete_dite_bien', 'like', '%' . $request->input('propriete_dite_bien') . '%');
-            }
-           
-            if ($request->filled('niveau')) {
-                $query->where('niveau', 'like', '%' . $request->input('niveau') . '%');
-            }
-            if ($request->filled('orientation')) {
-                $query->where('orientation', 'like', '%' . $request->input('orientation') . '%');
-            }
-           
-            if ($request->filled('etat')) {
-                $query->where('etat', 'like', '%' . $request->input('etat') . '%');
-            }
-            if ($request->filled('prix_min')) {
-                $query->where('prix', '>=', $request->input('prix_min'));
-            }
-            
-            if ($request->filled('prix_max')) {
-                $query->where('prix', '<=', $request->input('prix_max'));
-            }
-            
-            if ($request->filled('superficie_min')) {
-                $query->where('superficie_habitable', '>=', $request->input('superficie_min'));
-            }
-            
-            if ($request->filled('superficie_max')) {
-                $query->where('superficie_habitable', '<=', $request->input('superficie_max'));
-            }
-            if ($request->filled('tranche')) {
-                $query->whereHas('tranche', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('tranche'));
-                });
-            }
-            if ($request->filled('bloc')) {
-                $query->whereHas('bloc', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('bloc'));
-                });
-            }
-            if ($request->filled('immeuble')) {
-                $query->whereHas('immeuble', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('immeuble'));
-                });
-            }
-            if ($request->filled('type')) {
-                $query->whereHas('typeBien', function ($subQuery) use ($request) {
-                    $subQuery->where('type', $request->input('type'));
-                });
-            }
-            
-            if ($request->filled('vue')) {
-                $query->whereHas('vue', function ($subQuery) use ($request) {
-                    $subQuery->where('vue', $request->input('vue'));
-                });
-            }
-            if ($request->filled('typologie')) {
-                $query->whereHas('typologie', function ($subQuery) use ($request) {
-                    $subQuery->where('typologie', $request->input('typologie'));
-                });
-            }
-
-            $biens = $query->orderBy('created_at', 'desc')
-                ->paginate($size, ['*'], 'page', $page);
-
-            $pagination = [
-                'currentPage' => $biens->currentPage(),
-                'totalItems' => $biens->total(),
-                'totalPages' => $biens->lastPage(),
-            ];
-
-            $biens = $biens->items();
-
-            return response()->json([
-                'data' => $biens,
-                'pagination' => $pagination,
-            ], 200);
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
-
+    
     public function getBiensDispoByProjet($projet_id)
     {
         if (RoleHelper::AdminSup()) {
@@ -1006,96 +782,6 @@ class BienController extends Controller
         }
     }
 
-    public function indexByProjet(Request $request, $projet_id)
-    {
-        if (Auth::guard('api')->check()) {
-            $size = $request->input('size', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
-            DatabaseHelper::Config();
-
-            $query = Bien::on('temp')->where('projet_id', $projet_id);
-
-            // Appliquer les filtres si présents
-            if ($request->filled('propriete_dite_bien')) {
-                $query->where('propriete_dite_bien', 'like', '%' . $request->input('propriete_dite_bien') . '%');
-            }
-
-            if ($request->filled('niveau')) {
-                $query->where('niveau', 'like', '%' . $request->input('niveau') . '%');
-            }
-            if ($request->filled('orientation')) {
-                $query->where('orientation', 'like', '%' . $request->input('orientation') . '%');
-            }
-
-            if ($request->filled('etat')) {
-                $query->where('etat', 'like', '%' . $request->input('etat') . '%');
-            }
-            if ($request->filled('prix_min')) {
-                $query->where('prix', '>=', $request->input('prix_min'));
-            }
-
-            if ($request->filled('prix_max')) {
-                $query->where('prix', '<=', $request->input('prix_max'));
-            }
-
-            if ($request->filled('superficie_min')) {
-                $query->where('superficie_habitable', '>=', $request->input('superficie_min'));
-            }
-
-            if ($request->filled('superficie_max')) {
-                $query->where('superficie_habitable', '<=', $request->input('superficie_max'));
-            }
-            if ($request->filled('tranche')) {
-                $query->whereHas('tranche', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('tranche'));
-                });
-            }
-            if ($request->filled('bloc')) {
-                $query->whereHas('bloc', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('bloc'));
-                });
-            }
-            if ($request->filled('immeuble')) {
-                $query->whereHas('immeuble', function ($subQuery) use ($request) {
-                    $subQuery->where('nom', $request->input('immeuble'));
-                });
-            }
-            if ($request->filled('type')) {
-                $query->whereHas('typeBien', function ($subQuery) use ($request) {
-                    $subQuery->where('type', $request->input('type'));
-                });
-            }
-
-            if ($request->filled('vue')) {
-                $query->whereHas('vue', function ($subQuery) use ($request) {
-                    $subQuery->where('vue', $request->input('vue'));
-                });
-            }
-            if ($request->filled('typologie')) {
-                $query->whereHas('typologie', function ($subQuery) use ($request) {
-                    $subQuery->where('typologie', $request->input('typologie'));
-                });
-            }
-
-            $biens = $query->orderBy('created_at', 'desc')
-                ->paginate($size, ['*'], 'page', $page);
-
-
-            $pagination = [
-                'currentPage' => $biens->currentPage(),
-                'totalItems' => $biens->total(),
-                'totalPages' => $biens->lastPage(),
-            ];
-
-            $biens = $biens->items();
-
-            return response()->json([
-                'data' => $biens,
-                'pagination' => $pagination,
-            ], 200);
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
+    
 
 }

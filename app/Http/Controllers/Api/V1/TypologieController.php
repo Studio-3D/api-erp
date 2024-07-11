@@ -54,20 +54,49 @@ class TypologieController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-    public function get_typologiesByProjet($projet_id)
+    public function indexByProjet(Request $request, $projet_id)
     {
         if (Auth::guard('api')->check()) {
+            // Default values for pagination null si non pas envoyer avec la raquete
+            $size = $request->input('size', null);
+            $page = $request->input('page', null);
+
             DatabaseHelper::Config();
 
-            $typologies = Typologie::on('temp')
-                ->orderBy('created_at', 'desc')
-                ->where('projet_id', $projet_id)
-                ->get();
+            $query = Typologie::on('temp')->where('projet_id', $projet_id);
+
+            
+
+            if ($request->filled('typologie')) {
+                $query->where('typologie', 'like', '%' . $request->input('typologie') . '%');
+            }
+    
+            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+
+                $typologies = $query->orderBy('created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
+
+                $pagination = [
+                    'currentPage' => $typologies->currentPage(),
+                    'totalItems' => $typologies->total(),
+                    'totalPages' => $typologies->lastPage(),
+                ];
+
+                $typologies = $typologies->items();
+
+                return response()->json([
+                    'data' => $typologies,
+                    'pagination' => $pagination,
+                ], 200);
+            } else {
+            $typologies = $query->orderBy('created_at', 'desc')
+            ->get();
             return response()->json(['typologies' => $typologies]);
+
+            }
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
-
     }
 
     /**
@@ -171,38 +200,5 @@ class TypologieController extends Controller
        
     }
 
-    public function indexByProjet(Request $request, $projet_id)
-    {
-        if (Auth::guard('api')->check()) {
-            $size = $request->input('size', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
-            DatabaseHelper::Config();
-
-            $query = Typologie::on('temp')->where('projet_id', $projet_id);
-
-            
-
-            if ($request->filled('typologie')) {
-                $query->where('typologie', 'like', '%' . $request->input('typologie') . '%');
-            }
-
-            $typologies = $query->orderBy('created_at', 'desc')
-                ->paginate($size, ['*'], 'page', $page);
-
-            $pagination = [
-                'currentPage' => $typologies->currentPage(),
-                'totalItems' => $typologies->total(),
-                'totalPages' => $typologies->lastPage(),
-            ];
-
-            $typologies = $typologies->items();
-
-            return response()->json([
-                'typologies' => $typologies,
-                'pagination' => $pagination,
-            ], 200);
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
+    
 }
