@@ -49,6 +49,14 @@ class Reservation extends Model
     {
         return $this->hasMany(Avance::class,'reservation_id');
     }
+    public function rdv()
+    {
+        return $this->hasMany(Rendez_vous::class,'reservation_id');
+    }
+    public function compromis_vente()
+    {
+        return $this->hasOne(Compromis_vente::class,'reservation_id')->orderby('created_at','asc')->latest();
+    }
     public function first_avance()
     {
         return $this->hasOne(Avance::class,'reservation_id')->orderby('created_at','asc')->latest();

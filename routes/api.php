@@ -50,6 +50,8 @@ use App\Http\Controllers\VueController;
 use App\Http\Controllers\ActualiteController;
 use App\Http\Controllers\WhatsApp\WhatsAppController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\LivraisonController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -105,7 +107,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('projets/{idprojet}/partenaires', [V1PartenaireController::class, 'indexByProjet']);
         //l'API partenare
         Route::resource('projets', V1ProjetController::class);
-        
+
         //l'API tranches
         Route::resource('tranches', V1TrancheController::class);
         Route::get('projets/{idprojet}/tranches', [V1TrancheController::class, 'indexByProjet']);
@@ -355,6 +357,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('StatutFamilleEnum', [EnumController::class, 'StatutFamilleEnum_get'])->name('');
     Route::get('EtatBien', [EnumController::class, 'EtatBien_get'])->name('');
     Route::get('Enums_desistements', [EnumController::class, 'get_enums_desistements'])->name('');
+    Route::get('StatutRdv_Enum', [EnumController::class, 'StatutRdvEnum_get'])->name('');
+
 
     /************************NotificationController********************* */
     Route::get('get_relances_visites/{projet_id}', [NotificationController::class, 'get_relances_visites'])->name('');
@@ -405,5 +409,25 @@ Route::middleware('auth:api')->group(function () {
      /*************************************Actualites***************************** */
      Route::get('historiques/{date}/{id}/{type}', [ActualiteController::class, 'get_historique'])->name('');
      Route::get('actualites/{projet_id}/{user_id}/{de_date}/{a_date}', [ActualiteController::class, 'index'])->name('');
+     /***********************************Livraison*******************/
+                /*******rdv notaire*** */
+
+     Route::get('get_rdvs_reservation/{res_id}', [LivraisonController::class, 'get_rdvs_reservation'])->name('');
+     Route::put('update_rdv_reservation/{rdv_id}', [LivraisonController::class, 'update_rdv_reservation'])->name('');
+     Route::post('store_rdv_reservation/{rdv_id}', [LivraisonController::class, 'store_rdv_reservation'])->name('');
+     Route::put('traiter_rdv_reservation/{rdv_id}', [LivraisonController::class, 'traiter_rdv_reservation'])->name('');
+     Route::delete('destroy_rdv_reservation/{id}', [LivraisonController::class, 'destroy_rdv_reservation'])->name('');
+     Route::get('get_rdv_notaire_menu/{projet_id}', [LivraisonController::class, 'get_rdv_notaire_menu'])->name('');
+
+            /************compromis vente******/
+
+    Route::post('store_compromis_vente/{rdv_id}', [LivraisonController::class, 'store_compromis_vente'])->name('');
+    Route::get('show_compromis/{id}', [LivraisonController::class, 'show_compromis'])->name('');
+    Route::put('update_compromis/{comp_id}', [LivraisonController::class, 'update_compromis'])->name('');
+    Route::get('print_compromis/{id}', [LivraisonController::class, 'print_compromis'])->name('');
+    Route::get('get_compromis_by_reservation/{id}', [LivraisonController::class, 'get_compromis_by_reservation'])->name('');
+    Route::get('get_compromis_annules_by_reservation/{id}', [LivraisonController::class, 'get_compromis_annules_by_reservation'])->name('');
+
+
     });
 Route::get('sendResetPasswordEmail', [UserController::class, 'sendResetPasswordEmail']);

@@ -371,7 +371,7 @@ class ReservationController extends Controller
      {
          if (RoleHelper::ACSup()) {
              DatabaseHelper::Config();
-             $reservation = Reservation::on('temp')->with('remboursement_dd_with_transfert')->findOrFail($id);
+             $reservation = Reservation::on('temp')->with('remboursement_dd_with_transfert','compromis_vente')->findOrFail($id);
              $statut=$reservation->statut;
              $nb_histo=count($reservation->historiques);
              $etat=$reservation->etat;
@@ -387,7 +387,7 @@ class ReservationController extends Controller
                 $nb_pj=count($reservation->piece_jointe);
              }
              $nb_av=count($reservation->avances);
-             return response()->json(['code_res' => $code,'code_desistement' => $code_desistement,'prix'=>$prix,'nb_aquer'=>$nb_aq,'nb_av'=>$nb_av,'nb_pj'=>$nb_pj,'etat'=>$etat,'transfert'=>$reservation->remboursement_dd_with_transfert,'statut'=>$statut,'user_id'=>$user_id,'nb_histo'=>$nb_histo], 200);
+             return response()->json(['code_res' => $code,'code_desistement' => $code_desistement,'prix'=>$prix,'nb_aquer'=>$nb_aq,'nb_av'=>$nb_av,'nb_pj'=>$nb_pj,'etat'=>$etat,'transfert'=>$reservation->remboursement_dd_with_transfert,'statut'=>$statut,'user_id'=>$user_id,'nb_histo'=>$nb_histo,'compromis'=>$reservation->compromis_vente], 200);
          } else {
              return response()->json(['error' => 'Unauthorized'], 401);
          }
@@ -397,7 +397,7 @@ class ReservationController extends Controller
      {
          if (RoleHelper::ACSup()) {
              DatabaseHelper::Config();
-             $reservation = Reservation::on('temp')->with('desistements_ancien')->findOrFail($id);
+             $reservation = Reservation::on('temp')->with('desistements_ancien','compromis_vente')->findOrFail($id);
 
               //get nom propriete _dite_bien concat
               $propriete=null;
