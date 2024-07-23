@@ -19,7 +19,7 @@ class Projet extends Model
     ]; */
 
     protected $dates = ['deleted_at'];
-    protected $with=['typeProjet','userProjet'];
+    protected $with=['typeProjet','userProjet','societe'];
 
     public function typeProjet()
     {

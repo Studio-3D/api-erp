@@ -15,9 +15,11 @@ use Carbon\Carbon;
 use App\Models\Avance;
 use App\Models\Reservation;
 use App\Enum\StatutReservationEnum;
+use App\Enum\StatutRdvEnum;
 use App\Models\Desistement;
 use App\Models\PenaliteDesistement;
 use App\Models\Remboursement;
+use App\Models\Rendez_vous;
 use App\Enum\RoleEnum;
 
 class NotificationController extends Controller
@@ -345,8 +347,14 @@ class NotificationController extends Controller
                     //->where('avances.sr', 1)
                     ->whereDate('avances.echeance', '<=', Carbon::now())
                     ->where('reservations.etat', 1)->count();
-            }
-           return response()->json(['nb_dst_att_valide' => $nb_desistement_att_valide,'nb_pen_att_valide'=>$nb_pen_att_valide,'nb_av_att_validation'=>$nb_av_att_validation,'nb_res_att_validation'=>$nb_res_att_validation,'nb_demande_pre_remourse'=>$nb_demande,'nb_echeance'=>$nb_echeance]);
+
+                $nb_rdv_notaire = Rendez_vous::on('temp')->join('reservations', 'rendez_vous.reservation_id', '=', 'reservations.id')
+                ->whereNull('reservations.deleted_at')
+                ->where('reservations.etat', 1)
+                ->where('rendez_vous.statut','0')
+                ->where('reservations.projet_id',$projet_id)->count();
+                       }
+           return response()->json(['nb_dst_att_valide' => $nb_desistement_att_valide,'nb_pen_att_valide'=>$nb_pen_att_valide,'nb_av_att_validation'=>$nb_av_att_validation,'nb_res_att_validation'=>$nb_res_att_validation,'nb_demande_pre_remourse'=>$nb_demande,'nb_echeance'=>$nb_echeance,'nb_rdv_notaire'=>$nb_rdv_notaire]);
         }
          else{
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -395,9 +403,15 @@ class NotificationController extends Controller
                    // ->where('avances.sr', 1)
                     ->whereDate('avances.echeance', '<=', Carbon::now())
                     ->where('reservations.etat', 1)->where('avances.user_id',  $userAuth->value('id'))->count();
+                $nb_rdv_notaire = Rendez_vous::on('temp')
+                    ->join('reservations', 'rendez_vous.reservation_id', '=', 'reservations.id')
+                    ->whereNull('reservations.deleted_at')
+                    ->where('reservations.projet_id', $projet_id)
+                    ->where('rendez_vous.statut','0')
+                    ->where('reservations.etat', 1)->where('rendez_vous.user_id',  $userAuth->value('id'))->count();
 
             }
-           return response()->json(['nb_dst_en_cours' => $nb_desistement_encours,'nb_pen_en_cours'=>$nb_pen_en_cours,'nb_av_en_cours'=>$nb_av_en_cours,'nb_res_en_cours'=>$nb_res_en_cours,'nb_demande_pre_remourse'=>$nb_demande,'nb_echeance'=>$nb_echeance]);
+           return response()->json(['nb_dst_en_cours' => $nb_desistement_encours,'nb_pen_en_cours'=>$nb_pen_en_cours,'nb_av_en_cours'=>$nb_av_en_cours,'nb_res_en_cours'=>$nb_res_en_cours,'nb_demande_pre_remourse'=>$nb_demande,'nb_echeance'=>$nb_echeance,'nb_rdv_notaire'=>$nb_rdv_notaire]);
         }
          else{
             return response()->json(['error' => 'Unauthorized'], 401);
