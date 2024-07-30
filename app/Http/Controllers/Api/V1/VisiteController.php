@@ -167,10 +167,8 @@ class VisiteController extends Controller
                 $query->where('interet', $request->input('interet'));
             }
 
-            // Fetch visites and group them by origin_id
             $visites = $query->get()->groupBy('origin_id');
 
-            // Map the visites to the desired format
             $visites = $visites->map(function ($visite) {
                 $firstVisite = $visite->first();
                 return [
@@ -198,17 +196,14 @@ class VisiteController extends Controller
             // Paginate the array of visites
             $data = PaginationHelper::paginate_array($visites->toArray(), $size, $page, $request->url());
 
-            // Extract the items from the paginated result
             $items = $data->items();
             
-            // Build the pagination details
             $pagination = [
                 'currentPage' => $data->currentPage(),
                 'totalItems' => $data->total(),
                 'totalPages' => $data->lastPage(),
             ];
 
-            // Return the desired format
             return response()->json([
                 'data' => $items,
                 'pagination' => $pagination,
