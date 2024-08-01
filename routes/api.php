@@ -125,7 +125,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('projets/{idprojet}/biens', [V1BienController::class, 'indexByProjet']);
         //l'API compositionbiens
         Route::resource('compositionBiens', V1CompositionBienController::class);
-        
+
     });
 
     Route::post('upload-excel-data', [ExcelDataController::class, 'UploadDataExcel'])->name('upload-excel-data');
@@ -427,7 +427,15 @@ Route::middleware('auth:api')->group(function () {
     Route::get('print_compromis/{id}', [LivraisonController::class, 'print_compromis'])->name('');
     Route::get('get_compromis_by_reservation/{id}', [LivraisonController::class, 'get_compromis_by_reservation'])->name('');
     Route::get('get_compromis_annules_by_reservation/{id}', [LivraisonController::class, 'get_compromis_annules_by_reservation'])->name('');
+    Route::post('scanner_compromis', [LivraisonController::class, 'scanner_compromis'])->name('scanner_compromis');
 
+          /****************************Contrat de vente*****************/
+
+    Route::get('get_contrat_by_reservation/{id}', [LivraisonController::class, 'get_contrat_by_reservation'])->name('');
+    Route::post('store_contrat_vente/{rdv_id}', [LivraisonController::class, 'store_contrat_vente'])->name('');
+    Route::get('show_contrat/{id}', [LivraisonController::class, 'show_contrat'])->name('');
+    Route::put('update_contrat/{cont_id}', [LivraisonController::class, 'update_contrat'])->name('');
+    Route::post('scanner_contrat', [LivraisonController::class, 'scanner_contrat'])->name('');
 
     });
 Route::get('sendResetPasswordEmail', [UserController::class, 'sendResetPasswordEmail']);
