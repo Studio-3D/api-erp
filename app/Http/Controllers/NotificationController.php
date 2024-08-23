@@ -233,7 +233,7 @@ class NotificationController extends Controller
             $i=0;
             if(RoleHelper::AdminSup()){
 
-               $all_notifications=Notification::on('temp')->with('prospect','user','reservation','avance','bien')
+               $all_notifications=Notification::on('temp')->with('prospect','user','reservation','avance','bien','TraitementAppel')
                ->where(function ($query) {
                 $query->where('role',RoleEnum::ADMIN->value)
                     ->orwhere('user_id',Auth::guard('api')->user()->id)

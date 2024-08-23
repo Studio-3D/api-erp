@@ -17,6 +17,11 @@ use App\Http\Controllers\Api\V1\TypologieController as V1TypologieController;
 use App\Http\Controllers\Api\V1\UserController as V1UserController;
 use App\Http\Controllers\Api\V1\VueController as V1VueController;
 use App\Http\Controllers\Api\V1\VisiteController as V1VisiteController;
+use App\Http\Controllers\Api\V1\AppelController as V1AppelController;
+use App\Http\Controllers\Api\V1\EnumController as V1EnumController;
+use App\Http\Controllers\Api\V1\ProspectController as V1ProspectController;
+
+
 use App\Http\Controllers\AquereurController;
 use App\Http\Controllers\AvanceController;
 use App\Http\Controllers\BanqueController;
@@ -91,24 +96,33 @@ Route::middleware('auth:api')->group(function () {
         // l'API typeBiens
         Route::resource('typeBiens', V1TypeBienController::class);
         Route::get('projets/{idprojet}/typeBiens', [V1TypeBienController::class, 'indexByProjet']);
+        Route::get('get_typeBiensByProjet/{id}', [V1TypeBienController::class, 'get_typeBiensByProjet'])->name('');
 
         //l'API banques
         Route::resource('banques', V1BanqueController::class);
         //l'API VUES
         Route::resource('vues', V1VueController::class);
         Route::get('projets/{idprojet}/vues', [V1VueController::class, 'indexByProjet']);
+        Route::get('get_vuesByProjet/{id}', [V1VueController::class, 'get_vuesByProjet'])->name('get_vuesByProjet');
 
         //l'API Typologie
         Route::resource('typologies', V1TypologieController::class);
         Route::get('projets/{idprojet}/typologies', [V1TypologieController::class, 'indexByProjet']);
+        Route::get('get_typologiesByProjet/{id}', [V1TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');
 
         //l'API Typefrins
         Route::resource('typefreins', V1TypeFreinController::class);
+        Route::get('get_typeFreins', [V1TypeFreinController::class, 'get_typeFreins'])->name('');
+
         //l'API source
         Route::resource('sources', V1SourceController::class);
+        Route::get('get_sources', [V1SourceController::class, 'get_sources'])->name('get_sources');
+
         //l'API partenaire
         Route::resource('partenaires', V1PartenaireController::class);
         Route::get('projets/{idprojet}/partenaires', [V1PartenaireController::class, 'indexByProjet']);
+        Route::get('get_partenaires/{projet_id}', [V1PartenaireController::class, 'get_partenaires'])->name('get_partenaires');
+
         //l'API partenare
         Route::resource('projets', V1ProjetController::class);
 
@@ -133,6 +147,25 @@ Route::middleware('auth:api')->group(function () {
         //l'API visite
         Route::resource('visites', V1VisiteController::class);
         Route::get('projets/{idprojet}/visites', [V1VisiteController::class, 'indexByProjet']);
+
+        //l'Api relationClients
+        Route::resource('appels', V1AppelController::class);
+        Route::get('projets/{idprojet}/appels', [V1AppelController::class, 'indexByProjet']);
+        Route::get('show_t_appel/{id}', [V1AppelController::class, 'show_t_appel']);
+        Route::get('index_traitement_appel/{id}', [V1AppelController::class, 'index_traitement_appel']);
+        Route::delete('destroy_t_appel/{id}', [V1AppelController::class, 'destroy_t_appel'])->name('');
+        Route::put('traiter_relance_rdv_appel/{id}', [V1AppelController::class, 'traiter_relance_rdv_appel'])->name('');
+        Route::get('get_info_cin_unique/{prospect_id}/{cin}', [V1AppelController::class, 'get_info_cin_unique']);
+
+
+        //Enumeartion
+        Route::get('InteretEnum_appel', [V1EnumController::class, 'InteretEnum__appel_get'])->name('');
+
+            //  prospect
+        Route::get('search_info_by_cin/{cin}', [V1ProspectController::class, 'search_info_by_cin']);
+        Route::get('search_info_by_phone/{phone}', [V1ProspectController::class, 'search_info_by_phone']);
+
+
 
     });
 

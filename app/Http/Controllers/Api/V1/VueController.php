@@ -54,7 +54,7 @@ class VueController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-    
+
     public function indexByProjet(Request $request, $projet_id)
     {
         if (Auth::guard('api')->check()) {
@@ -101,7 +101,21 @@ class VueController extends Controller
         // Return unauthorized error if user is not authenticated
         return response()->json(['error' => 'Unauthorized'], 401);
     }
+    public function get_vuesByProjet($projet_id)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
 
+            $vues = Vue::on('temp')
+            ->orderBy('created_at', 'desc')
+            ->where('projet_id', $projet_id)
+            ->get();
+            return response()->json(['vues' => $vues]);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+
+    }
     /**
      * Show the form for creating a new resource.
      */
@@ -202,12 +216,12 @@ class VueController extends Controller
                 ];
             $vueRequest->merge($datavue);
             $vueController->store($vueRequest);
-            
-        
-       
+
+
+
     }
 
-    
+
 
 
 }

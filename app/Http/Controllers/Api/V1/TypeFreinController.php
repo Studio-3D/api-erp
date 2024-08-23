@@ -57,10 +57,22 @@ class TypeFreinController extends Controller
 
                 return response()->json(['typeFreins' => $typeFreins], 200);
             }
-            
+
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    public function get_typeFreins()
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $typefreins = TypeFrein::on('temp')->orderBy('created_at', 'desc')->get();
+            return response()->json(['typeFreins' => $typefreins]);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+
     }
 
     /**

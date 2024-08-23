@@ -99,7 +99,21 @@ class TypeBienController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
+    public function get_typeBiensByProjet($projet_id)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
 
+            $typebiens = TypeBien::on('temp')
+            ->orderBy('created_at', 'desc')
+            ->where('projet_id', $projet_id)
+            ->get();
+            return response()->json(['typeBiens' => $typebiens]);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+
+    }
     /**
      * Show the form for creating a new resource.
      */
@@ -238,9 +252,9 @@ class TypeBienController extends Controller
 
     }
 
-    
 
-    
+
+
 
 
 

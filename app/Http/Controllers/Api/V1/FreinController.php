@@ -69,53 +69,62 @@ class FreinController extends Controller
      */
     public function store(StoreFreinRequest $request)
     {
-        if(RoleHelper::ACSup()){
+        if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $frein=new Frein();
+            $frein = new Frein();
             $frein->setConnection('temp');
-            $frein->prix_min=$request->prix_min;
-            $frein->prix_max=$request->prix_max;
-            $frein->superficie_min=$request->sup_min;
-            $frein->superficie_max=$request->sup_max;
-            $frein->etat=$request->etat;
-            $frein->avance=$request->avance;
-            $frein->visite_id=$request->visite_id;
-            $frein->tranche=empty($request->selectedTranches)?false:true;
-            $frein->etage= empty($request->selectedEtages)?false:true ;
-            $frein->orientation= empty($request->selectedOrientations) ?false:true;
-            $frein->vue= empty($request->selectedVues) ?false:true;
-            $frein->typologie= empty($request->selectedTypologies) ?false:true;
-            if($frein->save()){
-                if(!empty($request->selectedTranches)){
-                    foreach($request->selectedTranches as $valeur){
-                            FreinTrancheHelper::createFreinTranche($valeur['id'],$frein->id);
+            $frein->prix_min = $request->prix_min;
+            $frein->prix_max = $request->prix_max;
+            $frein->superficie_min = $request->sup_min;
+            $frein->superficie_max = $request->sup_max;
+            $frein->etat = $request->etat;
+            $frein->avance = $request->avance;
+            $frein->visite_id = $request->visite_id;
+            $frein->traite_appel_id = $request->traite_appel_id;
+            $frein->tranche = empty($request->selectedTranches) ? false : true;
+            $frein->etage = empty($request->selectedEtages) ? false : true;
+            $frein->orientation = empty($request->selectedOrientations) ? false : true;
+            $frein->vue = empty($request->selectedVues) ? false : true;
+            $frein->typologie = empty($request->selectedTypologies) ? false : true;
+            if ($frein->save()) {
+
+                if (!empty($request->selectedTranches)) {
+                    $tranches_array = explode(',', $request->selectedTranches); // $tranches_array sera ['5', '2']
+                    foreach ($tranches_array as $valeur) {
+                        FreinTrancheHelper::createFreinTranche($valeur, $frein->id);
                     }
                 }
-                if(!empty($request->selectedEtages)){
-                    foreach($request->selectedEtages as $valeur){
-                        FreinEtageHelper::createFreinEtage($valeur,$frein->id);
+                if (!empty($request->selectedEtages)) {
+                    $array_etage = explode(',', $request->selectedEtages); // $tranches_array sera ['5', '2']
+                    foreach ($array_etage as $valeur) {
+                        FreinEtageHelper::createFreinEtage($valeur, $frein->id);
                     }
                 }
-                if(!empty($request->selectedOrientations)){
-                    foreach($request->selectedOrientations as $valeur){
-                        FreinOrientationHelper::createFreinOrientation($valeur,$frein->id);
+                if (!empty($request->selectedOrientations)) {
+                    $array_orientation = explode(',', $request->selectedOrientations); // $tranches_array sera ['5', '2']
+                    foreach ($array_orientation as $valeur) {
+                        FreinOrientationHelper::createFreinOrientation($valeur, $frein->id);
                     }
                 }
-                if(!empty($request->selectedTypologies)){
-                    foreach($request->selectedTypologies as $valeur){
-                        FreinTypologieHelper::createFreinTypologie($valeur['id'],$frein->id);
+                if (!empty($request->selectedTypologies)) {
+                    $array_typologie = explode(',', $request->selectedTypologies); // $tranches_array sera ['5', '2']
+                    foreach ($array_typologie as $valeur) {
+                        FreinTypologieHelper::createFreinTypologie($valeur, $frein->id);
                     }
                 }
-                if(!empty($request->selectedVues)){
-                    foreach($request->selectedVues as $valeur){
-                        FreinVueHelper::createFreinVue($valeur['id'],$frein->id);
+                if (!empty($request->selectedVues)) {
+                    $array_vue = explode(',', $request->selectedVues); // $tranches_array sera ['5', '2']
+                    foreach ($array_vue as $valeur) {
+                        FreinVueHelper::createFreinVue($valeur, $frein->id);
                     }
                 }
                 return response()->json(['frein' => $frein], 200);
             }
             return response()->json(['error' => "Cette visite n'est pas du type perdu."], 520);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
-        else return response()->json(['error' => 'Unauthorized'], 401);
+
     }
 
     /**
@@ -170,8 +179,7 @@ class FreinController extends Controller
         if(RoleHelper::ACSup()){
             DatabaseHelper::Config();
             $frein=Frein::on('temp')->findOrFail($id);
-
-            if(in_array("SUPERFICIE", $request->frein)=='true'){
+            if (str_contains($request->freins, 'SUPERFICIE')==true) {
                 $frein->superficie_min=$request->sup_min;
                 $frein->superficie_max=$request->sup_max;
             }
@@ -180,7 +188,7 @@ class FreinController extends Controller
                 $frein->superficie_max=null;
             }
 
-            if(in_array("PRIX", $request->frein)=='true'){
+            if (str_contains($request->freins, 'PRIX')==true) {
                 $frein->prix_min=$request->prix_min;
                 $frein->prix_max=$request->prix_max;
             }
@@ -188,52 +196,59 @@ class FreinController extends Controller
                 $frein->prix_min=null;
                 $frein->prix_max=null;
             }
-            if(in_array("AVANCE", $request->frein)=='true'){
+            if (str_contains($request->freins, 'AVANCE')==true) {
                 $frein->avance=$request->avance;
             }else{
                 $frein->avance=null;
             }
             $frein->etat=$request->etat;
-            $frein->tranche=in_array("TRANCHE", $request->frein)?false:true;
-            $frein->etage=in_array("ETAGE", $request->frein)?false:true ;
-            $frein->orientation= in_array("ORIENTATION", $request->frein)?false:true;
-            $frein->vue=in_array("VUE", $request->frein)?false:true;
-            $frein->typologie= in_array("TYPOLOGIE", $request->frein) ?false:true;
+            $frein->tranche=str_contains($request->freins, 'TRANCHE')?false:true;
+            $frein->etage=str_contains($request->freins, 'ETAGE')?false:true ;
+            $frein->orientation= str_contains($request->freins, 'ORIENTATION')?false:true;
+            $frein->vue=str_contains($request->freins, 'VUE')?false:true;
+            $frein->typologie= str_contains($request->freins, 'TYPOLOGIE') ?false:true;
             $frein->save();
             FreinTrancheHelper::destroyFreinTranche($frein->id);
-            if(!empty($request->selectedTranches) && in_array("TRANCHE", $request->frein) ){
-                foreach($request->selectedTranches as $valeur){
-                        FreinTrancheHelper::createFreinTranche($valeur['id'],$frein->id);
+            if(!empty($request->selectedTranches) && str_contains($request->freins, 'TRANCHE') ){
+                $tranches_array = explode(',', $request->selectedTranches); // $tranches_array sera ['5', '2']
+                foreach($tranches_array as $valeur){
+                        FreinTrancheHelper::createFreinTranche($valeur,$frein->id);
                 }
             }
             FreinEtageHelper::destroyFreinEtage($frein->id);
-            if(!empty($request->selectedEtages) && in_array("ETAGE", $request->frein)){
-                foreach($request->selectedEtages as $valeur){
-                    FreinEtageHelper::createFreinEtage($valeur,$frein->id);
+            if (!empty($request->selectedEtages)&& str_contains($request->freins, 'ETAGE')) {
+                $array_etage = explode(',', $request->selectedEtages); // $tranches_array sera ['5', '2']
+                foreach ($array_etage as $valeur) {
+                    FreinEtageHelper::createFreinEtage($valeur, $frein->id);
                 }
             }
             FreinOrientationHelper::destroyFreinOrientation($frein->id);
-            if(!empty($request->selectedOrientations) && in_array("ORIENTATION", $request->frein)){
-                foreach($request->selectedOrientations as $valeur){
-                    FreinOrientationHelper::createFreinOrientation($valeur,$frein->id);
+            if (!empty($request->selectedOrientations)&& str_contains($request->freins, 'ORIENTATION')) {
+                $array_orientation = explode(',', $request->selectedOrientations); // $tranches_array sera ['5', '2']
+                foreach ($array_orientation as $valeur) {
+                    FreinOrientationHelper::createFreinOrientation($valeur, $frein->id);
                 }
             }
             FreinTypologieHelper::destroyFreinTypologie($frein->id);
-            if(!empty($request->selectedTypologies) && in_array("TYPOLOGIE", $request->frein)){
-                foreach($request->selectedTypologies as $valeur){
-                    FreinTypologieHelper::createFreinTypologie($valeur['id'],$frein->id);
+            if (!empty($request->selectedTypologies)&& str_contains($request->freins, 'TYPOLOGIE')) {
+                $array_typologie = explode(',', $request->selectedTypologies); // $tranches_array sera ['5', '2']
+                foreach ($array_typologie as $valeur) {
+                    FreinTypologieHelper::createFreinTypologie($valeur, $frein->id);
                 }
             }
             FreinVueHelper::destroyFreinVue($frein->id);
-            if(!empty($request->selectedVues) && in_array("VUE", $request->frein)){
-                foreach($request->selectedVues as $valeur){
-                    FreinVueHelper::createFreinVue($valeur['id'],$frein->id);
+            if (!empty($request->selectedVues)&& str_contains($request->freins, 'VUE')) {
+                $array_vue = explode(',', $request->selectedVues); // $tranches_array sera ['5', '2']
+                foreach ($array_vue as $valeur) {
+                    FreinVueHelper::createFreinVue($valeur, $frein->id);
                 }
             }
              //destroy frein bien dispo
              FreinBienHelper::destroyFreinBien($frein->id);
              //notification des biens disponible pour ce frein
-             NotificationHelper::destroy_notif_bien_dispo_frein($frein->visite_id);
+             if($frein->visite_id!=null){
+                NotificationHelper::destroy_notif_bien_dispo_frein($frein->visite_id);
+             }
             return response()->json(['frein'=>$id]);
         }
         else {
@@ -390,7 +405,7 @@ class FreinController extends Controller
 
         }
     }
-
+  
     public function get_clients_freins($projet_id,Request $request)
     {
         if (RoleHelper::ACSup()) {
@@ -399,6 +414,7 @@ class FreinController extends Controller
             $page = $request->input('page', 1);
             if(RoleHelper::AdminSup()){
                 $freins= Frein::on('temp')
+                ->where('freins.visite_id','!=',null)
                 ->join('visites', 'visites.id', '=', 'freins.visite_id')
                 ->join('prospects', 'prospects.id', '=', 'visites.prospect_id')
                 ->select('freins.tranche','freins.etage','freins.orientation','freins.typologie','freins.vue','freins.prix_min','freins.prix_max','freins.superficie_min','freins.superficie_max','freins.avance','freins.id','freins.created_at','visites.origin_id as id_origin','prospects.cin','prospects.nom', 'prospects.prenom', 'prospects.telephone','prospects.telephone_num2','visites.origin_id')
@@ -409,6 +425,7 @@ class FreinController extends Controller
                 }
                 else{
                     $freins= Frein::on('temp')
+                    ->where('freins.visite_id','!=',null)
                     ->join('visites', 'visites.id', '=', 'freins.visite_id')
                     ->join('prospects', 'prospects.id', '=', 'visites.prospect_id')
                     ->select('freins.tranche','freins.etage','freins.orientation','freins.typologie','freins.vue','freins.prix_min','freins.prix_max','freins.superficie_min','freins.superficie_max','freins.avance','freins.id','freins.created_at','visites.origin_id as id_origin','prospects.cin','prospects.nom', 'prospects.prenom', 'prospects.telephone','prospects.telephone_num2','visites.origin_id')
@@ -545,6 +562,52 @@ class FreinController extends Controller
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+    }
+
+    /**************************************Apppellls********************** */
+    public function searchFreinByAppelId($id,$text){
+        if($text=='without_row_deleted'){
+            $frein=Frein::on('temp')->where('traite_appel_id',$id)->first();
+            if($frein){
+
+                    $frein_tranches=FreinTranche::on('temp')->where('frein_id',$frein->id)->get();
+                    if(count($frein_tranches)>0){
+                        $frein['frein_tranches']=$frein_tranches;
+                    }
+
+                    $frein_etages=FreinEtage::on('temp')->where('frein_id',$frein->id)->get();
+                    if(count($frein_etages)){
+                        $frein['frein_etages']=$frein_etages;
+                    }
+
+
+                    $frein_vues=FreinVue::on('temp')->where('frein_id',$frein->id)->get();
+                    if(count($frein_vues)){
+                        $frein['frein_vues']=$frein_vues;
+                    }
+
+
+
+                    $frein_typologies=FreinTypologie::on('temp')->where('frein_id',$frein->id)->get();
+                    if(count($frein_typologies)){
+                        $frein['frein_typologies']=$frein_typologies;
+                    }
+
+                    $frein_orientations=FreinOrientation::on('temp')->where('frein_id',$frein->id)->get();
+                    if(count($frein_orientations)){
+                        $frein['frein_orientations']=$frein_orientations;
+                    }
+
+
+                return $frein;
+            }
+            else
+            {
+                return null;
+            }
+
         }
 
     }

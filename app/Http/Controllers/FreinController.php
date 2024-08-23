@@ -398,6 +398,7 @@ class FreinController extends Controller
             $page = $request->input('page', 1);
             if(RoleHelper::AdminSup()){
                 $freins= Frein::on('temp')
+                ->where('freins.visite_id','!=',null)
                 ->join('visites', 'visites.id', '=', 'freins.visite_id')
                 ->join('prospects', 'prospects.id', '=', 'visites.prospect_id')
                 ->select('freins.tranche','freins.etage','freins.orientation','freins.typologie','freins.vue','freins.prix_min','freins.prix_max','freins.superficie_min','freins.superficie_max','freins.avance','freins.id','freins.created_at','visites.origin_id as id_origin','prospects.cin','prospects.nom', 'prospects.prenom', 'prospects.telephone','prospects.telephone_num2','visites.origin_id')
@@ -408,6 +409,7 @@ class FreinController extends Controller
                 }
                 else{
                     $freins= Frein::on('temp')
+                    ->where('freins.visite_id','!=',null)
                     ->join('visites', 'visites.id', '=', 'freins.visite_id')
                     ->join('prospects', 'prospects.id', '=', 'visites.prospect_id')
                     ->select('freins.tranche','freins.etage','freins.orientation','freins.typologie','freins.vue','freins.prix_min','freins.prix_max','freins.superficie_min','freins.superficie_max','freins.avance','freins.id','freins.created_at','visites.origin_id as id_origin','prospects.cin','prospects.nom', 'prospects.prenom', 'prospects.telephone','prospects.telephone_num2','visites.origin_id')

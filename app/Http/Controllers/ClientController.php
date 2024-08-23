@@ -102,6 +102,11 @@ class ClientController extends Controller
             $client->nom_mere = $request->nom_mere;
             $client->prospect_id = $request->prospect_id;
             if ($client->save()) {
+                if($client->prospect_id!=null){
+                  $prospect = Prospect::on('temp')->findorfail($client->prospect_id);
+                  $prospect->client_id=$client->id;
+                  $prospect->save();
+                }
                 return $client;
             }
         }
@@ -288,7 +293,7 @@ class ClientController extends Controller
                 ->select('visites.*')
                 ->where('prospect_id', $client->prospect_id)
                 ->get()->groupby('origin_id');
-            
+
             $visites = $visites->map(function ($visite) {
                 return [
                     'id' => $visite->first()->id,
