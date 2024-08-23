@@ -46,7 +46,6 @@ class StoreClientRequest extends FormRequest
             "nom_mari" => "string",
             "lieu_mariage" => "string",
             "date_mariage" => "date|nullable",
-            "nom" => "required|string ",
 
         ];
     }

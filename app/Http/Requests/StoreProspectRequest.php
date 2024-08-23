@@ -30,7 +30,6 @@ class StoreProspectRequest extends FormRequest
         $DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
         DatabaseHelper::Config();
         return [
-            'nom' => 'required|string',
             'prenom' => 'required|string',
             'telephone' => 'required|string',
             'telephone_num2' => 'string',
