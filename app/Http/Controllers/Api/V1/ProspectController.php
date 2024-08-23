@@ -4,15 +4,15 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Helpers\DatabaseHelper;
+use App\Http\Helpers\PaginationHelper;
 use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreProspectRequest;
 use App\Http\Requests\UpdateProspectRequest;
 use App\Models\Prospect;
+use App\Models\Visite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use App\Models\Visite;
-use App\Http\Helpers\PaginationHelper;
 
 class ProspectController extends Controller
 {
@@ -148,7 +148,8 @@ class ProspectController extends Controller
                 $cin_exist = Prospect::on('temp')->where('cin', $request->cin)->where('id', '!=', $id)->count();
                 if ($cin_exist > 0) {
                     return response()->json(['errors' => 'Le Cin que vous avez saisi' . $request->cin . ' apprtient à un autre utilisateur'], 422);
-                }}
+                }
+            }
             $prospect = Prospect::on('temp')->findOrFail($id);
             $update = $request->all();
             foreach ($update as $key => $value) {
@@ -204,7 +205,8 @@ class ProspectController extends Controller
                 ->where(function ($query) use ($phone) {
                     $query->where('telephone', $phone)
                         ->orwhere('telephone_num2', $phone)
-                    ;})
+                    ;
+                })
                 ->get()->first();
             return response()->json(['prospect' => $prospect]);
         }
@@ -220,7 +222,7 @@ class ProspectController extends Controller
                 ->select('visites.*')
                 ->where('prospect_id', $prospect_id)
                 ->get()->groupby('origin_id');
-            
+
             $visites = $visites->map(function ($visite) {
                 return [
                     'id' => $visite->first()->id,
@@ -241,7 +243,8 @@ class ProspectController extends Controller
                     'bien_id' => $visite->first()->bien_id ? $visite->first()->bien_id : '',
                     'visit_count' => count($visite),
 
-                ];});
+                ];
+            });
 
             $data = PaginationHelper::paginate_array($visites->toArray(), $perPage, $page, $request->url());
             return response()->json(['visites' => $data], 200);
