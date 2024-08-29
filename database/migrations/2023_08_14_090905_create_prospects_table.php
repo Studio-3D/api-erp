@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('cin')->unique()->nullable();
             $table->integer('client_id')->nullable();
-            $table->string('nom');
+            $table->string('nom')->nullable();
             $table->string('prenom')->nullable();
             $table->string('telephone');
             $table->string('telephone_num2')->nullable();
@@ -25,6 +25,7 @@ return new class extends Migration
             $table->foreignId('source')->nullable();
             $table->foreignId('partenaire_id')->nullable()->constrained('partenaires')->onDelete('cascade');
             $table->boolean('notifie')->default(false)->nullable();
+            $table->string('ville')->nullable();
             $table->timestamps();
             $table->softDeletes();
             $table->index(['cin','telephone','telephone_num2']);

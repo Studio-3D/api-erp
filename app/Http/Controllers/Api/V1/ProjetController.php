@@ -247,7 +247,7 @@ class ProjetController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $projet = Projet::on('temp')->withCount(['bloc', 'tranche', 'immeuble', 'bien'])->findOrfail($id);
+            $projet = Projet::on('temp')->with('tranche','bloc','immeuble')->withCount(['bloc', 'tranche', 'immeuble', 'bien'])->findOrfail($id);
             return response()->json(['projet' => $projet], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -370,6 +370,6 @@ class ProjetController extends Controller
         }
     }
 
-    
+
 
 }

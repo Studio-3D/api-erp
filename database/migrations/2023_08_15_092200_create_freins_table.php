@@ -26,6 +26,7 @@ return new class extends Migration
             $table->boolean('typologie')->default(false);
             $table->string('commentaire')->nullable();
             $table->foreignId('visite_id')->nullable()->constrained('visites')->onDelete('cascade');
+            $table->foreignId('traite_appel_id')->nullable()->constrained('traitements_appels')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
         });

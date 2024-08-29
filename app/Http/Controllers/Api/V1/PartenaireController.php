@@ -18,7 +18,22 @@ class PartenaireController extends Controller
     /**
      * Display a listing of the resource.
      */
-    
+    public function get_partenaires($projet_id)
+    {
+
+        if(RoleHelper::ACSup()){
+            DatabaseHelper::Config();
+            $partenaires = Partenaire::on('temp')->orderBy('created_at', 'desc')->where('projet_id',$projet_id)
+                ->get();
+            return response()->json(['partenaires' => $partenaires],200);
+        }
+        else{
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+
+
+    }
     public function index(Request $request)
     {
         if (Auth::guard('api')->check()) {
@@ -121,7 +136,7 @@ class PartenaireController extends Controller
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             //partenaire unique in this projects
-                
+
                 $partenaire = new Partenaire();
                 $partenaire->setConnection('temp');
                 $partenaire->description = $request->description;
@@ -129,7 +144,7 @@ class PartenaireController extends Controller
                 $partenaire->projet_id = $request->projet_id;
                 $partenaire->save();
                 return response()->json(['message' => $partenaire], 200);
-               
+
 
 
         } else {
@@ -173,7 +188,7 @@ class PartenaireController extends Controller
             $partenaire->save();
 
             return response()->json(['message' => $partenaire], 200);
-        
+
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -224,9 +239,9 @@ class PartenaireController extends Controller
                 ];
             $partenaireRequest->merge($dataPartenaire);
             $partenaireController->store($partenaireRequest);
-            
-        
-       
+
+
+
     }
 
 

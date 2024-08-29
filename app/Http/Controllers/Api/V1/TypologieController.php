@@ -65,12 +65,12 @@ class TypologieController extends Controller
 
             $query = Typologie::on('temp')->where('projet_id', $projet_id);
 
-            
+
 
             if ($request->filled('typologie')) {
                 $query->where('typologie', 'like', '%' . $request->input('typologie') . '%');
             }
-    
+
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
 
                 $typologies = $query->orderBy('created_at', 'desc')
@@ -125,7 +125,21 @@ class TypologieController extends Controller
         }
 
     }
+    public function get_typologiesByProjet($projet_id)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
 
+            $typologies = Typologie::on('temp')
+                ->orderBy('created_at', 'desc')
+                ->where('projet_id', $projet_id)
+                ->get();
+            return response()->json(['typologies' => $typologies]);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+
+    }
     /**
      * Display the specified resource.
      */
@@ -195,10 +209,10 @@ class TypologieController extends Controller
                 ];
             $typologieRequest->merge($dataTypologie);
             $typologieController->store($typologieRequest);
-            
-        
-       
+
+
+
     }
 
-    
+
 }
