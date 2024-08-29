@@ -821,7 +821,6 @@ class VisiteController extends Controller
     public function get_propriete_bien_concat($id){
         DatabaseHelper::Config();
         $b_pr=Bien::on('temp')->findorfail($id);
-
             //tranches bloc w immeuble
             if($b_pr->tranche_id!=null && $b_pr->bloc_id!=null && $b_pr->immeuble_id!=null){
                 $propriete=$propriete=$b_pr->tranche->nom.'-'.$b_pr->bloc->nom.'-'.$b_pr->immeuble->nom.'-'.$b_pr->propriete_dite_bien;

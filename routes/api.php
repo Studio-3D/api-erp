@@ -17,11 +17,13 @@ use App\Http\Controllers\Api\V1\TypologieController as V1TypologieController;
 use App\Http\Controllers\Api\V1\UserController as V1UserController;
 use App\Http\Controllers\Api\V1\VueController as V1VueController;
 use App\Http\Controllers\Api\V1\VisiteController as V1VisiteController;
+use App\Http\Controllers\Api\V1\ProspectController as V1ProspectController;
+use App\Http\Controllers\Api\V1\ClientController as V1ClientController;
+use App\Http\Controllers\Api\V1\AquereurController as V1AquereurController;
+use App\Http\Controllers\Api\V1\ReservationController as V1ReservationController;
+use App\Http\Controllers\Api\V1\AquereurController as V1AvanceController;
 use App\Http\Controllers\Api\V1\AppelController as V1AppelController;
 use App\Http\Controllers\Api\V1\EnumController as V1EnumController;
-use App\Http\Controllers\Api\V1\ProspectController as V1ProspectController;
-
-
 use App\Http\Controllers\AquereurController;
 use App\Http\Controllers\AvanceController;
 use App\Http\Controllers\BanqueController;
@@ -141,12 +143,33 @@ Route::middleware('auth:api')->group(function () {
         //l'API biens
         Route::resource('biens', V1BienController::class);
         Route::get('projets/{idprojet}/biens', [V1BienController::class, 'indexByProjet']);
+        Route::get('getBiensByProjet_Concat/{id}', [V1BienController::class, 'getBiensByProjet_Concat'])->name('getBiensByProjet_Concat');
+        Route::delete('libererBien/{id}', [V1BienController::class, 'libererBien_function'])->name('libererBien');
+        Route::put('setPropostionBien/{id}/{old_id}', [V1BienController::class, 'setPropostionBien'])->name('');
         //l'API compositionbiens
         Route::resource('compositionBiens', V1CompositionBienController::class);
 
         //l'API visite
         Route::resource('visites', V1VisiteController::class);
         Route::get('projets/{idprojet}/visites', [V1VisiteController::class, 'indexByProjet']);
+        Route::put('update_visite_bien_pre_reserve/{origin_id}', [V1VisiteController::class, 'update_visite_bien_pre_reserve'])->name('');
+        Route::post('store_n_visite/{id}', [V1VisiteController::class, 'store_n_visite'])->name('store_n_visite');
+        Route::get('get_oldBien_visite_pre_reserve/{origin_id}', [V1VisiteController::class, 'get_oldBien_visite_pre_reserve'])->name('');
+
+        //l'API prospect
+        Route::resource('prospects', V1ProspectController::class);
+        Route::get('search_prospect_by_cin/{cin}', [V1ProspectController::class, 'search_prospect_by_cin']);
+        Route::get('search_prospect_by_email/{email}', [V1ProspectController::class, 'search_prospect_by_email']);
+        Route::get('search_prospect_by_phone/{phone}', [V1ProspectController::class, 'search_prospect_by_phone']);
+        //l'API client
+        Route::resource('clients', V1ClientController::class);
+        //l'API Aquerreur
+        Route::resource('aquereurs', V1AquereurController::class);
+        //l'API Avance
+        Route::resource('avances', V1AvanceController::class);
+        //lapi reservaton
+        Route::resource('reservations', V1ReservationController::class);
+        Route::get('search_reservation_by_code/{code_res}', [V1ReservationController::class, 'search_reservation_by_code']);
 
         //l'Api relationClients
         Route::resource('appels', V1AppelController::class);

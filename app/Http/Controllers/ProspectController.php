@@ -66,6 +66,7 @@ class ProspectController extends Controller
             $prospect->prenom = $request->prenom;
             $prospect->telephone = $request->telephone;
             $prospect->telephone_num2 = $request->telephone_num2;
+            $prospect->ville = $request->ville;
             $prospect->email = $request->email;
             $prospect->origin = 'manuel';
             $prospect->notifie = $request->notifie;

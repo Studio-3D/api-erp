@@ -8,8 +8,8 @@ use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreSourceRequest;
 use App\Http\Requests\UpdateSourceRequest;
 use App\Models\Source;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class SourceController extends Controller
 {
@@ -30,7 +30,7 @@ class SourceController extends Controller
             if ($request->filled('source')) {
                 $query->where('source', 'like', '%' . $request->input('source') . '%');
             }
-            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+            if (is_numeric($size) && is_numeric($page) && $size >= 0 && $page >= 0) {
 
                 $sources = $query->orderBy('created_at', 'desc')
                     ->paginate($size, ['*'], 'page', $page);
@@ -47,7 +47,7 @@ class SourceController extends Controller
 
                 // Retourner la réponse simplifiée
                 return response()->json([
-                    'sources' => $sources,
+                    'data' => $sources,
                     'pagination' => $pagination,
                 ], 200);
             } else {
@@ -74,15 +74,17 @@ class SourceController extends Controller
      */
     public function store(StoreSourceRequest $request)
     {
-        if(RoleHelper::ACSup()){
+        if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $source=new Source();
+            $source = new Source();
             $source->setConnection('temp');
-            $source->source=$request->source;
+            $source->source = $request->source;
             $source->save();
-            return response()->json(['$source'=>$source],200);
+            return response()->json(['$source' => $source], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
-        else return response()->json(['error' => 'Unauthorized'], 401);
+
     }
 
     /**
@@ -110,19 +112,18 @@ class SourceController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateSourceRequest $request,$id)
+    public function update(UpdateSourceRequest $request, $id)
     {
-        if(RoleHelper::ACSup()){
+        if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $source=Source::on('temp')->findOrFail($id);
-            $update=$request->all();
-            foreach($update as $key => $value){
-                $source->$key= $value;
+            $source = Source::on('temp')->findOrFail($id);
+            $update = $request->all();
+            foreach ($update as $key => $value) {
+                $source->$key = $value;
             }
             $source->save();
-            return response()->json(['source'=>$source],200);
-        }
-        else {
+            return response()->json(['source' => $source], 200);
+        } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
@@ -132,18 +133,15 @@ class SourceController extends Controller
      */
     public function destroy(string $id)
     {
-        if(RoleHelper::AdminSup()){
+        if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            $source=Source::on('temp')->findOrFail($id);
-            if($source->delete())
-            {
-                return response()->json(['message'=>'Source supprimée avec succès.'],200);
+            $source = Source::on('temp')->findOrFail($id);
+            if ($source->delete()) {
+                return response()->json(['message' => 'Source supprimée avec succès.'], 200);
+            } else {
+                return response()->json(['error' => "La source n'a pas été supprimée."], 404);
             }
-            else{
-                return response()->json(['error'=>"La source n'a pas été supprimée."],404);
-            }
-        }
-        else{
+        } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }

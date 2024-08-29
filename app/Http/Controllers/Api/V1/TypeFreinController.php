@@ -47,7 +47,7 @@ class TypeFreinController extends Controller
 
                 // Retourner la réponse simplifiée
                 return response()->json([
-                    'typeFreins' => $typeFreins,
+                    'data' => $typeFreins,
                     'pagination' => $pagination,
                 ], 200);
             } else {
@@ -55,7 +55,7 @@ class TypeFreinController extends Controller
                 $typeFreins = $query->orderBy('created_at', 'desc')
                     ->get();
 
-                return response()->json(['typeFreins' => $typeFreins], 200);
+                return response()->json(['typefreins' => $typeFreins], 200);
             }
 
         }
