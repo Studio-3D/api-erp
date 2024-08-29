@@ -36,4 +36,14 @@ class Prospect extends Model
         return $this->hasMany(Visite::class,'prospect_id')->where('interet',1)->where('etat',1)->where('statut',1);
     }
 
+    public function visites()
+    {
+        return $this->hasMany(Visite::class,'prospect_id')->orderby('created_at','asc');
+    }
+    public function appels()
+    {
+        return $this->hasOne(Appel::class,'prospect_id')->latest();
+
+    }
+
 }

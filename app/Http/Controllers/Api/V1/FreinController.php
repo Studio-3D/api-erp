@@ -69,6 +69,7 @@ class FreinController extends Controller
             $frein->etat = $request->etat;
             $frein->avance = $request->avance;
             $frein->visite_id = $request->visite_id;
+            $frein->traite_appel_id = $request->traite_appel_id;
             $frein->tranche = empty($request->selectedTranches) ? false : true;
             $frein->etage = empty($request->selectedEtages) ? false : true;
             $frein->orientation = empty($request->selectedOrientations) ? false : true;
@@ -385,24 +386,27 @@ class FreinController extends Controller
 
         }
     }
-
-    public function get_clients_freins($projet_id, Request $request)
+   public function get_clients_freins($projet_id, Request $request)
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
-            if (RoleHelper::AdminSup()) {
-                $freins = Frein::on('temp')
-                    ->join('visites', 'visites.id', '=', 'freins.visite_id')
-                    ->join('prospects', 'prospects.id', '=', 'visites.prospect_id')
-                    ->select('freins.tranche', 'freins.etage', 'freins.orientation', 'freins.typologie', 'freins.vue', 'freins.prix_min', 'freins.prix_max', 'freins.superficie_min', 'freins.superficie_max', 'freins.avance', 'freins.id', 'freins.created_at', 'visites.origin_id as id_origin', 'prospects.cin', 'prospects.nom', 'prospects.prenom', 'prospects.telephone', 'prospects.telephone_num2', 'visites.origin_id')
-                    ->where('visites.projet_id', $projet_id)
-                    ->where('freins.etat', 2)
-                    ->where('visites.etat', 1)
-                    ->get();
-            } else {
-                $freins = Frein::on('temp')
+
+            if(RoleHelper::AdminSup()){
+                $freins= Frein::on('temp')
+                ->where('freins.visite_id','!=',null)
+                ->join('visites', 'visites.id', '=', 'freins.visite_id')
+                ->join('prospects', 'prospects.id', '=', 'visites.prospect_id')
+                ->select('freins.tranche','freins.etage','freins.orientation','freins.typologie','freins.vue','freins.prix_min','freins.prix_max','freins.superficie_min','freins.superficie_max','freins.avance','freins.id','freins.created_at','visites.origin_id as id_origin','prospects.cin','prospects.nom', 'prospects.prenom', 'prospects.telephone','prospects.telephone_num2','visites.origin_id')
+                ->where('visites.projet_id', $projet_id)
+                ->where('freins.etat', 2)
+                ->where('visites.etat', 1)
+                ->get();
+                }
+                else{
+                    $freins= Frein::on('temp')
+                    ->where('freins.visite_id','!=',null)
                     ->join('visites', 'visites.id', '=', 'freins.visite_id')
                     ->join('prospects', 'prospects.id', '=', 'visites.prospect_id')
                     ->select('freins.tranche', 'freins.etage', 'freins.orientation', 'freins.typologie', 'freins.vue', 'freins.prix_min', 'freins.prix_max', 'freins.superficie_min', 'freins.superficie_max', 'freins.avance', 'freins.id', 'freins.created_at', 'visites.origin_id as id_origin', 'prospects.cin', 'prospects.nom', 'prospects.prenom', 'prospects.telephone', 'prospects.telephone_num2', 'visites.origin_id')
@@ -539,4 +543,50 @@ class FreinController extends Controller
 
     }
 
+
+    /**************************************Apppellls********************** */
+    public function searchFreinByAppelId($id,$text){
+        if($text=='without_row_deleted'){
+            $frein=Frein::on('temp')->where('traite_appel_id',$id)->first();
+            if($frein){
+
+                    $frein_tranches=FreinTranche::on('temp')->where('frein_id',$frein->id)->get();
+                    if(count($frein_tranches)>0){
+                        $frein['frein_tranches']=$frein_tranches;
+                    }
+
+                    $frein_etages=FreinEtage::on('temp')->where('frein_id',$frein->id)->get();
+                    if(count($frein_etages)){
+                        $frein['frein_etages']=$frein_etages;
+                    }
+
+
+                    $frein_vues=FreinVue::on('temp')->where('frein_id',$frein->id)->get();
+                    if(count($frein_vues)){
+                        $frein['frein_vues']=$frein_vues;
+                    }
+
+
+
+                    $frein_typologies=FreinTypologie::on('temp')->where('frein_id',$frein->id)->get();
+                    if(count($frein_typologies)){
+                        $frein['frein_typologies']=$frein_typologies;
+                    }
+
+                    $frein_orientations=FreinOrientation::on('temp')->where('frein_id',$frein->id)->get();
+                    if(count($frein_orientations)){
+                        $frein['frein_orientations']=$frein_orientations;
+                    }
+
+
+                return $frein;
+            }
+            else
+            {
+                return null;
+            }
+
+        }
+
+    }
 }

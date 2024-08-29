@@ -35,5 +35,8 @@ class Notification extends Model
     public function bien(){
         return $this->belongsTo(Bien::class,'bien_id');
     }
+    public function TraitementAppel(){
+        return $this->belongsTo(TraitementAppel::class,'traite_appel_id');
+    }
 
 }

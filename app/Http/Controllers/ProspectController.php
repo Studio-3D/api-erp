@@ -73,6 +73,7 @@ class ProspectController extends Controller
             $prospect->source = $request->source;
             $prospect->partenaire_id = $request->partenaire_id;
             $prospect->message = $request->message;
+            $prospect->ville=$request->ville;
             $prospect->save();
             return $prospect;
 
@@ -220,7 +221,7 @@ class ProspectController extends Controller
                 ->select('visites.*')
                 ->where('prospect_id', $prospect_id)
                 ->get()->groupby('origin_id');
-            
+
             $visites = $visites->map(function ($visite) {
                 return [
                     'id' => $visite->first()->id,

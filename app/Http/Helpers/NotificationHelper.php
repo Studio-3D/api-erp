@@ -25,6 +25,7 @@ class NotificationHelper
         $notif->avance_id= $request->avance_id;
         $notif->reservation_id= $request->reservation_id;
         $notif->bien_id= $request->bien_id;
+        $notif->traite_appel_id= $request->traite_appel_id;
         $notif->save();
     }
     public static function destroy_notif_bien_dispo_frein($visite_id){

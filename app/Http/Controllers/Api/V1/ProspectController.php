@@ -10,6 +10,7 @@ use App\Http\Requests\StoreProspectRequest;
 use App\Http\Requests\UpdateProspectRequest;
 use App\Models\Prospect;
 use App\Models\Visite;
+use App\Models\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -73,6 +74,7 @@ class ProspectController extends Controller
             $prospect->source = $request->source;
             $prospect->partenaire_id = $request->partenaire_id;
             $prospect->message = $request->message;
+            $prospect->ville=$request->ville;
             $prospect->save();
             return $prospect;
 
@@ -212,6 +214,40 @@ class ProspectController extends Controller
         }
     }
 
+    //Appels
+    public function search_info_by_cin($cin)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+
+            $prospect = Prospect::on('temp')->with('visites','appels')->where('cin', $cin)
+            ->get()->first();
+            $client=Client::on('temp')->where('cin',$cin)->get()->first();
+            //appel by prospect
+            //visites by prospect
+            return response()->json(['prospect' => $prospect,'client'=>$client]);
+        }
+    }
+     public function search_info_by_phone($phone)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $prospect = Prospect::on('temp')->with('visites','appels')
+                ->where(function ($query) use ($phone) {
+                    $query->where('telephone', $phone)
+                        ->orwhere('telephone_num2', $phone)
+                    ;})
+                ->get()->first();
+            $client = Client::on('temp')->with('prospect')
+                ->where(function ($query) use ($phone) {
+                    $query->where('telephone_num1', $phone)
+                        ->orwhere('telephone_num2', $phone)
+                    ;})
+                ->get()->first();
+
+            return response()->json(['prospect' => $prospect,'client'=>$client]);
+        }
+    }
     public function VisitesByprospect(Request $request, $prospect_id)
     {
         if (Auth::guard('api')->check()) {

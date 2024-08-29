@@ -25,6 +25,8 @@ return new class extends Migration
             $table->foreignId('prospect_id')->nullable()->constrained('prospects')->onDelete('cascade');
             $table->foreignId('avance_id')->nullable()->constrained('avances')->onDelete('cascade');
             $table->foreignId('reservation_id')->nullable()->constrained('reservations')->onDelete('cascade');
+            $table->foreignId('bien_id')->nullable()->constrained('biens')->onDelete('cascade');
+            $table->foreignId('traite_appel_id')->nullable()->constrained('traitements_appels')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
         });
