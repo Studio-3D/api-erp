@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\V1\ReservationController as V1ReservationController
 use App\Http\Controllers\Api\V1\AquereurController as V1AvanceController;
 use App\Http\Controllers\Api\V1\AppelController as V1AppelController;
 use App\Http\Controllers\Api\V1\EnumController as V1EnumController;
+use App\Http\Controllers\Api\V1\EncaissementController as V1EncaissementController;
 use App\Http\Controllers\AquereurController;
 use App\Http\Controllers\AvanceController;
 use App\Http\Controllers\BanqueController;
@@ -182,7 +183,9 @@ Route::middleware('auth:api')->group(function () {
         //Enumeartion
         Route::get('InteretEnum_appel', [V1EnumController::class, 'InteretEnum__appel_get'])->name('');
 
-
+        //Encaissements
+        Route::resource('encaissements', V1EncaissementController::class);
+        Route::get('projets/{idprojet}/encaissements', [V1EncaissementController::class, 'indexByProjet']);
 
     });
 
