@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Auth;
         //$rules['nom']='required|string';
         $rules['prenom'] = 'required|string';
         $rules['interet'] = 'required';
-        if ($request->telephone_num2) {
+       if ($request->telephone_num2!=null) {
             $rules['telephone_num2'] = 'min:10|max:14';
         }
         if ($request->source_txt === 'PARTENAIRE') {
