@@ -24,4 +24,18 @@ class Encaissement extends Model
     {
         return $this->belongsTo(Avance::class,'avance_id');
     }
+    public function reservations()
+    {
+        return $this->belongsTo(Reservation::class,'reservation_id');
+    }
+    public function remboursement()
+    {
+        return $this->belongsTo(Remboursement::class,'remboursement_id');
+    }
+
+    public function penalite()
+    {
+        return $this->belongsTo(PenaliteDesistement::class,'penalite_id');
+    }
+
 }
