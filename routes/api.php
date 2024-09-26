@@ -26,6 +26,12 @@ use App\Http\Controllers\Api\V1\AppelController as V1AppelController;
 use App\Http\Controllers\Api\V1\EnumController as V1EnumController;
 use App\Http\Controllers\Api\V1\EncaissementController as V1EncaissementController;
 use App\Http\Controllers\Api\V1\ComptabiliteController as V1ComptabiliteController;
+use App\Http\Controllers\Api\V1\FournisseurController as V1FournisseurController;
+use App\Http\Controllers\Api\V1\DecompteController as V1DecompteController;
+use App\Http\Controllers\Api\V1\FactureController as V1FactureController;
+use App\Http\Controllers\Api\V1\CpsController as V1CpsController;
+use App\Http\Controllers\Api\V1\CreditsController as V1CreditsController;
+
 use App\Http\Controllers\AquereurController;
 use App\Http\Controllers\AvanceController;
 use App\Http\Controllers\BanqueController;
@@ -208,6 +214,24 @@ Route::middleware('auth:api')->group(function () {
         Route::get('projets/{idprojet}/get_tva_collecte_par_bien', [V1ComptabiliteController::class, 'get_tva_collecte_par_bien'])->name('');
         Route::get('projets/{idprojet}/get_tva_collecte_mensuelle', [V1ComptabiliteController::class, 'get_tva_collecte_mensuelle'])->name('');
         Route::put('ajouter_modifier_coeff/{id}', [V1ComptabiliteController::class, 'ajouter_modifier_coeff'])->name('');
+        //fournisseurs
+        Route::resource('fournisseurs', V1FournisseurController::class);
+        Route::get('projets/{idprojet}/fournisseurs', [V1FournisseurController::class, 'indexByProjet']);
+        //decomptes
+        Route::resource('decomptes', V1DecompteController::class);
+        Route::get('projets/{idprojet}/decomptes', [V1DecompteController::class, 'indexByProjet']);
+        Route::get('decomptes_in_facture/{projet_id}', [V1DecompteController::class, 'decomptes_in_facture']);
+
+         //factures
+         Route::resource('factures', V1FactureController::class);
+         Route::get('projets/{idprojet}/factures', [V1FactureController::class, 'indexByProjet']);
+          //cps
+          Route::resource('cps', V1CpsController::class);
+          Route::get('projets/{idprojet}/cps', [V1CpsController::class, 'indexByProjet']);
+          //credits
+          Route::resource('credits', V1CreditsController::class);
+          Route::get('projets/{idprojet}/credits', [V1CreditsController::class, 'indexByProjet']);
+          Route::put('update_credit/{id}', [V1CreditsController::class, 'update']);
 
 
     });

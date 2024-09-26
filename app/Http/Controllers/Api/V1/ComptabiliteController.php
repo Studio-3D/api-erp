@@ -81,7 +81,7 @@ class ComptabiliteController extends Controller
 
 
 
- 
+
     public function calculer_tva(StoreTvaRequest $request,$tranche_id)
     {
         if (RoleHelper::ACSup()) {
@@ -200,7 +200,7 @@ class ComptabiliteController extends Controller
 
         return response()->json(['error' => 'Unauthorized'], 401);
     }
-    public function get_tva_collecte_mensuelle (Request $request,$projet_id){
+    public function get_tva_collecte_mensuelle(Request $request,$projet_id){
         if (Auth::guard('api')->check()) {
             $size = $request->input('size', null);
             $page = $request->input('page', null);
@@ -217,15 +217,12 @@ class ComptabiliteController extends Controller
                 $end = Carbon::parse($request->input('a'));
                 $query->whereDate('created_at','<=', $end);
             }
+           
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
 
                 $tva_collectes = $query->orderBy('created_at', 'desc')
-                    ->get();
-                    $sum = 0;
-                    foreach ($tva_collectes as $av) {
-                        $sum += $av->tva_a_payer;
-                    }
-                $tva_collectes = PaginationHelper::paginate_array($tva_collectes->toArray(), $size, $page, $request->url());
+                    ->paginate($size, ['*'], 'page', $page);
+
                 $pagination = [
                     'currentPage' => $tva_collectes->currentPage(),
                     'totalItems' => $tva_collectes->total(),
@@ -236,7 +233,6 @@ class ComptabiliteController extends Controller
 
                 return response()->json([
                     'data' => $tva_collectes,
-                    'sum'=>$sum,
                     'pagination' => $pagination,
                 ], 200);
             }
