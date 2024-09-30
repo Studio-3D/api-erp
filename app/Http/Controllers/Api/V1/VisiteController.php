@@ -30,6 +30,7 @@ use App\Models\Immeuble;
 use App\Models\Notification;
 use App\Models\Prospect;
 use App\Models\Relance_Rdv_visite;
+use App\Models\TraitementAppel;
 use App\Models\Tranche;
 use App\Models\Typologie;
 use App\Models\User;
@@ -41,7 +42,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
 use \NumberFormatter;
-use App\Models\TraitementAppel;
 
 class VisiteController extends Controller
 {
@@ -262,7 +262,9 @@ class VisiteController extends Controller
         Chercher s'il y a appel du meme client==>le convertir en visite
         convert
         lead to visite
-        ****/
+         ****/
+
+
         $user = Auth::user();
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
@@ -284,6 +286,8 @@ class VisiteController extends Controller
                     $validatedData['partenaire_id'] = null;
                 }
                 $validatedData['telephone'] = $request->telephone;
+                $validatedData['nom'] = $request->nom;
+                $validatedData['prenom'] = $request->prenom;
                 $validatedData['telephone_num2'] = $request->telephone_num2;
                 $validatedData['ville'] = $request->input('ville');
                 $validatedData['origin'] = 'visite';
@@ -422,11 +426,11 @@ class VisiteController extends Controller
                             $freinRequest['sup_max'] = $request->sup_max;
                             $freinRequest['etat'] = 1;
                             $freinRequest['avance'] = $request->avance;
-                            $freinRequest['selectedTranches'] = $request->tranches_id;
+                            $freinRequest['selectedTranches'] = $request->tranches;
                             $freinRequest['selectedEtages'] = $request->etages;
                             $freinRequest['selectedOrientations'] = $request->orientations;
-                            $freinRequest['selectedTypologies'] = $request->typologies_id;
-                            $freinRequest['selectedVues'] = $request->vues_id;
+                            $freinRequest['selectedTypologies'] = $request->typologies;
+                            $freinRequest['selectedVues'] = $request->vues;
 
                             $freinController = new FreinController();
                             $freinController->store(new StoreFreinRequest($freinRequest));
@@ -489,11 +493,11 @@ class VisiteController extends Controller
                         }
 
                         //store visite_id to ==>traitement_appel
-                        if($request->id_t_appel!="null"){
-                            $t_appel=TraitementAppel::on('temp')->findorfail($request->id_t_appel);
-                            $t_appel->visite_id=$visite->id;
-                            $t_appel->date_convert_visite=Carbon::now();
-                            $t_appel->user_id_convert_visite= $userAuth->value('id');
+                        if ($request->id_t_appel != "null") {
+                            $t_appel = TraitementAppel::on('temp')->findorfail($request->id_t_appel);
+                            $t_appel->visite_id = $visite->id;
+                            $t_appel->date_convert_visite = Carbon::now();
+                            $t_appel->user_id_convert_visite = $userAuth->value('id');
                             $t_appel->save();
                         }
 
@@ -662,7 +666,7 @@ class VisiteController extends Controller
                                         'telephone_num2' => $request->telephone_num2,
                                         'notifie' => $prospect->notifie,
                                         'prospect_id' => $prospect->id,
-                                        'civilite' => 'Mr',
+                                        'civilite' => '1',
                                         'type_client' => 1,
                                         'situation_familliale' => 1,
                                         'sr' => $list_biens['sr'],
@@ -686,11 +690,11 @@ class VisiteController extends Controller
                             }
                             //convert appel to visite
                             //store visite_id to ==>traitement_appel
-                            if($request->id_t_appel!="null"){
-                                $t_appel=TraitementAppel::on('temp')->findorfail($request->id_t_appel);
-                                $t_appel->visite_id=$first_v_id;
-                                $t_appel->date_convert_visite=Carbon::now();
-                                $t_appel->user_id_convert_visite= $userAuth->value('id');
+                            if ($request->id_t_appel != "null") {
+                                $t_appel = TraitementAppel::on('temp')->findorfail($request->id_t_appel);
+                                $t_appel->visite_id = $first_v_id;
+                                $t_appel->date_convert_visite = Carbon::now();
+                                $t_appel->user_id_convert_visite = $userAuth->value('id');
                                 $t_appel->save();
                             }
 
@@ -839,7 +843,7 @@ class VisiteController extends Controller
                                         'telephone_num2' => $request->telephone_num2,
                                         'notifie' => $prospect->notifie,
                                         'prospect_id' => $prospect->id,
-                                        'civilite' => 'Mr',
+                                        'civilite' => '1',
                                         'type_client' => 1,
                                         'situation_familliale' => 1,
                                         'sr' => $list_biens['sr'],
@@ -869,11 +873,11 @@ class VisiteController extends Controller
                             }
                             //convert appel to visite
                             //store visite_id to ==>traitement_appel
-                            if($request->id_t_appel!="null"){
-                                $t_appel=TraitementAppel::on('temp')->findorfail($request->id_t_appel);
-                                $t_appel->visite_id=$first_v_id;
-                                $t_appel->date_convert_visite=Carbon::now();
-                                $t_appel->user_id_convert_visite= $userAuth->value('id');
+                            if ($request->id_t_appel != "null") {
+                                $t_appel = TraitementAppel::on('temp')->findorfail($request->id_t_appel);
+                                $t_appel->visite_id = $first_v_id;
+                                $t_appel->date_convert_visite = Carbon::now();
+                                $t_appel->user_id_convert_visite = $userAuth->value('id');
                                 $t_appel->save();
                             }
                         }
@@ -936,7 +940,7 @@ class VisiteController extends Controller
     {
         DatabaseHelper::Config();
         $b_pr = Bien::on('temp')->findorfail($id);
-        $propriete=0;
+        $propriete = 0;
 
         //tranches bloc w immeuble
         if ($b_pr->tranche_id != null && $b_pr->bloc_id != null && $b_pr->immeuble_id != null) {
@@ -1199,6 +1203,7 @@ class VisiteController extends Controller
             $prospect->prenom = $request->prenom;
             $prospect->telephone = $request->telephone;
             $prospect->telephone_num2 = $request->telephone_num2;
+            $prospect->ville = $request->input('ville');
             $prospect->source = $request->source_id;
             if ($request->source_txt == 'Partenaire') {
                 $prospect->partenaire_id = $request->partenaire_id;
@@ -1371,9 +1376,10 @@ class VisiteController extends Controller
                     'prenom' => $prospect->prenom,
                     'telephone_num1' => $prospect->telephone,
                     'telephone_num2' => $prospect->telephone_num2,
+                    'ville' => $prospect->ville,
                     'notifie' => $prospect->notifie,
                     'prospect_id' => $prospect->id,
-                    'civilite' => 'Mr',
+                    'civilite' => '1',
                     'type_client' => 1,
                     'situation_familliale' => 1,
                     'sr' => $request->sr,
@@ -1398,19 +1404,20 @@ class VisiteController extends Controller
             // }
 
             if ($visite->interet == InteretEnum::Perdu->value) {
+
                 $frein_id = Frein::on('temp')->where('visite_id', $visite->id)->get();
-                    $freinRequest['prix_min']=$request->prix_min;
-                    $freinRequest['freins']=$request->freins;
-                    $freinRequest['prix_max']=$request->prix_max;
-                    $freinRequest['sup_min']=$request->sup_min;
-                    $freinRequest['sup_max']=$request->sup_max;
-                    $freinRequest['etat']=1;
-                    $freinRequest['avance']=$request->avance;
-                    $freinRequest['selectedTranches']=$request->tranches_id;
-                    $freinRequest['selectedEtages']=$request->etages;
-                    $freinRequest['selectedOrientations']=$request->orientations;
-                    $freinRequest['selectedTypologies']=$request->typologies;
-                    $freinRequest['selectedVues']=$request->vues;
+                $freinRequest['prix_min'] = $request->prix_min;
+                $freinRequest['freins'] = $request->freins;
+                $freinRequest['prix_max'] = $request->prix_max;
+                $freinRequest['sup_min'] = $request->sup_min;
+                $freinRequest['sup_max'] = $request->sup_max;
+                $freinRequest['etat'] = 1;
+                $freinRequest['avance'] = $request->avance;
+                $freinRequest['selectedTranches'] = $request->tranches;
+                $freinRequest['selectedEtages'] = $request->etages;
+                $freinRequest['selectedOrientations'] = $request->orientations;
+                $freinRequest['selectedTypologies'] = $request->typologies;
+                $freinRequest['selectedVues'] = $request->vues;
                 $freinController = new FreinController();
                 if (!$frein_id->isEmpty()) {
                     $freinController->update(new UpdateFreinRequest($freinRequest), $frein_id->value('id'));
@@ -1667,7 +1674,7 @@ class VisiteController extends Controller
                             $freinRequest['sup_max'] = $request->sup_max;
                             $freinRequest['etat'] = 1;
                             $freinRequest['avance'] = $request->avance;
-                            $freinRequest['selectedTranches'] = $request->tranches_id;
+                            $freinRequest['selectedTranches'] = $request->tranches;
                             $freinRequest['selectedEtages'] = $request->etages;
                             $freinRequest['selectedOrientations'] = $request->orientations;
                             $freinRequest['selectedTypologies'] = $request->typologies;
@@ -1823,9 +1830,10 @@ class VisiteController extends Controller
                                         'prenom' => $prospect->prenom,
                                         'telephone_num1' => $prospect->telephone,
                                         'telephone_num2' => $prospect->telephone_num2,
+                                        'ville' => $prospect->ville,
                                         'notifie' => $prospect->notifie,
                                         'prospect_id' => $prospect->id,
-                                        'civilite' => 'Mr',
+                                        'civilite' => '1',
                                         'type_client' => 1,
                                         'situation_familliale' => 1,
                                         'sr' => $list_biens['sr'],
@@ -1918,9 +1926,10 @@ class VisiteController extends Controller
                                         'prenom' => $prospect->prenom,
                                         'telephone_num1' => $prospect->telephone,
                                         'telephone_num2' => $prospect->telephone_num2,
+                                        'ville' => $prospect->ville,
                                         'notifie' => $prospect->notifie,
                                         'prospect_id' => $prospect->id,
-                                        'civilite' => 'Mr',
+                                        'civilite' => '1',
                                         'type_client' => 1,
                                         'situation_familliale' => 1,
                                         'sr' => $list_biens['sr'],
@@ -1970,12 +1979,12 @@ class VisiteController extends Controller
                             }
                         }
                         /***RENDRE LES OLD RELANCES ET OLD RDV EN TRAITE AUTOMATIQUE****/
-                        $old_relances_rdv=Relance_Rdv_visite::on('temp')->where('visite_id',$old_visite->id)->where('type_traitement',0)->get();
-                        if(count($old_relances_rdv)>0){
-                            foreach($old_relances_rdv as $old){
-                                $old->type_traitement=2;//auto
-                                $old->date_traitement=Carbon::now();
-                                $old->user_id_traite=$userAuth->value('id');
+                        $old_relances_rdv = Relance_Rdv_visite::on('temp')->where('visite_id', $old_visite->id)->where('type_traitement', 0)->get();
+                        if (count($old_relances_rdv) > 0) {
+                            foreach ($old_relances_rdv as $old) {
+                                $old->type_traitement = 2; //auto
+                                $old->date_traitement = Carbon::now();
+                                $old->user_id_traite = $userAuth->value('id');
                                 $old->save();
                             }
                         }
