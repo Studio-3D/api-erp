@@ -183,7 +183,7 @@ class CreditsController extends Controller
             $cr->nb_mois = $request->nb_mois;
             $cr->taux_interet = $request->taux_interet;
             $cr->montant_interet = $request->montant_interet;
-        
+
             if ($cr->save()) {
                 return response()->json(['cr' => $cr], 200);
             }
@@ -207,6 +207,25 @@ class CreditsController extends Controller
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
+    }
+
+    public function get_info_numero_credit_unique($id,$num)
+    {
+            if(RoleHelper::ACSup()){
+                $user = Auth::user();
+                DatabaseHelper::Config();
+
+                if($id!=0){
+                   $info_count=Credit::on('temp')->where('num_contrat',$num)->where('id','!=',$id)->count();
+                }else{
+                   $info_count=Credit::on('temp')->where('num_contrat',$num)->count();
+                }
+                return response()->json(['info_count' => $info_count]);
+
+
+            } else {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
     }
 }
 

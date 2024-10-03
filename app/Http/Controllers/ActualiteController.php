@@ -394,7 +394,7 @@ class ActualiteController extends Controller
         }
     }
 
-    public function get_visites(Request $request)
+    public  function get_visites(Request $request)
     {
         DatabaseHelper::Config();
         //si est un commercial ou admin fait actualite par commercial

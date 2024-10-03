@@ -493,7 +493,7 @@ class VisiteController extends Controller
                         }
 
                         //store visite_id to ==>traitement_appel
-                        if ($request->id_t_appel != "null") {
+                        if ($request->id_t_appel != null) {
                             $t_appel = TraitementAppel::on('temp')->findorfail($request->id_t_appel);
                             $t_appel->visite_id = $visite->id;
                             $t_appel->date_convert_visite = Carbon::now();
@@ -690,7 +690,7 @@ class VisiteController extends Controller
                             }
                             //convert appel to visite
                             //store visite_id to ==>traitement_appel
-                            if ($request->id_t_appel != "null") {
+                            if ($request->id_t_appel != null) {
                                 $t_appel = TraitementAppel::on('temp')->findorfail($request->id_t_appel);
                                 $t_appel->visite_id = $first_v_id;
                                 $t_appel->date_convert_visite = Carbon::now();
@@ -873,7 +873,7 @@ class VisiteController extends Controller
                             }
                             //convert appel to visite
                             //store visite_id to ==>traitement_appel
-                            if ($request->id_t_appel != "null") {
+                            if ($request->id_t_appel !=null) {
                                 $t_appel = TraitementAppel::on('temp')->findorfail($request->id_t_appel);
                                 $t_appel->visite_id = $first_v_id;
                                 $t_appel->date_convert_visite = Carbon::now();
