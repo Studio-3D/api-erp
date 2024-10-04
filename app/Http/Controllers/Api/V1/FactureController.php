@@ -277,7 +277,26 @@ class FactureController extends Controller
     }
 
 
+    public function get_info_numero_facture_unique($id,$num)
+    {
+            if(RoleHelper::ACSup()){
+                $user = Auth::user();
+                DatabaseHelper::Config();
 
+                if($id!=0){
+                   $info_count=Facture::on('temp')->where('num_facture',$num)->where('id','!=',$id)->count();
+                }else{
+                   $info_count=Facture::on('temp')->where('num_facture',$num)->count();
+                }
+                return response()->json(['info_count' => $info_count]);
+
+
+            } else {
+                return response()->json(['error' => 'Unauthorized'], 401);
+
+
+            }
+    }
 
 
 }

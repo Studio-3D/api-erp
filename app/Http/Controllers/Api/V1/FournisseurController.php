@@ -91,6 +91,8 @@ class FournisseurController extends Controller
             $four->code = $request->code;
             $four->nom = $request->nom;
             $four->rc = $request->rc;
+            $four->projet_id = $request->projet_id;
+            $four->user_id=$userAuth->value('id');
             if ($request->hasFile('fichier_rc')) {
                 $four->fichier_rc = $request->file('fichier_rc')->getClientOriginalName();;
                 $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Fournisseurs');
@@ -190,6 +192,27 @@ class FournisseurController extends Controller
          } else {
              return response()->json(['error' => 'Unauthorized'], 401);
          }
+     }
+
+     public function get_info_ice_unique($id,$ice)
+     {
+             if(RoleHelper::ACSup()){
+                 $user = Auth::user();
+                 DatabaseHelper::Config();
+                 //cin unique
+                 if($id!=0){
+                    $info_count=Fournisseur::on('temp')->where('ice',$ice)->where('id','!=',$id)->count();
+                 }else{
+                    $info_count=Fournisseur::on('temp')->where('ice',$ice)->count();
+                 }
+                 return response()->json(['info_count' => $info_count]);
+
+
+             } else {
+                 return response()->json(['error' => 'Unauthorized'], 401);
+             }
+
+
      }
 
 

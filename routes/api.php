@@ -31,6 +31,9 @@ use App\Http\Controllers\Api\V1\DecompteController as V1DecompteController;
 use App\Http\Controllers\Api\V1\FactureController as V1FactureController;
 use App\Http\Controllers\Api\V1\CpsController as V1CpsController;
 use App\Http\Controllers\Api\V1\CreditsController as V1CreditsController;
+use App\Http\Controllers\Api\V1\StatistiquesController as V1StatistiquesController;
+
+
 
 use App\Http\Controllers\AquereurController;
 use App\Http\Controllers\AvanceController;
@@ -218,21 +221,30 @@ Route::middleware('auth:api')->group(function () {
         //fournisseurs
         Route::resource('fournisseurs', V1FournisseurController::class);
         Route::get('projets/{idprojet}/fournisseurs', [V1FournisseurController::class, 'indexByProjet']);
+        Route::get('get_info_ice_unique/{id}/{ice}', [V1FournisseurController::class, 'get_info_ice_unique']);
+
         //decomptes
         Route::resource('decomptes', V1DecompteController::class);
         Route::get('projets/{idprojet}/decomptes', [V1DecompteController::class, 'indexByProjet']);
         Route::get('decomptes_in_facture/{projet_id}', [V1DecompteController::class, 'decomptes_in_facture']);
+        Route::get('get_info_numero_decompte_unique/{id}/{num}', [V1DecompteController::class, 'get_info_numero_decompte_unique']);
 
          //factures
-         Route::resource('factures', V1FactureController::class);
-         Route::get('projets/{idprojet}/factures', [V1FactureController::class, 'indexByProjet']);
+        Route::resource('factures', V1FactureController::class);
+        Route::get('projets/{idprojet}/factures', [V1FactureController::class, 'indexByProjet']);
+        Route::get('get_info_numero_facture_unique/{id}/{num}', [V1FactureController::class, 'get_info_numero_facture_unique']);
+
           //cps
-          Route::resource('cps', V1CpsController::class);
-          Route::get('projets/{idprojet}/cps', [V1CpsController::class, 'indexByProjet']);
+        Route::resource('cps', V1CpsController::class);
+        Route::get('projets/{idprojet}/cps', [V1CpsController::class, 'indexByProjet']);
           //credits
-          Route::resource('credits', V1CreditsController::class);
-          Route::get('projets/{idprojet}/credits', [V1CreditsController::class, 'indexByProjet']);
-          Route::put('update_credit/{id}', [V1CreditsController::class, 'update']);
+        Route::resource('credits', V1CreditsController::class);
+        Route::get('projets/{idprojet}/credits', [V1CreditsController::class, 'indexByProjet']);
+        Route::put('update_credit/{id}', [V1CreditsController::class, 'update']);
+        Route::get('get_info_numero_credit_unique/{id}/{num}', [V1CreditsController::class, 'get_info_numero_credit_unique']);
+
+          //Statistiques
+        Route::get('statistiques_admin/{projet_id}/{de_date}/{a_date}', [V1StatistiquesController::class, 'index_admin'])->name('');
 
 
     });

@@ -187,7 +187,24 @@ class DecompteController extends Controller
     }
 
 
+    public function get_info_numero_decompte_unique($id,$num)
+    {
+            if(RoleHelper::ACSup()){
+                $user = Auth::user();
+                DatabaseHelper::Config();
 
+                if($id!=0){
+                   $info_count=Decompte::on('temp')->where('numero',$num)->where('id','!=',$id)->count();
+                }else{
+                   $info_count=Decompte::on('temp')->where('numero',$num)->count();
+                }
+                return response()->json(['info_count' => $info_count]);
+
+
+            } else {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+    }
 
 
 }
