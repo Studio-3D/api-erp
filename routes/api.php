@@ -32,6 +32,8 @@ use App\Http\Controllers\Api\V1\FactureController as V1FactureController;
 use App\Http\Controllers\Api\V1\CpsController as V1CpsController;
 use App\Http\Controllers\Api\V1\CreditsController as V1CreditsController;
 use App\Http\Controllers\Api\V1\StatistiquesController as V1StatistiquesController;
+use App\Http\Controllers\Api\V1\HomeController as V1HomeController;
+use App\Http\Controllers\Api\V1\ObjectifController as V1ObjectifsController;
 
 
 
@@ -101,6 +103,8 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('/utilisateurs', V1UserController::class);
         Route::put('activateUser/{id}', [V1UserController::class, 'activateUser'])->name('activateUser');
         Route::put('desactivateUser/{id}', [V1UserController::class, 'desactivateUser'])->name('desactivateUser');
+        Route::get('commerciaux_objectif/{projet_id}', [V1UserController::class, 'list_commerciaux_objectif'])->name('');
+        Route::get('commerciaux/{projet_id}', [V1UserController::class, 'list_commerciaux'])->name('');
 
         // l'API societes
         Route::resource('societes', V1SocieteController::class);
@@ -244,8 +248,13 @@ Route::middleware('auth:api')->group(function () {
         Route::get('get_info_numero_credit_unique/{id}/{num}', [V1CreditsController::class, 'get_info_numero_credit_unique']);
 
           //Statistiques
-        Route::get('statistiques_admin/{projet_id}/{de_date}/{a_date}', [V1StatistiquesController::class, 'index_admin'])->name('');
+        Route::get('statistiques_admin/{projet_id}/{de}/{a}', [V1StatistiquesController::class, 'index_admin'])->name('');
 
+        //fullcalendar home
+        Route::get('fullcalendar/{projet_id}/{user_id}', [V1HomeController::class, 'fullcalendar'])->name('');
+        //objectifs
+        Route::resource('objectifs', V1ObjectifsController::class);
+        Route::get('projets/{idprojet}/objectifs', [V1ObjectifsController::class, 'indexByProjet']);
 
     });
 
