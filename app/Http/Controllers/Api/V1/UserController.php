@@ -9,6 +9,9 @@ use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\Societe;
+use App\Models\UserProjet;
+use App\Models\Objectif;
+
 use App\Models\V1\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,6 +27,59 @@ class UserController extends Controller
      * PUT    /{id}   update
      * DELETE /{id}   destroy
      */
+
+    public function list_commerciaux_objectif ($projet_id){
+
+        if (Auth::guard('api')->check() ) {
+            DatabaseHelper::Config();
+            if(RoleHelper::AdminSup()){
+                $objectifs = Objectif::on('temp')->distinct(['user_id'])->get('user_id');
+                $arrQuery = array();;
+                for ($i = 0; $i < count($objectifs); $i++) {
+                array_push($arrQuery, $objectifs[$i]->user_id);
+                  }
+                  //stock all user_id into array and get users where user_id not in tble objectif
+               $data=UserProjet::on('temp')->with('user')
+               ->where('projet_id',$projet_id)
+               ->whereHas('user', function($q){
+                $q->where('role',3);
+
+            })->whereNotIn('user_id', $arrQuery)->get();
+
+            }
+           return response()->json(['users' => $data]);
+        }
+         else{
+            return response()->json(['error' => 'Unauthorized'], 401);
+         }
+    }
+
+    public function list_commerciaux ($projet_id){
+
+        if (Auth::guard('api')->check() ) {
+            DatabaseHelper::Config();
+            if(RoleHelper::AdminSup()){
+
+                  //stock all user_id into array and get users where user_id not in tble objectif
+                $query = UserProjet::on('temp')->with('user')->distinct(['user_id'])
+                ->whereHas('user', function($q){
+                    $q->where('role',3);
+                    });
+                    if ($projet_id!=0) {
+                        $query->where('projet_id',  $projet_id );
+                    }
+                    $query->get('user_id');
+
+                $data = $query->get('user_id');
+            }
+
+           return response()->json(['data' => $data]);
+        }
+         else{
+            return response()->json(['error' => 'Unauthorized'], 401);
+         }
+    }
+
     public function index(Request $request)
     {
         // Vérifier si l'utilisateur est authentifié
