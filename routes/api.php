@@ -39,8 +39,7 @@ use App\Http\Controllers\Api\V1\PrestatairesController as V1PrestatairesControll
 use App\Http\Controllers\Api\V1\ReclamationController as V1ReclamationsController;
 use App\Http\Controllers\Api\V1\RemiseCleController as V1RemiseCleController;
 
-
-
+use App\Http\Controllers\Api\V1\DesistementController as V1DesistementController;
 
 
 use App\Http\Controllers\AquereurController;
@@ -202,6 +201,11 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('reservations', V1ReservationController::class);
         Route::get('projets/{idprojet}/reservations', [V1ReservationController::class, 'indexByProjet']);
         Route::get('search_reservation_by_code/{code_res}', [V1ReservationController::class, 'search_reservation_by_code']);
+        //l'api desistement
+        Route::resource('desistements', V1DesistementController::class);
+        Route::get('projets/{idprojet}/desistements', [V1DesistementController::class, 'indexByProjet']);
+
+        //Route::get('get_desistements/{projet_id}/{type}/{etat}', [V1DesistementController::class, 'get_desistements'])->name('');
 
         //l'Api relationClients
         Route::resource('appels', V1AppelController::class);
