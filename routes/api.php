@@ -37,6 +37,31 @@ use App\Http\Controllers\Api\V1\PiecesJointeController as V1PiecesJointeControll
 use App\Http\Controllers\Api\V1\UserController as V1UserController;
 use App\Http\Controllers\Api\V1\VisiteController as V1VisiteController;
 use App\Http\Controllers\Api\V1\VueController as V1VueController;
+use App\Http\Controllers\Api\V1\ProspectController as V1ProspectController;
+use App\Http\Controllers\Api\V1\ClientController as V1ClientController;
+use App\Http\Controllers\Api\V1\AquereurController as V1AquereurController;
+use App\Http\Controllers\Api\V1\ReservationController as V1ReservationController;
+use App\Http\Controllers\Api\V1\AvanceController as V1AvanceController;
+use App\Http\Controllers\Api\V1\AppelController as V1AppelController;
+use App\Http\Controllers\Api\V1\EnumController as V1EnumController;
+use App\Http\Controllers\Api\V1\EncaissementController as V1EncaissementController;
+use App\Http\Controllers\Api\V1\ComptabiliteController as V1ComptabiliteController;
+use App\Http\Controllers\Api\V1\FournisseurController as V1FournisseurController;
+use App\Http\Controllers\Api\V1\DecompteController as V1DecompteController;
+use App\Http\Controllers\Api\V1\FactureController as V1FactureController;
+use App\Http\Controllers\Api\V1\CpsController as V1CpsController;
+use App\Http\Controllers\Api\V1\CreditsController as V1CreditsController;
+use App\Http\Controllers\Api\V1\StatistiquesController as V1StatistiquesController;
+use App\Http\Controllers\Api\V1\HomeController as V1HomeController;
+use App\Http\Controllers\Api\V1\ObjectifController as V1ObjectifsController;
+use App\Http\Controllers\Api\V1\ServicesPrestatairesController as V1ServicesPrestatairesController;
+use App\Http\Controllers\Api\V1\PrestatairesController as V1PrestatairesController;
+use App\Http\Controllers\Api\V1\ReclamationController as V1ReclamationsController;
+use App\Http\Controllers\Api\V1\RemiseCleController as V1RemiseCleController;
+
+use App\Http\Controllers\Api\V1\DesistementController as V1DesistementController;
+
+
 use App\Http\Controllers\AquereurController;
 use App\Http\Controllers\AvanceController;
 use App\Http\Controllers\BanqueController;
@@ -262,6 +287,27 @@ Route::middleware('auth:api')->group(function () {
         Route::get('projets/{idprojet}/objectifs', [V1ObjectifsController::class, 'indexByProjet']);
         //piecejointe
         Route::get('files_docs/{docs}', [V1PiecesJointeController::class, 'files_docs'])->name('files_docs');
+        //sav
+        Route::resource('ServicesPrestataires', V1ServicesPrestatairesController::class);
+        Route::get('services', [V1ServicesPrestatairesController::class, 'get_services']);
+        Route::get('projets/{idprojet}/ServicesPrestataires', [V1ServicesPrestatairesController::class, 'index']);
+
+        Route::resource('/Prestataires', V1PrestatairesController::class);
+        Route::get('projets/{idprojet}/Prestataires', [V1PrestatairesController::class, 'index']);
+        Route::get('search_prestataire_by_param/{param_1}/{value}', [V1PrestatairesController::class, 'search_prestataire_by_param']);
+        Route::get('get_info_cin_prestataire_unique/{prospect_id}/{cin}', [V1PrestatairesController::class, 'get_info_cin_prestataire_unique']);
+
+        //reclamations
+        Route::resource('/Reclamations', V1ReclamationsController::class);
+        Route::get('projets/{idprojet}/Reclamations', [V1ReclamationsController::class, 'indexByProjet']);
+        Route::get('getBiens_Vendu_ByProjet_Concat/{id}/{text}', [V1BienController::class, 'getBiens_Vendu_ByProjet_Concat'])->name('');
+        Route::put('traiter_reclamation/{id}', [V1ReclamationsController::class, 'traiter_reclamation'])->name('');
+
+        //Remise Cles
+        Route::resource('/RemiseCles', V1RemiseCleController::class);
+        Route::get('projets/{idprojet}/RemiseCles', [V1RemiseCleController::class, 'indexByProjet']);
+
+
 
     });
 
