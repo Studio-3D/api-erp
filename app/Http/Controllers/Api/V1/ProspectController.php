@@ -34,7 +34,7 @@ class ProspectController extends Controller
                 if ($request->filled('telephone')) {
                     $q->where(function ($subQuery) use ($request) {
                         $subQuery->where('telephone', 'like', '%' . $request->input('telephone') . '%')
-                                 ->orWhere('telephone_num2', 'like', '%' . $request->input('telephone') . '%');
+                            ->orWhere('telephone_num2', 'like', '%' . $request->input('telephone') . '%');
                     });
                 }
             });
@@ -47,8 +47,6 @@ class ProspectController extends Controller
             if ($request->filled('prenom')) {
                 $query->where('prenom', 'like', '%' . $request->input('prenom') . '%');
             }
-            
-            
 
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
 
@@ -82,7 +80,6 @@ class ProspectController extends Controller
 
         return response()->json(['error' => 'Unauthorized'], 401);
     }
-    
 
     /**
      * Show the form for creating a new resource.
