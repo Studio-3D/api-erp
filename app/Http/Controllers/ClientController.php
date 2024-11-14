@@ -17,6 +17,7 @@ use App\Models\Visite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class ClientController extends Controller
 {
@@ -101,13 +102,16 @@ class ClientController extends Controller
             $client->nom_pere = $request->nom_pere;
             $client->nom_mere = $request->nom_mere;
             $client->prospect_id = $request->prospect_id;
+            $client->code_client = $request->cin.'_'.$request->nom.'_'.$request->prenom;
             if ($client->save()) {
                 if($client->prospect_id!=null){
                   $prospect = Prospect::on('temp')->findorfail($client->prospect_id);
                   $prospect->client_id=$client->id;
                   $prospect->save();
                 }
-                return $client;
+                  //store info to database client
+                  $db_client = DB::connection('mysql_client')->table('users')->insert(['code_client' => $request->cin.'_'.$request->nom, 'name'=>$request->nom,'prenom'=>$request->prenom,'email'=>$request->email,'password'=>Hash::make('01020304'),'gender'=>$request->civilite,'client_id'=>$client->id]);
+                  return $client;
             }
         }
         return response()->json(['error' => 'Unauthorized'], 401);

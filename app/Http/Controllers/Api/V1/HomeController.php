@@ -37,6 +37,11 @@ class HomeController extends Controller
                 if($user_id==0){
 
                     $query_notif=Notification::on('temp')->with('projet')
+                        ->where('type','!=',3)
+                        ->where('type','!=',6)
+                        ->where('type','!=',7)
+                        ->where('type','!=',22)
+
                         ->where(function ($query) {
                         $query->where('role',RoleEnum::ADMIN->value)
                             ->orwhere('user_id',Auth::guard('api')->user()->id)
@@ -89,6 +94,10 @@ class HomeController extends Controller
                     $us_id=$us->id;
                     //search par user_id not origin
                     $query_notif=Notification::on('temp')->with('projet')
+                    ->where('type','!=',3)
+                    ->where('type','!=',6)
+                    ->where('type','!=',7)
+                    ->where('type','!=',22)
                     ->where('user_id',$user_id)->orderBy('date','desc')->withTrashed();
                         if ($projet_id!=0) {
                             $query_notif->where('projet_id',  $projet_id );
@@ -181,7 +190,10 @@ class HomeController extends Controller
 
 
             }else{
-                $query_notif=Notification::on('temp')->with('projet')
+                $query_notif=Notification::on('temp')->with('projet')->where('type','!=',3)
+                ->where('type','!=',6)
+                ->where('type','!=',7)
+                ->where('type','!=',22)
                 ->where('user_id',Auth::guard('api')->user()->id)->orderBy('date','desc')->withTrashed();
                 if ($projet_id!=0) {
                     $query_notif->where('projet_id',  $projet_id );

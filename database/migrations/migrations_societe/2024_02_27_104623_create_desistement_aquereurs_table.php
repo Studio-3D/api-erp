@@ -11,14 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('nouvel_aquereurs_desistements', function (Blueprint $table) {
+        Schema::create('aquereurs_desistements', function (Blueprint $table) {
             $table->id();
             $table->foreignId('desistement_id')->constrained('desistements')->onDelete('cascade');
-            $table->string('cin');
-            $table->string('nom');
-            $table->string('prenom');
-            $table->string('telephone');
-            $table->integer('pourcentage');
+            $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
+            $table->foreignId('aq_id')->constrained('aquereurs')->onDelete('cascade');
+            $table->integer('pourcentage')->nullable();
+            $table->string('type')->string('desisteurs / profit /non_desisteur');
             $table->softDeletes();
             $table->timestamps();
         });
@@ -29,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('nouvel_aquereurs_desistements');
+        Schema::dropIfExists('aquereurs_desistements');
     }
 };

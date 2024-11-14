@@ -36,7 +36,9 @@ use App\Http\Controllers\Api\V1\HomeController as V1HomeController;
 use App\Http\Controllers\Api\V1\ObjectifController as V1ObjectifsController;
 use App\Http\Controllers\Api\V1\ServicesPrestatairesController as V1ServicesPrestatairesController;
 use App\Http\Controllers\Api\V1\PrestatairesController as V1PrestatairesController;
+use App\Http\Controllers\Api\V1\ReclamationSavController as V1ReclamationsSavController;
 use App\Http\Controllers\Api\V1\ReclamationController as V1ReclamationsController;
+use App\Http\Controllers\Api\V1\EcheancesTrancheController as V1EchancesTrancheCleController;
 use App\Http\Controllers\Api\V1\RemiseCleController as V1RemiseCleController;
 
 use App\Http\Controllers\Api\V1\DesistementController as V1DesistementController;
@@ -279,17 +281,28 @@ Route::middleware('auth:api')->group(function () {
         Route::get('search_prestataire_by_param/{param_1}/{value}', [V1PrestatairesController::class, 'search_prestataire_by_param']);
         Route::get('get_info_cin_prestataire_unique/{prospect_id}/{cin}', [V1PrestatairesController::class, 'get_info_cin_prestataire_unique']);
 
-        //reclamations
-        Route::resource('/Reclamations', V1ReclamationsController::class);
-        Route::get('projets/{idprojet}/Reclamations', [V1ReclamationsController::class, 'indexByProjet']);
+        //ReclamationsSav
+        Route::resource('/ReclamationsSav', V1ReclamationsSavController::class);
+        Route::get('projets/{idprojet}/ReclamationsSav', [V1ReclamationsSavController::class, 'indexByProjet']);
         Route::get('getBiens_Vendu_ByProjet_Concat/{id}/{text}', [V1BienController::class, 'getBiens_Vendu_ByProjet_Concat'])->name('');
-        Route::put('traiter_reclamation/{id}', [V1ReclamationsController::class, 'traiter_reclamation'])->name('');
+        Route::put('traiter_reclamation_sav/{id}', [V1ReclamationsSavController::class, 'traiter_reclamation'])->name('');
 
         //Remise Cles
         Route::resource('/RemiseCles', V1RemiseCleController::class);
         Route::get('projets/{idprojet}/RemiseCles', [V1RemiseCleController::class, 'indexByProjet']);
 
+        //ReclamationsClients
+        Route::resource('ReclamationsClients', V1ReclamationsController::class);
+       // Route::get('projets/{idprojet}/ReclamationsClients ', [V1ReclamationsController::class, 'indexByProjet']);
+        Route::put('traiter_reclamation_client/{id}', [V1ReclamationsController::class, 'traiter_reclamation_client'])->name('');
 
+
+        //Echéances Tranche
+
+        Route::get('projets/{idprojet}/get_tranches_without_echeances', [V1EchancesTrancheCleController::class, 'get_tranches_without_echeances']);
+        Route::resource('/EcheancesTranche', V1EchancesTrancheCleController::class);
+        Route::get('projets/{idprojet}/EcheancesTranche', [V1EchancesTrancheCleController::class, 'indexByProjet']);
+        Route::get('list_echeances_byTrancheId/{id}', [V1EchancesTrancheCleController::class, 'list_echeances_byTrancheId']);
 
     });
 
