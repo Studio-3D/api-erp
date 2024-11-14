@@ -303,6 +303,32 @@ class ClientController extends Controller
         return response()->json(['client' => $client, 'prospect' => $prospect]);
 
     }
+
+    public function search_client_by_email($email)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $client = Client::on('temp')->where('email', $email)
+                ->get()->first();
+
+            if ($client != null) {
+                //si client n'est pas prospect
+                if ($client->prospect_id == null) {
+                    $prospect = Prospect::on('temp')->with('visites_perdu')->where('email', $email)
+                        ->get()->first();
+                } else {
+                    //client est un prospect
+                    $prospect = Prospect::on('temp')->where('id', $client->prospect_id)->with('visites_perdu')->get()->first();
+                }
+            } else {
+                //client n'existe  pas
+                $prospect = Prospect::on('temp')->with('visites_perdu')->where('email', $email)
+                    ->get()->first();
+            }
+
+            return response()->json(['client' => $client, 'prospect' => $prospect]);
+        }
+    }
     public function ReservationsByClient(Request $request, $client_id)
     {
         if (Auth::guard('api')->check()) {

@@ -30,11 +30,9 @@ class StoreProspectRequest extends FormRequest
         $DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
         DatabaseHelper::Config();
         return [
-            'prenom' => 'required',
             'telephone' => 'required|min:10|max:14',
-            'telephone_num2' => 'nullable|min:10|max:14',
-            'cin' => [ 'nullable',Rule::unique('temp.' . $DatabaseName . '.prospects', 'cin')],
-            'email' => [ 'nullable',Rule::unique('temp.' . $DatabaseName . '.prospects', 'email')],
+            'cin' => ['nullable', Rule::unique('temp.' . $DatabaseName . '.prospects', 'cin')],
+            'email' => ['nullable', Rule::unique('temp.' . $DatabaseName . '.prospects', 'email')],
 
         ];
     }
