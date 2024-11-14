@@ -113,7 +113,7 @@ class UserController extends Controller
         }
 
         // Si l'utilisateur s'agit d'un 'superadmin'
-        if (RoleHelper::Superadmin()) {
+        if (RoleHelper::Superadmin() && $user->societe_id == 1) {
             // Filtrer par société si la société est spécifiée
             if ($request->filled('societe')) {
                 $query->whereHas('societe', function ($subQuery) use ($request) {
@@ -126,7 +126,7 @@ class UserController extends Controller
                 $query->where('role', $request->input('role'));
             }
         } // Sinon, si l'utilisateur est 'admin'
-        else if (RoleHelper::Admin()) {
+        else if (RoleHelper::Admin() ||( RoleHelper::Superadmin() && $user->societe_id != 1 )) {
             // Filtrer avec l'id de la société et exclure les utilisateurs ayant le role superAdmin
             $query->where('societe_id', $user->societe_id)->where('role', '!=', 1);
         }
