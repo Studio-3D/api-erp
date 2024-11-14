@@ -15,15 +15,21 @@ use App\Http\Controllers\Api\V1\CreditsController as V1CreditsController;
 use App\Http\Controllers\Api\V1\DecompteController as V1DecompteController;
 use App\Http\Controllers\Api\V1\DesistementController as V1DesistementController;
 use App\Http\Controllers\Api\V1\EncaissementController as V1EncaissementController;
+use App\Http\Controllers\Api\V1\EnumController as V1EnumController;
 use App\Http\Controllers\Api\V1\FactureController as V1FactureController;
 use App\Http\Controllers\Api\V1\FournisseurController as V1FournisseurController;
 use App\Http\Controllers\Api\V1\HomeController as V1HomeController;
 use App\Http\Controllers\Api\V1\ImmeubleController as V1ImmeubleController;
 use App\Http\Controllers\Api\V1\ObjectifController as V1ObjectifsController;
 use App\Http\Controllers\Api\V1\PartenaireController as V1PartenaireController;
+use App\Http\Controllers\Api\V1\PiecesJointeController as V1PiecesJointeController;
+use App\Http\Controllers\Api\V1\PrestatairesController as V1PrestatairesController;
 use App\Http\Controllers\Api\V1\ProjetController as V1ProjetController;
 use App\Http\Controllers\Api\V1\ProspectController as V1ProspectController;
+use App\Http\Controllers\Api\V1\ReclamationController as V1ReclamationsController;
+use App\Http\Controllers\Api\V1\RemiseCleController as V1RemiseCleController;
 use App\Http\Controllers\Api\V1\ReservationController as V1ReservationController;
+use App\Http\Controllers\Api\V1\ServicesPrestatairesController as V1ServicesPrestatairesController;
 use App\Http\Controllers\Api\V1\SocieteController as V1SocieteController;
 use App\Http\Controllers\Api\V1\SourceController as V1SourceController;
 use App\Http\Controllers\Api\V1\StatistiquesController as V1StatistiquesController;
@@ -32,19 +38,9 @@ use App\Http\Controllers\Api\V1\TypeBienController as V1TypeBienController;
 use App\Http\Controllers\Api\V1\TypeFreinController as V1TypeFreinController;
 use App\Http\Controllers\Api\V1\TypeProjetController as V1TypeProjetController;
 use App\Http\Controllers\Api\V1\TypologieController as V1TypologieController;
-use App\Http\Controllers\Api\V1\PiecesJointeController as V1PiecesJointeController;
 use App\Http\Controllers\Api\V1\UserController as V1UserController;
 use App\Http\Controllers\Api\V1\VisiteController as V1VisiteController;
 use App\Http\Controllers\Api\V1\VueController as V1VueController;
-use App\Http\Controllers\Api\V1\EnumController as V1EnumController;
-
-use App\Http\Controllers\Api\V1\ServicesPrestatairesController as V1ServicesPrestatairesController;
-use App\Http\Controllers\Api\V1\PrestatairesController as V1PrestatairesController;
-use App\Http\Controllers\Api\V1\ReclamationController as V1ReclamationsController;
-use App\Http\Controllers\Api\V1\RemiseCleController as V1RemiseCleController;
-
-
-
 use App\Http\Controllers\AquereurController;
 use App\Http\Controllers\AvanceController;
 use App\Http\Controllers\BanqueController;
@@ -189,6 +185,7 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('clients', V1ClientController::class);
         Route::get('search_client_by_cin/{cin}', [V1ClientController::class, 'search_client_by_cin']);
         Route::get('search_client_by_phone/{phone}', [V1ClientController::class, 'search_client_by_phone']);
+        Route::get('search_client_by_email/{email}', [V1ClientController::class, 'search_client_by_email']);
 
         //l'API Aquerreur
         Route::resource('aquereurs', V1AquereurController::class);
@@ -289,8 +286,6 @@ Route::middleware('auth:api')->group(function () {
         //Remise Cles
         Route::resource('/RemiseCles', V1RemiseCleController::class);
         Route::get('projets/{idprojet}/RemiseCles', [V1RemiseCleController::class, 'indexByProjet']);
-
-
 
     });
 
