@@ -113,7 +113,7 @@ class UserController extends Controller
         }
 
         // Si l'utilisateur s'agit d'un 'superadmin'
-        if (RoleHelper::Superadmin()) {
+        if (RoleHelper::Superadmin() && $user->societe_id == 1) {
             // Filtrer par société si la société est spécifiée
             if ($request->filled('societe')) {
                 $query->whereHas('societe', function ($subQuery) use ($request) {
@@ -126,7 +126,7 @@ class UserController extends Controller
                 $query->where('role', $request->input('role'));
             }
         } // Sinon, si l'utilisateur est 'admin'
-        else if (RoleHelper::Admin()) {
+        else if (RoleHelper::Admin() ||( RoleHelper::Superadmin() && $user->societe_id != 1 )) {
             // Filtrer avec l'id de la société et exclure les utilisateurs ayant le role superAdmin
             $query->where('societe_id', $user->societe_id)->where('role', '!=', 1);
         }
@@ -271,7 +271,7 @@ class UserController extends Controller
                 return response()->json(['message' => 'profil modifié avec succès'], 200);
 
             }
-        } else if (RoleHelper::Superadmin()) {
+        } else if (RoleHelper::AdminSup()) {
             $user = User::findOrFail($id);
 
             $user->name = $request->input('name');
@@ -318,51 +318,6 @@ class UserController extends Controller
 
             return response()->json(['message' => 'Utilisateur modifié avec succès par super admin'], 200);
 
-        } else if (RoleHelper::Admin()) {
-            DatabaseHelper::Config();
-            $user = User::on('temp')->findOrfail($id);
-            $user->name = $request->input('name');
-            $user->prenom = $request->input('prenom');
-            $user->email = $request->input('email');
-            $user->gender = $request->input('gender');
-            $user->role = $request->input('role');
-            $user->phone = $request->input('phone');
-            $user->cin = $request->input('cin');
-            $user->fonction = $request->input('fonction');
-            $user->date_embauche = $request->input('date_embauche');
-            $user->niveau_etude = $request->input('niveau_etude');
-            $user->adresse = $request->input('adresse');
-            $user->cnss = $request->input('cnss');
-            $user->is_actif = $request->input('is_actif'); // Default to 1 if not provided
-            $user->solde_conge = $request->input('solde_conge');
-            $user_societes = User::where('id', $user->user_id_origin)->first();
-            $photo = '';
-            if ($request->hasFile('photo')) {
-                if ($user->photo != null) {
-                    $image_path = public_path('img/users/' . $user->photo);
-                    if (file_exists($image_path)) {
-                        unlink($image_path);
-                    }
-                }
-                $photo = time() . '.' . $request->name . '_' . $request->prenom . '.' . $request->photo->extension();
-                $societe = Societe::findOrfail($user_societes->societe_id);
-                //$request->photo->move(public_path('img/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/users'), $photo);
-                FichierHelper::ajouter_fichier($request->photo, $societe->raison_sociale_concatene, $societe->id, 'users', $photo);
-                $user->photo = $photo;
-            }
-
-            if ($user->save()) {
-
-                if ($user_societes) {
-                    $user_societes->update($request->all());
-                    if ($request->hasFile('photo')) {
-                        $user_societes->photo = $photo;
-                        $user_societes->save();
-                    }
-                }
-            }
-
-            return response()->json(['message' => 'Utilisateur modifié avec succès avec admin'], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
