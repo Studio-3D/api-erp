@@ -71,9 +71,9 @@ class UserController extends Controller
                     $query->get('user_id');
 
                 $data = $query->get('user_id');
+                return response()->json(['data' => $data]);
             }
 
-           return response()->json(['data' => $data]);
         }
          else{
             return response()->json(['error' => 'Unauthorized'], 401);

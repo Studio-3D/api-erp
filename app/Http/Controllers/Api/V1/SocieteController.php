@@ -134,6 +134,7 @@ class SocieteController extends Controller
                 broadcast(new NewSocieteEvent($societe->id));
                 return response()->json(['message' => 'societe supprimé avec succes'], 200);
 
+
             } else {
                 return response()->json(['message' => 'Societe non supprimée'], 404);
             }

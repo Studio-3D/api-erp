@@ -17,6 +17,7 @@ return new class extends Migration
         Schema::create('clients', function (Blueprint $table) {
             $table->id();
             $table->enum('type_client',[TypeClient::Particulier->value,TypeClient::Société->value]);
+            $table->string('code_client')->nullable();
             $table->string('nom');
             $table->string('prenom');
             $table->string('telephone_num1');

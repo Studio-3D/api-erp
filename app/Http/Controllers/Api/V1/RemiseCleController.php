@@ -31,7 +31,11 @@ class RemiseCleController extends Controller
             DatabaseHelper::Config();
 
             $query = RemiseCle::on('temp')->where('remise_cles.projet_id', $projet_id);
-
+            if(RoleHelper::Com()){
+                $user = Auth::user();
+                $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+                $query->where('user_id_remis',$userAuth->value('id'));
+            }
             if ($request->filled('bien')) {
                 $query->whereHas('bien', function ($q) use ($request) {
                     $q->where('propriete_dite_bien', 'like', '%' . $request->input('bien') . '%');
@@ -108,7 +112,7 @@ class RemiseCleController extends Controller
      */
     public function store(Request $request)
     {
-        if(RoleHelper::AdminSup()){
+        if(RoleHelper::ACSup()){
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -199,7 +203,7 @@ class RemiseCleController extends Controller
      */
     public function destroy(string $id)
     {
-        if(RoleHelper::AdminSup()){
+        if(RoleHelper::ACSup()){
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
