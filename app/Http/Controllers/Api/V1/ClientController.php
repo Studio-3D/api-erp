@@ -82,7 +82,7 @@ class ClientController extends Controller
                     $clients = Client::all();
                 }
                 else if (RoleHelper::AC()) {
-                    $clients = $query->orderBy('created_at', 'desc')
+                    $clients = $query->orderBy('nom', 'asc')
                     ->get();
                 }
 

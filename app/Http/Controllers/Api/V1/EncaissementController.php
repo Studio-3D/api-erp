@@ -136,9 +136,4 @@ class EncaissementController extends Controller
      */
 
 
-
-
-
-
-
 }

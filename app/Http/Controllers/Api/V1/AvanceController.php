@@ -16,6 +16,7 @@ use App\Http\Requests\UpdateAvanceRequest;
 use App\Models\Avance;
 use App\Models\Bien;
 use App\Models\Encaissement;
+use App\Models\TvaCollecte;
 use App\Models\FicheTransmission;
 use App\Models\HistoriqueAvance;
 use App\Models\Notification;
@@ -961,8 +962,15 @@ class AvanceController extends Controller
             $encaiss = Encaissement::on('temp')->where('avance_id', $id)->get();
 
             foreach ($encaiss as $en) {
+                $tav_collecte=TvaCollecte::on('temp')->where('encaissement_id',$en->id)->get();
+                if(count($tav_collecte)>0){
+                    foreach($tva_collectes as $tvc){
+                        $tvc->forceDelete();
+                    }
+                }
                 $en->forceDelete();
             }
+
 
             if ($avance->forceDelete()) {
                 return response()->json(['message' => 'avance deleted succesfully'], 200);
