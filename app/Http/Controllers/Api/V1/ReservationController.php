@@ -773,6 +773,8 @@ class ReservationController extends Controller
             Bien_Helper::libererBien($reservation->bien_id, null, null);
             $avanceController = new AvanceController();
             $avanceController->destoryUsingReservationId($id);
+            $tvaColletes = new ComptabiliteController();
+            $tvaColletes->destroyTvaCollectesByReservationId($id);
             $aquereurController = new AquereurController();
             $aquereurController->destroyAquerreursByReservationId($id);
             $pjController = new PiecesJointeController();

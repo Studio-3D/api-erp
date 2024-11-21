@@ -43,8 +43,8 @@ class ComptabiliteController extends Controller
                       $tranche->qp_terrain_tranche_valeur=$QP_valeur;
                       if($tranche->save()){
                         //delete ancien bien tva
-                        if(count($tranches->biens_tva)>0){
-                            foreach($tranches->biens_tva as $b_tva){
+                        if(count($tranche->biens_tva)>0){
+                            foreach($tranche->biens_tva as $b_tva){
                                 $b_tva->delete();
                             }
                         }
@@ -217,7 +217,7 @@ class ComptabiliteController extends Controller
                 $end = Carbon::parse($request->input('a'));
                 $query->whereDate('created_at','<=', $end);
             }
-           
+
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
 
                 $tva_collectes = $query->orderBy('created_at', 'desc')
@@ -240,4 +240,19 @@ class ComptabiliteController extends Controller
 
         return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+    public function destroyTvaCollectesByReservationId($reservation_id)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $tva_c =  TvaCollecte::on('temp')->where('reservation_id', $reservation_id)->get();
+            foreach ($tva_c as $t) {
+                $t->forceDelete();
+            }
+            return response()->json(['message' => 'tva deleted successfully'], 200);
+
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
 }
