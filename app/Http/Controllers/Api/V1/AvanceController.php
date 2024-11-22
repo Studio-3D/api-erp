@@ -32,6 +32,9 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use \NumberFormatter;
 
+use App\Enum\ModePaiement;
+use App\Models\PiecesJointe;
+use DB;
 class AvanceController extends Controller
 {
     /**
@@ -203,15 +206,34 @@ class AvanceController extends Controller
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
             if (RoleHelper::AdminSup()) {
-                $avances = Avance::on('temp')->with('last_statut')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
-                    ->select('avances.*')
-                    ->whereNull('reservations.deleted_at')
-                    ->where('reservations.projet_id', $projet_id)
-                    ->where('avances.statut', $statut)
-                    ->where('reservations.etat', 1)
-                    ->where('reservations.statut', StatutReservationEnum::Validé->value)
-                    ->orderBy('avances.created_at', 'desc')
-                    ->paginate($perPage, ['*'], 'page', $page);
+                    if($request->statut==3){
+                        $avances = Avance::on('temp')->with('last_statut')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
+                        ->select('avances.*')
+                        ->whereNull('reservations.deleted_at')
+                        ->where('reservations.projet_id', $projet_id)
+                        ->where('avances.statut', $statut)
+                        //validé mais en attente encaissement
+                        ->orwhere('avances.statut',4)
+                        ->where('reservations.etat', 1)
+                        ->where('reservations.statut', StatutReservationEnum::Validé->value)
+                        ->orderBy('avances.created_at', 'desc')
+                        ->paginate($perPage, ['*'], 'page', $page);
+                    }else{
+
+                        $avances = Avance::on('temp')->with('last_statut')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
+                        ->select('avances.*')
+                        ->whereNull('reservations.deleted_at')
+                        ->where('reservations.projet_id', $projet_id)
+                        ->where('avances.statut', $statut)
+                        ->where('reservations.etat', 1)
+                        ->where('reservations.statut', StatutReservationEnum::Validé->value)
+                        ->orderBy('avances.created_at', 'desc')
+                        ->paginate($perPage, ['*'], 'page', $page);
+                    }
+
+
+
+
             } elseif (RoleHelper::Com()) {
                 $user = Auth::user();
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -244,6 +266,8 @@ class AvanceController extends Controller
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $avance = Avance::on('temp')->findOrFail($id);
+            $reservation = Reservation::on('temp')->findOrFail($avance->reservation_id);
+            $bien=Bien::on('temp')->withSum('tva_collectes','tva_a_payer')->findOrFail( $reservation->bien_id);
             $avance->statut = $request->etat;
             if ($avance->save()) {
                 //store statut_avances_penalites table=>si validé
@@ -299,7 +323,24 @@ class AvanceController extends Controller
                 $encaiss->date_reglement = $avance->created_at;
                 $encaiss->date_encaissement = $request->date_encaiss;
                 $encaiss->user_id_valider = $userAuth->value('id');
-                $encaiss->save();
+                if($encaiss->save()){
+                    if($bien->Bien_tva!=null){
+                        $data=[
+                            'montant'=>$avance->montant,
+                            'prix'=>$bien->prix,
+                            'qp_terrain_valeur'=>$bien->Bien_tva->qp_terrain_valeur,
+                            'ancien_tva_collectes'=>$bien->tva_collectes,
+                            'tva_collectes_sum_tva_a_payer'=>$bien->tva_collectes_sum_tva_a_payer,
+                            'tva_bien'=>$bien->Bien_tva->tva,
+                            'reservation_id'=>$avance->reservation_id,
+                            'bien_id'=>$bien->id,
+                            'type'=>'avances',
+                            'encaissement_id'=>$encaiss->id
+                        ];
+                        $this->store_tva_collecte($request->merge($data));
+                    }
+                }
+
 
             } else {
                 //2 traitement avance
@@ -355,6 +396,7 @@ class AvanceController extends Controller
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $reservation = Reservation::on('temp')->findOrFail($request->reservation_id);
+            $bien=Bien::on('temp')->withSum('tva_collectes','tva_a_payer')->findOrFail( $reservation->bien_id);
             $avance = new Avance();
             $avance->setConnection('temp');
             $last_num_recu = Avance::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")
@@ -365,12 +407,13 @@ class AvanceController extends Controller
             } else {
                 $avance->num_recu = '001';
             }
-            // $avance->sr = (bool) $request->sr;
-            if ($request->sr == 'false' || $request->sr == false) {
-                $avance->sr = 0;
-            } else {
-                $avance->sr = 1;
-            }
+           // $avance->sr = (bool) $request->sr;
+            if($request->sr=='0'||$request->sr==0){
+                $avance->sr=0;
+                }
+                else{
+                    $avance->sr=1;
+                }
 
             $avance->mode_paiement = $request->mode_paiement;
             //cheque cheque-banque cheque cetifice
@@ -387,7 +430,7 @@ class AvanceController extends Controller
             }
             $avance->user_id = $userAuth->value('id');
             $avance->date_reglement = $request->date_reglement;
-            $avance->commentaireAvance = $request->commentaireAvance == 'null' ? null : $request->commentaireAvance;
+            $avance->commentaireAvance = $request->commentaireAvance=='null'?null:$request->commentaireAvance;
 
             $avance->montant = $request->montant;
             if ($request->montant_par_lettre != null) {
@@ -403,7 +446,7 @@ class AvanceController extends Controller
                 $avance->desistement_id = $request->desistement_id;
                 $avance->dossier_id_transfert = $request->dossier_id_transfert;
                 $avance->statut = StatutReservationEnum::Validé->value;
-                /* $avance->user_id_valider = $userAuth->value('id');
+               /* $avance->user_id_valider = $userAuth->value('id');
                 $avance->date_validation = Carbon::now();
                 $avance->date_encaissement = $request->date_encaissement;
                 $avance->num_remise = ModePaiement::transfert_dossier->value;*/
@@ -415,20 +458,22 @@ class AvanceController extends Controller
                     $avance->statut = StatutReservationEnum::Validé->value;
                 }
             }
-            if ($request->montant == 0) {
+            if($request->montant==0){
                 $avance->statut = StatutReservationEnum::Validé->value;
             }
 
             if ($avance->save()) {
+
+
                 //store statut_avances table=>si validé
-                if ($avance->statut == StatutReservationEnum::Validé->value) {
+                if($avance->statut==StatutReservationEnum::Validé->value ){
                     $st_avance = new StatutAvancePenalite();
                     $st_avance->setConnection('temp');
-                    $st_avance->avance_id = $avance->id;
+                    $st_avance->avance_id=$avance->id;
                     $st_avance->user_id_valider = $userAuth->value('id');
                     $st_avance->date_validation = Carbon::now();
                     $st_avance->date_encaissement = $request->date_encaissement;
-                    $st_avance->num_remise = $request->num_remise == "null" ? null : $request->num_remise;
+                    $st_avance->num_remise = $request->num_remise=="null"?null:$request->num_remise;
                     $st_avance->save();
                 }
 
@@ -461,165 +506,209 @@ class AvanceController extends Controller
                         $piecesJointeController->store($pieceJointeRequest);
                     }
                 }
-                    //send notification d'echeance
-                    if ($avance->echeance != null) {
+                //send notification d'echeance
+                if ($avance->echeance != null) {
+                    Config::set('broadcasting.default', 'pusher_3');
+                    $data_notif = [
+                        'lien' => '/reservations/show/'.$avance->reservation_id,
+                        'date' => $avance->echeance,
+                        'type' => 5,
+                        'description' => 'ECHEANCE',
+                        'user_id' => $avance->user->user_id_origin,
+                        'role'=>null,
+                        'projet_id'=>$avance->reservation->projet_id,
+                        'avance_id'=>$avance->id,
+                        'reservation_id'=>$request->reservation_id
+
+                    ];
+                    $notif_helper = new NotificationHelper();
+                    $notif_helper->storeNotification($request->merge($data_notif));
+                    broadcast(new NotificationEvent(0));
+                    if($avance->echeance<=Carbon::now()){
+                        Config::set('broadcasting.default', 'pusher_5');
+                        //5 echeances
+                        broadcast(new NotifMenuEvent(5));
+                    }
+
+
+
+                }
+                //si avance est cree without reservaation au depart
+                //si commercial==> demande validation du paiement
+                if($request->avance_with_reservation==false && $avance->reservation->statut==StatutReservationEnum::Validé->value){
+                    if (RoleHelper::Com() && $request->montant>0 ) {
                         Config::set('broadcasting.default', 'pusher_3');
                         $data_notif = [
-                            'lien' => '/reservations/show/' . $avance->reservation_id,
-                            'date' => $avance->echeance,
-                            'type' => 5,
-                            'description' => 'ECHEANCE',
-                            'user_id' => $avance->user->user_id_origin,
-                            'role' => null,
-                            'projet_id' => $avance->reservation->projet_id,
-                            'avance_id' => $avance->id,
-                            'reservation_id' => $request->reservation_id,
+                           // 'lien' => '/reservations/show/'.$avance->reservation_id,
+                            'lien'=>'/validation/avances/attente',
+                            'date' => Carbon::now(),
+                            'type' => 7,
+                            'user_id'=>null,
+                            'description' => 'Validation paiement',
+                            'role'=>RoleEnum::ADMIN->value,
+                            'projet_id'=>$avance->reservation->projet_id,
+                            'avance_id'=>$avance->id,
+                            'reservation_id'=>$request->reservation_id
 
                         ];
                         $notif_helper = new NotificationHelper();
                         $notif_helper->storeNotification($request->merge($data_notif));
                         broadcast(new NotificationEvent(0));
-                        if ($avance->echeance <= Carbon::now()) {
-                            Config::set('broadcasting.default', 'pusher_5');
-                            //5 echeances
-                            broadcast(new NotifMenuEvent(5));
-                        }
-
+                        Config::set('broadcasting.default', 'pusher_5');
+                        //2 traitement avance
+                        broadcast(new NotifMenuEvent(2));
                     }
-                    //si avance est cree without reservaation au depart
-                    //si commercial==> demande validation du paiement
-                    if ($request->avance_with_reservation == false && $avance->reservation->statut == StatutReservationEnum::Validé->value) {
-                        if (RoleHelper::Com() && $request->montant > 0) {
-                            Config::set('broadcasting.default', 'pusher_3');
-                            $data_notif = [
-                                // 'lien' => '/reservations/show/'.$avance->reservation_id,
-                                'lien' => '/validation/avances/attente',
-                                'date' => Carbon::now(),
-                                'type' => 7,
-                                'user_id' => null,
-                                'description' => 'Validation paiement',
-                                'role' => RoleEnum::ADMIN->value,
-                                'projet_id' => $avance->reservation->projet_id,
-                                'avance_id' => $avance->id,
-                                'reservation_id' => $request->reservation_id,
+                }
 
-                            ];
-                            $notif_helper = new NotificationHelper();
-                            $notif_helper->storeNotification($request->merge($data_notif));
-                            broadcast(new NotificationEvent(0));
-                            Config::set('broadcasting.default', 'pusher_5');
-                            //2 traitement avance
-                            broadcast(new NotifMenuEvent(2));
-                        }
-                    }
+                $num_recu='';
+                //num recu cree aujourdhui
+                $recu_now = FicheTransmission::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")->whereDate('created_at', Carbon::now())
+                    ->get('num_recu')->first();
+                if ($recu_now != null) {
+                    $num_recu = $recu_now->num_recu;
 
-                    //store avance to fiche transmission
-                    $fiche = new FicheTransmission();
-                    $fiche->setConnection('temp');
-                    //num recu cree aujourdhui
-                    $recu_now = FicheTransmission::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")->whereDate('created_at', Carbon::now())
+                } else {
+                    //num recu cree != aujourdhui
+                    $rec_not_now = FicheTransmission::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")->whereDate('created_at', '!=', Carbon::now())
                         ->get('num_recu')->first();
-                    if ($recu_now != null) {
-                        $fiche->num_recu = $recu_now->num_recu;
-
+                    if ($rec_not_now != null) {
+                        $pp = $rec_not_now->num_recu + 1;
+                        $num_recu = '00' . $pp . '';
                     } else {
-                        //num recu cree != aujourdhui
-                        $rec_not_now = FicheTransmission::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")->whereDate('created_at', '!=', Carbon::now())
-                            ->get('num_recu')->first();
-                        if ($rec_not_now != null) {
-                            $pp = $rec_not_now->num_recu + 1;
-                            $fiche->num_recu = '00' . $pp . '';
-                        } else {
-                            $fiche->num_recu = '001';
-                        }
-
+                        $num_recu = '001';
                     }
-                    $fiche->avance_id = $avance->id;
-                    $fiche->user_id = $userAuth->value('id');
-                    if ($request->mode_paiement == 2 || $request->mode_paiement == 3 || $request->mode_paiement == 4) {
-                        $fiche->date = $request->echeance;
-                    } else {
-                        $fiche->date = Carbon::now();
+
+                }
+                 //store avance to fiche transmission
+                $fiche = new FicheTransmission();
+                $fiche->setConnection('temp');
+                $fiche->num_recu= $num_recu ;
+                $fiche->avance_id = $avance->id;
+                $fiche->user_id = $userAuth->value('id');
+                if ($request->mode_paiement == 2 || $request->mode_paiement == 3 || $request->mode_paiement == 4) {
+                    $fiche->date = $request->echeance;
+                } else {
+                    $fiche->date = Carbon::now();
+                }
+                $fiche->save();
+
+                $action=0;
+                //si bien est desisté on fait remboursement etat=1 en on envoie notification du bien desisté est vendu
+                if ($reservation->bien->desistement_id!=null) {
+                    $remboursements = Remboursement::on('temp')->where('desistement_id',$reservation->bien->desistement_id)
+                    ->where('etat',0)->where('statut',0)
+                    ->where(function ($query) {
+                        $query->where('mode_rembourse', 'apres_vente')
+                            ->orwhere('mode_rembourse', 'transfert_rem_apres_vente')
+                        ;})
+                    ->get();
+
+                    foreach($remboursements as $remb){
+                        $remb->etat=1;
+                        $remb->save();
+                        $action=1;
                     }
-                    $fiche->save();
+                    if($action==1){
+                        //to admin et commerciaux
+                        Config::set('broadcasting.default', 'pusher_3');
+                        $data_notif = [
+                            'lien' => '/remboursements/demande',
+                            'date' => Carbon::now(),
+                            'type' => 19,
+                            'description' => 'bien desisté est vendu',
+                            'role'=>RoleEnum::ADMIN->value,
+                            'projet_id'=>$avance->reservation->projet_id,
+                            'bien_id'=>$reservation->bien_id,
+                            'reservation_id'=>$reservation->id
 
-                    $action = 0;
-                    //si bien est desisté on fait remboursement etat=1 en on envoie notification du bien desisté est vendu
-                    if ($reservation->bien->desistement_id != null) {
-                        $remboursements = Remboursement::on('temp')->where('desistement_id', $reservation->bien->desistement_id)
-                            ->where('etat', 0)->where('statut', 0)
-                            ->where(function ($query) {
-                                $query->where('mode_rembourse', 'apres_vente')
-                                    ->orwhere('mode_rembourse', 'transfert_rem_apres_vente')
-                                ;
-                            })
-                            ->get();
+                        ];
+                        $notif_helper = new NotificationHelper();
+                        $notif_helper->storeNotification($request->merge($data_notif));
+                        broadcast(new NotificationEvent(0));
 
-                        foreach ($remboursements as $remb) {
-                            $remb->etat = 1;
-                            $remb->save();
-                            $action = 1;
-                        }
-                        if ($action == 1) {
-                            //to admin et commerciaux
-                            Config::set('broadcasting.default', 'pusher_3');
+                        if( $reservation->bien->desistement->user->role==3){
+
                             $data_notif = [
                                 'lien' => '/remboursements/demande',
                                 'date' => Carbon::now(),
                                 'type' => 19,
                                 'description' => 'bien desisté est vendu',
-                                'role' => RoleEnum::ADMIN->value,
-                                'projet_id' => $avance->reservation->projet_id,
-                                'bien_id' => $reservation->bien_id,
-                                'reservation_id' => $reservation->id,
+                                'role'=>RoleEnum::COMMERCIAL->value,
+                                'user_id'=>$reservation->bien->desistement->user->user_id_origin,
+                                'projet_id'=>$avance->reservation->projet_id,
+                                'bien_id'=>$reservation->bien_id,
+                                'reservation_id'=>$reservation->id
 
                             ];
                             $notif_helper = new NotificationHelper();
                             $notif_helper->storeNotification($request->merge($data_notif));
                             broadcast(new NotificationEvent(0));
 
-                            if ($reservation->bien->desistement->user->role == 3) {
-
-                                $data_notif = [
-                                    'lien' => '/remboursements/demande',
-                                    'date' => Carbon::now(),
-                                    'type' => 19,
-                                    'description' => 'bien desisté est vendu',
-                                    'role' => RoleEnum::COMMERCIAL->value,
-                                    'user_id' => $reservation->bien->desistement->user->user_id_origin,
-                                    'projet_id' => $avance->reservation->projet_id,
-                                    'bien_id' => $reservation->bien_id,
-                                    'reservation_id' => $reservation->id,
-
-                                ];
-                                $notif_helper = new NotificationHelper();
-                                $notif_helper->storeNotification($request->merge($data_notif));
-                                broadcast(new NotificationEvent(0));
-
-                            }
-
                         }
 
                     }
+                }
 
-                    if (RoleHelper::AdminSup()) {
-                        //store encaissement
-                        if ($request->date_encaissement != null && ($request->num_remise != null || $request->num_remise != "null")) {
-                            $encaiss = new Encaissement();
-                            $encaiss->setConnection('temp');
-                            $encaiss->reservation_id = $request->reservation_id;
-                            $encaiss->bien_id=$avance->reservation->bien_id;
-                            $encaiss->type_encaissement = 1; //Avances
-                            $encaiss->montant = $avance->montant;
-                            $encaiss->avance_id = $avance->id;
-                            $encaiss->date_reglement = $avance->created_at;
-                            $encaiss->date_encaissement = $request->date_encaissement;
-                            $encaiss->user_id_valider = $userAuth->value('id');
-                            $encaiss->save();
+                if (RoleHelper::AdminSup()) {
+                    //store encaissement
+                    if ($request->date_encaissement != null && ($request->num_remise != null && $request->num_remise!="null")) {
+                        $encaiss = new Encaissement();
+                        $encaiss->setConnection('temp');
+                        $encaiss->reservation_id = $request->reservation_id;
+                        $encaiss->bien_id =$reservation->bien->id;
+                        $encaiss->type_encaissement = 1; //Avances
+                        $encaiss->montant = $avance->montant;
+                        $encaiss->avance_id = $avance->id;
+                        $encaiss->date_reglement = $avance->created_at;
+                        $encaiss->date_encaissement = $request->date_encaissement;
+                        $encaiss->user_id_valider = $userAuth->value('id');
+                         //calcul du tva collecte
+                            if($encaiss->save()){
+                                //get tva du bien
+                                if($bien->Bien_tva!=null){
+                                    $data=[
+                                        'montant'=>$avance->montant,
+                                        'prix'=>$bien->prix,
+                                        'qp_terrain_valeur'=>$bien->Bien_tva->qp_terrain_valeur,
+                                        'ancien_tva_collectes'=>$bien->tva_collectes,
+                                        'tva_collectes_sum_tva_a_payer'=>$bien->tva_collectes_sum_tva_a_payer,
+                                        'tva_bien'=>$bien->Bien_tva->tva,
+                                        'reservation_id'=>$avance->reservation_id,
+                                        'bien_id'=>$bien->id,
+                                        'type'=>'avances',
+                                        'encaissement_id'=>$encaiss->id
+                                    ];
+                                    $this->store_tva_collecte($request->merge($data));
+
+                                }
+                            }
+                    }
+                    //on vide la column desistement_id car il est vendu et si le bien a des ancien tva on archive pour affichier tva collecte de l'ancien Reservation
+                    if($reservation->bien->desistement_id!=null){
+                        $bien->setConnection('temp');
+                        $bien->desistement_id=NULL;
+                        if($bien->save()){
+                              //set tva collecte ancien to archive 4==>5
+                              if(count($bien->tva_collectes_ancien_reservation)>0){
+                                foreach($bien->tva_collectes_ancien_reservation as $t_c_a){
+                                    $t_c_a->delete();
+                                }
+                            }
+                            //set tva collecte to 4
+                            if(count($bien->tva_collectes)>0){
+                                foreach($bien->tva_collectes as $t_c){
+                                    $t_c->etat=4;
+                                    $t_c->save();
+                                }
+                            }
+
+
                         }
+                    }
 
-                        //store commission a voir
-                    }}
+                    //store commission a voir
+                }
+            }
             }
             return $avance;
 
@@ -640,6 +729,67 @@ class AvanceController extends Controller
         return response()->json(['error', 'Unauthorized'], 401);
     }
 
+    public function store_tva_collecte(Request $request){
+         DatabaseHelper::Config();
+         $user = Auth::user();
+         $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+       //20% % tva appliqué sur les avances tva/ttc  ou tva/prix HT [0.15 ... 0.20]
+       $percent_tva=0.2;
+       $avance_terrain=number_format(($request->montant/$request->prix)*$request->qp_terrain_valeur, 2, '.', '');
+       $avance_bien_ttc=number_format($request->montant-$avance_terrain, 2, '.', '');
+       $avance_bien_ht=number_format($avance_bien_ttc/(1+$percent_tva), 2, '.', '');
+       $tva_col_a_ajouter=number_format($percent_tva*$avance_bien_ht, 2, '.', '');
+       //exist tva collecte du bien
+       if (count($request->ancien_tva_collectes)>0){
+             //somme du ancien tva collect
+           $tva_collect_sum=$request->tva_collectes_sum_tva_a_payer;
+             //difference avec le tva d'apprtement
+           $diff=$request->tva_bien-$tva_collect_sum;
+           //si diff>tva_coll_a_ajouter_new
+               if($diff>=$tva_col_a_ajouter){
+                   $tva_c=new TvaCollecte();
+                   $tva_c->setConnection('temp');
+                   $tva_c->reservation_id=$request->reservation_id;
+                   $tva_c->bien_id=$request->bien_id;
+                   $tva_c->encaissement_id=$request->encaissement_id;
+                   if($request->type=='remboursements'){
+                    $tva_c->tva_a_payer=-$tva_col_a_ajouter;  //+ pour avances
+                   }else{
+                    $tva_c->tva_a_payer=$tva_col_a_ajouter;  //+ pour avances
+                   }
+                   //added
+                   $tva_c->avance_terrain=$avance_terrain;
+                   $tva_c->avance_bien_ttc=$avance_bien_ttc;
+                   $tva_c->avance_bien_ht=$avance_bien_ht;
+                   $tva_c->user_id= $userAuth->value('id');
+                   $tva_c->save();
+               }
+               //else rien a ajouter tva_collecter_new>tva du bien on peut pas ajouter des tva collecte
+       }else{
+           //a jouter first tva collecte
+                   $tva_c=new TvaCollecte();
+                   $tva_c->setConnection('temp');
+                   $tva_c->reservation_id=$request->reservation_id;
+                   $tva_c->bien_id=$request->bien_id;
+                   $tva_c->encaissement_id=$request->encaissement_id;
+                   if($request->type=='remboursements'){
+                    $tva_c->tva_a_payer=-$tva_col_a_ajouter;  //+ pour avances
+                   }else{
+                    $tva_c->tva_a_payer=$tva_col_a_ajouter;  //+ pour avances
+                   }
+                   //added
+                   $tva_c->avance_terrain=$avance_terrain;
+                   $tva_c->avance_bien_ttc=$avance_bien_ttc;
+                   $tva_c->avance_bien_ht=$avance_bien_ht;
+                   $tva_c->user_id= $userAuth->value('id');
+                   $tva_c->save();
+       }
+    }
+    /**
+     * Display the specified resource.
+     */
+
+
     /**
      * Show the form for editing the specified resource.
      */
@@ -658,20 +808,22 @@ class AvanceController extends Controller
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $avance = Avance::on('temp')->findOrFail($id);
-            $old_date_encaisse = null;
-            $old_n_remise = null;
-            $old_commmentaire_re = null;
-            $old_user_id = null;
-            $old_date_valid = null;
+            $old_date_encaisse=null;
+            $old_n_remise=null;
+            $old_commmentaire_re=null;
+            $old_user_id=null;
+            $old_date_valid=null;
+            $reservation = Reservation::on('temp')->findOrFail($avance->reservation_id);
+            $bien=Bien::on('temp')->withSum('tva_collectes','tva_a_payer')->findOrFail( $reservation->bien_id);
 
-            if ($avance->statut == StatutReservationEnum::Validé->value || $avance->statut == StatutReservationEnum::Refusé->value) {
-                $old_st_avance = StatutAvancePenalite::on('temp')->where('avance_id', $id)->orderBy('created_at', 'desc')->first();
-                if ($old_st_avance != null) {
-                    $old_date_encaisse = $old_st_avance->date_encaissement;
-                    $old_n_remise = $old_st_avance->num_remise;
-                    $old_commmentaire_re = $old_st_avance->commentaire;
-                    $old_user_id = $old_st_avance->user_id_valider;
-                    $old_date_valid = $old_st_avance->date_validation;
+            if($avance->statut==StatutReservationEnum::Validé->value||$avance->statut==StatutReservationEnum::Refusé->value  ){
+                $old_st_avance = StatutAvancePenalite::on('temp')->where('avance_id',$id)->orderBy('created_at','desc')->first();
+                if($old_st_avance!=null){
+                    $old_date_encaisse=$old_st_avance->date_encaissement;
+                    $old_n_remise=$old_st_avance->num_remise;
+                    $old_commmentaire_re=$old_st_avance->commentaire;
+                    $old_user_id=$old_st_avance->user_id_valider;
+                    $old_date_valid=$old_st_avance->date_validation;
                 }
             }
             //store historique
@@ -690,9 +842,9 @@ class AvanceController extends Controller
             $histo->montant = $avance->montant;
             $histo->montant_par_lettre = $avance->montant_par_lettre;
             $histo->statut = $avance->statut;
-            $histo->commentaire_rejete = $old_commmentaire_re;
+            $histo->commentaire_rejete=$old_commmentaire_re;
             $histo->user_id_valider = $old_user_id;
-            $histo->date_validation = $old_date_valid;
+            $histo->date_validation =$old_date_valid;
             $histo->date_encaissement = $old_date_encaisse;
             $histo->num_remise = $old_n_remise;
 
@@ -700,48 +852,49 @@ class AvanceController extends Controller
                 $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
                 $societe = Societe::findOrfail($user_societes->societe_id);
 
-                //****edit piece jointe***
-                if (!$request->file('files_avance')) {
-                    $pjController = new PiecesJointeController();
-                    $pjController->destoryFileUsingAvanceId($id, $societe);
+               //****edit piece jointe***
+               if (!$request->file('files_avance')) {
+                   $pjController = new PiecesJointeController();
+                   $pjController->destoryFileUsingAvanceId($id,$societe);
 
+               }
+               if ($request->file('files_avance')) {
+
+                   //****delete old piece jointe***
+
+                   $pjController = new PiecesJointeController();
+                   $pjController->destoryFileUsingAvanceId($id,$societe);
+
+                   foreach ($request->file('files_avance') as $file) {
+
+                       $piecesJointeController = new PiecesJointeController();
+                       $pieceJointeRequest = new StorePiecesJointeRequest();
+
+                       // Récupérer le nom du fichier
+                       $Myfile = $file->getClientOriginalName();
+
+                       $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements');
+                       File::makeDirectory($directory, 0755, true, true);
+                       $file->move($directory, $Myfile);
+                       $fileType = $file->getClientOriginalExtension();
+                       $datapieceJointe = [
+                           'fichier' => $Myfile,
+                           'type' => $fileType,
+                           'avance_id' => $avance->id,
+                           'active' => 1,
+
+                       ];
+
+                       $pieceJointeRequest->merge($datapieceJointe);
+                       $piecesJointeController->store($pieceJointeRequest);
+
+                   }
+               }
+                if($request->sr=='0'){
+                    $avance->sr=0;
                 }
-                if ($request->file('files_avance')) {
-
-                    //****delete old piece jointe***
-
-                    $pjController = new PiecesJointeController();
-                    $pjController->destoryFileUsingAvanceId($id, $societe);
-
-                    foreach ($request->file('files_avance') as $file) {
-
-                        $piecesJointeController = new PiecesJointeController();
-                        $pieceJointeRequest = new StorePiecesJointeRequest();
-
-                        // Récupérer le nom du fichier
-                        $Myfile = $file->getClientOriginalName();
-
-                        $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements');
-                        File::makeDirectory($directory, 0755, true, true);
-                        $file->move($directory, $Myfile);
-                        $fileType = $file->getClientOriginalExtension();
-                        $datapieceJointe = [
-                            'fichier' => $Myfile,
-                            'type' => $fileType,
-                            'avance_id' => $avance->id,
-                            'active' => 1,
-
-                        ];
-
-                        $pieceJointeRequest->merge($datapieceJointe);
-                        $piecesJointeController->store($pieceJointeRequest);
-
-                    }
-                }
-                if ($request->sr == 'false') {
-                    $avance->sr = 0;
-                } else {
-                    $avance->sr = 1;
+                else{
+                    $avance->sr=1;
                 }
 
                 $avance->mode_paiement = $request->mode_paiement;
@@ -763,7 +916,7 @@ class AvanceController extends Controller
                     $avance->echeance = null;
                 }
                 $avance->user_id = $userAuth->value('id');
-                $avance->commentaireAvance = $request->commentaireAvance == 'null' ? null : $request->commentaireAvance;
+                $avance->commentaireAvance = $request->commentaireAvance=='null'?null:$request->commentaireAvance;
                 $avance->montant = $request->montant;
                 $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
                 $mnt_lettre = $inWords->format($request->montant);
@@ -776,7 +929,7 @@ class AvanceController extends Controller
                     }
                 }
                 //si commercial  si deja rejete on fait statut =>en cours
-                elseif (RoleHelper::Com()) {
+                elseif(RoleHelper::Com()){
                     if ($avance->statut == StatutReservationEnum::Refusé->value) {
                         $avance->statut = StatutReservationEnum::En_Attente->value;
                     }
@@ -795,68 +948,111 @@ class AvanceController extends Controller
                 }
 
                 if ($avance->save()) {
-                    // remodifier fiche transmission
-                    $fiche = FicheTransmission::on('temp')->where('avance_id', $avance->id)->orderby('created_at', 'desc')->first();
-                    if ($fiche != null) {
-                        $fiche->setConnection('temp');
-                        if ($request->mode_paiement == 2 || $request->mode_paiement == 3 || $request->mode_paiement == 4) {
-                            $fiche->date = $request->echeance;
-                        } else {
-                            $fiche->date = Carbon::now();
-                        }
-                        $fiche->save();
+                       // remodifier fiche transmission
+                $fiche = FicheTransmission::on('temp')->where('avance_id', $avance->id)->orderby('created_at', 'desc')->first();
+                if ($fiche != null) {
+                    $fiche->setConnection('temp');
+                    if ($request->mode_paiement == 2 || $request->mode_paiement == 3 || $request->mode_paiement == 4) {
+                        $fiche->date = $request->echeance;
+                    } else {
+                        $fiche->date = Carbon::now();
                     }
+                    $fiche->save();
+                }
 
-                    if (RoleHelper::AdminSup()) {
-                        if ($request->date_encaissement != null && ($request->num_remise != null || $request->num_remise != "null")) {
-                            if ($avance->statut == StatutReservationEnum::Validé->value) {
-                                $st_avance = StatutAvancePenalite::on('temp')->where('avance_id', $avance->id)->orderBy('created_at', 'desc')->first();
-                                if ($st_avance != null) {
+                    if(RoleHelper::AdminSup()){
+                        if($request->date_encaissement!=null && ($request->num_remise!=null || $request->num_remise!="null")  ){
+                            if($avance->statut==StatutReservationEnum::Validé->value ){
+                                $st_avance = StatutAvancePenalite::on('temp')->where('avance_id',$avance->id)->orderBy('created_at','desc')->first();
+                                if($st_avance!=null){
                                     $st_avance->setConnection('temp');
-                                    $st_avance->avance_id = $avance->id;
+                                    $st_avance->avance_id=$avance->id;
                                     $st_avance->user_id_valider = $userAuth->value('id');
                                     $st_avance->date_validation = Carbon::now();
                                     $st_avance->date_encaissement = $request->date_encaissement;
-                                    $st_avance->num_remise = $request->num_remise == "null" ? null : $request->num_remise;
+                                    $st_avance->num_remise =$request->num_remise=="null"?null:$request->num_remise;
                                     $st_avance->save();
                                 }
 
-                            } else {
+                            }else{
                                 $st_avance = new StatutAvancePenalite();
                                 $st_avance->setConnection('temp');
-                                $st_avance->avance_id = $avance->id;
+                                $st_avance->avance_id=$avance->id;
                                 $st_avance->user_id_valider = $userAuth->value('id');
                                 $st_avance->date_validation = Carbon::now();
                                 $st_avance->date_encaissement = $request->date_encaissement;
-                                $st_avance->num_remise = $request->num_remise == "null" ? null : $request->num_remise;
+                                $st_avance->num_remise = $request->num_remise=="null"?null:$request->num_remise;
                                 $st_avance->save();
                             }
 
-                            //remodifier encaissement
+                        //remodifier encaissement
 
-                            $encaiss = Encaissement::on('temp')->where('avance_id', $avance->id)->orderby('created_at', 'desc')->first();
+                        $encaiss = Encaissement::on('temp')->where('avance_id', $avance->id)->orderby('created_at', 'desc')->first();
 
-                            if ($encaiss != null) {
-                                $encaiss->setConnection('temp');
-                                $encaiss->montant = $avance->montant;
-                                $encaiss->avance_id = $avance->id;
-                                $encaiss->date_reglement = $avance->updated_at;
-                                $encaiss->date_encaissement = $request->date_encaissement;
-                                $encaiss->user_id_valider = $userAuth->value('id');
-                            } else {
-                                $encaiss = new Encaissement();
-                                $encaiss->setConnection('temp');
-                                $encaiss->reservation_id = $avance->reservation_id;
-                                $encaiss->bien_id=$avance->reservation->bien_id;
-                                $encaiss->type_encaissement = 1; //Avances
-                                $encaiss->montant = $avance->montant;
-                                $encaiss->avance_id = $avance->id;
-                                $encaiss->date_reglement = $avance->created_at;
-                                $encaiss->date_encaissement = $request->date_encaissement;
-                                $encaiss->user_id_valider = $userAuth->value('id');
-                                $encaiss->save();
+                        if ($encaiss != null) {
+                            $encaiss->setConnection('temp');
+                            $encaiss->montant = $avance->montant;
+                            $encaiss->avance_id = $avance->id;
+                            $encaiss->date_reglement = $avance->updated_at;
+                            $encaiss->date_encaissement = $request->date_encaissement;
+                            $encaiss->user_id_valider = $userAuth->value('id');
+                            if($encaiss->save()){
+                                //get tva du bien
+                                if($bien->Bien_tva!=null){
+                                    //supprime ancien tva collecte by encaisse _id
+                                    $tva_collecte=TvaCollecte::on('temp')->where('encaissement_id',$encaiss->id)->first();
+                                    if($tva_collecte!=null){
+                                        $tva_collecte->forceDelete();
+                                        $data=[
+                                            'montant'=>$avance->montant,
+                                            'prix'=>$bien->prix,
+                                            'qp_terrain_valeur'=>$bien->Bien_tva->qp_terrain_valeur,
+                                            'ancien_tva_collectes'=>$bien->tva_collectes,
+                                            'tva_collectes_sum_tva_a_payer'=>$bien->tva_collectes_sum_tva_a_payer,
+                                            'tva_bien'=>$bien->Bien_tva->tva,
+                                            'reservation_id'=>$avance->reservation_id,
+                                            'bien_id'=>$bien->id,
+                                            'type'=>'avances',
+                                            'encaissement_id'=>$encaiss->id
+                                        ];
+                                        $this->store_tva_collecte($request->merge($data));
+                                    }
+
+
+                                }
+                            }
+                        }else{
+                            $encaiss = new Encaissement();
+                            $encaiss->setConnection('temp');
+                            $encaiss->reservation_id = $avance->reservation_id;
+                            $encaiss->bien_id=$avance->reservation->bien_id;
+                            $encaiss->type_encaissement = 1; //Avances
+                            $encaiss->montant = $avance->montant;
+                            $encaiss->avance_id = $avance->id;
+                            $encaiss->date_reglement = $avance->created_at;
+                            $encaiss->date_encaissement =$request->date_encaissement;
+                            $encaiss->user_id_valider = $userAuth->value('id');
+                            if($encaiss->save()){
+                                if($bien->Bien_tva!=null){
+                                    $data=[
+                                        'montant'=>$avance->montant,
+                                        'prix'=>$bien->prix,
+                                        'qp_terrain_valeur'=>$bien->Bien_tva->qp_terrain_valeur,
+                                        'ancien_tva_collectes'=>$bien->tva_collectes,
+                                        'tva_collectes_sum_tva_a_payer'=>$bien->tva_collectes_sum_tva_a_payer,
+                                        'tva_bien'=>$bien->Bien_tva->tva,
+                                        'reservation_id'=>$avance->reservation_id,
+                                        'bien_id'=>$bien->id,
+                                        'type'=>'avances',
+                                        'encaissement_id'=>$encaiss->id
+                                    ];
+                                    $this->store_tva_collecte($request->merge($data));
+
+                                }
                             }
                         }
+                        }
+
 
                     }
 
@@ -875,20 +1071,22 @@ class AvanceController extends Controller
                             'date' => $avance->echeance,
                             'type' => 5,
                             'description' => 'ECHEANCE',
-                            'role' => null,
-                            'user_id' => $avance->user->user_id_origin,
-                            'projet_id' => $avance->reservation->projet_id,
-                            'avance_id' => $avance->id,
-                            'reservation_id' => $avance->reservation_id,
+                            'role'=>null,
+                            'user_id'=>$avance->user->user_id_origin,
+                            'projet_id'=>$avance->reservation->projet_id,
+                            'avance_id'=>$avance->id,
+                            'reservation_id'=>$avance->reservation_id
 
                         ];
                         $notif_helper = new NotificationHelper();
                         $notif_helper->storeNotification($request->merge($data_notif));
                         broadcast(new NotificationEvent($id));
-                        if ($avance->echeance <= Carbon::now()) {
+                        if($avance->echeance<=Carbon::now()){
                             Config::set('broadcasting.default', 'pusher_5');
                             broadcast(new NotifMenuEvent(5));
                         }
+
+
 
                     }
                     //si commercial==> demande validation du paiement
@@ -897,37 +1095,37 @@ class AvanceController extends Controller
                             'lien' => '/reservations/show/' . $avance->reservation_id,
                             'date' => Carbon::now(),
                             'type' => 7,
-                            'user_id' => null,
+                            'user_id'=>null,
                             'description' => 'Validation paiement',
-                            'role' => RoleEnum::ADMIN->value,
-                            'projet_id' => $avance->reservation->projet_id,
-                            'avance_id' => $avance->id,
-                            'reservation_id' => $avance->reservation_id,
+                            'role'=>RoleEnum::ADMIN->value,
+                            'projet_id'=>$avance->reservation->projet_id,
+                            'avance_id'=>$avance->id,
+                            'reservation_id'=>$avance->reservation_id
 
                         ];
                         $notif_helper = new NotificationHelper();
                         $notif_helper->storeNotification($request->merge($data_notif));
                         broadcast(new NotificationEvent($id));
                     }
-                    if ($avance->reservation->statut == StatutReservationEnum::Validé->value) {
-                        if (RoleHelper::Com() && $request->montant > 0) {
+                    if($avance->reservation->statut==StatutReservationEnum::Validé->value){
+                        if (RoleHelper::Com() && $request->montant>0 ) {
                             Config::set('broadcasting.default', 'pusher_3');
                             $data_notif = [
-                                // 'lien' => '/reservations/show/'.$avance->reservation_id,
-                                'lien' => '/validation/avances/attente',
+                               // 'lien' => '/reservations/show/'.$avance->reservation_id,
+                                'lien'=>'/validation/avances/attente',
                                 'date' => Carbon::now(),
                                 'type' => 7,
-                                'user_id' => null,
+                                'user_id'=>null,
                                 'description' => 'Validation paiement',
-                                'role' => RoleEnum::ADMIN->value,
-                                'projet_id' => $avance->reservation->projet_id,
-                                'avance_id' => $avance->id,
-                                'reservation_id' => $request->reservation_id,
+                                'role'=>RoleEnum::ADMIN->value,
+                                'projet_id'=>$avance->reservation->projet_id,
+                                'avance_id'=>$avance->id,
+                                'reservation_id'=>$request->reservation_id
 
                             ];
                             $notif_helper = new NotificationHelper();
                             $notif_helper->storeNotification($request->merge($data_notif));
-                            broadcast(new NotificationEvent($id));
+                                                    broadcast(new NotificationEvent($id));
 
                             Config::set('broadcasting.default', 'pusher_5');
                             //2 traitement avance
@@ -942,7 +1140,6 @@ class AvanceController extends Controller
         }
         return response()->json(['error', 'Unauthorized'], 401);
     }
-
     /**
      * Remove the specified resource from storage.
      */
@@ -951,26 +1148,32 @@ class AvanceController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::config();
             $avance = Avance::on('temp')->findOrFail($id);
+            $st = StatutAvancePenalite::on('temp')->where('avance_id', $id)->get();
+            foreach ($st as $s) {
+                $s->forceDelete();
+            }
             $histo = HistoriqueAvance::on('temp')->where('avance_id', $id)->get();
             foreach ($histo as $h) {
                 $h->forceDelete();
             }
             $fiche = FicheTransmission::on('temp')->where('avance_id', $id)->get();
-            foreach ($fiche as $f) {
-                $f->forceDelete();
+            if(count($fiche)>0){
+                foreach ($fiche as $f) {
+                    $f->forceDelete();
+                }
             }
+
             $encaiss = Encaissement::on('temp')->where('avance_id', $id)->get();
 
             foreach ($encaiss as $en) {
-                $tav_collecte=TvaCollecte::on('temp')->where('encaissement_id',$en->id)->get();
-                if(count($tav_collecte)>0){
+                $tva_collectes=TvaCollecte::on('temp')->where('encaissement_id',$en->id)->get();
+                if(count($tva_collectes)>0){
                     foreach($tva_collectes as $tvc){
                         $tvc->forceDelete();
                     }
                 }
                 $en->forceDelete();
             }
-
 
             if ($avance->forceDelete()) {
                 return response()->json(['message' => 'avance deleted succesfully'], 200);
@@ -1034,42 +1237,7 @@ class AvanceController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-    public function valideAvance($id)
-    {
-        if (RoleHelper::AdminComptableSup()) {
-            DatabaseHelper::Config();
-            $avance = Avance::on('temp')->findOrFail($id);
-            if ($avance->exists()) {
-                $avance->statut = StatutReservationEnum::Validé->value;
-                if ($avance->save()) {
-                    return response()->json(['message' => 'Advance has been validated'], 200);
-                } else {
-                    return response()->json(['message' => "Advance hasn't been validated."], 400);
-                }
-            }
-        }
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
-
-    public function refuseAvance($id)
-    {
-
-        if (RoleHelper::AdminComptableSup()) {
-            DatabaseHelper::Config();
-            $avance = Avance::on('temp')->findOrFail($id);
-            if ($avance->exists) {
-                $avance->statut = StatutReservationEnum::Refusé->value;
-                if ($avance->save()) {
-                    return response()->json(['message' => 'The advance has been refused'], 200);
-                } else {
-                    return response()->json(['message' => "The advance hasn't been refused"], 400);
-                }
-            }
-        }
-        return response()->json(['error' => 'Unauthorized'], 401);
-
-    }
-
+    //att validation ou valdé mais att encaissement
     public function get_notif_avances_att_validation($projet_id)
     {
 
@@ -1077,13 +1245,22 @@ class AvanceController extends Controller
             DatabaseHelper::Config();
 
             if (RoleHelper::AdminSup()) {
-                $nb_att_validation = Avance::on('temp')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
+                $nb_att_valida = Avance::on('temp')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
                     ->whereNull('reservations.deleted_at')
                     ->where('reservations.etat', 1)
                     ->where('reservations.statut', StatutReservationEnum::Validé->value)
                     ->where('avances.statut', 3)
                     ->whereNull('reservations.deleted_at')
                     ->where('reservations.projet_id', $projet_id)->count();
+                $nb_att_encaissement = Avance::on('temp')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
+                    ->whereNull('reservations.deleted_at')
+                    ->where('reservations.etat', 1)
+                    ->where('reservations.statut', StatutReservationEnum::Validé->value)
+                    ->where('avances.statut', 3)
+                    ->whereNull('reservations.deleted_at')
+                    ->where('reservations.projet_id', $projet_id)->count();
+                $nb_att_validation=$nb_att_encaissement+$nb_att_valida;
+
             } else if (RoleHelper::Com()) {
                 $user = Auth::user();
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
