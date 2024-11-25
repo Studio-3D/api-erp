@@ -813,19 +813,59 @@ class ReservationController extends Controller
     public function get_Historiques_by_reservation($id, Request $request)
     {
         if (Auth::guard('api')->check()) {
+            $size = $request->input('size', config('app.default_item_number_perpage')); // Default size if not provided
+            $page = $request->input('page', 1); // Default page if not provided
+
             DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
-            $page = $request->input('page', 1);
-            $historiques = HistoReservation::on('temp')->where('reservation_id', $id)->orderby('created_at', 'desc')
-                ->paginate($perPage, ['*'], 'page', $page);
-            return response()->json(['historiques' => $historiques]);
 
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
 
+            $query = HistoReservation::on('temp')->with('user','bien')->where('reservation_id', $id);
+            // Optional filters (Add more if needed)
+
+            if ($request->filled('date')) {
+                $start = Carbon::parse($request->input('date'));
+                $query->whereDate('created_at' ,$start);
+            }
+
+            if ($request->filled('respo')) {
+                $query->whereHas('user', function ($q) use ($request) {
+                    $q->where(function ($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->input('cc') . '%')
+                            ->orWhere('prenom', 'like', '%' . $request->input('cc') . '%');
+                    });
+                });
+            }
+            if ($request->filled('bien')) {
+                $query->whereHas('bien', function ($q) use ($request) {
+                    $q->where('propriete_dite_bien', 'like', '%' . $request->input('bien') . '%');
+                });
+            }
+
+
+            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+                // Paginate if size and page are valid
+                $historiques = $query->orderBy('created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
+
+                // Add pagination info
+                $pagination = [
+                    'currentPage' => $historiques->currentPage(),
+                    'totalItems' => $historiques->total(),
+                    'totalPages' => $historiques->lastPage(),
+                ];
+
+                $historiques = $historiques->items();
+
+                return response()->json([
+                    'data' => $historiques,
+                    'pagination' => $pagination,
+                ], 200);
+            }
         }
 
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+
 
     public function get_reservations_by_etat($projet_id, $statut, Request $request)
     {

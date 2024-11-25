@@ -58,7 +58,147 @@ class AvanceController extends Controller
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
-    public function getAvances_by_Reservation(Request $request, $reservation_id)
+    public function getAvancesByReservation(Request $request, $reservation_id)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $size = $request->input('size', config('app.default_item_number_perpage'));
+            $page = $request->input('page', 1);
+
+            $reservation = Reservation::on('temp')->select('prix', 'etat')->findorfail($reservation_id);
+            $sum_avances = 0;
+            if ($reservation->etat == 1) {
+                // Requête principale pour les avances non supprimées
+                $query = Avance::on('temp')
+                    ->with('last_statut')
+                    ->withCount('historiques')
+                    ->where('reservation_id', $reservation_id)
+                    ->orderBy('created_at', 'desc');
+
+                // Calcul de la somme des avances != refusé avant l'application des filtres
+                $avances = $query->get();
+                foreach ($avances as $av) {
+                    if ($av->statut != StatutReservationEnum::Refusé->value) {
+                        $sum_avances += $av->montant;
+                    }
+                }
+            } else {
+                // Requête pour les avances supprimées (dossier désisté)
+                $query = Avance::on('temp')
+                    ->with('last_statut')
+                    ->withCount('historiques')
+                    ->onlyTrashed()
+                    ->where('reservation_id', $reservation_id)
+                    ->orderBy('created_at', 'desc');
+
+                // Calcul de la somme des avances != refusé avant l'application des filtres
+                $avances = $query->get();
+                foreach ($avances as $av) {
+                    if ($av->statut != StatutReservationEnum::Refusé->value) {
+                        $sum_avances += $av->montant;
+                    }
+                }
+            }
+
+            // Application des filtres supplémentaires
+            if ($request->filled('numero_paiement')) {
+                $query->where('numero_paiement', 'like', '%' . $request->input('numero_paiement') . '%');
+            }
+            if ($request->filled('montant')) {
+                $query->where('montant', 'like', '%' . $request->input('montant') . '%');
+            }
+            if ($request->filled('mode_paiement')) {
+                $query->where('mode_paiement', 'like', '%' . $request->input('mode_paiement') . '%');
+            }
+            if ($request->filled('cc')) {
+                $query->whereHas('user', function ($q) use ($request) {
+                    $q->where(function ($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->input('cc') . '%')
+                            ->orWhere('prenom', 'like', '%' . $request->input('cc') . '%');
+                    });
+                });
+            }
+            if ($request->filled('date_start') && $request->filled('date_end')) {
+                $query->whereBetween('avances.date_reglement', [
+                    $request->input('date_start'),
+                    $request->input('date_end'),
+                ]);
+            }
+
+            // Récupération des résultats paginés après application des filtres
+            $avances = $query->paginate($size, ['*'], 'page', $page);
+
+            // Construction de la pagination
+            $pagination = [
+                'currentPage' => $avances->currentPage(),
+                'totalItems' => $avances->total(),
+                'totalPages' => $avances->lastPage(),
+            ];
+
+            // Envoi de la réponse
+            return response()->json([
+                'data' => $avances->items(),
+                'pagination' => $pagination,
+                'sum_avances' => $sum_avances,
+                'prix' => $reservation->prix,
+                'etat_res' => $reservation->etat,
+            ], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function getAvanceHistory(Request $request, $id)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $size = $request->input('size', config('app.default_item_number_perpage'));
+            $page = $request->input('page', 1);
+
+            $query = HistoriqueAvance::on('temp')->where('avance_id', $id)->with('user', 'banque');
+            if ($request->filled('numero_paiement')) {
+                $query->where('numero_paiement', 'like', '%' . $request->input('numero_paiement') . '%');
+            }
+            if ($request->filled('montant')) {
+                $query->where('montant', 'like', '%' . $request->input('montant') . '%');
+            }
+            if ($request->filled('mode_paiement')) {
+                $query->where('mode_paiement', 'like', '%' . $request->input('mode_paiement') . '%');
+            }
+            if ($request->filled('cc')) {
+                $query->whereHas('user', function ($q) use ($request) {
+                    $q->where(function ($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->input('cc') . '%')
+                            ->orWhere('prenom', 'like', '%' . $request->input('cc') . '%');
+                    });
+                });
+            }
+            if ($request->filled('date_start') && $request->filled('date_end')) {
+                $query->whereBetween('avances.date_reglement', [
+                    $request->input('date_start'),
+                    $request->input('date_end'),
+                ]);
+            }
+            $historiques = $query->orderBy('created_at', 'desc')
+                ->paginate($size, ['*'], 'page', $page);
+
+            $pagination = [
+                'currentPage' => $historiques->currentPage(),
+                'totalItems' => $historiques->total(),
+                'totalPages' => $historiques->lastPage(),
+            ];
+
+            $historiques = $historiques->items();
+
+            return response()->json([
+                'data' => $historiques,
+                'pagination' => $pagination,
+            ], 200);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+    /*public function getAvances_by_Reservation(Request $request, $reservation_id)
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
@@ -116,7 +256,7 @@ class AvanceController extends Controller
             return response()->json(['historiques' => $historiques], 200);
         }
         return response()->json(['error' => 'Unauthorized'], 401);
-    }
+    }*/
 
     public function get_avances_by_etat($projet_id, $statut,Request $request)
     {
@@ -336,7 +476,7 @@ class AvanceController extends Controller
                 $avance->num_recu = '001';
             }
            // $avance->sr = (bool) $request->sr;
-            if($request->sr=='false'||$request->sr==false){
+            if($request->sr=='0'||$request->sr==0){
                 $avance->sr=0;
                 }
                 else{
@@ -809,7 +949,7 @@ class AvanceController extends Controller
 
                    }
                }
-                if($request->sr=='false'){
+                if($request->sr=='0'){
                     $avance->sr=0;
                 }
                 else{
@@ -1037,7 +1177,14 @@ class AvanceController extends Controller
             $encaiss = Encaissement::on('temp')->where('avance_id', $id)->get();
 
             foreach ($encaiss as $en) {
+                $tva_collectes=TvaCollecte::on('temp')->where('encaissement_id',$en->id)->get();
+                if(count($tva_collectes)>0){
+                    foreach($tva_collectes as $tv){
+                        $tv->forceDelete();
+                    }
+                }
                 $en->forceDelete();
+                //tva collecte
             }
 
             if ($avance->forceDelete()) {
@@ -1102,7 +1249,7 @@ class AvanceController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-    public function valideAvance($id)
+    /*public function valideAvance($id)
     {
         if (RoleHelper::AdminComptableSup()) {
             DatabaseHelper::Config();
@@ -1136,7 +1283,7 @@ class AvanceController extends Controller
         }
         return response()->json(['error' => 'Unauthorized'], 401);
 
-    }
+    }*/
 
     public function get_notif_avances_att_validation($projet_id){
 

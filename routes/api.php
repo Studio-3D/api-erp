@@ -43,6 +43,7 @@ use App\Http\Controllers\Api\V1\VisiteController as V1VisiteController;
 
 use App\Http\Controllers\Api\V1\ReclamationSavController as V1ReclamationsSavController;
 use App\Http\Controllers\Api\V1\EcheancesTrancheController as V1EchancesTrancheCleController;
+use App\Http\Controllers\Api\V1\RemboursementController as V1RemboursementController;
 
 
 use App\Http\Controllers\Api\V1\VueController as V1VueController;
@@ -198,12 +199,23 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('avances', V1AvanceController::class);
         Route::get('getAvancesByReservation/{reservation_id}', [V1AvanceController::class, 'getAvancesByReservation'])->name('getAvancesByReservation');
         Route::get('getAvanceHistory/{id}', [V1AvanceController::class, 'getAvanceHistory'])->name('getAvanceHistory');
+        Route::put('traiter_avance/{id}', [V1AvanceController::class, 'traiter_avance'])->name('');
+        Route::get('get_notif_avances_att_validation/{projet_id}', [V1AvanceController::class, 'get_notif_avances_att_validation'])->name('');
+        Route::get('avances_by_etat/{projet_id}/{etat}', [V1AvanceController::class, 'get_avances_by_etat'])->name('');
+        Route::get('avances_rejets/{projet_id}', [V1AvanceController::class, 'get_avances_rejets'])->name('');
+        Route::get('get_echeances/{projet_id}', [V1AvanceController::class, 'get_echeances'])->name('');
+        Route::get('get_echeances_menu/{projet_id}', [V1AvanceController::class, 'get_echeances_menu'])->name('');
+
         //Route::get('historiques_avance/{date}/{id}', [AvanceController::class, 'historiques_avance'])->name('');
 
         //lapi reservaton
         Route::resource('reservations', V1ReservationController::class);
         Route::get('projets/{idprojet}/reservations', [V1ReservationController::class, 'indexByProjet']);
         Route::get('search_reservation_by_code/{code_res}', [V1ReservationController::class, 'search_reservation_by_code']);
+        Route::get('reservations_by_etat/{projet_id}/{etat}', [V1ReservationController::class, 'get_reservations_by_etat'])->name('');
+        Route::get('get_Historiques_by_reservation/{id}', [V1ReservationController::class, 'get_Historiques_by_reservation'])->name('');
+        Route::get('info_reservation/{projet_id}', [V1ReservationController::class, 'info_reservation'])->name('');
+
         //l'api desistement
         Route::resource('desistements', V1DesistementController::class);
         Route::get('projets/{idprojet}/desistements', [V1DesistementController::class, 'indexByProjet']);
@@ -306,6 +318,10 @@ Route::middleware('auth:api')->group(function () {
         Route::get('projets/{idprojet}/EcheancesTranche', [V1EchancesTrancheCleController::class, 'indexByProjet']);
         Route::get('list_echeances_byTrancheId/{id}', [V1EchancesTrancheCleController::class, 'list_echeances_byTrancheId']);
 
+
+        //Remboursement
+
+        Route::get('get_detail_transfert/{reservation_id}', [V1RemboursementController::class, 'get_detail_transfert'])->name('');
 
     });
 
@@ -482,7 +498,7 @@ Route::middleware('auth:api')->group(function () {
     Route::delete('destoryAquereurUsingReservationId/{reservation_id}', [AquereurController::class, 'destroyAquerreursByReservationId'])->name('destoryAquereurUsingReservationId');
     Route::get('getAquereur_by_Reservation/{reservation_id}', [AquereurController::class, 'getAquereur_by_Reservation'])->name('getAquereur_by_Reservation');
 
-    /*************************************Avances***************************** */
+    /*************************************Avances*****************************
     Route::resource('avance', AvanceController::class);
     Route::get('avances/{projet_id}', [AvanceController::class, 'index'])->name('avances');
     Route::delete('destoryUsingReservationId/{reservation_id}', [AvanceController::class, 'destoryUsingReservationId'])->name('destoryUsingReservationId');
@@ -490,12 +506,12 @@ Route::middleware('auth:api')->group(function () {
     Route::put('refuseAvance/{id}', [AvanceController::class, 'refuseAvance'])->name('refuseAvance');
     Route::get('getAvances_by_Reservation/{reservation_id}', [AvanceController::class, 'getAvances_by_Reservation'])->name('getAvances_by_Reservation');
     Route::get('historiques_avance/{date}/{id}', [AvanceController::class, 'historiques_avance'])->name('');
-    Route::get('get_notif_avances_att_validation/{projet_id}', [AvanceController::class, 'get_notif_avances_att_validation'])->name('');
-    Route::get('avances_by_etat/{projet_id}/{etat}', [AvanceController::class, 'get_avances_by_etat'])->name('');
-    Route::put('traiter_avance/{id}', [AvanceController::class, 'traiter_avance'])->name('');
+   Route::get('get_notif_avances_att_validation/{projet_id}', [AvanceController::class, 'get_notif_avances_att_validation'])->name('');
+    //Route::get('avances_by_etat/{projet_id}/{etat}', [AvanceController::class, 'get_avances_by_etat'])->name('');
+    //Route::put('traiter_avance/{id}', [AvanceController::class, 'traiter_avance'])->name('');
     Route::get('avances_rejets/{projet_id}', [AvanceController::class, 'get_avances_rejets'])->name('');
     Route::get('get_echeances/{projet_id}', [AvanceController::class, 'get_echeances'])->name('');
-    Route::get('get_echeances_menu/{projet_id}', [AvanceController::class, 'get_echeances_menu'])->name('');
+    Route::get('get_echeances_menu/{projet_id}', [AvanceController::class, 'get_echeances_menu'])->name('');*/
 
     /*************************************PiecesJointe***************************** */
     Route::resource('piecesjointe', PiecesJointeController::class);
@@ -507,14 +523,11 @@ Route::middleware('auth:api')->group(function () {
 
     /*************************************Reservation***************************** */
     Route::resource('reservation', ReservationController::class);
-    Route::get('info_reservation/{projet_id}', [ReservationController::class, 'info_reservation'])->name('');
     Route::get('reservations/{projet_id}', [ReservationController::class, 'index'])->name('reservations');
     Route::get('getAllInformationsReservation/{id}', [ReservationController::class, 'getAllInformationsReservation'])->name('getAllInformationsReservation');
     Route::get('getReservationssByProjet/{id}', [ReservationController::class, 'getReservationssByProjet'])->name('getReservationssByProjet');
-    Route::get('get_Historiques_by_reservation/{id}', [ReservationController::class, 'get_Historiques_by_reservation'])->name('');
     Route::get('getDossiers/{projet_id}/{dos_id}', [ReservationController::class, 'get_dossiers'])->name('');
     Route::get('search_reservation_by_code/{code_res}', [ReservationController::class, 'search_reservation_by_code']);
-    Route::get('reservations_by_etat/{projet_id}/{etat}', [ReservationController::class, 'get_reservations_by_etat'])->name('');
     Route::put('traiter_reservation/{id}', [ReservationController::class, 'traiter_reservation'])->name('');
     Route::get('get_notif_reservation_att_validation/{projet_id}', [ReservationController::class, 'get_notif_reservation_att_validation'])->name('');
     Route::get('reservations_rejets/{projet_id}', [ReservationController::class, 'get_reservations_rejets'])->name('');

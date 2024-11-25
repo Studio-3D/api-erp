@@ -2,17 +2,16 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\RoleHelper;
 use App\Models\Remboursement;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use App\Models\User;
 use App\Models\Bien;
+use App\Http\Controllers\Controller;
 use App\Models\Societe;
 use Illuminate\Support\Facades\File;
 use App\Enum\RoleEnum;
@@ -269,6 +268,7 @@ class RemboursementController extends Controller
                 $encaiss = new Encaissement();
                 $encaiss->setConnection('temp');
                 $encaiss->remboursement_id = $id;
+                $encaiss->bien_id=$remboursement->reservation->bien_id;
                 $encaiss->reservation_id = $remboursement->reservation_id;
                 $encaiss->type_encaissement = 3; //Remboursements
                 $encaiss->montant = $remboursement->montant_a_rembourser;
@@ -305,24 +305,59 @@ class RemboursementController extends Controller
 
     }
 
-     public function get_detail_transfert(Request $request, $reservation_id)
+
+
+     public function get_detail_transfert($reservation_id, Request $request)
      {
-         if (RoleHelper::ACSup()) {
+         if (Auth::guard('api')->check()) {
+             $size = $request->input('size', config('app.default_item_number_perpage')); // Default size if not provided
+             $page = $request->input('page', 1); // Default page if not provided
+
              DatabaseHelper::Config();
-             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
-             $page = $request->input('page', 1);
-             $data = Remboursement::on('temp')
-                    ->with('dossier_transfert')
-                 ->where('reservation_id', $reservation_id)
-                 ->select('remboursements.*')->orderBy('created_at','desc')
-                 ->paginate($perPage,['*'],'page',$page);
-             return response()->json(['remboursement' => $data], 200);
 
-         } else {
-             return response()->json(['error' => 'Unauthorized'], 401);
+             $query =  Remboursement::on('temp')->with('dossier_transfert') ->where('reservation_id', $reservation_id);
+             // Optional filters (Add more if needed)
 
+             if ($request->filled('date')) {
+                 $start = Carbon::parse($request->input('date'));
+                 $query->whereDate('created_at' ,$start);
+             }
+             if ($request->filled('dossier')) {
+                $query->whereHas('dossier_transfert', function ($q) use ($request) {
+                    $q->where('code_reservation', 'like', '%' . $request->input('dossier') . '%');
+                });
+            }
+
+             if ($request->filled('montant')) {
+
+                 $query->where('montant_transfert','like', '%' . $request->input('montant') . '%');
+             }
+
+
+             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+                 // Paginate if size and page are valid
+                 $transfert = $query->orderBy('created_at', 'desc')
+                     ->paginate($size, ['*'], 'page', $page);
+
+                 // Add pagination info
+                 $pagination = [
+                     'currentPage' => $transfert->currentPage(),
+                     'totalItems' => $transfert->total(),
+                     'totalPages' => $transfert->lastPage(),
+                 ];
+
+                 $transfert = $transfert->items();
+
+                 return response()->json([
+                     'data' => $transfert,
+                     'pagination' => $pagination,
+                 ], 200);
+             }
          }
+
+         return response()->json(['error' => 'Unauthorized'], 401);
      }
+
      public function get_notif_demande_pre_remboursement($projet_id){
         DatabaseHelper::Config();
         if (RoleHelper::AdminSup()) {

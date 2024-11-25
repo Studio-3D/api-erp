@@ -360,12 +360,37 @@ class NotificationController extends Controller
                 ->where('desistements.archive',0)
                 ->where('desistements.deleted_at',NULL)
                 ->where('desistements.projet_id',$projet_id)->where('penalites_desistements.statut',0)->count();
-                $nb_av_att_validation = Avance::on('temp')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
+                //att validation ou att encaissement (valider mais num remisenu)
+                $nb_av_att_valida = Avance::on('temp')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
                 ->whereNull('reservations.deleted_at')
                 ->where('reservations.etat', 1)
                 ->where('reservations.statut', StatutReservationEnum::Validé->value)
                 ->where('avances.statut',3)
                 ->where('reservations.projet_id',$projet_id)->count();
+                $nb_v_att_encaissement= Avance::on('temp')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
+                ->whereNull('reservations.deleted_at')
+                ->where('reservations.etat', 1)
+                ->where('reservations.statut', StatutReservationEnum::Validé->value)
+                ->where('avances.statut',4)
+                ->where('reservations.projet_id',$projet_id)->count();
+
+                /* //avance en attente et avance  stored by admin(validé) mais sans encaissement
+                $nb_av_att_validation = Avance::on('temp')->with('last_statut')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
+                ->select('avances.*')
+                ->whereNull('reservations.deleted_at')
+                ->where('reservations.projet_id', $projet_id)
+                ->where(function ($query) use ($request) {
+                    $query->where('avances.statut', 3)
+                    ->orWhere(function ($query2) use($request) {
+                        $query2->where('avances.statut', 1)->where('avances.montant', '>',0)
+                        ->whereHas('last_statut', function ($q) use ($request) {
+                            $q->where('num_remise', null)
+                            ->where('date_encaissement', null);
+                        });
+                    });
+                })
+                ->where('reservations.etat', 1)
+                ->where('reservations.statut', StatutReservationEnum::Validé->value)->count();*/
                 $nb_res_att_validation = Reservation::on('temp')->with('last_statut')
                 ->where('projet_id', $projet_id)
                 ->where('statut', 3)
@@ -391,7 +416,7 @@ class NotificationController extends Controller
                 ->where('rendez_vous.statut','0')
                 ->where('reservations.projet_id',$projet_id)->count();
                        }
-           return response()->json(['nb_dst_att_valide' => $nb_desistement_att_valide,'nb_pen_att_valide'=>$nb_pen_att_valide,'nb_av_att_validation'=>$nb_av_att_validation,'nb_res_att_validation'=>$nb_res_att_validation,'nb_demande_pre_remourse'=>$nb_demande,'nb_echeance'=>$nb_echeance,'nb_rdv_notaire'=>$nb_rdv_notaire]);
+           return response()->json(['nb_dst_att_valide' => $nb_desistement_att_valide,'nb_pen_att_valide'=>$nb_pen_att_valide,'nb_av_att_validation'=>$nb_av_att_valida+$nb_v_att_encaissement,'nb_res_att_validation'=>$nb_res_att_validation,'nb_demande_pre_remourse'=>$nb_demande,'nb_echeance'=>$nb_echeance,'nb_rdv_notaire'=>$nb_rdv_notaire]);
         }
          else{
             return response()->json(['error' => 'Unauthorized'], 401);
