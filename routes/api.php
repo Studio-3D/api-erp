@@ -204,7 +204,6 @@ Route::middleware('auth:api')->group(function () {
         Route::put('traiter_avance/{id}', [V1AvanceController::class, 'traiter_avance'])->name('');
         Route::get('get_notif_avances_att_validation/{projet_id}', [V1AvanceController::class, 'get_notif_avances_att_validation'])->name('');
         Route::get('avances_by_etat/{projet_id}/{etat}', [V1AvanceController::class, 'get_avances_by_etat'])->name('');
-        Route::get('avances_rejets/{projet_id}', [V1AvanceController::class, 'get_avances_rejets'])->name('');
         Route::get('get_echeances/{projet_id}', [V1AvanceController::class, 'get_echeances'])->name('');
         Route::get('get_echeances_menu/{projet_id}', [V1AvanceController::class, 'get_echeances_menu'])->name('');
 
@@ -217,6 +216,9 @@ Route::middleware('auth:api')->group(function () {
         Route::get('reservations_by_etat/{projet_id}/{etat}', [V1ReservationController::class, 'get_reservations_by_etat'])->name('');
         Route::get('get_Historiques_by_reservation/{id}', [V1ReservationController::class, 'get_Historiques_by_reservation'])->name('');
         Route::get('info_reservation/{projet_id}', [V1ReservationController::class, 'info_reservation'])->name('');
+        Route::get('get_notif_reservation_att_validation/{projet_id}', [V1ReservationController::class, 'get_notif_reservation_att_validation'])->name('');
+        Route::put('traiter_reservation/{id}', [V1ReservationController::class, 'traiter_reservation'])->name('');
+        Route::get('relancer_reservation/{id}', [V1ReservationController::class, 'relancer_reservation'])->name('');
 
         //l'api desistement
         Route::resource('desistements', V1DesistementController::class);
@@ -529,11 +531,10 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getAllInformationsReservation/{id}', [ReservationController::class, 'getAllInformationsReservation'])->name('getAllInformationsReservation');
     Route::get('getReservationssByProjet/{id}', [ReservationController::class, 'getReservationssByProjet'])->name('getReservationssByProjet');
     Route::get('getDossiers/{projet_id}/{dos_id}', [ReservationController::class, 'get_dossiers'])->name('');
-    Route::get('search_reservation_by_code/{code_res}', [ReservationController::class, 'search_reservation_by_code']);
-    Route::put('traiter_reservation/{id}', [ReservationController::class, 'traiter_reservation'])->name('');
-    Route::get('get_notif_reservation_att_validation/{projet_id}', [ReservationController::class, 'get_notif_reservation_att_validation'])->name('');
-    Route::get('reservations_rejets/{projet_id}', [ReservationController::class, 'get_reservations_rejets'])->name('');
-    Route::get('relancer_reservation/{id}', [ReservationController::class, 'relancer_reservation'])->name('');
+   // Route::get('search_reservation_by_code/{code_res}', [ReservationController::class, 'search_reservation_by_code']);
+   // Route::put('traiter_reservation/{id}', [ReservationController::class, 'traiter_reservation'])->name('');
+   // Route::get('get_notif_reservation_att_validation/{projet_id}', [ReservationController::class, 'get_notif_reservation_att_validation'])->name('');
+   // Route::get('reservations_rejets/{projet_id}', [ReservationController::class, 'get_reservations_rejets'])->name('');
 
     /******************************Typologie **********************/
     Route::get('get_typologiesByProjet/{id}', [TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');

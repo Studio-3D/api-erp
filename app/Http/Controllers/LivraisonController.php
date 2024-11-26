@@ -21,7 +21,7 @@ use App\Events\NotifMenuEvent;
 use App\Models\Compromis_vente;
 use App\Models\Contrat_vente;
 use App\Enum\StatutReservationEnum;
-
+use App\Models\Reservation;
 
 use App\Models\Societe;
 use Illuminate\Support\Facades\File;
@@ -45,8 +45,8 @@ class LivraisonController extends Controller
             ->select('rendez_vous.*')->orderBy('created_at','desc')->get();
             $last_rdv = $data->take(1);
             $data_p = PaginationHelper::paginate_array(array_slice($data->toArray(), 1),$perPage,$page,$request->url());
-
-            return response()->json(['last_rdv' => $last_rdv,'historiques' => $data_p], 200);
+            $reservation=Reservation::on('temp')->findorfail($reservation_id);
+            return response()->json(['last_rdv' => $last_rdv,'historiques' => $data_p,'etat_res'=>$reservation->etat], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

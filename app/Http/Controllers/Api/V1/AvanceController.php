@@ -31,6 +31,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use \NumberFormatter;
+use App\Http\Helpers\PaginationHelper;
 
 use App\Enum\ModePaiement;
 use App\Models\PiecesJointe;
@@ -118,11 +119,13 @@ class AvanceController extends Controller
                     });
                 });
             }
-            if ($request->filled('date_start') && $request->filled('date_end')) {
-                $query->whereBetween('avances.date_reglement', [
-                    $request->input('date_start'),
-                    $request->input('date_end'),
-                ]);
+            if ($request->filled('date_start')) {
+                $start = Carbon::parse($request->input('date_start'));
+                $query->whereDate('date_reglement','>=', $start);
+            }
+            if ($request->filled('date_end')) {
+                $end = Carbon::parse($request->input('date_end'));
+                $query->whereDate('date_reglement','<=', $end);
             }
 
             // Récupération des résultats paginés après application des filtres
@@ -173,11 +176,14 @@ class AvanceController extends Controller
                     });
                 });
             }
-            if ($request->filled('date_start') && $request->filled('date_end')) {
-                $query->whereBetween('avances.date_reglement', [
-                    $request->input('date_start'),
-                    $request->input('date_end'),
-                ]);
+
+            if ($request->filled('date_start')) {
+                $start = Carbon::parse($request->input('date_start'));
+                $query->whereDate('date_reglement','>=', $start);
+            }
+            if ($request->filled('date_end')) {
+                $end = Carbon::parse($request->input('date_end'));
+                $query->whereDate('date_reglement','<=', $end);
             }
             $historiques = $query->orderBy('created_at', 'desc')
                 ->paginate($size, ['*'], 'page', $page);
@@ -199,69 +205,156 @@ class AvanceController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
+
+
     public function get_avances_by_etat($projet_id, $statut, Request $request)
     {
-        if (Auth::guard('api')->check()) {
+        if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
+            $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
+            $aa=0;
             if (RoleHelper::AdminSup()) {
-                    if($request->statut==3){
-                        $avances = Avance::on('temp')->with('last_statut')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
-                        ->select('avances.*')
-                        ->whereNull('reservations.deleted_at')
-                        ->where('reservations.projet_id', $projet_id)
-                        ->where('avances.statut', $statut)
-                        //validé mais en attente encaissement
-                        ->orwhere('avances.statut',4)
-                        ->where('reservations.etat', 1)
-                        ->where('reservations.statut', StatutReservationEnum::Validé->value)
-                        ->orderBy('avances.created_at', 'desc')
-                        ->paginate($perPage, ['*'], 'page', $page);
-                    }else{
+                if($statut==3){
+                    $query = Avance::on('temp')->with('last_statut','reservation')
+                    ->where('mode_paiement','!=',7)->where('montant','>',0) ->orderBy('created_at', 'desc')
+                    ->where(function($qq) use ($statut){
+                        $qq->where('statut',1)
+                            ->orwhere('statut',$statut);
+                        });
+                    $query->whereHas('reservation', function ($q) use ($projet_id) {
+                           $q->where('projet_id', $projet_id)
+                                ->where('etat', 1)
+                                ->where('statut',StatutReservationEnum::Validé->value);
+                    });
 
-                        $avances = Avance::on('temp')->with('last_statut')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
-                        ->select('avances.*')
-                        ->whereNull('reservations.deleted_at')
-                        ->where('reservations.projet_id', $projet_id)
-                        ->where('avances.statut', $statut)
-                        ->where('reservations.etat', 1)
-                        ->where('reservations.statut', StatutReservationEnum::Validé->value)
-                        ->orderBy('avances.created_at', 'desc')
-                        ->paginate($perPage, ['*'], 'page', $page);
+                    if ($request->filled('mode_paiement')) {
+                        $query->where('mode_paiement', 'like', '%' . $request->input('mode_paiement') . '%');
+                    }
+                     if ($request->filled('numero_paiement')) {
+                        $query->where('numero_paiement', 'like', '%' . $request->input('numero_paiement') . '%');
+                    }
+                    if ($request->filled('montant')) {
+                        $query->where('montant', 'like', '%' . $request->input('montant') . '%');
                     }
 
+                    if ($request->filled('cc')) {
+                        $query->whereHas('user', function ($q) use ($request) {
+                            $q->where(function ($q) use ($request) {
+                                $q->where('name', 'like', '%' . $request->input('cc') . '%')
+                                    ->orWhere('prenom', 'like', '%' . $request->input('cc') . '%');
+                            });
+                        });
+                    }
+                    if ($request->filled('date_start') && $request->filled('date_end')) {
+                        $query->whereBetween('date_reglement', [
+                            $request->input('date_start'),
+                            $request->input('date_end'),
+                        ]);
+                    }
+
+                    $array = $query->get();
+                    $array_2=array();
+                    if(count($array)>0){
+                        foreach($array as $ar){
+                            if($ar->statut==3){
+                                array_push($array_2,$ar);
+                            }
+                            elseif($ar->last_statut!=null){
+                                    if($ar->last_statut->num_remise==null && $ar->last_statut->date_encaissement==null ){
+                                        array_push($array_2,$ar);
+                                    }
+                            }
+                        }
+                    }
+
+                    // Paginate the array of visites
+                    $avances = PaginationHelper::paginate_array($array_2, $size, $page, $request->url());
+
+                }else{
+                    $aa=1;
+                    $query =Avance::on('temp')->with('last_statut','reservation')
+                    ->where('mode_paiement','!=',7)->where('montant','>',0) ->orderBy('created_at', 'desc')
+                    ->where('statut', $statut);
+                    $query->whereHas('reservation', function ($q) use ($projet_id) {
+                           $q->where('projet_id', $projet_id)
+                                ->where('etat', 1)
+                                ->where('statut',StatutReservationEnum::Validé->value);
+                    });
+
+                    $avances = $query->orderBy('created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
+                }
 
 
-
-            } elseif (RoleHelper::Com()) {
-                $user = Auth::user();
-                $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-
-                $avances = Avance::on('temp')->with('last_statut')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
-                    ->select('avances.*')
-                    ->whereNull('reservations.deleted_at')
-                    ->where('reservations.projet_id', $projet_id)
-                    ->where('avances.statut', $statut)
-                    ->where('reservations.etat', 1)
-                    ->where('reservations.statut', StatutReservationEnum::Validé->value)
-                    ->where('avances.user_id', $userAuth->value('id'))
-                    ->orderBy('avances.created_at', 'desc')
-                    ->paginate($perPage, ['*'], 'page', $page);
-
-            }
-            return response()->json(['avances' => $avances]);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        } elseif (RoleHelper::Com()) {
+            $aa=1;
+            $user = Auth::user();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+                $query =Avance::on('temp')->with('last_statut','reservation')
+                    ->where('mode_paiement','!=',7)->where('montant','>',0)
+                    ->where('statut', $statut)
+                    ->where('avances.user_id', $userAuth->value('id'));
+                    $query->whereHas('reservation', function ($q) use ($projet_id) {
+                           $q->where('projet_id', $projet_id)
+                                ->where('etat', 1)
+                                ->where('statut',StatutReservationEnum::Validé->value);
+                    });
+                $avances = $query->orderBy('created_at', 'desc')
+                ->paginate($size, ['*'], 'page', $page);
 
         }
+        if($aa==1){
+            if ($request->filled('mode_paiement')) {
+                $query->where('mode_paiement', 'like', '%' . $request->input('mode_paiement') . '%');
+            }
+             if ($request->filled('numero_paiement')) {
+                $query->where('numero_paiement', 'like', '%' . $request->input('numero_paiement') . '%');
+            }
+            if ($request->filled('montant')) {
+                $query->where('montant', 'like', '%' . $request->input('montant') . '%');
+            }
 
+            if ($request->filled('cc')) {
+                $query->whereHas('user', function ($q) use ($request) {
+                    $q->where(function ($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->input('cc') . '%')
+                            ->orWhere('prenom', 'like', '%' . $request->input('cc') . '%');
+                    });
+                });
+            }
+            if ($request->filled('date_start')) {
+                $start = Carbon::parse($request->input('date_start'));
+                $query->whereDate('date_reglement','>=', $start);
+            }
+            if ($request->filled('date_end')) {
+                $end = Carbon::parse($request->input('date_end'));
+                $query->whereDate('date_reglement','<=', $end);
+            }
+
+        }
+            // Construction de la pagination
+            $pagination = [
+                'currentPage' => $avances->currentPage(),
+                'totalItems' => $avances->total(),
+                'totalPages' => $avances->lastPage(),
+            ];
+
+            // Envoi de la réponse
+            return response()->json([
+                'data' => $avances->items(),
+                'pagination' => $pagination,
+
+            ], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     public function traiter_avance($id, Request $request)
     {
         if (RoleHelper::ACSup()) {
+
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -289,9 +382,11 @@ class AvanceController extends Controller
             }
 
             if ($request->etat == 1) {
+
                 //2 traitement avance
                 Config::set('broadcasting.default', 'pusher_5');
                 broadcast(new NotifMenuEvent(2));
+                return response()->json($request->etat);
                 if ($avance->reservation->user->role == RoleEnum::COMMERCIAL->value) {
                     Config::set('broadcasting.default', 'pusher_3');
 
@@ -709,6 +804,9 @@ class AvanceController extends Controller
                     //store commission a voir
                 }
             }
+            //actualiser menu validation avance
+            Config::set('broadcasting.default', 'pusher_5');
+            broadcast(new NotifMenuEvent(2));
             }
             return $avance;
 
@@ -1245,21 +1343,32 @@ class AvanceController extends Controller
             DatabaseHelper::Config();
 
             if (RoleHelper::AdminSup()) {
-                $nb_att_valida = Avance::on('temp')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
-                    ->whereNull('reservations.deleted_at')
-                    ->where('reservations.etat', 1)
-                    ->where('reservations.statut', StatutReservationEnum::Validé->value)
-                    ->where('avances.statut', 3)
-                    ->whereNull('reservations.deleted_at')
-                    ->where('reservations.projet_id', $projet_id)->count();
-                $nb_att_encaissement = Avance::on('temp')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
-                    ->whereNull('reservations.deleted_at')
-                    ->where('reservations.etat', 1)
-                    ->where('reservations.statut', StatutReservationEnum::Validé->value)
-                    ->where('avances.statut', 3)
-                    ->whereNull('reservations.deleted_at')
-                    ->where('reservations.projet_id', $projet_id)->count();
-                $nb_att_validation=$nb_att_encaissement+$nb_att_valida;
+                //avance en attente et avance  stored by admin(validé) mais sans encaissement
+                $query = Avance::on('temp')->with('last_statut','reservation')
+                    ->where('mode_paiement','!=',7)->where('montant','>',0) ->orderBy('created_at', 'desc')
+                    ->where(function($qq) {
+                        $qq->where('statut',1)
+                            ->orwhere('statut',3);
+                        });
+                    $query->whereHas('reservation', function ($q) use ($projet_id) {
+                           $q->where('projet_id', $projet_id)
+                                ->where('etat', 1)
+                                ->where('statut',StatutReservationEnum::Validé->value);
+                    });
+                    $array = $query->get();
+                    $nb_att_validation=0;
+                    if(count($array)>0){
+                        foreach($array as $ar){
+                            if($ar->statut==3){
+                                $nb_att_validation+=1;
+                            }
+                            elseif($ar->last_statut!=null){
+                                    if($ar->last_statut->num_remise==null && $ar->last_statut->date_encaissement==null ){
+                                        $nb_att_validation+=1;
+                                    }
+                            }
+                        }
+                    }
 
             } else if (RoleHelper::Com()) {
                 $user = Auth::user();
@@ -1282,86 +1391,97 @@ class AvanceController extends Controller
 
     }
 
-    public function get_avances_rejets($projet_id, Request $request)
-    {
-
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
-            DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
-            $page = $request->input('page', 1);
-
-            if (RoleHelper::AdminSup()) {
-                //ADMIN
-                $avances = Avance::on('temp')->with('last_statut')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
-                    ->select('avances.*')
-                    ->where('reservations.etat', 1)
-                    ->where('avances.statut', 2)
-                    ->whereNull('reservations.deleted_at')
-                    ->where('reservations.projet_id', $projet_id)->orderBy('created_at', 'desc')
-                    ->paginate($perPage, ['*'], 'page', $page);
-
-            } else
-            if (RoleHelper::Com()) {
-                $user = Auth::user();
-                $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-                $avances = Avance::on('temp')->with('last_statut')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
-                    ->select('avances.*')
-                    ->where('reservations.etat', 1)
-                    ->where('avances.statut', 2)
-                    ->whereNull('reservations.deleted_at')
-                    ->where('avances.user_id', $userAuth->value('id'))
-                    ->where('reservations.projet_id', $projet_id)->orderBy('created_at', 'desc')
-                    ->paginate($perPage, ['*'], 'page', $page);
-
-            }
-            return response()->json(['avances' => $avances]);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
-    }
     public function get_echeances($projet_id, Request $request)
     {
 
         if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
+            $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
 
             if (RoleHelper::AdminSup()) {
                 //ADMIN
-                $echeances = Avance::on('temp')
-                    ->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
-                    ->select('avances.*')
-                    ->whereNull('reservations.deleted_at')
-                    ->where('reservations.projet_id', $projet_id)
-                // ->where('avances.sr', 1)
-                    ->whereDate('avances.echeance', '<=', Carbon::now())
-                    ->where('reservations.etat', 1)->orderBy('created_at', 'desc')
-                    ->paginate($perPage, ['*'], 'page', $page);
-
+                    $query =Avance::on('temp')->with('last_statut','reservation')
+                    ->where('mode_paiement','!=',7)->where('montant','>',0)
+                    ->where('statut', StatutReservationEnum::Validé->value)
+                    ->whereDate('echeance', '<=', Carbon::now());
+                    $query->whereHas('reservation', function ($q) use ($projet_id) {
+                           $q->where('projet_id', $projet_id)
+                                ->where('etat', 1)
+                                ->where('statut',StatutReservationEnum::Validé->value);
+                    });
             } else
             if (RoleHelper::Com()) {
                 $user = Auth::user();
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-                $echeances = Avance::on('temp')
-                    ->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
-                    ->select('avances.*')
-                    ->whereNull('reservations.deleted_at')
-                    ->where('reservations.projet_id', $projet_id)
-                //->where('avances.sr', 1)
-                    ->where('avances.user_id', $userAuth->value('id'))
-                    ->whereDate('avances.echeance', '<=', Carbon::now())
-                    ->where('reservations.etat', 1)->orderBy('created_at', 'desc')
-                    ->paginate($perPage, ['*'], 'page', $page);
+
+                    $query =Avance::on('temp')->with('last_statut','reservation')
+                    ->where('mode_paiement','!=',7)->where('montant','>',0)
+                    ->where('statut', StatutReservationEnum::Validé->value)
+                    ->whereDate('echeance', '<=', Carbon::now())  ->where('avances.user_id', $userAuth->value('id'));
+                    $query->whereHas('reservation', function ($q) use ($projet_id) {
+                           $q->where('projet_id', $projet_id)
+                                ->where('etat', 1)
+                                ->where('statut',StatutReservationEnum::Validé->value);
+                    });
 
             }
-            return response()->json(['echeances' => $echeances]);
+
+            if ($request->filled('mode_paiement')) {
+                $query->where('mode_paiement', 'like', '%' . $request->input('mode_paiement') . '%');
+            }
+             if ($request->filled('numero_paiement')) {
+                $query->where('numero_paiement', 'like', '%' . $request->input('numero_paiement') . '%');
+            }
+            if ($request->filled('montant')) {
+                $query->where('montant', 'like', '%' . $request->input('montant') . '%');
+            }
+
+            if ($request->filled('cc')) {
+                $query->whereHas('user', function ($q) use ($request) {
+                    $q->where(function ($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->input('cc') . '%')
+                            ->orWhere('prenom', 'like', '%' . $request->input('cc') . '%');
+                    });
+                });
+            }
+            if ($request->filled('date_start')) {
+                $start = Carbon::parse($request->input('date_start'));
+                $query->whereDate('date_reglement','>=', $start);
+            }
+            if ($request->filled('date_end')) {
+                $end = Carbon::parse($request->input('date_end'));
+                $query->whereDate('date_reglement','<=', $end);
+            }
+
+            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+                $echeances = $query->orderBy('created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
+
+                // Extraire les propriétés du paginateur
+                $pagination = [
+                    'currentPage' => $echeances->currentPage(),
+                    'totalItems' => $echeances->total(),
+                    'totalPages' => $echeances->lastPage(),
+                ];
+
+                // Extraire les éléments d'utilisateur du paginateur
+                $echeances = $echeances->items();
+
+                // Retourner la réponse simplifiée
+                return response()->json([
+                    'data' => $echeances,
+                    'pagination' => $pagination,
+                ], 200);
+            }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
     }
+
+
+
 
     public function get_echeances_menu($projet_id, Request $request)
     {
@@ -1377,23 +1497,27 @@ class AvanceController extends Controller
                     ->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
                     ->whereNull('reservations.deleted_at')
                     ->where('reservations.projet_id', $projet_id)
-                //->where('avances.sr', 1)
+                    ->where('avances.mode_paiement','!=',7)->where('avances.montant','>',0)
+                    //->where('avances.sr', 1)
+                    ->where('avances.statut', StatutReservationEnum::Validé->value)
                     ->whereDate('avances.echeance', '<=', Carbon::now())
-                    ->where('reservations.etat', 1)->orderBy('created_at', 'desc')
+                    ->where('reservations.etat', 1)->where('reservations.statut',StatutReservationEnum::Validé->value)->orderBy('created_at', 'desc')
                     ->count();
 
             } else
             if (RoleHelper::Com()) {
                 $user = Auth::user();
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-                $echeances = Avance::on('temp')
+                    $echeances = Avance::on('temp')
                     ->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
                     ->whereNull('reservations.deleted_at')
                     ->where('reservations.projet_id', $projet_id)
-                //->where('avances.sr', 1)
+                    ->where('avances.mode_paiement','!=',7)->where('avances.montant','>',0)
+                    //->where('avances.sr', 1)
                     ->where('avances.user_id', $userAuth->value('id'))
+                    ->where('avances.statut', StatutReservationEnum::Validé->value)
                     ->whereDate('avances.echeance', '<=', Carbon::now())
-                    ->where('reservations.etat', 1)->orderBy('created_at', 'desc')
+                    ->where('reservations.etat', 1)->where('reservations.statut',StatutReservationEnum::Validé->value)->orderBy('created_at', 'desc')
                     ->count();
 
             }
