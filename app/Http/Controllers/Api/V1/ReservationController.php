@@ -114,11 +114,14 @@ class ReservationController extends Controller
                     $q->where('propriete_dite_bien', 'like', '%' . $request->input('bien') . '%');
                 });
             }
-            if ($request->filled('date_start') && $request->filled('date_end')) {
-                $query->whereBetween('reservations.date_reservation', [
-                    $request->input('date_start'),
-                    $request->input('date_end'),
-                ]);
+
+            if ($request->filled('date_start')) {
+                $start = Carbon::parse($request->input('date_start'));
+                $query->whereDate('reservations.date_reservation','>=', $start);
+            }
+            if ($request->filled('date_end')) {
+                $end = Carbon::parse($request->input('date_end'));
+                $query->whereDate('reservations.date_reservation','<=', $end);
             }
 
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
@@ -176,7 +179,7 @@ class ReservationController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-    public function get_reservations_rejets(Request $request, $projet_id)
+    /*public function get_reservations_rejets(Request $request, $projet_id)
     {
 
         if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
@@ -219,7 +222,7 @@ class ReservationController extends Controller
 
         }
         return response()->json(['error' => 'Unauthorized'], 401);
-    }
+    }*/
     /**
      * Show the form for creating a new resource.
      */
@@ -867,49 +870,91 @@ class ReservationController extends Controller
     }
 
 
-    public function get_reservations_by_etat($projet_id, $statut, Request $request)
-    {
-        if (Auth::guard('api')->check()) {
-            DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
-            $page = $request->input('page', 1);
-            $avances = Avance::on('temp')->select('reservation_id', DB::raw('SUM(avances.montant) as sum_avances'))
-                ->groupby('reservation_id');
-            if (RoleHelper::AdminSup()) {
-                $reservations = Reservation::on('temp')->with('last_statut', 'first_avance')
-                    ->joinSub($avances, 'avances_req', function ($join) {
-                        $join->on('avances_req.reservation_id', '=', 'reservations.id');
-                    })
-                    ->select('reservations.*', 'avances_req.sum_avances')
-                    ->orderBy('reservations.created_at', 'desc')
-                    ->where('reservations.projet_id', $projet_id)
-                    ->where('reservations.statut', $statut)
-                    ->where('reservations.etat', 1)
-                    ->paginate($perPage, ['*'], 'page', $page);
 
-            } elseif (RoleHelper::Com()) {
+    public function get_reservations_by_etat($projet_id, $statut, Request $request)    {
+        if (Auth::guard('api')->check()) {
+            $size = $request->input('size', config('app.default_item_number_perpage')); // Default size if not provided
+            $page = $request->input('page', 1); // Default page if not provided
+
+            DatabaseHelper::Config();
+
+
+            $query = Reservation::on('temp')->withSum('avances','montant')->with('desistement_att_validation_rejete','last_statut','first_avance')
+            ->orderBy('created_at', 'desc')
+                ->where('projet_id', $projet_id)
+                ->where('etat', 1)->where('reservations.statut', $statut);
+            if (RoleHelper::Com()) {
                 $user = Auth::user();
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-                $reservations = Reservation::on('temp')->with('last_statut')
-                    ->joinSub($avances, 'avances_req', function ($join) {
-                        $join->on('avances_req.reservation_id', '=', 'reservations.id');
-                    })
-                    ->select('reservations.*', 'avances_req.sum_avances')
-                    ->orderBy('reservations.created_at', 'desc')
-                    ->where('reservations.projet_id', $projet_id)
-                    ->where('reservations.statut', $statut)
-                    ->where('reservations.etat', 1)
-                    ->where('reservations.user_id', $userAuth->value('id'))
-                    ->paginate($perPage, ['*'], 'page', $page);
-
+                $query->where('reservations.user_id', $userAuth->value('id'));
             }
-            return response()->json(['reservations' => $reservations]);
+            // Optional filters (Add more if needed)
+            if ($request->filled('code_reservation')) {
+                $query->where('code_reservation', 'like', '%' . $request->input('code_reservation') . '%');
+            }
+            if ($request->filled('date_reservation')) {
+                $query->where('date_reservation', $request->input('date_reservation'));
+            }
+            if ($request->filled('client_id')) {
+                $query->whereHas('Aquereurs.client', function ($q) use ($request) {
+                    $q->where(function ($q) use ($request) {
+                        $q->where('id', $request->input('client_id'));
+                    });
+                });
+            }
+            if ($request->filled('client')) {
+                $query->whereHas('Aquereurs.client', function ($q) use ($request) {
+                    $q->where(function ($q) use ($request) {
+                        $q->where('nom', 'like', '%' . $request->input('client') . '%')
+                            ->orWhere('prenom', 'like', '%' . $request->input('client') . '%');
+                    });
+                });
+            }
+            if ($request->filled('cc')) {
+                $query->whereHas('user', function ($q) use ($request) {
+                    $q->where(function ($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->input('cc') . '%')
+                            ->orWhere('prenom', 'like', '%' . $request->input('cc') . '%');
+                    });
+                });
+            }
+            if ($request->filled('bien')) {
+                $query->whereHas('bien', function ($q) use ($request) {
+                    $q->where('propriete_dite_bien', 'like', '%' . $request->input('bien') . '%');
+                });
+            }
 
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            if ($request->filled('date_start')) {
+                $start = Carbon::parse($request->input('date_start'));
+                $query->whereDate('reservations.date_reservation','>=', $start);
+            }
+            if ($request->filled('date_end')) {
+                $end = Carbon::parse($request->input('date_end'));
+                $query->whereDate('reservations.date_reservation','<=', $end);
+            }
 
+            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+                // Paginate if size and page are valid
+                $reservations = $query->orderBy('reservations.created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
+
+                // Add pagination info
+                $pagination = [
+                    'currentPage' => $reservations->currentPage(),
+                    'totalItems' => $reservations->total(),
+                    'totalPages' => $reservations->lastPage(),
+                ];
+
+                $reservations = $reservations->items();
+
+                return response()->json([
+                    'data' => $reservations,
+                    'pagination' => $pagination,
+                ], 200);
+            }
         }
 
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
 
     public function get_notif_reservation_att_validation($projet_id)
@@ -918,29 +963,22 @@ class ReservationController extends Controller
         if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
             DatabaseHelper::Config();
 
-            $avances = Avance::on('temp')->select('reservation_id', DB::raw('SUM(avances.montant) as sum_avances'))
-                ->groupby('reservation_id');
+
 
             if (RoleHelper::AdminSup()) {
 
-                $nb_att_validation = Reservation::on('temp')->with('last_statut')
-                    ->joinSub($avances, 'avances_req', function ($join) {
-                        $join->on('avances_req.reservation_id', '=', 'reservations.id');
-                    })
-                    ->where('reservations.projet_id', $projet_id)
-                    ->where('reservations.statut', 3)
-                    ->where('reservations.etat', 1)->count();
+                $nb_att_validation = Reservation::on('temp')->withSum('avances','montant')->with('desistement_att_validation_rejete','last_statut','first_avance')
+                ->orderBy('created_at', 'desc')
+                ->where('projet_id', $projet_id)
+                ->where('etat', 1)->where('statut',3)->count();
 
             } else if (RoleHelper::Com()) {
                 $user = Auth::user();
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-                $nb_att_validation = Reservation::on('temp')->with('last_statut')
-                    ->joinSub($avances, 'avances_req', function ($join) {
-                        $join->on('avances_req.reservation_id', '=', 'reservations.id');
-                    })
-                    ->where('reservations.projet_id', $projet_id)
-                    ->where('reservations.statut', 3)
-                    ->where('reservations.etat', 1)->where('reservations.user_id', $userAuth->value('id'))->count();
+                $nb_att_validation = Reservation::on('temp')->withSum('avances','montant')->with('desistement_att_validation_rejete','last_statut','first_avance')
+                ->orderBy('created_at', 'desc')
+                    ->where('projet_id', $projet_id)
+                    ->where('etat', 1)->where('statut',3)->where('user_id', $userAuth->value('id'))->count();
             }
             return response()->json(['nb' => $nb_att_validation]);
 
@@ -1015,7 +1053,6 @@ class ReservationController extends Controller
             //traiter reservation with avance
             if ($request->with_avance == 1) {
                 $avanceController = new AvanceController();
-
                 $data_avance = [
                     'etat' => $request->statut_av,
                     'n_remise' => $request->n_remise,
