@@ -63,7 +63,10 @@ class Bien extends Model
     }
     public function reservation()
     {
-        return $this->hasone(Reservation::class,'bien_id')->orderby('created_at','desc')->where('etat',1)->latest();
+        return $this->hasOne(Reservation::class, 'bien_id')->orderby('created_at','desc')
+            ->where('etat', 1) 
+            ->latest();    
+               
     }
     public function compositionBien()
    {
