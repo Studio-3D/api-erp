@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Tranche;
 use App\Models\Bien;
 use App\Models\Bloc;
-use App\Models\CompositionBien; 
+use App\Models\CompositionBien;
 use App\Models\TypeBien;
 use App\Models\Immeuble;
 use Illuminate\Support\Collection;
@@ -22,16 +22,16 @@ use App\Models\Projet;
 
 class ExcelDataController extends Controller{
 
-   
-        
-        
-        
-        
 
-       
+
+
+
+
+
+
     public function UploadDataExcel(Request $request){
         
-        
+
         $projet_id = $request->projetId;
 
         DatabaseHelper::Config();
@@ -44,31 +44,31 @@ class ExcelDataController extends Controller{
         $data = $request->input('data');
 
         $keys = array_keys($data[0]);
-        
-   
-        
+
+
+
 
         $importMethod = $this->determineImportMethod($keys);
 
         return ImportExcelHelper::$importMethod($data, $projet_id);
     }
-    
-        
+
+
         private function determineImportMethod($keys) {
             $hasTranche = in_array('tranche', $keys);
             $hasBloc = in_array('Bloc', $keys);
             $hasImmeuble = in_array('immeuble', $keys);
-        
+
             if ($hasTranche && $hasBloc && $hasImmeuble) {
                 return 'ImportStockByProjet';
-           
+
 
             } elseif ($hasTranche && $hasBloc && !$hasImmeuble) {
-         
+
 
                 return 'ImportStockByProjetWithoutImmeuble';
             } elseif ($hasTranche && !$hasBloc && $hasImmeuble) {
-          
+
 
                 return 'ImportStockByProjetWithoutBloc';
             } elseif ($hasTranche && !$hasBloc && !$hasImmeuble) {
@@ -89,9 +89,9 @@ class ExcelDataController extends Controller{
         }
     }
 
-           
 
 
-    
+
+
 
 

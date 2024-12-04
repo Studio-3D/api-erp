@@ -460,7 +460,7 @@ class NotificationController extends Controller
                     ->whereNull('reservations.deleted_at')
                     ->where('reservations.projet_id', $projet_id)
                    // ->where('avances.sr', 1)
-                   ->where('statut', StatutReservationEnum::Validé->value)
+                   ->where('avances.statut', StatutReservationEnum::Validé->value)
                     ->whereDate('avances.echeance', '<=', Carbon::now())
                     ->where('reservations.etat', 1)->where('avances.user_id',  $userAuth->value('id'))
                     ->where('avances.mode_paiement','!=',7)->where('avances.montant','>',0)

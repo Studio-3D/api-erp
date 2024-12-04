@@ -40,10 +40,10 @@ use App\Http\Controllers\Api\V1\TypeProjetController as V1TypeProjetController;
 use App\Http\Controllers\Api\V1\TypologieController as V1TypologieController;
 use App\Http\Controllers\Api\V1\UserController as V1UserController;
 use App\Http\Controllers\Api\V1\VisiteController as V1VisiteController;
-
 use App\Http\Controllers\Api\V1\ReclamationSavController as V1ReclamationsSavController;
 use App\Http\Controllers\Api\V1\EcheancesTrancheController as V1EchancesTrancheCleController;
 use App\Http\Controllers\Api\V1\RemboursementController as V1RemboursementController;
+use App\Http\Controllers\Api\V1\UploadBienController as V1UploadBienController;
 
 
 use App\Http\Controllers\Api\V1\VueController as V1VueController;
@@ -221,11 +221,16 @@ Route::middleware('auth:api')->group(function () {
         Route::get('relancer_reservation/{id}', [V1ReservationController::class, 'relancer_reservation'])->name('');
 
         //l'api desistement
-        Route::resource('desistements', V1DesistementController::class);
+        Route::resource('desistement', V1DesistementController::class);
         Route::get('projets/{idprojet}/desistements', [V1DesistementController::class, 'indexByProjet']);
-
-        //Route::get('get_desistements/{projet_id}/{type}/{etat}', [V1DesistementController::class, 'get_desistements'])->name('');
-
+        Route::get('penalites/{projet_id}/{etat}', [V1DesistementController::class, 'get_all_penalites'])->name('');
+        Route::put('traiter_penalite/{id}', [V1DesistementController::class, 'traiter_penalite'])->name('');
+        Route::get('get_notif_penalite_admin/{projet_id}', [V1DesistementController::class, 'get_notif_pen_admin'])->name('');
+        Route::get('get_notif_penalite_commercial/{projet_id}', [V1DesistementController::class, 'get_notif_pen_commercial'])->name('');
+        Route::get('show_penalite/{id}', [V1DesistementController::class, 'show_penalite'])->name('');
+        Route::get('get_historiques_penalites/{desistement_id}', [V1DesistementController::class, 'get_historiques_penalites_by_desId'])->name('');
+        Route::post('penalites/corriger_penalite', [V1DesistementController::class, 'corriger_penalite'])->name('');
+        Route::put('update_sr_penalite/{id}', [V1DesistementController::class, 'update_sr_penalite'])->name('');
         //l'Api relationClients
         Route::resource('appels', V1AppelController::class);
         Route::get('projets/{idprojet}/appels', [V1AppelController::class, 'indexByProjet']);
@@ -326,11 +331,20 @@ Route::middleware('auth:api')->group(function () {
         //Remboursement
 
         Route::get('get_detail_transfert/{reservation_id}', [V1RemboursementController::class, 'get_detail_transfert'])->name('');
+        Route::get('get_remboursements/{projet_id}/{etat}', [V1RemboursementController::class, 'indexByProjet'])->name('');
+        Route::post('traiter_demande_pre_rembourse/{id}', [v1RemboursementController::class, 'traiter_demande_pre_rembourse'])->name('');
+        Route::post('traiter_accuse/{id}', [V1RemboursementController::class, 'traiter_accuse'])->name('');
+        Route::get('get_notif_demande_pre_remboursement/{projet_id}', [V1RemboursementController::class, 'get_notif_demande_pre_remboursement'])->name('');
+        Route::post('traiter_decaissement/{id}', [V1RemboursementController::class, 'traiter_decaissement'])->name('');
+        Route::get('get_remboursements_dos_transfert/{projet_id}', [V1RemboursementController::class, 'get_remboursements_dos_transfert'])->name('');
+
+        //IMPORT Bien by Excel
+        Route::post('upload_excel_bien', [V1UploadBienController::class, 'upload'])->name('');
 
     });
 
-    Route::post('upload-excel-data', [ExcelDataController::class, 'UploadDataExcel'])->name('upload-excel-data');
-    Route::post('testfunction', [ExcelDataController::class, 'testfunction'])->name('upload-excel-data');
+    /*Route::post('upload_excel_data', [ExcelDataController::class, 'UploadDataExcel'])->name('upload-excel-data');
+    Route::post('testfunction', [ExcelDataController::class, 'UploadDataExcel'])->name('upload-excel-data');*/
 
     /*************************************Société***************************** */
     Route::resource('societe', SocieteController::class);
@@ -572,7 +586,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('notifications_menu_horizontal_vente_commercial/{projet_id}', [NotificationController::class, 'get_notif_menu_horizontal_vente_comm'])->name('');
 
     /********************************DesistemenController*********** */
-    Route::resource('desistement', DesistementController::class);
+    //Route::resource('desistement', DesistementController::class);
     Route::get('get_historiques_desistement_by_reservation/{code_desistement}', [DesistementController::class, 'get_historiques_desistement_by_reservation'])->name('');
     Route::put('validation_desistement/{id}', [DesistementController::class, 'validation_desitement'])->name('');
     Route::get('get_notif_dst_commercial/{projet_id}', [DesistementController::class, 'get_notif_dst_commercial'])->name('');
@@ -583,24 +597,24 @@ Route::middleware('auth:api')->group(function () {
     Route::get('get_dossiers_by_bien/{bien_id}', [DesistementController::class, 'get_dossiers_by_bien'])->name('');
 
     //penalites
-    Route::get('penalites/{projet_id}/{etat}', [DesistementController::class, 'get_all_penalites'])->name('');
-    Route::put('traiter_penalite/{id}', [DesistementController::class, 'traiter_penalite'])->name('');
-    Route::get('show_penalite/{id}', [DesistementController::class, 'show_penalite'])->name('');
-    Route::post('penalites/corriger_penalite', [DesistementController::class, 'corriger_penalite'])->name('');
-    Route::get('get_notif_penalite_admin/{projet_id}', [DesistementController::class, 'get_notif_pen_admin'])->name('');
-    Route::get('get_notif_penalite_commercial/{projet_id}', [DesistementController::class, 'get_notif_pen_commercial'])->name('');
-    Route::get('get_historiques_penalites/{desistement_id}', [DesistementController::class, 'get_historiques_penalites_by_desId'])->name('');
+   // Route::get('penalites/{projet_id}/{etat}', [DesistementController::class, 'get_all_penalites'])->name('');
+   // Route::put('traiter_penalite/{id}', [DesistementController::class, 'traiter_penalite'])->name('');
+  //  Route::get('show_penalite/{id}', [DesistementController::class, 'show_penalite'])->name('');
+   // Route::post('penalites/corriger_penalite', [DesistementController::class, 'corriger_penalite'])->name('');
+  //  Route::get('get_notif_penalite_admin/{projet_id}', [DesistementController::class, 'get_notif_pen_admin'])->name('');
+   // Route::get('get_notif_penalite_commercial/{projet_id}', [DesistementController::class, 'get_notif_pen_commercial'])->name('');
+  //  Route::get('get_historiques_penalites/{desistement_id}', [DesistementController::class, 'get_historiques_penalites_by_desId'])->name('');
 
     /******************************************* */
 
-    Route::resource('remboursement', RemboursementController::class);
-    Route::get('get_remboursements/{projet_id}/{etat}', [RemboursementController::class, 'index'])->name('');
-    Route::get('get_detail_transfert/{reservation_id}', [RemboursementController::class, 'get_detail_transfert'])->name('');
-    Route::post('traiter_demande_pre_rembourse/{id}', [RemboursementController::class, 'traiter_demande_pre_rembourse'])->name('');
-    Route::get('get_notif_demande_pre_remboursement/{projet_id}', [RemboursementController::class, 'get_notif_demande_pre_remboursement'])->name('');
-    Route::post('traiter_accuse/{id}', [RemboursementController::class, 'traiter_accuse'])->name('');
-    Route::post('traiter_decaissement/{id}', [RemboursementController::class, 'traiter_decaissement'])->name('');
-    Route::get('get_remboursements_dos_transfert/{projet_id}', [RemboursementController::class, 'get_remboursements_dos_transfert'])->name('');
+    //Route::resource('remboursement', RemboursementController::class);
+   // Route::get('get_remboursements/{projet_id}/{etat}', [RemboursementController::class, 'index'])->name('');
+  //  Route::get('get_detail_transfert/{reservation_id}', [RemboursementController::class, 'get_detail_transfert'])->name('');
+  //  Route::post('traiter_demande_pre_rembourse/{id}', [RemboursementController::class, 'traiter_demande_pre_rembourse'])->name('');
+ //   Route::get('get_notif_demande_pre_remboursement/{projet_id}', [RemboursementController::class, 'get_notif_demande_pre_remboursement'])->name('');
+  //  Route::post('traiter_accuse/{id}', [RemboursementController::class, 'traiter_accuse'])->name('');
+  //  Route::post('traiter_decaissement/{id}', [RemboursementController::class, 'traiter_decaissement'])->name('');
+   // Route::get('get_remboursements_dos_transfert/{projet_id}', [RemboursementController::class, 'get_remboursements_dos_transfert'])->name('');
 
     /*************************************Actualites***************************** */
     Route::get('historiques/{date}/{id}/{type}', [ActualiteController::class, 'get_historique'])->name('');

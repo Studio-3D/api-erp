@@ -27,6 +27,9 @@ class Desistement extends Model
     public function reservation(){
         return $this->belongsTo(Reservation::class,'reservation_id_new');
     }
+    public function dossier_transfert(){
+        return $this->belongsTo(Reservation::class,'dossier_id_transfert');
+    }
     public function reservation_ancien(){
         return $this->belongsTo(Reservation::class,'reservation_id');
     }
@@ -75,7 +78,7 @@ class Desistement extends Model
     {
         return $this->hasMany(PiecesJointe::class,'desistement_id')->where('active',1);
     }
-    
+
     //piece jointe cree par commercial (desistement)
     public function Piece_jointes_des_montant_a_ajouter()
     {

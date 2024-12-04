@@ -31,7 +31,7 @@ class SocieteController extends Controller
     public function get_societes()
     {
         if (RoleHelper::Superadmin()) {
-            $societes = Societe::whereNotIn('id', [1])->get();    
+            $societes = Societe::whereNotIn('id', [1])->get();
             return response()->json(['societes' => $societes]);
 
         }
@@ -65,7 +65,7 @@ class SocieteController extends Controller
     }
 
 
-   
+
 
     /**
      * Store a newly created resource in storage.
@@ -87,7 +87,7 @@ class SocieteController extends Controller
             $societe->capital = $request->capital;
             if ($request->hasFile('logo')) {
                 $logo = time() . '.' . $raison_sociale_concatene . '.' . $request->logo->extension();
-                
+
             }
             $societe->save();
             if ($request->hasFile('logo')) {
@@ -183,7 +183,7 @@ class SocieteController extends Controller
                     $databaseHelper->renameDatabase($oldDatabaseName, $newDatabaseName);
                 }
             }
-            
+
             Config::set('broadcasting.default', 'pusher_1');
             // $societes = Societe::all();
             broadcast(new NewSocieteEvent($societe->id));

@@ -31,6 +31,9 @@ class Remboursement extends Model
     public function banque(){
         return $this->belongsTo(Banque::class,'banque_id');
     }
+    public function desistement_not_trashed(){
+        return $this->belongsTo(Desistement::class,'desistement_id');
+    }
 
 
 
