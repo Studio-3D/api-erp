@@ -9,7 +9,7 @@ use App\Models\Bien;
 use App\Models\Bloc;
 use App\Models\Projet;
 use App\Http\Helpers\DatabaseHelper;
-use App\Models\CompositionBien; 
+use App\Models\CompositionBien;
 use App\Models\TypeBien;
 use App\Models\Immeuble;
 use App\Http\Helpers\Bien_Helper;
@@ -19,22 +19,25 @@ use Illuminate\Support\Facades\Log;
 class ImportExcelHelper {
 
     public static function ImportStockByProjetWithoutTrancheAndBlocAndImmeuble($data,$projet_id){
+
         DatabaseHelper::Config();
 
         $projet=Projet::on('temp')->findOrfail($projet_id);
 
-        
+
         if($projet->nbre_tranches==0 && $projet->nbre_blocs==0 && $projet->nbre_immeubles==0)
         {
+
             foreach($data as $row)
             {
-               Bien_Helper::checkAndCreateBien($projet_id, null,  null, null, $row);
+                Bien_Helper::checkAndCreateBienByExcel($projet_id, null,  null, null, $row);
             }
+            return response()->json('done');
         }
         else{
             return response()->json(['error' => 'Project does not meet the required conditions.'], 400);
         }
-        
+
     }
 
 
@@ -54,7 +57,7 @@ class ImportExcelHelper {
                     $immeuble->projet_id=$projet_id;
                     $immeuble->save();
                 }
-                Bien_Helper::checkAndCreateBien($projet_id, null,  null, $immeuble->id, $row);
+                Bien_Helper::checkAndCreateBienByExcel($projet_id, null,  null, $immeuble->id, $row);
             }
         }else{
             return response()->json(['error' => 'Project does not meet the required conditions.'], 400);
@@ -62,23 +65,23 @@ class ImportExcelHelper {
         }
     }
 
-    public function ImportStockByProjetWithoutTrancheAndImmeuble($data, $projet_id){
+    public static function ImportStockByProjetWithoutTrancheAndImmeuble($data, $projet_id){
         DatabaseHelper::Config();
         $projet = Projet::on('temp')->findOrfail($projet_id);
         if($projet->nbre_tranches==0 && $projet->nbre_immeubles==0 && $projet->nbre_blocs>0){
             foreach($data as $row){
                 $bloc = Bloc::on('temp')
-                                ->where('nom', $row['Bloc'])
+                                ->where('nom', $row['bloc'])
                                 ->where('projet_id', $projet_id)
                                 ->first();
                 if(!$bloc){
                     $bloc=new Bloc();
                     $bloc->setConnection('temp');
-                    $bloc->nom=$row['Bloc'];
+                    $bloc->nom=$row['bloc'];
                     $bloc->projet_id=$projet_id;
                     $bloc->save();
                 }
-                Bien_Helper::checkAndCreateBien($projet_id, null, $bloc->id, null, $row);
+                Bien_Helper::checkAndCreateBienByExcel($projet_id, null, $bloc->id, null, $row);
             }
         }else{
             return response()->json(['error' => 'Project does not meet the required conditions.'], 400);
@@ -94,13 +97,13 @@ class ImportExcelHelper {
         if($projet->nbre_tranches==0 && $projet->nbre_blocs>0 && $projet->nbre_immeubles>0){
             foreach($data as $row){
                 $bloc = Bloc::on('temp')
-                                ->where('nom', $row['Bloc'])
+                                ->where('nom', $row['bloc'])
                                 ->where('projet_id', $projet_id)
                                 ->first();
                 if(!$bloc){
                     $bloc=new Bloc();
                     $bloc->setConnection('temp');
-                    $bloc->nom=$row['Bloc'];
+                    $bloc->nom=$row['bloc'];
                     $bloc->projet_id=$projet_id;
                     $bloc->save();
                 }
@@ -117,14 +120,14 @@ class ImportExcelHelper {
                     $immeuble->bloc_id=$bloc->id;
                     $immeuble->save();
                 }
-                Bien_Helper::checkAndCreateBien($projet_id, null, $bloc->id, $immeuble->id, $row);
+                Bien_Helper::checkAndCreateBienByExcel($projet_id, null, $bloc->id, $immeuble->id, $row);
             }
         }else{
             return response()->json(['error' => 'Project does not meet the required conditions.'], 400);
 
         }
     }
-    
+
     public static function ImportStockByProjetWithoutBlocAndImmeuble($data,$projet_id){
         DatabaseHelper::Config();
 
@@ -143,7 +146,7 @@ class ImportExcelHelper {
                     $tranche->projet_id=$projet_id;
                     $tranche->save();
                 }
-                Bien_Helper::checkAndCreateBien($projet_id, $tranche->id, null, null, $row);
+                Bien_Helper::checkAndCreateBienByExcel($projet_id, $tranche->id, null, null, $row);
             }
         }else{
             return response()->json(['error' => 'Project does not meet the required conditions.'], 400);
@@ -182,8 +185,8 @@ class ImportExcelHelper {
                         $immeuble->save();
 
                 }
-                Bien_Helper::checkAndCreateBien( $projet_id, $tranche->id, null, $immeuble->id, $row);           
-                       
+                Bien_Helper::checkAndCreateBienByExcel( $projet_id, $tranche->id, null, $immeuble->id, $row);
+
             }
 
         }else{
@@ -191,7 +194,7 @@ class ImportExcelHelper {
 
         }
     }
-        
+
     public static function ImportStockByProjetWithoutImmeuble($data,$projet_id){
         DatabaseHelper::Config();
 
@@ -210,26 +213,26 @@ class ImportExcelHelper {
                     $tranche->save();
                 }
                 $bloc = Bloc::on('temp')
-                                ->where('nom', $row['Bloc'])
+                                ->where('nom', $row['bloc'])
                                 ->where('tranche_id', $tranche->id)
                                 ->where('projet_id', $projet_id)
                                 ->first();
                 if(!$bloc){
                     $bloc=new Bloc();
                     $bloc->setConnection('temp');
-                    $bloc->nom=$row['Bloc'];
+                    $bloc->nom=$row['bloc'];
                     $bloc->projet_id=$projet_id;
                     $bloc->tranche_id=$tranche->id;
                     $bloc->save();
                 }
-                Bien_Helper::checkAndCreateBien($projet_id, $tranche->id, $bloc->id, null, $row);
+                Bien_Helper::checkAndCreateBienByExcel($projet_id, $tranche->id, $bloc->id, null, $row);
             }
         }else{
             return response()->json(['error' => 'Project does not meet the required conditions.'], 400);
 
         }
     }
-   
+
     public static function ImportStockByProjet($data, $projet_id){
         DatabaseHelper::Config();
 
@@ -248,14 +251,14 @@ class ImportExcelHelper {
                     $tranche->save();
                 }
                 $bloc = Bloc::on('temp')
-                                ->where('nom', $row['Bloc'])
+                                ->where('nom', $row['bloc'])
                                 ->where('tranche_id', $tranche->id)
                                 ->where('projet_id', $projet_id)
                                 ->first();
                 if(!$bloc){
                     $bloc=new Bloc();
                     $bloc->setConnection('temp');
-                    $bloc->nom=$row['Bloc'];
+                    $bloc->nom=$row['bloc'];
                     $bloc->projet_id=$projet_id;
                     $bloc->tranche_id=$tranche->id;
                     $bloc->save();
@@ -275,7 +278,7 @@ class ImportExcelHelper {
                     $immeuble->bloc_id=$bloc->id;
                     $immeuble->save();
                 }
-                Bien_Helper::checkAndCreateBien($projet_id, $tranche->id, $bloc->id, $immeuble->id, $row);
+                Bien_Helper::checkAndCreateBienByExcel($projet_id, $tranche->id, $bloc->id, $immeuble->id, $row);
             }
         }else{
             return response()->json(['error' => 'Project does not meet the required conditions.'], 400);

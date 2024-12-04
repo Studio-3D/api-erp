@@ -59,8 +59,9 @@ class DesistementController extends Controller
     {
         $user = Auth::user();
         Config::set('broadcasting.default', 'pusher_3');
-        if (RoleHelper::AC()) {
+        if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
+            $type=$request->type;
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
 
             //get code desistement partage =>pour stocker dans reservation
@@ -624,14 +625,16 @@ class DesistementController extends Controller
                 //Validation /Notification
                 if (RoleHelper::AdminSup()) {
 
-                    if ($request->type == TypeDesistement::Désistement_Définitif->value) {
-
-                        //update eta de reservation
+                    if ($type == TypeDesistement::Désistement_Définitif->value) {
+                        return response()->json('ana hnaa agaaian');
+                        $reservation = Reservation::on('temp')->findOrFail($request->reservation_id);
+                        //update etat de reservation
                         $reservation->setConnection('temp');
                         $reservation->etat = EtatReservationEnum::desist_definitif->value;
                         $reservation->code_desistement = $code_desist_reservation;
-                        if ($reservation->save()) {
 
+                        if ($reservation->save()) {
+                            return response()->json('yep');
                             //soft_delete_avances
                             $avanceController = new AvanceController();
                             $avanceController->soft_destroy_avances_by_reservationId($request->reservation_id);
@@ -711,7 +714,7 @@ class DesistementController extends Controller
                     }
 
                     //DP
-                    elseif ($request->type == TypeDesistement::Désistement_Au_Profit->value) {
+                    elseif ($type == TypeDesistement::Désistement_Au_Profit->value) {
 
                         //dp_proche//dp_co
                         if ($request->type_dp == TypeDesistementProfit::Désistement_AU_PROFIT_UN_PROCHE->value || $request->type_dp == TypeDesistementProfit::Désistement_AU_PROFIT_UN_CO_RESERVATAIRE->value) {
@@ -1049,7 +1052,7 @@ class DesistementController extends Controller
                     }
                     //CHANGEMENT DE BIEN
 
-                    elseif ($request->type == TypeDesistement::Changement_De_Bien->value) {
+                    elseif ($type == TypeDesistement::Changement_De_Bien->value) {
                         //set bien Pré-Réservé
                         $bien_c = new BienController();
                         $bien_c->prereserverBien($request->bien_id_new, null, null);
@@ -1236,14 +1239,14 @@ class DesistementController extends Controller
                     }
 
                 } else {
-
+                    return response()->json('lhih');
                     //notif to admin pour valider desistement
 
                     $data_notif = [
                         'lien' => '/desistements/show/' . $desistement->id,
                         'date' => Carbon::now(),
                         'type' => 9,
-                        'description' => 'DEMANDE VALIDATION desistement',
+                        'description' => 'Demance Validation desistement',
                         'role' => RoleEnum::ADMIN->value,
                         'projet_id' => $desistement->projet_id,
                         'reservation_id' => $desistement->reservation_id,
@@ -2407,7 +2410,7 @@ class DesistementController extends Controller
         if ($request->filled('lien_prt')) {
             $query->where('lien_parente', $request->input('lien_prt'));
         }
-        
+
 
         // Gérer les rôles et la pagination
         if (RoleHelper::AdminSup()) {
@@ -2415,7 +2418,7 @@ class DesistementController extends Controller
                 ->paginate($perPage, ['*'], 'page', $page);
         } elseif (RoleHelper::Com()) {
             $user = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
 
             $desistements = $query->where('user_id', $userAuth->id)
                 ->orderBy('created_at', 'desc')
@@ -2641,50 +2644,133 @@ class DesistementController extends Controller
         }
 
     }
-    public function get_all_penalites(Request $request, $projet_id, $statut)
+
+    public function get_all_penalites(Request $request, $projet_id,$statut)
     {
-        if (Auth::guard('api')->check()) {
+
+        if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', config('app.default_item_number_perpage'));
+            $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
+             // Statut pour l'attente de validation (admin -> encours commercial)
+                if ($statut == 5) {
+                    $statut = 0;
+                }
 
-            //att de validation(admin)==>encours(commercial)
-            if ($statut == 5) {
-                $statut = 0;
-            }
-            if (RoleHelper::AdminSup()) {
                 DatabaseHelper::Config();
-                $penalites = PenaliteDesistement::on('temp')->select('penalites_desistements.*')
-                    ->with('banque', 'last_statut', 'responsable_validation')
-                    ->join('desistements', 'desistements.id', '=', 'penalites_desistements.desistement_id')
-                    ->orderBy('created_at', 'desc')
-                    ->where('penalites_desistements.statut', $statut)
-                    ->where('desistements.projet_id', $projet_id)
-                    ->where('desistements.archive', 0)
-                    ->where('penalites_desistements.archive', 0)
-                    ->where('desistements.deleted_at', null)
-                    ->paginate($perPage, ['*'], 'page', $page);
 
-            } elseif (RoleHelper::Com()) {
-                DatabaseHelper::Config();
-                $user = Auth::user();
-                $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-                $penalites = PenaliteDesistement::on('temp')->select('penalites_desistements.*')
-                    ->with('banque', 'last_statut', 'responsable_validation')
-                    ->join('desistements', 'desistements.id', '=', 'penalites_desistements.desistement_id')
-                    ->orderBy('created_at', 'desc')
-                    ->where('penalites_desistements.statut', $statut)
-                    ->where('desistements.projet_id', $projet_id)
-                    ->where('desistements.archive', 0)
-                    ->where('penalites_desistements.archive', 0)
-                    ->where('desistements.deleted_at', null)
-                    ->where('desistements.user_id', $userAuth->value('id'))
-                    ->paginate($perPage, ['*'], 'page', $page);
-            }
-            return response()->json(['penalites' => $penalites], 200);
+                // Construire la requête avec les relations nécessaires
+
+                $query = PenaliteDesistement::on('temp')->with('banque', 'last_statut', 'responsable_validation','desistement')
+                ->where('statut', $statut)
+                ->where('archive', 0);
+                $query->whereHas('desistement', function ($q) use ($projet_id) {
+                    $q->where('projet_id', $projet_id)->where('archive', 0);
+                });
+
+                 // Filtrage supplémentaire (cc, code_reservation, penalite, etc.)
+                if ($request->filled('num_recu')) {
+                    if($request->input('num_recu')=='SR'||$request->input('num_recu')=='sr'){
+                        $query->where('sr', 1);
+                    }else{
+                        $query->where('num_recu', 'like', '%' . $request->input('num_recu') . '%');
+                    }
+
+
+                }
+
+
+                if ($request->filled('responsable')) {
+                    $query->whereHas('desistement.user', function ($q) use ($request) {
+                        $q->where(function ($q) use ($request) {
+                            $q->where('name', 'like', '%' . $request->input('responsable') . '%')
+                            ->orWhere('prenom', 'like', '%' . $request->input('responsable') . '%');
+                        });
+                    });
+                }
+                if ($request->filled('code_reservation')) {
+                    $query->whereHas('desistement.reservation_ancien', function ($q) use ($request) {
+                        $q->where('code_reservation', 'like', '%' . $request->input('code_reservation') . '%');
+                    });
+                }
+                if ($request->filled('penalite')) {
+                    $query->where('montant', 'like', '%' . $request->input('penalite') . '%');
+                }
+                if ($request->filled('date')) {
+                    $start = Carbon::parse($request->input('date'));
+                    $query->whereDate('created_at', $start);
+                }
+                if($request->filled('type_desistement')){
+                    $type=$request->input('type_desistement');
+                        if($type==1 ||$type==3 ){
+                            $query->whereHas('desistement', function ($q) use ($type) {
+                                $q->where('type', $type);
+                            });
+                        }else{
+                                $type_dp=0;
+                                switch($type){
+                                    case 11:
+                                        $type_dp=1;
+                                        break;
+                                    case 12:
+                                        $type_dp=2;
+                                        break;
+                                    case 13:
+                                        $type_dp=3;
+                                        break;
+                                }
+                            //au profit
+                            $query->whereHas('desistement', function ($q) use ($type_dp) {
+                                $q->where('type_dp', $type_dp);
+                            });
+
+                        }
+
+                }
+                if ($request->filled('mode_paiement')) {
+                    $query->where('mode_paiement', 'like', '%' . $request->input('mode_paiement') . '%');
+                }
+
+
+
+                if (RoleHelper::AdminSup()) {
+                    $penalites = $query->orderBy('created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
+                } elseif (RoleHelper::Com()) {
+                    $user = Auth::user();
+                    $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+
+                    $query->whereHas('desistement', function ($q) use ($userAuth) {
+                        $q->where('user_id',$userAuth->value('id'));
+                         });
+                    $penalites = $query->orderBy('created_at', 'desc')
+                         ->paginate($size, ['*'], 'page', $page);
+
+                }
+
+
+
+
+
+            // Construction de la pagination
+            $pagination = [
+                'currentPage' => $penalites->currentPage(),
+                'totalItems' => $penalites->total(),
+                'totalPages' => $penalites->lastPage(),
+            ];
+
+            // Envoi de la réponse
+            return response()->json([
+                'data' => $penalites->items(),
+                'pagination' => $pagination,
+
+            ], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
-        return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+
     public function show_penalite($id)
     {
         if (Auth::guard('api')->check()) {
@@ -2715,96 +2801,102 @@ class DesistementController extends Controller
         }
     }
 
-    public function traiter_penalite($id, Request $request)
+   public function traiter_penalite($id,Request $request)
     {
-        if (RoleHelper::ACSup()) {
+        if(RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $penalite = PenaliteDesistement::on('temp')->findOrFail($id);
-            $penalite->statut = $request->etat;
-            if ($penalite->save()) {
-                //store statut_avances_penalites table=>si validé
+            $penalite->statut=$request->etat;
+                if($penalite->save()){
+                                 //store statut_avances_penalites table=>si validé
 
-                $st_pen = new StatutAvancePenalite();
-                $st_pen->setConnection('temp');
-                $st_pen->statut = $request->etat;
-                if ($request->etat == 1) {
-                    $st_pen->num_remise = $request->n_remise;
-                    $st_pen->date_encaissement = $request->date_encaiss;
+                    $st_pen = new StatutAvancePenalite();
+                    $st_pen->setConnection('temp');
+                    $st_pen->statut=$request->etat;
+                    if($request->etat==1){
+                        $st_pen->num_remise=$request->n_remise;
+                        $st_pen->date_encaissement=$request->date_encaiss;
 
-                } else {
-                    $st_pen->commentaire = $request->commentaire;
+                    }else{
+                        $st_pen->commentaire=$request->commentaire;
+                    }
+
+                    $st_pen->penalite_id=$penalite->id;
+                    $st_pen->user_id_valider = $userAuth->value('id');
+                    $st_pen->date_validation = Carbon::now();
+                    $st_pen->save();
                 }
-
-                $st_pen->penalite_id = $penalite->id;
-                $st_pen->user_id_valider = $userAuth->value('id');
-                $st_pen->date_validation = Carbon::now();
-                $st_pen->save();
-            }
-            if ($request->etat == 1) {
-                Config::set('broadcasting.default', 'pusher_5');
-                //3 traitement  penalite
-                broadcast(new NotifMenuEvent(3));
-                if ($penalite->desistement->user->role == RoleEnum::COMMERCIAL->value) {
+                if($request->etat==1){
+                 Config::set('broadcasting.default', 'pusher_5');
+                 //3 traitement  penalite
+                 broadcast(new NotifMenuEvent(3));
+                 if($penalite->desistement->user->role==RoleEnum::COMMERCIAL->value){
                     Config::set('broadcasting.default', 'pusher_3');
                     $data_notif = [
-                        'lien' => '/desistements/penalite/show/' . $penalite->id,
-                        'date' => Carbon::now(),
-                        'type' => 13,
-                        'user_id' => $penalite->desistement->user->user_id_origin,
-                        'description' => 'Pénalité Validé',
-                        'projet_id' => $penalite->desistement->projet_id,
-                        'reservation_id' => $penalite->desistement->reservation_ancien->id,
+                       'lien' => '/desistements/penalite/show/'.$penalite->id,
+                       'date' => Carbon::now(),
+                       'type' =>13,
+                       'user_id'=>$penalite->desistement->user->user_id_origin,
+                       'description' => 'Pénalité Validé',
+                       'projet_id'=>$penalite->desistement->projet_id,
+                       'reservation_id'=>$penalite->desistement->reservation_ancien->id,
 
-                    ];
-                    $notif_helper = new NotificationHelper();
-                    $notif_helper->storeNotification($request->merge($data_notif));
-                    broadcast(new NotificationEvent($id));
-                }
+
+                   ];
+                   $notif_helper = new NotificationHelper();
+                   $notif_helper->storeNotification($request->merge($data_notif));
+                   broadcast(new NotificationEvent($id));
+                 }
+
 
                 //store new notification validé
-                $encaiss = new Encaissement();
-                $encaiss->setConnection('temp');
-                $encaiss->reservation_id = $penalite->desistement->reservation_id;
-                $encaiss->type_encaissement = 6; //Penalités
-                $encaiss->montant = $penalite->montant;
-                $encaiss->penalite_id = $penalite->id;
-                $encaiss->date_reglement = $penalite->created_at;
-                $encaiss->date_encaissement = $request->date_encaiss;
-                $encaiss->user_id_valider = $userAuth->value('id');
-                $encaiss->save();
+                 $encaiss = new Encaissement();
+                 $encaiss->setConnection('temp');
+                 $encaiss->reservation_id = $penalite->desistement->reservation_id;
+                 $encaiss->bien_id=$penalite->desistement->bien_id_ancien;
+                 $encaiss->type_encaissement = 6; //Penalités
+                 $encaiss->montant = $penalite->montant;
+                 $encaiss->penalite_id = $penalite->id;
+                 $encaiss->date_reglement = $penalite->created_at;
+                 $encaiss->date_encaissement = $request->date_encaiss;
+                 $encaiss->user_id_valider = $userAuth->value('id');
+                 $encaiss->save();
 
-            } else {
-                //store new notification rejeté
-                Config::set('broadcasting.default', 'pusher_5');
-                //3 traitement  penalite
-                broadcast(new NotifMenuEvent(3));
-                if ($penalite->desistement->user->role == RoleEnum::COMMERCIAL->value) {
-                    $data_notif = [
-                        'lien' => '/desistements/penalite/show/' . $penalite->id,
-                        'date' => Carbon::now(),
-                        'type' => 14,
-                        'user_id' => $penalite->desistement->user->user_id_origin,
-                        'description' => 'Pénalité rejeté',
-                        'projet_id' => $penalite->desistement->projet_id,
-                        'reservation_id' => $penalite->desistement->reservation_ancien->id,
 
-                    ];
-                    $notif_helper = new NotificationHelper();
-                    $notif_helper->storeNotification($request->merge($data_notif));
-                    //3 traitement  penalite
-                    Config::set('broadcasting.default', 'pusher_3');
+                }else{
+                        //store new notification rejeté
+                        Config::set('broadcasting.default', 'pusher_5');
+                        //3 traitement  penalite
+                        broadcast(new NotifMenuEvent(3));
+                        if($penalite->desistement->user->role==RoleEnum::COMMERCIAL->value){
+                            $data_notif = [
+                                'lien' => '/desistements/penalite/show/'.$penalite->id,
+                                'date' => Carbon::now(),
+                                'type' =>14,
+                                'user_id'=>$penalite->desistement->user->user_id_origin,
+                                'description' => 'Pénalité rejeté',
+                                'projet_id'=>$penalite->desistement->projet_id,
+                                'reservation_id'=>$penalite->desistement->reservation_ancien->id,
 
-                    broadcast(new NotificationEvent($id));
+                            ];
+                            $notif_helper = new NotificationHelper();
+                            $notif_helper->storeNotification($request->merge($data_notif));
+                            //3 traitement  penalite
+                            Config::set('broadcasting.default', 'pusher_3');
+
+                            broadcast(new NotificationEvent($id));
+                        }
                 }
-            }
 
             return response()->json(['message' => 'données enregistrés avec succès.'], 200);
 
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+
+
+       } else {
+           return response()->json(['error' => 'Unauthorized'], 401);
+       }
 
     }
     public function destroy(string $id)

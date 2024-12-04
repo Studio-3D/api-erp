@@ -66,7 +66,9 @@ class RemboursementController extends Controller
                 elseif($action==1){
                     $remboursements=Remboursement::on('temp')->join('desistements', 'desistements.id', '=', 'remboursements.desistement_id')
                     ->select('remboursements.*','desistements.id as des_id')
-                    ->where('desistements.projet_id',$projet_id)->where('remboursements.statut',2)->where('remboursements.etat',1)
+                    ->where('desistements.projet_id',$projet_id)
+                    ->where('remboursements.statut',2)
+                    ->where('remboursements.etat',1)
                     ->where('remboursements.user_id_remis','!=',NULL)
                     ->orderBy('remboursements.created_at','desc')
                     ->where('desistements.deleted_at',NULL)
@@ -77,7 +79,9 @@ class RemboursementController extends Controller
                 elseif($action==2){
                     $remboursements=Remboursement::on('temp')->join('desistements', 'desistements.id', '=', 'remboursements.desistement_id')
                     ->select('remboursements.*','desistements.id as des_id')->with('banque')
-                    ->where('desistements.projet_id',$projet_id)->where('remboursements.statut',3)->where('remboursements.etat',1)
+                    ->where('desistements.projet_id',$projet_id)
+                    ->where('remboursements.statut',3)
+                    ->where('remboursements.etat',1)
                     ->where('remboursements.date_decaissement','!=',NULL)
                     ->where('remboursements.banque_id','!=',NULL)
                     ->orderBy('remboursements.created_at','desc')
@@ -109,7 +113,8 @@ class RemboursementController extends Controller
                 }else*/if($action==3){
                     $remboursements=Remboursement::on('temp')->join('desistements', 'desistements.id', '=', 'remboursements.desistement_id')
                     ->select('remboursements.*','desistements.id as des_id')
-                    ->where('desistements.projet_id',$projet_id)->where('remboursements.etat',1)
+                    ->where('desistements.projet_id',$projet_id)
+                    ->where('remboursements.etat',1)
                     ->where('desistements.user_id', $userAuth->value('id'))
                     ->where(function ($query) use ($request) {
                         $query->where('remboursements.statut', 1)
@@ -125,7 +130,9 @@ class RemboursementController extends Controller
                 elseif($action==4){
                     $remboursements=Remboursement::on('temp')->join('desistements', 'desistements.id', '=', 'remboursements.desistement_id')
                     ->select('remboursements.*','desistements.id as des_id')
-                    ->where('desistements.projet_id',$projet_id)->where('remboursements.statut',2)->where('remboursements.etat',1)
+                    ->where('desistements.projet_id',$projet_id)
+                    ->where('remboursements.statut',2)
+                    ->where('remboursements.etat',1)
                     ->where('desistements.user_id', $userAuth->value('id'))
                     ->where('remboursements.user_id_remis',$userAuth->value('id'))
                     ->orderBy('remboursements.created_at','desc')

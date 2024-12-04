@@ -18,6 +18,9 @@ class PenaliteDesistement extends Model
     public function desistement(){
         return $this->belongsTo(Desistement::class,'desistement_id');
     }
+    public function desistement_archive_null(){
+        return $this->belongsTo(Desistement::class,'desistement_id')->where('archive',0);
+    }
     public function Piece_jointes()
     {
         return $this->hasMany(PiecesJointe::class,'penalite_id')->where('active',1);

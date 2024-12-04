@@ -1491,7 +1491,7 @@ class VisiteController extends Controller
 
     }
     //store n visite
-    public function store_n_visite($id, Store_n_VisiteRequest $request)
+    public function store_n_visite($id, Request $request)
     {
 
         DatabaseHelper::Config();
