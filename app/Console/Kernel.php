@@ -16,6 +16,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('app:clear-proposition-table')->dailyAt('00:00');
         $schedule->command('app:liberer_bien_pre_reserve')->everyMinute();
         $schedule->command('app:destroy_notif')->dailyAt('00:00');
+        $schedule->command('emails:send-scheduled')->dailyAt('00:00'); // Exécute tous les jours à minuit
+
        }
 
     /**

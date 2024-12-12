@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>E-mail Programmé</title>
+</head>
+<body>
+    <h1>Bonjour {{ $name }},</h1>
+    <p>Nous vous envoyons cet e-mail comme prévu pour la date {{ $scheduledDate }}.</p>
+    <p>Merci de nous faire confiance !</p>
+</body>
+</html>

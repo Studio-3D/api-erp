@@ -9,4 +9,5 @@ Enum StatutReservationEnum:int
     case Validé=1;
     case Refusé=2;
     case En_Attente=3;
+    case Annulé=4;
 }
