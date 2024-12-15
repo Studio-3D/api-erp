@@ -12,6 +12,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
+
         $schedule->command('app:delete-societe-database-command')->everyMinute();
         $schedule->command('app:clear-proposition-table')->dailyAt('00:00');
         $schedule->command('app:liberer_bien_pre_reserve')->everyMinute();

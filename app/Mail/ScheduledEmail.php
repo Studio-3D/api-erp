@@ -13,56 +13,65 @@ class ScheduledEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $user;
+    public $type; // Ajout d'une propriété pour le type
+
     /**
      * Create a new message instance.
      */
-    use Queueable, SerializesModels;
-
-    public $user;
-
-    public function __construct($user)
+    public function __construct($type, $user)
     {
-        $this->user = $user;
+        $this->type = $type; // Assigner le type
+        $this->user = $user; // Assigner l'utilisateur
     }
 
     public function build()
     {
-        return $this->view(view: 'emails.scheduled') // Créez une vue dans `resources/views/emails/scheduled.blade.php`
-                    ->subject('Votre e-mail programmé')
+        // Sélectionner la vue en fonction du type
+        $view = $this->getViewByType($this->type);
+
+        return $this->view($view) // Charger la vue appropriée
+                    ->subject($this->getSubjectByType($this->type)) // Sujet dynamique
                     ->with([
                         'name' => $this->user->name,
                         'scheduledDate' => $this->user->created_at,
                     ])
-                    ->from('immo.immobilier02@gmail.com','Immobilier');;
+                    ->from('immo.immobilier02@gmail.com', 'Immobilier');
     }
 
     /**
-     * Get the message envelope.
+     * Get the view based on the type.
      */
-    public function envelope(): Envelope
+    private function getViewByType($type)
     {
-        return new Envelope(
-            subject: 'Scheduled Email',
-        );
+        // Associer les types aux vues
+        switch ($type) {
+            case 1:
+                return 'emails.scheduled';
+            case 2:
+                return 'emails.reglEmail';
+            case 3:
+                return 'emails.EcheanceEmail';
+            default:
+                return 'emails.default'; // Vue par défaut si le type est inconnu
+        }
     }
 
     /**
-     * Get the message content definition.
+     * Get the subject based on the type.
      */
-    public function content(): Content
+    private function getSubjectByType($type)
     {
-        return new Content(
-            view: 'emails.scheduled',
-        );
-    }
-
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-     */
-    public function attachments(): array
-    {
-        return [];
+        // Associer les types aux sujets
+        switch ($type) {
+            case 1:
+                return 'Votre email programmé';
+            case 2:
+                return 'Votre email de règlement';
+            case 3:
+                return 'Votre échéance approche';
+            default:
+                return 'Notification';
+        }
     }
 }
