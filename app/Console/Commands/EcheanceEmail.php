@@ -26,7 +26,10 @@ class EcheanceEmail extends Command
      */
     public function handle()
     {
-        $databases = DB::table('societes')->whereNull('deleted_at')->where('id', '>=', 233)->get();
+        $databases = DB::table('societes')
+        ->whereNull('deleted_at')
+        //->where('id', '=', 233)
+        ->get();
         DatabaseHelper::envoyer_email_echeance($databases);
     }
 }

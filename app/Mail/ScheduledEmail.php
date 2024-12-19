@@ -52,6 +52,8 @@ class ScheduledEmail extends Mailable
                 return 'emails.rdvEmail';
             case 3:
                 return 'emails.echeanceEmail';
+            case 4:
+                return 'emails.echeanceEmail';
             default:
                 return 'emails.default'; // Vue par défaut si le type est inconnu
         }
@@ -65,11 +67,13 @@ class ScheduledEmail extends Mailable
         // Associer les types aux sujets
         switch ($type) {
             case 1:
-                return 'Votre email programmé';
+                return 'Votre email Relance';
             case 2:
-                return 'Votre email de règlement';
+                return 'Votre email de Rdv';
             case 3:
                 return 'Votre échéance approche';
+            case 4:
+                return 'Votre Prospect';
             default:
                 return 'Notification';
         }
