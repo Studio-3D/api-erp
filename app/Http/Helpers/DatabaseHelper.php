@@ -2,20 +2,24 @@
 
 namespace App\Http\Helpers;
 
-use App\Models\Societe;
-use App\Models\Bien;
-use App\Models\Proposition;
-use App\Models\Frein;
-use App\Models\Notification;
-use App\Models\PreReservation;
 use App\Http\Helpers\Bien_Helper;
 use App\Http\Helpers\NotificationHelper;
+use App\Mail\ScheduledEmail;
+use App\Models\Avance;
+use App\Models\Bien;
+use App\Models\Notification;
+use App\Models\Proposition;
+use App\Models\Relance_Rdv_visite;
+use App\Models\Societe;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config; // Mail à envoyer
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Config;
 
 class DatabaseHelper
 {
@@ -83,7 +87,6 @@ class DatabaseHelper
         DB::statement("DROP DATABASE $oldDatabaseName");
     }
 
-
     public static function Config($societe_id = null)
     {
         if (!$societe_id) {
@@ -122,7 +125,6 @@ class DatabaseHelper
         ];
     }
 
-
     public static function deletePropositionTable($databases)
     {
         foreach ($databases as $database) {
@@ -140,42 +142,40 @@ class DatabaseHelper
             //
             if (Schema::connection('temp')->hasTable('propositions')) {
                 if ($notConnectedUsers->isNotEmpty()) {
-                  $propositions= Proposition::on('temp')
-                        ->whereIn('user_id', $notConnectedUsers)  // id  from  users from mother db
+                    $propositions = Proposition::on('temp')
+                        ->whereIn('user_id', $notConnectedUsers) // id  from  users from mother db
                         ->get();
-                       foreach($propositions as $prop){
-                        $bien=Bien::on('temp')->findorfail($prop->bien_id);
-                        if($bien->etat=='ENCOURS_DE_PROPOSITION'){
-                            Bien_Helper::libererBien($bien->id,'console',null);
+                    foreach ($propositions as $prop) {
+                        $bien = Bien::on('temp')->findorfail($prop->bien_id);
+                        if ($bien->etat == 'ENCOURS_DE_PROPOSITION') {
+                            Bien_Helper::libererBien($bien->id, 'console', null);
                         }
                         $prop->forceDelete();
-                       }
+                    }
 
                     \Log::info("Deleted propositions for not connected users in $databaseName.");
                 }
                 if ($connectedUsers->isNotEmpty()) {
-                    $propositions=Proposition::on('temp')
-                    ->select('id', 'created_at','bien_id')
-                    ->whereIn('user_id', $connectedUsers)
-                    ->whereNotIn('id', function ($query) use ($connectedUsers) {  $query->select(DB::raw('MAX(id)'))->from('propositions')->whereIn('user_id', $connectedUsers)
-                    ->groupBy('user_id'); })->get();
-                        foreach($propositions as $prop){
-                        $bien=Bien::on('temp')->findorfail($prop->bien_id);
-                        if($bien->etat=='ENCOURS_DE_PROPOSITION'){
-                            Bien_Helper::libererBien($bien->id,'console',null);
+                    $propositions = Proposition::on('temp')
+                        ->select('id', 'created_at', 'bien_id')
+                        ->whereIn('user_id', $connectedUsers)
+                        ->whereNotIn('id', function ($query) use ($connectedUsers) {$query->select(DB::raw('MAX(id)'))->from('propositions')->whereIn('user_id', $connectedUsers)
+                                ->groupBy('user_id');})->get();
+                    foreach ($propositions as $prop) {
+                        $bien = Bien::on('temp')->findorfail($prop->bien_id);
+                        if ($bien->etat == 'ENCOURS_DE_PROPOSITION') {
+                            Bien_Helper::libererBien($bien->id, 'console', null);
                         }
                         $prop->forceDelete();
-                       }
+                    }
                     \Log::info("Deleted older propositions for connected users in $databaseName.");
 
                 }
             } else {
-                \Log::info("Table 'propositions' does not exist in $databaseName.");
+                \log::info("Table 'propositions' does not exist in $databaseName.");
             }
         }
     }
-
-
 
     public static function destroy_notif($databases)
     {
@@ -191,11 +191,11 @@ class DatabaseHelper
             //
             if (Schema::connection('temp')->hasTable('notifications')) {
                 $date_15 = \Carbon\Carbon::today()->subDays(15);
-                 $Notifiations = Notification::on('temp')
-                 ->whereDate('created_at', '<=', $date_15)
-                 ->onlyTrashed()
-                 ->get();
-                 if (($Notifiations->count()) > 0) {
+                $Notifiations = Notification::on('temp')
+                    ->whereDate('created_at', '<=', $date_15)
+                    ->onlyTrashed()
+                    ->get();
+                if (($Notifiations->count()) > 0) {
                     foreach ($Notifiations as $nt) {
                         $nt->forceDelete();
                     }
@@ -203,9 +203,114 @@ class DatabaseHelper
             }
         }
     }
+
+    public static function envoyer_email_rdv_rlc($databases)
+{
+    foreach ($databases as $database) {
+        $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+
+        // Switch to the temporary database
+        $connection = DatabaseHelper::Connection_database($databaseName);
+        config(['database.connections.temp' => $connection]);
+        DB::connection('temp')->setDatabaseName($connection['database']);
+        DB::reconnect('temp');
+
+        if (Schema::connection('temp')->hasTable('relances_rdv_visites')) {
+            $today = Carbon::now()->toDateString();
+
+            // Récupération des utilisateurs avec leur type (1: relance, 2: rdv)
+            $relances = Relance_Rdv_visite::on('temp')
+                ->where('type', 1)
+                ->whereDate('date_relance', $today)
+                ->pluck('user_id');
+
+            $rdvs = Relance_Rdv_visite::on('temp')
+                ->where('type', 2)
+                ->whereDate('rdv', $today)
+                ->pluck('user_id');
+
+            $userIds = $relances->merge($rdvs)->unique();
+
+            if ($userIds->isEmpty()) {
+                Log::info('Aucun utilisateur à relancer ou notifier aujourd\'hui pour la base de données ' . $databaseName);
+                continue;
+            }
+
+            // Récupérer les utilisateurs concernés
+            $users = User::on('temp')->whereIn('id', $userIds)->get();
+
+            foreach ($users as $user) {
+                try {
+                    // Vérification du type et envoi de l'email
+                    $relanceExists = $relances->contains($user->id);
+                    $rdvExists = $rdvs->contains($user->id);
+
+                    if ($relanceExists) {
+                        Mail::to($user->email)->send(new ScheduledEmail(1, $user));
+                        Log::info("Email de relance envoyé à {$user->email} dans la base de données {$databaseName}");
+                    }
+
+                    if ($rdvExists) {
+                        Mail::to($user->email)->send(new ScheduledEmail(2, $user));
+                        Log::info("Email de rdv envoyé à {$user->email} dans la base de données {$databaseName}");
+                    }
+
+                } catch (\Exception $e) {
+                    // Log en cas d'échec
+                    Log::error("Échec de l'envoi de l'email à {$user->email}: " . $e->getMessage());
+                }
+            }
+
+            Log::info('Processus de relance et notification terminé pour la base de données ' . $databaseName);
+        }
+    }
+}
+
+
+    public static function envoyer_email_echeance($databases)
+    {
+        foreach ($databases as $database) {
+            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+
+            // Switch to the temporary database
+            $connection = DatabaseHelper::Connection_database($databaseName);
+            config(['database.connections.temp' => $connection]);
+            DB::connection('temp')->setDatabaseName($connection['database']);
+            DB::reconnect('temp');
+
+            //
+            if (Schema::connection('temp')->hasTable('relances_rdv_visites')) {
+                $today = Carbon::now()->toDateString();
+                $userIds = Avance::on('temp')->whereDate('echeance', $today)->pluck('user_id');
+
+                if ($userIds->isEmpty()) {
+                    Log::info(message: 'Aucun date de relance aujourd\'hui pour la base de données ' . $databaseName);
+                    continue;
+                }
+
+                // Récupérer les utilisateurs dans la table Users
+                $users = User::on('temp')->whereIn('id', $userIds)->get();
+
+                foreach ($users as $user) {
+                    try {
+                        // Envoi de l'email
+                        Mail::to($user->email)->send(new ScheduledEmail(3, $user));
+                        Log::info("Email envoyé à {$user->email} dans la base de données {$databaseName}");
+                    } catch (\Exception $e) {
+                        // Log en cas d'échec
+                        Log::error(message: "Échec de l'envoi de l'email à {$user->email}: " . $e->getMessage());
+                    }
+                }
+
+                Log::info('Processus de relance terminé pour la base de données ' . $databaseName);
+            }
+        }
+
+    }
+
     public static function liberer_bien_pre_reserve($databases)
     {
-         Config::set('broadcasting.default', 'pusher_3');
+        Config::set('broadcasting.default', 'pusher_3');
 
         foreach ($databases as $database) {
             $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
@@ -218,43 +323,41 @@ class DatabaseHelper
 
             //
             if (Schema::connection('temp')->hasTable('biens')) {
-                   $cur_date = Carbon::now();
-                    $biens=Bien::on('temp')->where('etat','PRE_RESERVATION')->get();
-                    foreach($biens as $bien){
-                        if($bien->last_pre_reservation!=null){
-                            $diff_in_days =Carbon::parse($bien->last_pre_reservation->date_pre_reserve)->diffInDays($cur_date);
-                            if ($diff_in_days >= $bien->projet->limite_annulation_reservation+$bien->projet->prolongation_reservation) {
-                                //if diff>=3 libere bien
-                                Bien_Helper::libererBien($bien->id,'console',null);
-                            }
-                            else if($diff_in_days == $bien->projet->limite_annulation_reservation){
+                $cur_date = Carbon::now();
+                $biens = Bien::on('temp')->where('etat', 'PRE_RESERVATION')->get();
+                foreach ($biens as $bien) {
+                    if ($bien->last_pre_reservation != null) {
+                        $diff_in_days = Carbon::parse($bien->last_pre_reservation->date_pre_reserve)->diffInDays($cur_date);
+                        if ($diff_in_days >= $bien->projet->limite_annulation_reservation + $bien->projet->prolongation_reservation) {
+                            //if diff>=3 libere bien
+                            Bien_Helper::libererBien($bien->id, 'console', null);
+                        } else if ($diff_in_days == $bien->projet->limite_annulation_reservation) {
 
-                                //if diff==2 notif to commercial
-                                if($bien->last_pre_reservation->visite_id!=null){
-                                    $data_notif = [
-                                        'lien' =>  '/visites/show/'.$bien->last_pre_reservation->visite->origin_id,
-                                        'date' => Carbon::now(),
-                                        'type' => 4,
-                                        'description' => 'Régler situation du bien pre reservé',
-                                        'user_id'=>$bien->last_pre_reservation->visite->user->user_id_origin,
-                                        'visite_id'=>$bien->last_pre_reservation->visite->id,
-                                        'prospect_id'=>$bien->last_pre_reservation->visite->prospect_id,
-                                        'projet_id'=>$bien->last_pre_reservation->visite->projet_id
+                            //if diff==2 notif to commercial
+                            if ($bien->last_pre_reservation->visite_id != null) {
+                                $data_notif = [
+                                    'lien' => '/visites/show/' . $bien->last_pre_reservation->visite->origin_id,
+                                    'date' => Carbon::now(),
+                                    'type' => 4,
+                                    'description' => 'Régler situation du bien pre reservé',
+                                    'user_id' => $bien->last_pre_reservation->visite->user->user_id_origin,
+                                    'visite_id' => $bien->last_pre_reservation->visite->id,
+                                    'prospect_id' => $bien->last_pre_reservation->visite->prospect_id,
+                                    'projet_id' => $bien->last_pre_reservation->visite->projet_id,
 
-                                    ];
-                                    $notif_helper = new NotificationHelper();
-                                    $notif_helper->storeNotification($request->merge($data_notif));
-
-
-                                }
-                               /* else{
-                                    //appel_id!=null notification au detail appel ==>pas ecnours
-
-                                }*/
+                                ];
+                                $notif_helper = new NotificationHelper();
+                                $notif_helper->storeNotification($request->merge($data_notif));
 
                             }
+                            /* else{
+                        //appel_id!=null notification au detail appel ==>pas ecnours
+
+                        }*/
+
                         }
                     }
+                }
             }
         }
     }
