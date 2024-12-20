@@ -205,66 +205,95 @@ class DatabaseHelper
     }
 
     public static function envoyer_email_rdv_rlc($databases)
-{
-    foreach ($databases as $database) {
-        $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+    {
+        foreach ($databases as $database) {
+            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
 
-        // Switch to the temporary database
-        $connection = DatabaseHelper::Connection_database($databaseName);
-        config(['database.connections.temp' => $connection]);
-        DB::connection('temp')->setDatabaseName($connection['database']);
-        DB::reconnect('temp');
+            // Configurer la connexion à la base de données temporaire
+            $connection = DatabaseHelper::Connection_database($databaseName);
+            config(['database.connections.temp' => $connection]);
+            DB::connection('temp')->setDatabaseName($connection['database']);
+            DB::reconnect('temp');
 
-        if (Schema::connection('temp')->hasTable('relances_rdv_visites')) {
-            $today = Carbon::now()->toDateString();
+            if (Schema::connection('temp')->hasTable('relances_rdv_visites')) {
+                $today = Carbon::now()->toDateString();
 
-            // Récupération des utilisateurs avec leur type (1: relance, 2: rdv)
-            $relances = Relance_Rdv_visite::on('temp')
-                ->where('type', 1)
-                ->whereDate('date_relance', $today)
-                ->pluck('user_id');
+                // Récupérer les relances et RDVs pour les prospects
+                $relances = Relance_Rdv_visite::on('temp')
+                    ->with(['visite.prospect'])
+                    ->whereDate('date_relance', $today)
+                    ->where('type', 1)
+                    ->get();
 
-            $rdvs = Relance_Rdv_visite::on('temp')
-                ->where('type', 2)
-                ->whereDate('rdv', $today)
-                ->pluck('user_id');
+                $rdvs = Relance_Rdv_visite::on('temp')
+                    ->with(['visite.prospect'])
+                    ->whereDate('rdv', $today)
+                    ->where('type', 2)
+                    ->get();
 
-            $userIds = $relances->merge($rdvs)->unique();
+                $prospectNotifications = $relances->merge($rdvs);
 
-            if ($userIds->isEmpty()) {
-                Log::info('Aucun utilisateur à relancer ou notifier aujourd\'hui pour la base de données ' . $databaseName);
-                continue;
-            }
+                // Récupérer les relances et RDVs pour les utilisateurs
+                $relanceUserIds = Relance_Rdv_visite::on('temp')
+                    ->where('type', 1)
+                    ->whereDate('date_relance', $today)
+                    ->pluck('user_id');
 
-            // Récupérer les utilisateurs concernés
-            $users = User::on('temp')->whereIn('id', $userIds)->get();
+                $rdvUserIds = Relance_Rdv_visite::on('temp')
+                    ->where('type', 2)
+                    ->whereDate('rdv', $today)
+                    ->pluck('user_id');
 
-            foreach ($users as $user) {
-                try {
-                    // Vérification du type et envoi de l'email
-                    $relanceExists = $relances->contains($user->id);
-                    $rdvExists = $rdvs->contains($user->id);
+                $userIds = $relanceUserIds->merge($rdvUserIds)->unique();
+                $users = User::on('temp')->whereIn('id', $userIds)->get();
 
-                    if ($relanceExists) {
-                        Mail::to($user->email)->send(new ScheduledEmail(1, $user));
-                        Log::info("Email de relance envoyé à {$user->email} dans la base de données {$databaseName}");
+                // Envoi des emails aux prospects
+                foreach ($prospectNotifications as $notification) {
+                    $prospectEmail = $notification->visite->prospect->email ?? null;
+
+                    if ($prospectEmail) {
+                        try {
+                            $emailType = $notification->type; // 1: Relance, 2: RDV
+                            Mail::to($prospectEmail)->send(new ScheduledEmail(4, $notification));
+
+                            $logMessage = $emailType === 1
+                                ? "Email de relance envoyé à {$prospectEmail} (Prospect)"
+                                : "Email de RDV envoyé à {$prospectEmail} (Prospect)";
+                            Log::info($logMessage . " dans la base de données {$databaseName}");
+                        } catch (\Exception $e) {
+                            Log::error("Échec de l'envoi de l'email au prospect {$prospectEmail}: " . $e->getMessage());
+                        }
+                    } else {
+                        Log::warning("Aucun email associé au prospect pour la visite ID {$notification->visite_id} dans la base de données {$databaseName}");
                     }
-
-                    if ($rdvExists) {
-                        Mail::to($user->email)->send(new ScheduledEmail(2, $user));
-                        Log::info("Email de rdv envoyé à {$user->email} dans la base de données {$databaseName}");
-                    }
-
-                } catch (\Exception $e) {
-                    // Log en cas d'échec
-                    Log::error("Échec de l'envoi de l'email à {$user->email}: " . $e->getMessage());
                 }
-            }
 
-            Log::info('Processus de relance et notification terminé pour la base de données ' . $databaseName);
+                // Envoi des emails aux utilisateurs
+                foreach ($users as $user) {
+                    try {
+                        $relanceExists = $relanceUserIds->contains($user->id);
+                        $rdvExists = $rdvUserIds->contains($user->id);
+
+                        if ($relanceExists) {
+                            Mail::to($user->email)->send(new ScheduledEmail(1, $user));
+                            Log::info("Email de relance envoyé à {$user->email} (Utilisateur) dans la base de données {$databaseName}");
+                        }
+
+                        if ($rdvExists) {
+                            Mail::to($user->email)->send(new ScheduledEmail(2, $user));
+                            Log::info("Email de RDV envoyé à {$user->email} (Utilisateur) dans la base de données {$databaseName}");
+                        }
+                    } catch (\Exception $e) {
+                        Log::error("Échec de l'envoi de l'email à l'utilisateur {$user->email}: " . $e->getMessage());
+                    }
+                }
+
+                Log::info('Processus de relance et notification terminé pour la base de données ' . $databaseName);
+            } else {
+                Log::warning('La table relances_rdv_visites est absente dans la base de données ' . $databaseName);
+            }
         }
     }
-}
 
 
     public static function envoyer_email_echeance($databases)
@@ -278,35 +307,65 @@ class DatabaseHelper
             DB::connection('temp')->setDatabaseName($connection['database']);
             DB::reconnect('temp');
 
-            //
             if (Schema::connection('temp')->hasTable('relances_rdv_visites')) {
                 $today = Carbon::now()->toDateString();
-                $userIds = Avance::on('temp')->whereDate('echeance', $today)->pluck('user_id');
 
-                if ($userIds->isEmpty()) {
-                    Log::info(message: 'Aucun date de relance aujourd\'hui pour la base de données ' . $databaseName);
+                // Récupérer les avances avec leurs relations
+                $echeances = Avance::on('temp')
+                    ->whereDate('echeance', $today)
+                    ->with(['reservation.aquereurs.client'])
+                    ->get();
+
+                if ($echeances->isEmpty()) {
+                    Log::info("Aucune échéance trouvée pour la base de données {$databaseName}");
                     continue;
                 }
 
-                // Récupérer les utilisateurs dans la table Users
-                $users = User::on('temp')->whereIn('id', $userIds)->get();
+                // **Envoi d'emails aux utilisateurs (users)**
+                $userIds = $echeances->pluck('user_id')->unique(); // Extraire les user_ids associés
+                if ($userIds->isNotEmpty()) {
+                    $users = User::on('temp')->whereIn('id', $userIds)->get();
 
-                foreach ($users as $user) {
-                    try {
-                        // Envoi de l'email
-                        Mail::to($user->email)->send(new ScheduledEmail(3, $user));
-                        Log::info("Email envoyé à {$user->email} dans la base de données {$databaseName}");
-                    } catch (\Exception $e) {
-                        // Log en cas d'échec
-                        Log::error(message: "Échec de l'envoi de l'email à {$user->email}: " . $e->getMessage());
+                    foreach ($users as $user) {
+                        try {
+                            Mail::to($user->email)->send(new ScheduledEmail(3, $user));
+                            Log::info("Email envoyé à l'utilisateur {$user->email} dans la base de données {$databaseName}");
+                        } catch (\Exception $e) {
+                            Log::error("Échec de l'envoi de l'email à l'utilisateur {$user->email}: " . $e->getMessage());
+                        }
+                    }
+                } else {
+                    Log::info("Aucun utilisateur associé aux avances pour la base de données {$databaseName}");
+                }
+
+                // **Envoi d'emails aux clients (clients)**
+                foreach ($echeances as $avance) {
+                    if (!$avance->reservation || !$avance->reservation->aquereurs) {
+                        Log::warning("Aucune réservation ou acquéreurs pour l'avance ID {$avance->id} dans la base de données {$databaseName}");
+                        continue;
+                    }
+
+                    foreach ($avance->reservation->aquereurs as $aquereur) {
+                        $client = $aquereur->client;
+
+                        if ($client && !empty($client->email)) {
+                            try {
+                                Mail::to($client->email)->send(new ScheduledEmail(4, $avance));
+                                Log::info("Email envoyé au client {$client->email} (Client ID: {$client->id}) dans la base de données {$databaseName}");
+                            } catch (\Exception $e) {
+                                Log::error("Échec de l'envoi de l'email au client {$client->email}: " . $e->getMessage());
+                            }
+                        } else {
+                            Log::warning("Aucun email pour le client ID {$aquereur->client_id} dans la réservation ID {$avance->reservation->id}");
+                        }
                     }
                 }
 
-                Log::info('Processus de relance terminé pour la base de données ' . $databaseName);
+                Log::info("Processus d'envoi des emails terminé pour la base de données {$databaseName}");
             }
         }
-
     }
+
 
     public static function liberer_bien_pre_reserve($databases)
     {
