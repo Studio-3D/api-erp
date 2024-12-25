@@ -49,34 +49,7 @@ class NotificationController extends Controller
         return response()->json(['error'=>'Unauthorized'],401);
     }
 
-    public function get_relances_visites(Request $request,$projet_id)
-    {
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
-            DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
-            $page = $request->input('page', 1);
-            $user = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            if(RoleHelper::AdminSup()){
 
-
-                $rel_visites=Relance_Rdv_visite::on('temp')->join('visites','visites.id', '=', 'relances_rdv_visites.visite_id')
-                ->select('relances_rdv_visites.*')
-                ->where('visites.projet_id',$projet_id)->whereDate('relances_rdv_visites.date_relance', '<=', Carbon::now())->where('visites.etat',1)
-                ->where('relances_rdv_visites.type_traitement', 0)->where('relances_rdv_visites.type', 1)
-                ->orderby('relances_rdv_visites.date_relance', 'asc') ->paginate($perPage, ['*'], 'page', $page);
-
-
-            }else{
-
-                $rel_visites=Relance_Rdv_visite::on('temp')->select('relances_rdv_visites.*')->join('visites','visites.id', '=', 'relances_rdv_visites.visite_id') ->select('relances_rdv_visites.*')->where('visites.etat',1)->where('visites.projet_id',$projet_id)->whereDate('relances_rdv_visites.date_relance', '<=', Carbon::now())->where('relances_rdv_visites.user_id', $userAuth->value('id'))->where('relances_rdv_visites.type_traitement', 0)->where('relances_rdv_visites.type', 1)->orderby('relances_rdv_visites.date_relance', 'asc') ->paginate($perPage, ['*'], 'page', $page);
-            }
-           return response()->json(['relance_visites' => $rel_visites]);
-        }
-         else{
-            return response()->json(['error' => 'Unauthorized'], 401);
-         }
-    }
     public function get_nb_relances_visites(Request $request,$projet_id)
     {
         if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
@@ -100,31 +73,7 @@ class NotificationController extends Controller
          }
 
     }
-    public function get_rdv_visites(Request $request,$projet_id)
-    {
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
-            DatabaseHelper::Config();
-            $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
-            $page = $request->input('page', 1);
-            $user = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            if(RoleHelper::AdminSup()){
-                $rdv_visites=Relance_Rdv_visite::on('temp')->join('visites','visites.id', '=', 'relances_rdv_visites.visite_id')
-                ->select('relances_rdv_visites.*')
-                ->where('visites.projet_id',$projet_id)->whereDate('relances_rdv_visites.rdv', '<=', Carbon::now())
-                ->where('relances_rdv_visites.type_traitement', 0)->where('relances_rdv_visites.type', 2)->where('visites.etat',1)
-                ->orderby('relances_rdv_visites.date_relance', 'asc') ->paginate($perPage, ['*'], 'page', $page);
-
-
-            }else{
-                $rdv_visites=Relance_Rdv_visite::on('temp')->select('relances_rdv_visites.*')->join('visites','visites.id', '=', 'relances_rdv_visites.visite_id')->where('visites.etat',1)->where('visites.projet_id',$projet_id)->whereDate('relances_rdv_visites.rdv', '<=', Carbon::now())->where('relances_rdv_visites.user_id', $userAuth->value('id'))->where('relances_rdv_visites.type_traitement', 0)->where('relances_rdv_visites.type', 2)->orderby('relances_rdv_visites.date_relance', 'asc') ->paginate($perPage, ['*'], 'page', $page);
-            }
-           return response()->json(['rdv_visites' => $rdv_visites]);
-        }
-         else{
-            return response()->json(['error' => 'Unauthorized'], 401);
-         }
-    }
+   
     public function get_nb_rdv_visites(Request $request,$projet_id)
     {
         if (Auth::guard('api')->check() && RoleHelper::ACSup()) {

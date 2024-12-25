@@ -699,7 +699,7 @@ class AppelController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    public function get_relances_appels(Request $request, $projet_id)
+    public function get_relances_rdv_appels(Request $request, $projet_id)
     {
 
         if (Auth::guard('api')->check()) {
@@ -711,7 +711,7 @@ class AppelController extends Controller
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $query = Relance_Rdv_Appel::on('temp')->with('traite_appel')
-                ->whereDate('date_relance', '<=', Carbon::now())->where('type_traitement', 0)->where('type', 1)
+                ->where('type_traitement', 0)->where('type', $request->type)
                 ->whereHas('traite_appel.appel', function ($q) use ($projet_id) {
                     $q->where('projet_id', $projet_id);
                 });
@@ -720,10 +720,23 @@ class AppelController extends Controller
                     $q->where('user_id', $userAuth->value('id'));
                 });
             }
+            if($request->type==1){
+                $query->whereDate('date_relance', '<=', Carbon::now());
+            }else{
+                $query->whereDate('rdv', '<=', Carbon::now());
+            }
             if ($request->filled('nom_prenom')){
                     $query->whereHas('traite_appel.appel.prospect', function ($q) use ($request) {
                     $q->where('nom', 'like', '%' . $request->input('nom_prenom') . '%')
                     ->orWhere('prenom', 'like', '%' . $request->input('nom_prenom') . '%');});
+            }
+            if ($request->filled('cin')){
+                $query->whereHas('traite_appel.appel.prospect', function ($q) use ($request) {
+                $q->where('cin', 'like', '%' . $request->input('cin') . '%');});
+            }
+            if ($request->filled('telephone')){
+                $query->whereHas('traite_appel.appel.prospect', function ($q) use ($request) {
+                $q->where('telephone', 'like', '%' . $request->input('telephone') . '%');});
             }
             if ($request->filled('mode_relance')) {
                 $query->where('mode_relance', $request->input('mode_relance'));
@@ -732,6 +745,10 @@ class AppelController extends Controller
             if ($request->filled('date_relance')) {
                 $start = Carbon::parse($request->input('date_relance'));
                 $query->whereDate('date_relance', $start);
+            }
+            if ($request->filled('rdv')) {
+                $start = Carbon::parse($request->input('rdv'));
+                $query->whereDate('rdv', $start);
             }
 
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
@@ -761,65 +778,7 @@ class AppelController extends Controller
 
         return response()->json(['error' => 'Unauthorized'], 401);
     }
-    public function get_rdv_appels(Request $request, $projet_id)
-    {
-
-        if (Auth::guard('api')->check()) {
-            // Default values for pagination null si non pas envoyer avec la raquete
-            $size = $request->input('size', null);
-            $page = $request->input('page', null);
-
-            DatabaseHelper::Config();
-            $user = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            $query = Relance_Rdv_Appel::on('temp')->with('traite_appel')
-                ->whereDate('rdv', '<=', Carbon::now())->where('type_traitement', 0)->where('type', 2)
-                ->whereHas('traite_appel.appel', function ($q) use ($projet_id) {
-                    $q->where('projet_id', $projet_id);
-                });
-            if(!RoleHelper::AdminSup()){
-                $query->whereHas('traite_appel', function ($q) use ($userAuth) {
-                    $q->where('user_id', $userAuth->value('id'));
-                });
-            }
-            if ($request->filled('nom_prenom')){
-                $query->whereHas('traite_appel.appel.prospect', function ($q) use ($request) {
-                $q->where('nom', 'like', '%' . $request->input('nom_prenom') . '%')
-                ->orWhere('prenom', 'like', '%' . $request->input('nom_prenom') . '%');});
-        }
-
-            if ($request->filled('rdv')) {
-                $start = Carbon::parse($request->input('rdv'));
-                $query->whereDate('rdv', $start);
-            }
-
-            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
-
-                $rdvs = $query->orderBy('created_at', 'desc')
-                    ->paginate($size, ['*'], 'page', $page);
-
-                $pagination = [
-                    'currentPage' => $rdvs->currentPage(),
-                    'totalItems' => $rdvs->total(),
-                    'totalPages' => $rdvs->lastPage(),
-                ];
-
-                $rdvs = $rdvs->items();
-
-                return response()->json([
-                    'data' => $rdvs,
-                    'pagination' => $pagination,
-                ], 200);
-            } else {
-            $rdvs = $query->orderBy('created_at', 'desc')
-            ->get();
-            return response()->json(['rdv_appels' => $rdvs]);
-
-            }
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
+    
 
 
     public function index_traitement_appel(Request $request, $id)
