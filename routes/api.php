@@ -44,6 +44,7 @@ use App\Http\Controllers\Api\V1\ReclamationSavController as V1ReclamationsSavCon
 use App\Http\Controllers\Api\V1\EcheancesTrancheController as V1EchancesTrancheCleController;
 use App\Http\Controllers\Api\V1\RemboursementController as V1RemboursementController;
 use App\Http\Controllers\Api\V1\UploadBienController as V1UploadBienController;
+use App\Http\Controllers\Api\V1\FreinController as V1FreinController;
 
 
 use App\Http\Controllers\Api\V1\VueController as V1VueController;
@@ -185,6 +186,13 @@ Route::middleware('auth:api')->group(function () {
         Route::put('update_visite_bien_pre_reserve/{origin_id}', [V1VisiteController::class, 'update_visite_bien_pre_reserve'])->name('');
         Route::post('store_n_visite/{id}', [V1VisiteController::class, 'store_n_visite'])->name('store_n_visite');
         Route::get('get_oldBien_visite_pre_reserve/{origin_id}', [V1VisiteController::class, 'get_oldBien_visite_pre_reserve'])->name('');
+        Route::get('projets/{idprojet}/relances_rdv_visites', [V1VisiteController::class, 'get_relances_rdv_visites'])->name('');
+        Route::put('traiter_relance_rdv_visite/{id}', [V1VisiteController::class, 'traiter_relance_rdv_visite'])->name('');
+            /****************************Frein*****************************/
+       Route::resource('frein', V1FreinController::class);
+       Route::get('projets/{idprojet}/get_clients_freins', [V1FreinController::class, 'get_clients_freins'])->name('');
+       Route::get('biens_by_frein/{id}', [V1FreinController::class, 'biens_by_frein'])->name('');
+       Route::put('traiter_bien_frein/{bien_id}/{frein_id}', [V1FreinController::class, 'traiter_bien_frein'])->name('');
 
         //l'API prospect
         Route::resource('prospects', V1ProspectController::class);
@@ -253,8 +261,7 @@ Route::middleware('auth:api')->group(function () {
         Route::put('traiter_relance_rdv_appel/{id}', [V1AppelController::class, 'traiter_relance_rdv_appel'])->name('');
         Route::get('get_info_cin_unique/{prospect_id}/{cin}', [V1AppelController::class, 'get_info_cin_unique']);
         //RELANCES RDV APPELS
-        Route::get('projets/{idprojet}/relances_appels', [V1AppelController::class, 'get_relances_appels'])->name('');
-        Route::get('projets/{idprojet}/rdv_appels', [V1AppelController::class, 'get_rdv_appels'])->name('');
+        Route::get('projets/{idprojet}/relances_rdv_appels', [V1AppelController::class, 'get_relances_rdv_appels'])->name('');
         Route::get('get_nb_rdv_appels/{projet_id}', [V1AppelController::class, 'get_nb_rdv_appels'])->name('');
         Route::get('get_nb_relances_appels/{projet_id}', [V1AppelController::class, 'get_nb_relances_appels'])->name('');
 
@@ -361,6 +368,7 @@ Route::middleware('auth:api')->group(function () {
 
     /*Route::post('upload_excel_data', [ExcelDataController::class, 'UploadDataExcel'])->name('upload-excel-data');
     Route::post('testfunction', [ExcelDataController::class, 'UploadDataExcel'])->name('upload-excel-data');*/
+    Route::get('biens_by_frein/{id}', [FreinController::class, 'biens_by_frein'])->name('');
 
     /*************************************Société***************************** */
     Route::resource('societe', SocieteController::class);
@@ -470,7 +478,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('store_n_visite/{id}', [VisiteController::class, 'store_n_visite'])->name('store_n_visite');
     Route::get('getAllAttributes', [VisiteController::class, 'getAllAttributes'])->name('getAllAttributes');
     Route::get('get_historiques_visite/{origin_id}', [VisiteController::class, 'get_historiques'])->name('get_historiques');
-    Route::put('traiter_relance_rdv_visite/{id}', [VisiteController::class, 'traiter_relance_rdv_visite'])->name('');
+    //Route::put('traiter_relance_rdv_visite/{id}', [VisiteController::class, 'traiter_relance_rdv_visite'])->name('');
     Route::get('get_oldBien_visite_pre_reserve/{origin_id}', [VisiteController::class, 'get_oldBien_visite_pre_reserve'])->name('');
     Route::put('update_visite_bien_pre_reserve/{origin_id}', [VisiteController::class, 'update_visite_bien_pre_reserve'])->name('');
 
@@ -480,11 +488,7 @@ Route::middleware('auth:api')->group(function () {
     Route::post('restoreTypeFrein/{id}', [TypeFreinController::class, 'restoreTypeFrein'])->name('restoreTypeFrein');
 
     /*************************************Prospect***************************** */
-    /*************************************Frein***************************** */
-    Route::resource('frein', FreinController::class);
-    Route::get('get_clients_freins/{projet_id}', [FreinController::class, 'get_clients_freins'])->name('');
-    Route::get('biens_by_frein/{id}', [FreinController::class, 'biens_by_frein'])->name('');
-    Route::put('traiter_bien_frein/{bien_id}/{frein_id}', [FreinController::class, 'traiter_bien_frein'])->name('');
+
     /*************************************Prospect***************************** */
     Route::resource('prospect', ProspectController::class);
     Route::get('search_prospect_by_email/{email}', [ProspectController::class, 'search_prospect_by_email']);
@@ -587,9 +591,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('StatutRdv_Enum', [EnumController::class, 'StatutRdvEnum_get'])->name('');
 
     /************************NotificationController********************* */
-    Route::get('get_relances_visites/{projet_id}', [NotificationController::class, 'get_relances_visites'])->name('');
     Route::get('get_nb_relances_visites/{projet_id}', [NotificationController::class, 'get_nb_relances_visites'])->name('');
-    Route::get('get_rdv_visites/{projet_id}', [NotificationController::class, 'get_rdv_visites'])->name('');
     Route::get('get_nb_rdv_visites/{projet_id}', [NotificationController::class, 'get_nb_rdv_visites'])->name('');
     Route::get('get_nb_frein_client_visite/{projet_id}', [NotificationController::class, 'get_nb_frein_client_visite'])->name('');
 

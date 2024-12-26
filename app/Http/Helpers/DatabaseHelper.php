@@ -159,8 +159,9 @@ class DatabaseHelper
                     $propositions = Proposition::on('temp')
                         ->select('id', 'created_at', 'bien_id')
                         ->whereIn('user_id', $connectedUsers)
-                        ->whereNotIn('id', function ($query) use ($connectedUsers) {$query->select(DB::raw('MAX(id)'))->from('propositions')->whereIn('user_id', $connectedUsers)
-                                ->groupBy('user_id');})->get();
+                        /*->whereNotIn('id', function ($query) use ($connectedUsers) {$query->select(DB::raw('MAX(id)'))->from('propositions')->whereIn('user_id', $connectedUsers)
+                                ->groupBy('user_id');})*/->get();
+                               Log::info($propositions);
                     foreach ($propositions as $prop) {
                         $bien = Bien::on('temp')->findorfail($prop->bien_id);
                         if ($bien->etat == 'ENCOURS_DE_PROPOSITION') {

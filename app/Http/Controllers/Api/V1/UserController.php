@@ -348,14 +348,13 @@ class UserController extends Controller
                 }
                 //modifier user projet
                 $user_projets = UserProjet::on('temp')->where('user_id', $user_societes->id)->delete();
-                if (!empty($request->selectedProjets )) {
 
-                    $dataArray_projets = json_decode($request->input('selectedProjets', '[]'), true);
-                    foreach ($dataArray_projets as $valeur) {
-                        UserProjetHelper::createUserProjet($valeur['id'],$user_societes->id);
+                if (!empty($request->selectedProjets)) {
+                    $projets_array = explode(',', $request->selectedProjets); // $projets_array sera ['5', '2']
+                    foreach ($projets_array as $valeur) {
+                        UserProjetHelper::createUserProjet($valeur, $user_societes->id);
                     }
                 }
-
                 if($old_email!=$request->email){
                     $to_email=$user->email;
                     $data=array('password'=>'Votre Ancien Password','sexe'=>$request->gender,'nom'=>$request->name,'prenom'=>$request->prenom,'email'=>$request->email);

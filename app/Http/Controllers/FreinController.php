@@ -498,7 +498,7 @@ class FreinController extends Controller
 
                     array_push($clients,array('id' => $fr->id,'date' => $fr->created_at,'nom' => $fr->nom,'prenom' => $fr->prenom,'telephone' => $fr->telephone,'telephone_2' => $fr->telephone_num2,'id_origin' => $fr->origin_id,'frein'=>$fr_type));
                  }
-                }
+            }
                     $data = PaginationHelper::paginate_array($clients,$perPage,$page,$request->url());
                     return response()->json(['clients' => $data,'count_clients'=>count($clients)]);
 

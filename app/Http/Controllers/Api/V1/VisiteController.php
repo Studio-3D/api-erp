@@ -1026,7 +1026,6 @@ class VisiteController extends Controller
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $relance = Relance_Rdv_visite::on('temp')->findOrFail($id);
-
             //if date !=null (nouvelle relance )
             if ($request->date != null) {
 
@@ -2019,4 +2018,85 @@ class VisiteController extends Controller
 
         return response()->json($formData);
     }
+
+
+    public function get_relances_rdv_visites(Request $request, $projet_id)
+    {
+
+        if (Auth::guard('api')->check()) {
+            // Default values for pagination null si non pas envoyer avec la raquete
+            $size = $request->input('size', null);
+            $page = $request->input('page', null);
+
+            DatabaseHelper::Config();
+            $user = Auth::user();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $query = Relance_Rdv_visite::on('temp')->with('visite')
+                ->where('type', $request->type)->where('type_traitement', 0)
+                ->whereHas('visite', function ($q) use ($projet_id) {
+                    $q->where('projet_id', $projet_id)->where('etat', 1);
+                });
+            if(!RoleHelper::AdminSup()){
+                    $query->where('user_id', $userAuth->value('id'));
+                        }
+            if($request->type==1){
+                $query->whereDate('date_relance', '<=', Carbon::now());
+            }else{
+                $query->whereDate('rdv', '<=', Carbon::now());
+            }
+            if ($request->filled('nom_prenom')){
+                    $query->whereHas('visite.prospect', function ($q) use ($request) {
+                    $q->where('nom', 'like', '%' . $request->input('nom_prenom') . '%')
+                    ->orWhere('prenom', 'like', '%' . $request->input('nom_prenom') . '%');});
+            }
+            if ($request->filled('cin')){
+                $query->whereHas('visite.prospect', function ($q) use ($request) {
+                $q->where('cin', 'like', '%' . $request->input('cin') . '%');});
+            }
+            if ($request->filled('telephone')){
+                $query->whereHas('visite.prospect', function ($q) use ($request) {
+                $q->where('telephone', 'like', '%' . $request->input('telephone') . '%')
+                ->orWhere('telephone_num2', 'like', '%' . $request->input('telephone') . '%');});
+            }
+            if ($request->filled('mode_relance')) {
+                $query->where('mode_relance', $request->input('mode_relance'));
+            }
+
+            if ($request->filled('date_relance')) {
+                $start = Carbon::parse($request->input('date_relance'));
+                $query->whereDate('date_relance', $start);
+            }
+            if ($request->filled('rdv')) {
+                $start = Carbon::parse($request->input('rdv'));
+                $query->whereDate('rdv', $start);
+            }
+
+            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+
+                $relances = $query->orderBy('created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
+
+                $pagination = [
+                    'currentPage' => $relances->currentPage(),
+                    'totalItems' => $relances->total(),
+                    'totalPages' => $relances->lastPage(),
+                ];
+
+                $relances = $relances->items();
+
+                return response()->json([
+                    'data' => $relances,
+                    'pagination' => $pagination,
+                ], 200);
+            } else {
+            $relances = $query->orderBy('created_at', 'desc')
+            ->get();
+            return response()->json(['relances' => $relances]);
+
+            }
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
 }

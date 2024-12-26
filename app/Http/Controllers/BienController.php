@@ -167,7 +167,7 @@ class BienController extends Controller
 
 
                 if ($bien->etat == 'disponible') {
-                    Bien_Helper::store_bien_frein($bien->id);
+                    Bien_Helper::store_bien_frein($bien->id,null);
                 }
 
             }
