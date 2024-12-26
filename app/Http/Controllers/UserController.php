@@ -2,46 +2,61 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
-use App\Models\Societe;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use App\Mail\ResetPasswordMail;
-use Illuminate\Validation\Rule;
-use App\Http\Helpers\RoleHelper;
-use Illuminate\Support\Facades\DB;
 use App\Http\Helpers\DatabaseHelper;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
+use App\Http\Helpers\RoleHelper;
 use App\Http\Helpers\UserProjetHelper;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Mail\ResetPasswordMail;
+use App\Models\Societe;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
 
     public function login(Request $request)
     {
+        // Validation des entrées
         $credentials = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
         ]);
-        $User = User::where('email', $request->email)->first();
-        if ($User->is_actif == 1) {
-            if (Auth::attempt($credentials)) {
-                $user = Auth::user();
-                $user->is_connected = 1;
-                $user->save();
-                $accessToken = $user->createToken('API Token')->accessToken;
 
-                return response()->json(['access_token' => $accessToken], 200);
-            }
-            return response()->json(['error' => 'email ou mot de passe incorrect'], 422);
+        // Rechercher l'utilisateur par email
+        $User = User::where('email', $request->email)->first();
+
+        // Vérifier si l'utilisateur existe
+        if (!$User) {
+            return response()->json(['error' => 'Utilisateur non trouvé'], 404);
         }
 
-        return response()->json(['error' => 'utilisateur non actif'], 422);
+        // Vérifier si l'utilisateur est actif
+        if ($User->is_actif != 1) {
+            return response()->json(['error' => 'Utilisateur non actif'], 422);
+        }
+
+        // Vérifier les identifiants
+        if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+            $user->is_connected = 1;
+            $user->save();
+
+            // Générer le token d'accès
+            $accessToken = $user->createToken('API Token')->accessToken;
+
+            return response()->json(['access_token' => $accessToken], 200);
+        }
+
+        // Identifiants incorrects
+        return response()->json(['error' => 'Email ou mot de passe incorrect'], 422);
     }
     public function logout(Request $request)
     {
