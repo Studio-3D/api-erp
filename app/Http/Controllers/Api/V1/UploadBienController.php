@@ -72,7 +72,7 @@ class UploadBienController extends Controller
 
 
 
-        private function determineImportMethod($keys) {
+       /* private function determineImportMethod($keys) {
             $hasTranche = in_array('tranche', $keys);
             $hasBloc = in_array('Bloc', $keys);
             $hasImmeuble = in_array('immeuble', $keys);
@@ -104,7 +104,7 @@ class UploadBienController extends Controller
             } else {
                 return 'ImportStockByProjetWithoutTrancheAndBlocAndImmeuble';
             }
-        }
+        }*/
 
 
     /**
@@ -123,34 +123,7 @@ class UploadBienController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, $id)
-    {
-        if (RoleHelper::AdminSup()) {
-            DatabaseHelper::Config();
-
-            $user = Auth::user();
-            DatabaseHelper::Config();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
-            $societe = Societe::findOrfail($user_societes->societe_id);
-            $cps = Cps::on('temp')->findOrFail($id);
-            $cps->nature_travaux = $request->nature_travaux;
-            $cps->cout = $request->cout;
-            $cps->date_validation = $request->date_validation;
-            $cps->projet_id = $request->projet_id;
-            $cps->user_id=$userAuth->value('id');
-            if ($request->hasFile('piece_jointe')) {
-                $cps->piece_jointe = $request->file('piece_jointe')->getClientOriginalName();;
-                $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/cps');
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('piece_jointe')->move($directory,$request->file('piece_jointe')->getClientOriginalName());
-            }
-            if ($cps->save()) {
-                return response()->json(['cps' => $cps], 200);
-            }
-        }
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
+  
 
     /**
      * Remove the specified resource from storage.

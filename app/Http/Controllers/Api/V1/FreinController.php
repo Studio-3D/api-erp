@@ -689,4 +689,38 @@ class FreinController extends Controller
         }
 
     }
+
+
+    public function desactiver_freins($param,Request $request)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $exit=0;
+            foreach ($request->list_freins as $key => $list) {
+                //Annuler perdu
+
+                if ($list['action'] == 2) {
+                    $exit=1;
+                    $frein = Frein::on('temp')->findorfail($list['fr_id']);
+                    $frein->etat = 4;
+                    if ($frein->save()) {
+                        //destroy frein bien
+                        FreinBienHelper::destroyFreinBien($frein->id);
+                        //notification des biens disponible pour ce frein
+                        NotificationHelper::destroy_notif_bien_dispo_frein($frein->visite_id);
+                    }
+
+                }
+            }
+            if($exit==1){
+                Config::set('broadcasting.default', 'pusher_5');
+                broadcast(new NotifMenuEvent('C'));
+            }
+
+            return response()->json(['message' => 'suceees'], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+    }
 }
