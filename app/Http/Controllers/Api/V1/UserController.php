@@ -6,25 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\FichierHelper;
 use App\Http\Helpers\RoleHelper;
+use App\Http\Helpers\UserProjetHelper;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
+use App\Mail\ResetPasswordMail;
+use App\Models\Objectif;
 use App\Models\Societe;
 use App\Models\UserProjet;
-use App\Models\Objectif;
-use App\Http\Helpers\UserProjetHelper;
 use App\Models\V1\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
-use Mail;
 use Illuminate\Support\Facades\DB;
-
-
-use Illuminate\Support\Str;
-use Illuminate\Support\Carbon;
-use App\Mail\ResetPasswordMail;
 use Illuminate\Support\Facades\Hash;
-
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
@@ -37,56 +33,56 @@ class UserController extends Controller
      * DELETE /{id}   destroy
      */
 
-    public function list_commerciaux_objectif ($projet_id){
+    public function list_commerciaux_objectif($projet_id)
+    {
 
-        if (Auth::guard('api')->check() ) {
+        if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            if(RoleHelper::AdminSup()){
+            if (RoleHelper::AdminSup()) {
                 $objectifs = Objectif::on('temp')->distinct(['user_id'])->get('user_id');
-                $arrQuery = array();;
+                $arrQuery = array();
                 for ($i = 0; $i < count($objectifs); $i++) {
-                array_push($arrQuery, $objectifs[$i]->user_id);
-                  }
-                  //stock all user_id into array and get users where user_id not in tble objectif
-               $data=UserProjet::on('temp')->with('user')
-               ->where('projet_id',$projet_id)
-               ->whereHas('user', function($q){
-                $q->where('role',3);
+                    array_push($arrQuery, $objectifs[$i]->user_id);
+                }
+                //stock all user_id into array and get users where user_id not in tble objectif
+                $data = UserProjet::on('temp')->with('user')
+                    ->where('projet_id', $projet_id)
+                    ->whereHas('user', function ($q) {
+                        $q->where('role', 3);
 
-            })->whereNotIn('user_id', $arrQuery)->get();
+                    })->whereNotIn('user_id', $arrQuery)->get();
 
             }
-           return response()->json(['users' => $data]);
-        }
-         else{
+            return response()->json(['users' => $data]);
+        } else {
             return response()->json(['error' => 'Unauthorized'], 401);
-         }
+        }
     }
 
-    public function list_commerciaux ($projet_id){
+    public function list_commerciaux($projet_id)
+    {
 
-        if (Auth::guard('api')->check() ) {
+        if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            if(RoleHelper::AdminSup()){
+            if (RoleHelper::AdminSup()) {
 
-                  //stock all user_id into array and get users where user_id not in tble objectif
+                //stock all user_id into array and get users where user_id not in tble objectif
                 $query = UserProjet::on('temp')->with('user')->distinct(['user_id'])
-                ->whereHas('user', function($q){
-                    $q->where('role',3);
+                    ->whereHas('user', function ($q) {
+                        $q->where('role', 3);
                     });
-                    if ($projet_id!=0) {
-                        $query->where('projet_id',  $projet_id );
-                    }
-                    $query->get('user_id');
+                if ($projet_id != 0) {
+                    $query->where('projet_id', $projet_id);
+                }
+                $query->get('user_id');
 
                 $data = $query->get('user_id');
                 return response()->json(['data' => $data]);
             }
 
-        }
-         else{
+        } else {
             return response()->json(['error' => 'Unauthorized'], 401);
-         }
+        }
     }
 
     public function index(Request $request)
@@ -136,7 +132,7 @@ class UserController extends Controller
                 $query->where('role', $request->input('role'));
             }
         } // Sinon, si l'utilisateur est 'admin'
-        else if (RoleHelper::Admin() ||( RoleHelper::Superadmin() && $user->societe_id != 1 )) {
+        else if (RoleHelper::Admin() || (RoleHelper::Superadmin() && $user->societe_id != 1)) {
             // Filtrer avec l'id de la société et exclure les utilisateurs ayant le role superAdmin
             $query->where('societe_id', $user->societe_id)->where('role', '!=', 1);
         }
@@ -204,18 +200,18 @@ class UserController extends Controller
 
                 $dataArray_projets = json_decode($request->input('selectedProjets', '[]'), true);
 
-                $this->createSubUser($request, $user->id, $user->photo,$dataArray_projets);
+                $this->createSubUser($request, $user->id, $user->photo, $dataArray_projets);
 
                 //send accces par email to user
 
-                    $to_email=$user->email;
-                    $data=array('password'=>$request->password,'sexe'=>$request->gender,'nom'=>$request->name,'prenom'=>$request->prenom,'email'=>$request->email);
-                    Mail::send('User.mail', $data, function($message) use($to_email){
-                        $message->to($to_email)
-                            ->subject ('Codes Accés au Immo Gestion');
-                        $message->from('hhhh.test022@gmail.com','Immo Gestion');
+                $to_email = $user->email;
+                $data = array('password' => $request->password, 'sexe' => $request->gender, 'nom' => $request->name, 'prenom' => $request->prenom, 'email' => $request->email);
+                Mail::send('User.mail', $data, function ($message) use ($to_email) {
+                    $message->to($to_email)
+                        ->subject('Codes Accés au Immo Gestion');
+                    $message->from('hhhh.test022@gmail.com', 'Immo Gestion');
 
-                    });
+                });
             }
             return response()->json(['message' => $user], 200);
         } else {
@@ -227,12 +223,12 @@ class UserController extends Controller
         $user = null;
         if (RoleHelper::Superadmin()) {
             $user = User::findOrfail($id);
-        } else{
+        } else {
             DatabaseHelper::Config();
             $user = User::on('temp')->where('user_id_origin', $id)->first();
         }
-       /* if (!$user) {
-            return response()->json(['message' => 'Utilisateur non trouvé'], 200);
+        /* if (!$user) {
+        return response()->json(['message' => 'Utilisateur non trouvé'], 200);
         }*/
         return response()->json(['user' => $user], 200);
     }
@@ -299,13 +295,12 @@ class UserController extends Controller
                     }
                 }
 
-
                 return response()->json(['message' => 'profil modifié avec succès'], 200);
 
             }
         } else if (RoleHelper::AdminSup()) {
             $user = User::findOrFail($id);
-            $old_email=$user->email;
+            $old_email = $user->email;
             $user->name = $request->input('name');
             $user->prenom = $request->input('prenom');
             $user->email = $request->input('email');
@@ -355,13 +350,13 @@ class UserController extends Controller
                         UserProjetHelper::createUserProjet($valeur, $user_societes->id);
                     }
                 }
-                if($old_email!=$request->email){
-                    $to_email=$user->email;
-                    $data=array('password'=>'Votre Ancien Password','sexe'=>$request->gender,'nom'=>$request->name,'prenom'=>$request->prenom,'email'=>$request->email);
-                    Mail::send('User.mail', $data, function($message) use($to_email){
+                if ($old_email != $request->email) {
+                    $to_email = $user->email;
+                    $data = array('password' => 'Votre Ancien Password', 'sexe' => $request->gender, 'nom' => $request->name, 'prenom' => $request->prenom, 'email' => $request->email);
+                    Mail::send('User.mail', $data, function ($message) use ($to_email) {
                         $message->to($to_email)
-                            ->subject ('Codes Accés au Immo Gestion');
-                        $message->from('hhhh.test022@gmail.com','Immo Gestion');
+                            ->subject('Codes Accés au Immo Gestion');
+                        $message->from('hhhh.test022@gmail.com', 'Immo Gestion');
 
                     });
                 }
@@ -402,7 +397,7 @@ class UserController extends Controller
     }
 
     // Methodes utilitaires (partie invisible a l'exterieur de la classe)
-    private function createSubUser($request, $user_id, $user_photo,$dataArray_projets)
+    private function createSubUser($request, $user_id, $user_photo, $dataArray_projets)
     {
 
         DatabaseHelper::Config($request->societe_id);
@@ -430,9 +425,9 @@ class UserController extends Controller
             $user->photo = $user_photo;
         }
 
-        if($user->save()){
+        if ($user->save()) {
             foreach ($dataArray_projets as $valeur) {
-                UserProjetHelper::createUserProjet($valeur['id'],$user->id);
+                UserProjetHelper::createUserProjet($valeur['id'], $user->id);
             }
         }
     }
@@ -471,70 +466,80 @@ class UserController extends Controller
 
     }
 
-
-    public function sendEmail()
+    public function sendEmail(Request $request)
     {
-      //  if (RoleHelper::SuperAdmin()) {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
 
-            $user = Auth::guard('api')->user()->email;
+        // Rechercher l'utilisateur par email
+        $user = User::where('email', $request->email)->first();
 
-            if (!$user) {
-                return response()->json(['message' => 'User not found'], 404);
-            }
-            DB::table('password_reset_tokens')
-                ->where('email', $user)
-                ->delete();
+        // Vérifier si l'utilisateur existe
+        if (!$user) {
+            return response()->json(['error' =>"Nous n'avons pas trouvé de compte associé à cette adresse e-mail."], 404);
+        }
 
-            $token = Str::random(60);
-            $confirmationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-            $expirationTime = now()->addMinutes(3);
-            DB::table('password_reset_tokens')->insert([
-                'email' => $user,
-                'token' => $token,
-                'expires_at' => $expirationTime,
-                'created_at' => now(),
-            ]);
+        
+        DB::table('password_reset_tokens')
+            ->where('email', $user->email)
+            ->delete();
 
-            // Construct the reset URL you can chenbge the url
-            $resetUrl = 'http://localhost:3000/reset-password/' . $token;
+        $token = Str::random(60);
+        $confirmationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        $expirationTime = now()->addMinutes(3);
+        DB::table('password_reset_tokens')->insert([
+            'email' => $user->email,
+            'token' => $token,
+            'expires_at' => $expirationTime,
+            'created_at' => now(),
+        ]);
 
-            // Send an email to the user with the reset URL
-            Mail::to($user)->send(new ResetPasswordMail($resetUrl, $confirmationCode));
+        // Construct the reset URL you can chenbge the url
+        $resetUrl = 'http://localhost:3000/reset-password/' . $token;
 
-            return response()->json(['message' => 'Password reset email sent']);
-       // }
+        // Send an email to the user with the reset URL
+        Mail::to($user->email)->send(new ResetPasswordMail($resetUrl, $confirmationCode));
+
+        return response()->json(['message' => 'Password reset email sent']);
+        // }
     }
-    public function resendEmail()
+    public function resendEmail(Request $request)
     {
-        //if (RoleHelper::SuperAdmin()) {
             // Validate the request and check for user existence
-            $user = Auth::guard('api')->user()->email;
+           $request->validate([
+            'email' => 'required|email',
+        ]);
 
-            if (!$user) {
-                return response()->json(['message' => 'User not found'], 404);
-            }
-            DB::table('password_reset_tokens')
-                ->where('email', $user)
-                ->delete();
+        // Rechercher l'utilisateur par email
+        $user = User::where('email', $request->email)->first();
 
-            $token = Str::random(60);
-            $confirmationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-            $expirationTime = now()->addMinutes(3); // Expires in 1 minute
-            // Store the token in the 'password_resets' table
-            DB::table('password_reset_tokens')->insert([
-                'email' => $user,
-                'token' => $token,
-                'expires_at' => $expirationTime,
-                'created_at' => now(),
-            ]);
 
-            // Construct the reset URL
-            $resetUrl = env('HOST_NAME_FRONT') . '/reset-password/' . $token;
-            // Send an email to the user with the reset URL
-            Mail::to($user)->send(new ResetPasswordMail($resetUrl, $confirmationCode));
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
+        }
+        DB::table('password_reset_tokens')
+            ->where('email', $user->email)
+            ->delete();
 
-            return response()->json(['message' => 'Password reset email sent']);
-       // }
+        $token = Str::random(60);
+        $confirmationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        $expirationTime = now()->addMinutes(3); // Expires in 1 minute
+        // Store the token in the 'password_resets' table
+        DB::table('password_reset_tokens')->insert([
+            'email' => $user->email,
+            'token' => $token,
+            'expires_at' => $expirationTime,
+            'created_at' => now(),
+        ]);
+
+        // Construct the reset URL
+        $resetUrl = env('HOST_NAME_FRONT') . '/reset-password/' . $token;
+        // Send an email to the user with the reset URL
+        Mail::to($user->email)->send(new ResetPasswordMail($resetUrl, $confirmationCode));
+
+        return response()->json(['message' => 'Password reset email sent']);
+    
     }
 
     public function resetPassword(Request $request, $token)
@@ -565,4 +570,23 @@ class UserController extends Controller
             return response()->json(['message' => 'Password reset successful']);
         }
     }
+
+    public function reset(Request $request)
+{
+    $request->validate([
+        'current_password' => 'required',
+        'new_password' => 'required|confirmed',
+    ]);
+
+    $user = auth()->user();
+
+    if (!Hash::check($request->current_password, $user->password)) {
+        return response()->json(['error' => 'Ancien mot de passe incorrect'], 400);
+    }
+
+    $user->update(['password' => Hash::make($request->new_password)]);
+
+    return response()->json(['message' => 'Mot de passe réinitialisé avec succès'], 200);
+}
+
 }

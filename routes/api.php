@@ -96,6 +96,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('login', [UserController::class, 'login'])->name('login');
 Route::post('/validateToken/{token}', [UserController::class, 'validateToken']);
+Route::post('/resetPassword/{token}', [V1UserController::class, 'resetPassword']);
+Route::post('sendEmail', [V1UserController::class, 'sendEmail']);
+Route::post('resendEmail', [V1UserController::class, 'resendEmail']);
+Route::post('/resetPassword/{token}', [UserController::class, 'resetPassword']);
 
 /*************************************APIs FROM Outside ***************************** */
 
@@ -114,10 +118,7 @@ Route::middleware('auth:api')->group(function () {
         Route::put('desactivateUser/{id}', [V1UserController::class, 'desactivateUser'])->name('desactivateUser');
         Route::get('commerciaux_objectif/{projet_id}', [V1UserController::class, 'list_commerciaux_objectif'])->name('');
         Route::get('commerciaux/{projet_id}', [V1UserController::class, 'list_commerciaux'])->name('');
-        Route::post('sendEmail', [V1UserController::class, 'sendEmail']);
-        Route::post('resendEmail', [V1UserController::class, 'resendEmail']);
-
-        Route::post('/resetPassword/{token}', [V1UserController::class, 'resetPassword']);
+        
         // l'API societes
         Route::resource('societes', V1SocieteController::class);
         // l'API typeProjets
@@ -392,10 +393,11 @@ Route::middleware('auth:api')->group(function () {
     Route::post('addUserProjet/{id}', [UserController::class, 'addUserProjet'])->name('addUserProjet');
     Route::get('get_users', [UserController::class, 'get_users'])->name('get_users');
     Route::get('get_commerciaux', [UserController::class, 'get_commerciaux'])->name('get_users');
-    Route::post('sendEmail', [UserController::class, 'sendEmail']);
+   /*  Route::post('sendEmail', [UserController::class, 'sendEmail']);
     Route::post('resendEmail', [UserController::class, 'resendEmail']);
+ */
 
-    Route::post('/resetPassword/{token}', [UserController::class, 'resetPassword']);
+    Route::post('/reset', [UserController::class, 'reset']);
 
     /*************************************Projet***************************** */
     Route::resource('projet', ProjetController::class);

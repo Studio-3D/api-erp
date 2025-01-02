@@ -574,43 +574,47 @@ class UserController extends Controller
             return response()->json(['message' => 'Password reset email sent']);
         }
     }
-    public function resendEmail()
+    public function resendEmail(Request $request)
     {
-        if (RoleHelper::SuperAdmin()) {
             // Validate the request and check for user existence
-            $user = Auth::guard('api')->user()->email;
+           $request->validate([
+            'email' => 'required|email',
+        ]);
 
-            if (!$user) {
-                return response()->json(['message' => 'User not found'], 404);
-            }
-            DB::table('password_reset_tokens')
-                ->where('email', $user)
-                ->delete();
+        // Rechercher l'utilisateur par email
+        $user = User::where('email', $request->email)->first();
 
-            $token = Str::random(60);
-            $confirmationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-            $expirationTime = now()->addMinutes(3); // Expires in 1 minute
-            // Store the token in the 'password_resets' table
-            DB::table('password_reset_tokens')->insert([
-                'email' => $user,
-                'token' => $token,
-                'expires_at' => $expirationTime,
-                'created_at' => now(),
-            ]);
 
-            // Construct the reset URL
-            $resetUrl = env('HOST_NAME_FRONT') . '/reset-password/' . $token;
-            // Send an email to the user with the reset URL
-            Mail::to($user)->send(new ResetPasswordMail($resetUrl, $confirmationCode));
-
-            return response()->json(['message' => 'Password reset email sent']);
+        if (!$user) {
+            return response()->json(['message' => 'User not found'], 404);
         }
+        DB::table('password_reset_tokens')
+            ->where('email', $user->email)
+            ->delete();
+
+        $token = Str::random(60);
+        $confirmationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
+        $expirationTime = now()->addMinutes(3); // Expires in 1 minute
+        // Store the token in the 'password_resets' table
+        DB::table('password_reset_tokens')->insert([
+            'email' => $user->email,
+            'token' => $token,
+            'expires_at' => $expirationTime,
+            'created_at' => now(),
+        ]);
+
+        // Construct the reset URL
+        $resetUrl = env('HOST_NAME_FRONT') . '/reset-password/' . $token;
+        // Send an email to the user with the reset URL
+        Mail::to($user->email)->send(new ResetPasswordMail($resetUrl, $confirmationCode));
+
+        return response()->json(['message' => 'Password reset email sent']);
+    
     }
 
     public function resetPassword(Request $request, $token)
     {
 
-        if (RoleHelper::ACSup()) {
             $passwordReset = DB::table('password_reset_tokens')
                 ->where('token', $token)
                 ->first();
@@ -624,16 +628,32 @@ class UserController extends Controller
             }
 
             $user = User::where('email', $passwordReset->email)->first();
-            $user->update([
-                'password' => Hash::make($request->password),
-            ]);
+            $user->update(['password' => Hash::make($request->password)]);
 
             DB::table('password_reset_tokens')
                 ->where('token', $token)
                 ->delete();
 
             return response()->json(['message' => 'Password reset successful']);
+        
+    }
+
+    public function reset(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'new_password' => 'required|confirmed',
+        ]);
+    
+        $user = auth()->user();
+    
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json(['error' => 'Ancien mot de passe incorrect'], 400);
         }
+    
+        $user->update(['password' => Hash::make($request->new_password)]);
+    
+        return response()->json(['message' => 'Mot de passe réinitialisé avec succès'], 200);
     }
     public function validateToken($token)
     {
