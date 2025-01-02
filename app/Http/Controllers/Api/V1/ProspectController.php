@@ -10,6 +10,7 @@ use App\Http\Requests\StoreProspectRequest;
 use App\Http\Requests\UpdateProspectRequest;
 use App\Models\Client;
 use App\Models\Prospect;
+use App\Models\Source;
 use App\Models\Visite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -208,7 +209,7 @@ class ProspectController extends Controller
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $prospect = Prospect::on('temp')->findOrFail($id);
-            if ($prospect->delete()) {
+            if ($prospect->forceDelete()) {
                 return response()->json(['message' => 'Prospect supprimé avec succès.'], 200);
             } else {
                 return response()->json(['error' => "Le prospect n'a pas été supprimé."], 404);
@@ -223,13 +224,13 @@ class ProspectController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             if ($param_1 == 'cin' || $param_1 == 'email') {
-                $prospect = Prospect::on('temp')->with('visite_pre_reserves', 'visites', 'appels')->where($param_1, $value)
+                $prospect = Prospect::on('temp')->with('visite_pre_reserves', 'visites','visites.frein','visites.frein.freinTranche','visites.frein.FreinEtage','visites.frein.FreinOrientation','visites.frein.FreinTypologie','visites.frein.FreinVue', 'appels')->where($param_1, $value)
                     ->get()->first();
                 $client = Client::on('temp')->with('prospect')->where($param_1, $value)->get()->first();
 
             } else {
                 //telephone
-                $prospect = Prospect::on('temp')->with('visite_pre_reserves', 'visites', 'appels')
+                $prospect = Prospect::on('temp')->with('visite_pre_reserves', 'visites', 'visites.frein','visites.frein.freinTranche','visites.frein.FreinEtage','visites.frein.FreinOrientation','visites.frein.FreinTypologie','visites.frein.FreinVue','appels')
                     ->where(function ($query) use ($value) {
                         $query->where('telephone', $value)
                             ->orwhere('telephone_num2', $value)
@@ -286,5 +287,86 @@ class ProspectController extends Controller
 
         }
         return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+
+
+    public function upload(Request $request)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            set_time_limit(0);
+            ini_set('memory_limit', '-1');
+
+            $data = $request->input('jsonData');
+
+                foreach($data as $row)
+                {
+                    $prospect_cin=0;
+                    $prospect_email=0;
+                    $prospect_tel=0;
+                    $prospect_tel2=0;
+
+                    //cin unique
+                    if (!empty($row['cin'])) {
+                        $prospect_cin=Prospect::on('temp')->where('cin',$row['cin'])->count();
+                    }
+
+                    //tel1 unique
+                    if (!empty($row['telephone'])) {
+                        $prospect_tel=Prospect::on('temp')
+                        ->where(function ($subQuery) use ($row) {
+                            $subQuery->where('telephone',$row['telephone'])
+                                     ->orWhere('telephone_num2', $row['telephone']);
+                        })-> count();
+                    }
+
+                    //tel2 unique
+                    if (!empty($row['telephone_num2'])) {
+                        $prospect_tel2=Prospect::on('temp')
+                        ->where(function ($subQuery) use ($row) {
+                            $subQuery->where('telephone',$row['telephone_num2'])
+                                     ->orWhere('telephone_num2', $row['telephone_num2']);
+                        })-> count();
+                    }
+                    if (!empty($row['email'])) {
+                        $prospect_email=Prospect::on('temp')->where('email',$row['email'])->count();
+                    }
+
+                    if($prospect_cin==0 && $prospect_email==0&&$prospect_tel==0&&$prospect_tel2==0){
+                        $source_id=null;
+                        if(!empty($row['source'])){
+                            $source=Source::on('temp')->where('source',$row['source'])->first();
+                            if($source!=null){
+                                $source_id=$source->id;
+                            }
+                        }
+
+                        $prospect=new Prospect();
+                        $prospect->setConnection("temp");
+                        $prospect->cin = $row['cin'];
+                        $prospect->nom = $row['nom'];
+                        $prospect->prenom = $row['prenom'];
+                        $prospect->telephone = $row['telephone'];
+                        $prospect->telephone_num2 = empty($row['telephone_num2'])?null:$row['telephone_num2'];
+                        $prospect->email = empty($row['email'])?null:$row['email'];
+                        $prospect->origin = 'import';
+                        $prospect->notifie = 0;
+                        $prospect->source = $source_id;
+                        $prospect->partenaire_id =NULL;
+                        $prospect->message = NULL;
+                        $prospect->ville =empty($row['ville'])?null:$row['ville'];;
+                        $prospect->save();
+                        return response()->json('done');
+
+                    }
+
+                }
+
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
     }
 }

@@ -62,6 +62,10 @@ class Visite extends Model
     {
         return $this->hasone(Reservation::class,'visite_id','id');
     }
+    public function frein()
+    {
+        return $this->hasone(Frein::class,'visite_id')->orderby('created_at','desc')->latest();
+    }
 
 
 }

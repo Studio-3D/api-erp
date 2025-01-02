@@ -66,6 +66,7 @@ class HomeController extends Controller
                     ->whereDate('created_at', Carbon::now());
                     if ($projet_id!=0) {
                         $query_v_now->where('projet_id',  $projet_id );
+                        
                     }
                     $nb_visites_now = $query_v_now->count();
 
@@ -362,7 +363,8 @@ class HomeController extends Controller
                         $q->where('projet_id', $projet_id);
                     });
                 }
-                if($us_role!=2){
+                //comercial
+                if($us_role==3){
                     $query_en->where(function($query_n) use($us_id) {
                         $query_n->whereHas('avance', function ($q_com) use ($us_id) {
                             $q_com->where('user_id', $us_id);
@@ -388,7 +390,8 @@ class HomeController extends Controller
                     $q->where('projet_id', $projet_id);
                 });
             }
-            if($us_role!=2){
+              //comercial
+              if($us_role==3){
                 $query_penalite->whereHas('desistement', function ($q_com) use ($us_id) {
                     $q_com->where('user_id', $us_id);
                 });
@@ -409,7 +412,8 @@ class HomeController extends Controller
                     $q->where('projet_id', $projet_id);
                 });
             }
-            if($us_role!=2){
+              //comercial
+              if($us_role==3){
                 $query_remb->whereHas('desistement', function ($q) use ($us_id) {
                     $q->where('user_id', $us_id);
                 });
@@ -429,7 +433,8 @@ class HomeController extends Controller
             if ($projet_id!=0) {
                 $query_nb_visites->where('projet_id',  $projet_id );
             }
-            if($us_role!=2){
+              //comercial
+              if($us_role==3){
                 $query_nb_visites->where('user_id', $us_id);
             }
             $nb_visites = $query_nb_visites->count();
@@ -446,7 +451,8 @@ class HomeController extends Controller
                             ;
                 });
                 }
-                if($us_role!=2){
+                  //comercial
+                  if($us_role==3){
                     $query_nb_appel->where('user_id', $us_id);
                 }
             $nb_appels = $query_nb_appel->count();
@@ -472,7 +478,8 @@ class HomeController extends Controller
             $query_reclamations = DB::connection('mysql_client')->table('reclamations')
            // ->Leftjoin('erp_societe_principal_10.users as users_traite','users_traite.id','=','reclamations.user_id_traite')
             ->Leftjoin('erp_societe_principal_10.reservations','reservations.id','=','reclamations.dossier_id');
-            if($us_role!=2){
+             //comercial
+             if($us_role==3){
                 $query_reclamations->where('reclamations.user_id_traite',$us_id);
             }
             if($projet_id!=null){
@@ -516,7 +523,8 @@ class HomeController extends Controller
                                 ->where('statut',StatutReservationEnum::Validé->value);
                             });
                     }
-                    if($us_role!=2){
+                     //comercial
+                    if($us_role==3){
                         $query_echeances->where('user_id', $us_id);
                     }
             $nb_echeance = count($query_echeances->get());
@@ -548,7 +556,8 @@ class HomeController extends Controller
             if($projet_id!=null){
                 $query_rsv->where('projet_id', $projet_id);
             }
-            if($us_role!=2){
+              //comercial
+            if($us_role==3){
                 $query_rsv->where('user_id', $us_id);
             }
             $nb_rsv = count($query_rsv->get());
@@ -580,7 +589,8 @@ class HomeController extends Controller
             if($projet_id!=null){
                 $query_remis_recement->where('projet_id', $projet_id);
             }
-            if($us_role!=2){
+             //comercial
+            if($us_role==3){
                 $query_remis_recement->where('user_id', $us_id);
             }
             $nb_remise_recement=$query_remis_recement->count();
@@ -646,8 +656,6 @@ class HomeController extends Controller
 
 
          ]);
-        }else{
-
         }
     }
     public function get_nb_biens(Request $request){

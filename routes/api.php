@@ -193,12 +193,14 @@ Route::middleware('auth:api')->group(function () {
        Route::get('projets/{idprojet}/get_clients_freins', [V1FreinController::class, 'get_clients_freins'])->name('');
        Route::get('biens_by_frein/{id}', [V1FreinController::class, 'biens_by_frein'])->name('');
        Route::put('traiter_bien_frein/{bien_id}/{frein_id}', [V1FreinController::class, 'traiter_bien_frein'])->name('');
+       Route::put('desactiver_freins/{id}', [V1FreinController::class, 'desactiver_freins'])->name('');
 
         //l'API prospect
         Route::resource('prospects', V1ProspectController::class);
         Route::get('search_prospect_by_param/{param_1}/{value}', [V1ProspectController::class, 'search_prospect_by_param']);
         Route::get('search_prospect_by_cin/{cin}', [V1ProspectController::class, 'search_prospect_by_cin']);
         Route::get('search_prospect_by_phone/{phone}', [V1ProspectController::class, 'search_prospect_by_phone']);
+        Route::post('upload_excel_prospect', [V1ProspectController::class, 'upload'])->name('');
 
         //l'API client
         Route::resource('clients', V1ClientController::class);
@@ -362,6 +364,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('upload_excel_bien', [V1UploadBienController::class, 'upload'])->name('');
            //Dashboad
         Route::get('dashboard/{projet_id}/{de}/{a}', [V1HomeController::class, 'dashboard'])->name('');
+
 
 
     });
