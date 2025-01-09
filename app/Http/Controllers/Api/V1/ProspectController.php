@@ -15,6 +15,9 @@ use App\Models\Visite;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use App\Models\TraitementFrein;
+use App\Enum\InteretEnum;
+use App\Enum\StatutVisiteEnum;
 
 class ProspectController extends Controller
 {
@@ -224,13 +227,13 @@ class ProspectController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             if ($param_1 == 'cin' || $param_1 == 'email') {
-                $prospect = Prospect::on('temp')->with('visite_pre_reserves', 'visites','visites.frein','visites.frein.freinTranche','visites.frein.FreinEtage','visites.frein.FreinOrientation','visites.frein.FreinTypologie','visites.frein.FreinVue', 'appels')->where($param_1, $value)
+                $prospect = Prospect::on('temp')->with('visite_pre_reserves', 'visites','visites.freins','visites.freins.freinTranche','visites.freins.FreinEtage','visites.freins.FreinOrientation','visites.freins.FreinTypologie','visites.freins.FreinVue', 'appels')->where($param_1, $value)
                     ->get()->first();
                 $client = Client::on('temp')->with('prospect')->where($param_1, $value)->get()->first();
 
             } else {
                 //telephone
-                $prospect = Prospect::on('temp')->with('visite_pre_reserves', 'visites', 'visites.frein','visites.frein.freinTranche','visites.frein.FreinEtage','visites.frein.FreinOrientation','visites.frein.FreinTypologie','visites.frein.FreinVue','appels')
+                $prospect = Prospect::on('temp')->with('visite_pre_reserves', 'visites', 'visites.freins','visites.freins.freinTranche','visites.freins.FreinEtage','visites.freins.FreinOrientation','visites.freins.FreinTypologie','visites.freins.FreinVue','appels')
                     ->where(function ($query) use ($value) {
                         $query->where('telephone', $value)
                             ->orwhere('telephone_num2', $value)
@@ -245,7 +248,19 @@ class ProspectController extends Controller
                     })
                     ->get()->first();
             }
-            return response()->json(['prospect' => $prospect, 'client' => $client]);
+
+            //bien pre reserve par appel on cas des biens disponibles
+            $biens_traitement_freins=[];
+            if($prospect!=null){
+                $biens_traitement_freins = TraitementFrein::on('temp')->with('bien','visite')
+                ->whereHas('visite', function ($q) use ($prospect) {
+                $q->where('prospect_id', $prospect->id);
+                })
+                ->where('interet', InteretEnum::Intéressé->value)
+                ->where('statut', StatutVisiteEnum::Pré_Réservation->value)->orderby('created_at', 'desc')->get(['bien_id', 'id'])->take(1);
+            }
+
+            return response()->json(['prospect' => $prospect, 'client' => $client,'biens_traitement_freins'=>$biens_traitement_freins]);
         }
     }
     public function VisitesByprospect(Request $request, $prospect_id)

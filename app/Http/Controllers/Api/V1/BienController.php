@@ -690,6 +690,58 @@ class BienController extends Controller
         }
     }
 
+    public function pre_reservations_index(Request $request, $projet_id)
+    {
+        if (Auth::guard('api')->check()) {
+            $size = $request->input('size', null);
+            $page = $request->input('page', null);
+            DatabaseHelper::Config();
+
+            // Démarrer la requête directement sur le modèle
+            $query = PreReservation::on('temp')->with('bien','visite','visite.rdv_relation');
+            $query->whereHas('bien', function ($subQuery) use ($projet_id) {
+                $subQuery->where('projet_id', $projet_id);
+            });
+            $query->whereHas('visite', function ($subQuery)  {
+                $subQuery->where('statut',1);
+            });
+            if ($request->filled('nature_travaux')) {
+                $query->where('nature_travaux', 'like', '%' . $request->input('nature_travaux') . '%');
+            }
+
+            if ($request->filled('cout')) {
+                $query->where('cout',  $request->input('cout') );
+            }
+            if ($request->filled('date_validation')) {
+                $start = Carbon::parse($request->input('date_validation'));
+                $query->whereDate('date_validation', $start);
+            }
+
+            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+                $biens = $query->orderBy('created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
+
+                // Extraire les propriétés du paginateur
+                $pagination = [
+                    'currentPage' => $biens->currentPage(),
+                    'totalItems' => $biens->total(),
+                    'totalPages' => $biens->lastPage(),
+                ];
+
+                // Extraire les éléments d'utilisateur du paginateur
+                $biens = $biens->items();
+
+                // Retourner la réponse simplifiée
+                return response()->json([
+                    'data' => $biens,
+                    'pagination' => $pagination,
+                ], 200);
+            }
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
     public function libere_bien_frein($id)
     {
         if (Auth::guard('api')->check()) {

@@ -28,9 +28,8 @@ class UpdateVisiteRequest extends FormRequest
         $rules['nom']='required|string';
         $rules['prenom']='required|string';
         $rules['interet']='required';
-        if ($request->telephone_num2) {
-            $rules['telephone_num2']='min:10|max:14';
-        }
+        $rules['telephone_num2'] = 'nullable';
+
         if ($request->source_txt==='PARTENAIRE') {
             $rules['partenaire_id']='required';
         }

@@ -879,7 +879,7 @@ class VisiteController extends Controller
                     $visite['frein']=$frein->searchFreinByVisiteId($visite->id,'without_row_deleted');
                 }
 
-                $relatedVisites=Visite::on('temp')->with('pre_reservation_visite','relance_relation','rdv_relation','reservation')->where('origin_id',$visite->id)->where('etat',1)->orderby('created_at', 'DESC')->get();
+                $relatedVisites=Visite::on('temp')->with('pre_reservation_visite','relance_relation','rdv_relation','reservation','traitement_frein','traitement_frein.bien','traitement_frein.rdv_relation','traitement_frein.frein')->where('origin_id',$visite->id)->where('etat',1)->orderby('created_at', 'DESC')->get();
 
                 foreach ($relatedVisites as $relatedVisite) {
                     if ($relatedVisite->interet == InteretEnum::Perdu->value) {
@@ -1281,6 +1281,7 @@ class VisiteController extends Controller
                         'avance' => $request->avance_res,
                         'mode_paiement' => $request->mode_paiement,
                         'numero_paiement' => $request->numero_paiement,
+
                         'date_reglement' => $request->date_reglement,
                         'echeance' => $request->echeance,
                         'banque_id' => $request->banque_id,
@@ -1292,6 +1293,7 @@ class VisiteController extends Controller
                     $reservationRequest->merge($dataReservation);
                     $reservationController->store($reservationRequest);
 
+                   
 
             }
             // }

@@ -118,7 +118,7 @@ Route::middleware('auth:api')->group(function () {
         Route::put('desactivateUser/{id}', [V1UserController::class, 'desactivateUser'])->name('desactivateUser');
         Route::get('commerciaux_objectif/{projet_id}', [V1UserController::class, 'list_commerciaux_objectif'])->name('');
         Route::get('commerciaux/{projet_id}', [V1UserController::class, 'list_commerciaux'])->name('');
-        
+
         // l'API societes
         Route::resource('societes', V1SocieteController::class);
         // l'API typeProjets
@@ -177,6 +177,7 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('libererBien/{id}', [V1BienController::class, 'libererBien_function'])->name('libererBien');
         Route::put('setPropostionBien/{id}/{old_id}', [V1BienController::class, 'setPropostionBien'])->name('');
         Route::get('projets/{idprojet}/getBiensByTranche_tva', [V1BienController::class, 'getBiensByTranche_tva'])->name('');
+        Route::get('projets/{idprojet}/pre_reservations', [V1BienController::class, 'pre_reservations_index']);
 
         //l'API compositionbiens
         Route::resource('compositionBiens', V1CompositionBienController::class);
@@ -189,11 +190,14 @@ Route::middleware('auth:api')->group(function () {
         Route::get('get_oldBien_visite_pre_reserve/{origin_id}', [V1VisiteController::class, 'get_oldBien_visite_pre_reserve'])->name('');
         Route::get('projets/{idprojet}/relances_rdv_visites', [V1VisiteController::class, 'get_relances_rdv_visites'])->name('');
         Route::put('traiter_relance_rdv_visite/{id}', [V1VisiteController::class, 'traiter_relance_rdv_visite'])->name('');
-            /****************************Frein*****************************/
+        Route::get('relance_rdv_by_visite/{id}', [V1VisiteController::class, 'relance_rdv_by_visite'])->name('');
+        Route::get('get_historiques_visite/{origin_id}', [V1VisiteController::class, 'get_historiques'])->name('get_historiques');
+
+        /****************************Frein*****************************/
        Route::resource('frein', V1FreinController::class);
        Route::get('projets/{idprojet}/get_clients_freins', [V1FreinController::class, 'get_clients_freins'])->name('');
        Route::get('biens_by_frein/{id}', [V1FreinController::class, 'biens_by_frein'])->name('');
-       Route::put('traiter_bien_frein/{bien_id}/{frein_id}', [V1FreinController::class, 'traiter_bien_frein'])->name('');
+       Route::put('traiter_bien_frein/{frein_id}', [V1FreinController::class, 'traiter_bien_frein'])->name('');
        Route::put('desactiver_freins/{id}', [V1FreinController::class, 'desactiver_freins'])->name('');
 
         //l'API prospect
@@ -365,7 +369,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('upload_excel_bien', [V1UploadBienController::class, 'upload'])->name('');
            //Dashboad
         Route::get('dashboard/{projet_id}/{de}/{a}', [V1HomeController::class, 'dashboard'])->name('');
-
+            //pre reservation
 
 
     });
@@ -475,17 +479,6 @@ Route::middleware('auth:api')->group(function () {
     Route::post('restoreTypeBien/{id}', [TypeBienController::class, 'restoreTypeBien'])->name('restoreTypeBien');
     Route::get('getTrashedTypesBien', [TypeBienController::class, 'getTrashedTypesBien'])->name('getTrashedTypesBien');
     Route::get('TypeBiens/{projet_id}', [TypeBienController::class, 'index'])->name('TypeBiens');
-
-    /*************************************Visite***************************** */
-    Route::resource('visite', VisiteController::class);
-    Route::get('visites/{projet_id}', [VisiteController::class, 'index'])->name('visites');
-    Route::get('relance_rdv_by_visite/{id}', [VisiteController::class, 'relance_rdv_by_visite'])->name('');
-    Route::post('store_n_visite/{id}', [VisiteController::class, 'store_n_visite'])->name('store_n_visite');
-    Route::get('getAllAttributes', [VisiteController::class, 'getAllAttributes'])->name('getAllAttributes');
-    Route::get('get_historiques_visite/{origin_id}', [VisiteController::class, 'get_historiques'])->name('get_historiques');
-    //Route::put('traiter_relance_rdv_visite/{id}', [VisiteController::class, 'traiter_relance_rdv_visite'])->name('');
-    Route::get('get_oldBien_visite_pre_reserve/{origin_id}', [VisiteController::class, 'get_oldBien_visite_pre_reserve'])->name('');
-    Route::put('update_visite_bien_pre_reserve/{origin_id}', [VisiteController::class, 'update_visite_bien_pre_reserve'])->name('');
 
     /*************************************type_Freins***************************** */
     Route::resource('type_freins', TypeFreinController::class);

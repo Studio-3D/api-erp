@@ -20,6 +20,7 @@ use App\Models\TypeBien;
 use App\Models\CompositionBien;
 use Illuminate\Support\Facades\Log;
 
+use App\Models\TraitementFrein;
 
 
 
@@ -173,7 +174,6 @@ class Bien_Helper
             $bien->superficie_vendable=$bien->superficie_habitable+$bien->superficie_balcon_calculer+$bien->superficie_terrasse_calculer;
             $bien->prix=$bien->prix_unitaire*$bien->superficie_total+$bien->prix_parking+ $bien->prix_box;
             $bien->etat='disponible';
-            $bien->save();
             if($bien->save()){
                 $nb_chambre=0;
                 $nb_salon=0;
@@ -233,7 +233,7 @@ class Bien_Helper
                 }
 
 
-
+                Bien_Helper::store_bien_frein($bien->id,'import');
 
                 /*if (array_key_exists("composition",$row)){
                     $pattern = "/[,\s.]/";
@@ -350,6 +350,35 @@ class Bien_Helper
 
                     }
             }
+            //traitement Frein
+            $traitement_frein=TraitementFrein::on('temp')->where('bien_id',$id)->where('interet',InteretEnum::Intéressé->value)->where('statut',1)->orderBy('created_at', 'DESC')->first();
+            if($traitement_frein!=null){
+                $traitement_frein->statut=StatutVisiteEnum::Pré_Réservation_Perdu->value;
+                $traitement_frein->save();
+                //SUPPRIMER LES OLDS NOTIF
+                $notif_old_relance=Notification::on('temp')->where(function ($query){
+                    $query->where('type',1)
+                        ->orwhere('type',2);})
+                    ->where(function ($query_2) use($traitement_frein){
+                            $query_2->where('visite_id',$traitement_frein->visite_id);})
+                    ->get();
+                    if(($notif_old_relance->count())>0){
+                       foreach($notif_old_relance as $nt_r){
+                        $nt_r->delete();
+                       }
+                    }
+                /***RENDRE LES OLD RELANCES ET OLD RDV EN TRAITE AUTOMATIQUE****/
+                    $old_relances_rdv=Relance_Rdv_visite::on('temp')->where('visite_id',$traitement_frein->visite_id)->where('type_traitement',0)->get();
+                    if(count($old_relances_rdv)>0){
+                        foreach($old_relances_rdv as $old){
+                            $old->type_traitement=2;//auto
+                            $old->date_traitement=Carbon::now();
+                            $old->user_id_traite=null;
+                            $old->save();
+                        }
+
+                    }
+            }
         }
         if($text=='console'){
             HistoriqueBienHelper::createHistoriqueBien(1, "liberation automatique",$id,NULL,NULL,NULL);
@@ -381,7 +410,7 @@ class Bien_Helper
         'frein_orientations.orientation','frein_typologies.typologie_id','frein_vues.vue_id','freins.avance as fr_avance'
         )
         ->where('visites.projet_id', $bien->projet_id)
-        ->whereIN('freins.etat', [1,2])
+        ->whereIN('freins.etat', [1,2,6])
         ->where('visites.etat', 1)
         ->get();
 

@@ -62,9 +62,15 @@ class Visite extends Model
     {
         return $this->hasone(Reservation::class,'visite_id','id');
     }
-    public function frein()
+    //frein used on cas de store n visite 
+    public function freins()
     {
-        return $this->hasone(Frein::class,'visite_id')->orderby('created_at','desc')->latest();
+        return $this->hasone(Frein::class,'visite_id')->where('etat','!=',5)->orderby('created_at','desc')->latest();
+    }
+
+    public function traitement_frein()
+    {
+        return $this->hasMany(TraitementFrein::class,'visite_id','id')->orderby('created_at','asc');
     }
 
 
