@@ -42,6 +42,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
 use \NumberFormatter;
+use App\Models\TraitementFrein;
 
 class VisiteController extends Controller
 {
@@ -221,7 +222,11 @@ class VisiteController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $biens_visite = Visite::on('temp')->where('origin_id', $origin_id)->where('interet', InteretEnum::Intéressé->value)->where('etat', 1)->where('statut', StatutVisiteEnum::Pré_Réservation->value)->orderby('created_at', 'desc')->get(['bien_id', 'id']);
-            return response()->json(['biens_visite' => $biens_visite], 200);
+            //bien pre reserve par appel on cas des biens disponibles
+            $biens_traitement_freins = TraitementFrein::on('temp')->with('bien')->where('origin_id', $origin_id)
+            ->where('interet', InteretEnum::Intéressé->value)
+            ->where('statut', StatutVisiteEnum::Pré_Réservation->value)->orderby('created_at', 'desc')->get(['bien_id', 'id'])->take(1);
+            return response()->json(['biens_visite' => $biens_visite,'biens_traitement_freins'=>$biens_traitement_freins], 200);
         }
     }
     public function update_visite_bien_pre_reserve($id, Request $request)
@@ -233,11 +238,18 @@ class VisiteController extends Controller
 
                 if ($list['action'] == 2) {
                     $bien = Bien::on('temp')->findorfail($list['bien_id']);
-                    $bien->etat = EtatBien::DISPONIBLE->value;
+                    //$bien->etat = EtatBien::DISPONIBLE->value;
                     if ($bien->save()) {
-                        $visite = Visite::on('temp')->findorfail($list['visite_id']);
-                        $visite->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
-                        $visite->save();
+                        if(isset($list['visite_id'])){
+                            $visite = Visite::on('temp')->findorfail($list['visite_id']);
+                            $visite->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
+                            $visite->save();
+                        }else if(isset($list['traitement_frein_id'])){
+                            $t_f = TraitementFrein::on('temp')->findorfail($list['traitement_frein_id']);
+                            $t_f->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
+                            $t_f->save();
+                        }
+
                     }
 
                 }
@@ -389,32 +401,7 @@ class VisiteController extends Controller
                                 $relance->visite_id = $visite->id;
                                 $relance->save();
                             }
-                            if ($request->rdv != null) {
-                                $data_notif = [
-                                    'lien' => '/visites/show/' . $visite->origin_id,
-                                    'date' => $request->rdv,
-                                    'type' => 2,
-                                    'description' => 'RDV VISITE',
-                                    'user_id' => Auth::guard('api')->user()->id,
-                                    'role' => null,
-                                    'visite_id' => $visite->getAttribute('id'),
-                                    'prospect_id' => $visite->prospect_id,
-                                    'projet_id' => $visite->projet_id,
 
-                                ];
-                                $notif_helper = new NotificationHelper();
-                                $notif_helper->storeNotification($request->merge($data_notif));
-
-                                broadcast(new NotificationEvent($visite->id));
-                                $rdv = new Relance_Rdv_visite();
-                                $rdv->setConnection('temp');
-                                $rdv->type = 2; //rdv
-                                $rdv->rdv = $request->rdv;
-                                $rdv->type_traitement = 0; //0 non_traite 1//mnuelle 2// auto //3 nouvel relance_rdv
-                                $rdv->user_id = $userAuth->value('id');
-                                $rdv->visite_id = $visite->id;
-                                $rdv->save();
-                            }
                         }
                         if ($visite->interet == InteretEnum::Perdu->value) {
 
@@ -864,11 +851,19 @@ class VisiteController extends Controller
 
                                 }
 
-                                //set old visite to pre _reservation_vendu
 
-                                $old_visite_transfere = Visite::on('temp')->findorfail($list_biens['visite_id']);
-                                $old_visite_transfere->statut = StatutVisiteEnum::Pré_Réservation_Vendu->value;
-                                $old_visite_transfere->save();
+
+
+                                 //set old visite to pre _reservation_vendu
+                                 if(isset($list_biens['visite_id'])){
+                                    $old_visite_transfere = Visite::on('temp')->findorfail($list_biens['visite_id']);
+                                    $old_visite_transfere->statut = StatutVisiteEnum::Pré_Réservation_Vendu->value;
+                                    $old_visite_transfere->save();
+                                }else if(isset($list_biens['traitement_frein_id'])){
+                                    $t_f = TraitementFrein::on('temp')->findorfail($list_biens['traitement_frein_id']);
+                                    $t_f->statut = StatutVisiteEnum::Pré_Réservation_Vendu->value;
+                                    $t_f->save();
+                                }
                             }
                             //convert appel to visite
                             //store visite_id to ==>traitement_appel
@@ -991,32 +986,34 @@ class VisiteController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
 
-            $visite = Visite::on('temp')->with('relance_relation', 'rdv_relation', 'reservation')->findOrfail($id);
-            $frein = new FreinController();
-            if ($visite->interet == InteretEnum::Perdu->value) {
-                $visite['frein'] = $frein->searchFreinByVisiteId($visite->id, 'without_row_deleted');
-            }
 
-            $relatedVisites = Visite::on('temp')->with('pre_reservation_visite', 'relance_relation', 'rdv_relation', 'reservation')->where('origin_id', $visite->id)->where('etat', 1)->orderby('created_at', 'DESC')->get();
-
-            foreach ($relatedVisites as $relatedVisite) {
-                if ($relatedVisite->interet == InteretEnum::Perdu->value) {
-                    $frein_v = $frein->searchFreinByVisiteId($relatedVisite->id, 'without_row_deleted');
-                    $relatedVisite['frein'] = $frein_v;
+            $visite = Visite::on('temp')->with('relance_relation','rdv_relation','reservation')->findOrfail($id);
+            $frein=new FreinController();
+                if($visite->interet==InteretEnum::Perdu->value) {
+                    $visite['frein']=$frein->searchFreinByVisiteId($visite->id,'without_row_deleted');
                 }
-            }
-            $relatedVisites_show = Visite::on('temp')->with('pre_reservation_visite', 'relance_relation', 'rdv_relation', 'reservation')->where('origin_id', $visite->id)->where('etat', 1)->where('show', 1)->orderby('created_at', 'DESC')->get();
-            //get nom propriete _dite_bien concat utilisé dans edit visite
-            $propriete = null;
-            if ($visite->bien_id != null) {
-                $propriete = $this->get_propriete_bien_concat($visite->bien_id);
-            }
 
-            return response()->json(['visite' => $visite, 'propriete_dite_bien' => $propriete, 'visites' => $relatedVisites, 'visites_show' => $relatedVisites_show], 200);
+                $relatedVisites=Visite::on('temp')->with('freins','pre_reservation_visite','relance_relation','rdv_relation','reservation','traitement_frein','traitement_frein.bien','traitement_frein.rdv_relation','traitement_frein.frein')->where('origin_id',$visite->id)->where('etat',1)->orderby('created_at', 'DESC')->get();
+
+                foreach ($relatedVisites as $relatedVisite) {
+                    if ($relatedVisite->interet == InteretEnum::Perdu->value) {
+                        $frein_v = $frein->searchFreinByVisiteId($relatedVisite->id,'without_row_deleted');
+                        $relatedVisite['frein'] = $frein_v;
+                    }
+                }
+                $relatedVisites_show=Visite::on('temp')->with('pre_reservation_visite','relance_relation','rdv_relation','reservation')->where('origin_id',$visite->id)->where('etat',1)->where('show',1)->orderby('created_at', 'DESC')->get();
+                //get nom propriete _dite_bien concat utilisé dans edit visite
+                $propriete=null;
+                if($visite->bien_id!=null){
+                    $propriete= $this->get_propriete_bien_concat($visite->bien_id);
+                }
+
+            return response()->json(['visite' => $visite,'propriete_dite_bien' => $propriete,'visites'=>$relatedVisites,'visites_show'=>$relatedVisites_show], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+
 
     public static function traiter_relance_rdv_visite($id, UpdateDate_relance_Rdv $request)
     {
@@ -1490,9 +1487,8 @@ class VisiteController extends Controller
 
     }
     //store n visite
-    public function store_n_visite($id, Request $request)
+    public function store_n_visite($id, Store_n_VisiteRequest $request)
     {
-
         DatabaseHelper::Config();
         Config::set('broadcasting.default', 'pusher_3');
         $originalVisite = Visite::on('temp')->find($id);
@@ -1579,33 +1575,6 @@ class VisiteController extends Controller
                                 $relance->user_id = $userAuth->value('id');
                                 $relance->visite_id = $newVisit->id;
                                 $relance->save();
-                            }
-                            if ($request->rdv != null) {
-                                $data_notif = [
-                                    'lien' => '/visites/show/' . $newVisit->origin_id,
-                                    'date' => $request->rdv,
-                                    'type' => 2,
-                                    'description' => 'RDV VISITE',
-                                    'user_id' => Auth::guard('api')->user()->id,
-                                    'role' => null,
-                                    'visite_id' => $newVisit->id,
-                                    'prospect_id' => $newVisit->prospect_id,
-                                    'projet_id' => $newVisit->projet_id,
-
-                                ];
-                                $notif_helper = new NotificationHelper();
-                                $notif_helper->storeNotification($request->merge($data_notif));
-
-                                broadcast(new NotificationEvent($newVisit->id));
-
-                                $rdv = new Relance_Rdv_visite();
-                                $rdv->setConnection('temp');
-                                $rdv->type = 2; //rdv
-                                $rdv->rdv = $request->rdv;
-                                $rdv->type_traitement = 0; //0 non_traite 1//mnuelle 2// auto //3 nouvel relance_rdv
-                                $rdv->user_id = $userAuth->value('id');
-                                $rdv->visite_id = $newVisit->id;
-                                $rdv->save();
                             }
                         }
                         $old_visites = Visite::on('temp')->where('origin_id', $id)->where('id', '!=', $newVisit->id)->orderBy('created_at', 'DESC')->get();
@@ -1949,10 +1918,16 @@ class VisiteController extends Controller
 
                                 }
                                 //set old visite to pre _reservation_vendu
+                                if(isset($list_biens['visite_id'])){
+                                    $old_visite_transfere = Visite::on('temp')->findorfail($list_biens['visite_id']);
+                                    $old_visite_transfere->statut = StatutVisiteEnum::Pré_Réservation_Vendu->value;
+                                    $old_visite_transfere->save();
+                                }else if(isset($list_biens['traitement_frein_id'])){
+                                    $t_f = TraitementFrein::on('temp')->findorfail($list_biens['traitement_frein_id']);
+                                    $t_f->statut = StatutVisiteEnum::Pré_Réservation_Vendu->value;
+                                    $t_f->save();
+                                }
 
-                                $old_visite_transfere = Visite::on('temp')->findorfail($list_biens['visite_id']);
-                                $old_visite_transfere->statut = StatutVisiteEnum::Pré_Réservation_Vendu->value;
-                                $old_visite_transfere->save();
                             }
                         }
                     }

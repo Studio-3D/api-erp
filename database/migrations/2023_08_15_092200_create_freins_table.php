@@ -17,7 +17,7 @@ return new class extends Migration
             $table->double('prix_max', 12, 2)->nullable();
             $table->double('superficie_min', 12, 2)->nullable();
             $table->double('superficie_max', 12, 2)->nullable();
-            $table->boolean('etat')->default(false)->comment('1 attent 2 existe_bien_disponible 3=>traite 4=>descativé par user');
+            $table->boolean('etat')->default(false)->comment('1 attent 2 existe_bien_disponible 3=>traite 4=>descativé par user  5 =>desactive par appel en frein bien disponible 6=>create new frein by appel bien disponible');
             $table->double('avance')->nullable();
             $table->boolean('tranche')->default(false);
             $table->boolean('orientation' )->default(false);

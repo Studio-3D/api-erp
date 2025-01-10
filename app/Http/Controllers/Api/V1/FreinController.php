@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Http\Controllers\Api\V1;
-
+use Carbon\Carbon;
+use App\Events\NotificationEvent;
 use App\Events\NotifMenuEvent;
 use App\Http\Controllers\Controller;
 use App\Http\Helpers\DatabaseHelper;
@@ -18,6 +19,8 @@ use App\Http\Requests\StoreFreinRequest;
 use App\Http\Requests\Traite_Bien_freinRequest;
 use App\Http\Requests\UpdateFreinRequest;
 use App\Models\Frein;
+use App\Models\TraitementFrein;
+use App\Models\Visite;
 use App\Models\FreinEtage;
 use App\Models\FreinOrientation;
 use App\Models\FreinTranche;
@@ -28,6 +31,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use App\Models\User;
+use App\Enum\InteretEnum;
+use App\Http\Helpers\Bien_Helper;
+use App\Models\Relance_Rdv_visite;
+
 
 class FreinController extends Controller
 {
@@ -77,7 +84,6 @@ class FreinController extends Controller
             $frein->vue = empty($request->selectedVues) ? false : true;
             $frein->typologie = empty($request->selectedTypologies) ? false : true;
             if ($frein->save()) {
-
                 if (!empty($request->selectedTranches)) {
                     $tranches_array = explode(',', $request->selectedTranches); // $tranches_array sera ['5', '2']
                     foreach ($tranches_array as $valeur) {
@@ -590,6 +596,7 @@ class FreinController extends Controller
                 });
             }
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+                $all_biens= $query->orderBy('created_at', 'desc')->get();
                 $biens = $query->orderBy('created_at', 'desc')
                     ->paginate($size, ['*'], 'page', $page);
 
@@ -605,6 +612,7 @@ class FreinController extends Controller
 
                 // Retourner la réponse simplifiée
                 return response()->json([
+                    'all_biens'=>$all_biens,
                     'data' => $biens,
                     'pagination' => $pagination,
                 ], 200);
@@ -614,26 +622,220 @@ class FreinController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-    public function traiter_bien_frein(Traite_Bien_freinRequest $request, $bien_id, $frein_id)
+    public function traiter_bien_frein(Traite_Bien_freinRequest $request, $frein_id)
     {
 
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $frein = Frein::on('temp')->findOrFail($frein_id);
-            if ($request->pre_reserve == 1) {
-                $bien = new BienController();
-                $bien->prereserverBien($bien_id, null, null);
-            }
-            $frein->etat = 3;
-            $frein->commentaire = $request->commentaire;
-            if ($frein->save()) {
-                //destroy frein bien
-                FreinBienHelper::destroyFreinBien($frein_id);
-                //notification des biens disponible pour ce frein
-                NotificationHelper::destroy_notif_bien_dispo_frein($frein->visite_id);
-            }
-            Config::set('broadcasting.default', 'pusher_5');
-            broadcast(new NotifMenuEvent('C'));
+            $user = Auth::user();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $frein = Frein::on('temp')->with('visite.traitement_frein')->findOrFail($frein_id);
+            //store traitement frein
+            //si ya aucun traitement Frein on store ancien donnee de frein (hisorique)
+               /* if(count($frein->visite->traitement_frein)==0){
+                    $t_f = new TraitementFrein();
+                    $t_f->setConnection('temp');
+                    $t_f->visite_id=$frein->visite_id;
+                    $t_f->frein_id=$frein_id;
+                     $t_f->origin_id=$frein->visite->origin_id;
+                    $t_f->commentaire=$frein->commentaire;
+                    $t_f->interet=3;
+                    $t_f->date=$frein->visite->created_at;
+                    $t_f->user_id=$frein->visite->user_id;
+                    $t_f->save();
+                }*/
+                // store le new Traitement
+                $t_f = new TraitementFrein();
+                $t_f->setConnection('temp');
+                $t_f->visite_id=$frein->visite_id;
+                $t_f->origin_id=$frein->visite->origin_id;
+                $t_f->frein_id=$frein_id;
+                $t_f->commentaire=$request->commentaire;
+                $t_f->interet=$request->interet;
+                $t_f->date=Carbon::now();
+                if($t_f->interet==1){
+                    //pre reservation
+                    $t_f->statut=1;
+                    $t_f->bien_id=$request->bien_id;
+                }
+                $t_f->user_id= $userAuth->value('id');
+                if($t_f->save()){
+                    //set ancien relance to traite automatique
+                    /***RENDRE LES OLD RELANCES ET OLD RDV EN TRAITE AUTOMATIQUE****/
+                    $old_relances_rdv=Relance_Rdv_visite::on('temp')->where('visite_id',$frein->visite->id)->where('type_traitement',0)->get();
+                    if(count($old_relances_rdv)>0){
+                        foreach($old_relances_rdv as $old){
+                            $old->type_traitement=2;//auto
+                            $old->date_traitement=Carbon::now();
+                            $old->user_id_traite=$userAuth->value('id');
+                            $old->save();
+                        }
+                    }
+                    //receptif
+                    if ($request->interet == InteretEnum::Réceptif->value || $request->interet == InteretEnum::Perdu->value) {
+                        //rendre bien disponible si interet!=Intéressé ==>Réceptif ou Perdu
+                        if ($request->list_biens_clickable) {
+                            foreach ($request->list_biens_clickable as $key => $bien_id) {
+                                if ($bien_id) {
+                                    Bien_Helper::libererBien($bien_id, null, null);
+                                }
+                            }
+                        }
+                        //receptif
+                        if ($request->interet == InteretEnum::Réceptif->value) {
+                            if ($request->date_relance != null) {
+                              //  Config::set('broadcasting.default', 'pusher_3');
+                                $data_notif = [
+                                    'lien' => '/visites/show/' . $frein->visite->origin_id,
+                                    'date' => $request->date_relance,
+                                    'type' => 1,
+                                    'description' => 'RELANCE VISITE',
+                                    'user_id' => Auth::guard('api')->user()->id,
+                                    'role' => null,
+                                    'visite_id' => $frein->visite->getAttribute('id'),
+                                    'prospect_id' => $frein->visite->prospect_id,
+                                    'projet_id' => $frein->visite->projet_id,
+
+                                ];
+                                $notif_helper = new NotificationHelper();
+                                $notif_helper->storeNotification($request->merge($data_notif));
+                               // broadcast(new NotificationEvent($frein->visite->id));
+
+                                $relance = new Relance_Rdv_visite();
+                                $relance->setConnection('temp');
+                                $relance->type = 1; //relance
+                                $relance->mode_relance = $request->mode_relance;
+                                $relance->date_relance = $request->date_relance;
+                                $relance->type_traitement = 0; //0 non_traite 1//mnuelle 2// auto //3 nouvel relance_rdv
+                                $relance->user_id = $userAuth->value('id');
+                                $relance->visite_id = $frein->visite->id;
+                                if($relance->save()){
+                                    $t_f->setConnection('temp');
+                                    $t_f->relance_rdv_id=$relance->id;
+                                    $t_f->save();
+                                }
+
+
+                            }
+
+                        }else{
+                            //perdu store new frein
+
+                            $frein_new = new Frein();
+                            $frein_new->setConnection('temp');
+                            $frein_new->prix_min = $request->prix_min;
+                            $frein_new->prix_max = $request->prix_max;
+                            $frein_new->superficie_min = $request->sup_min;
+                            $frein_new->superficie_max = $request->sup_max;
+                            //create new frein by appel bien disponible
+                            $frein_new->etat = 6;
+                            $frein_new->avance = $request->avance;
+                            $frein_new->visite_id = $frein->visite_id;
+                            $frein_new->traite_appel_id =null;
+                            $frein_new->tranche = empty($request->tranches) ? false : true;
+                            $frein_new->etage = empty($request->etages) ? false : true;
+                            $frein_new->orientation = empty($request->orientations) ? false : true;
+                            $frein_new->vue = empty($request->vues) ? false : true;
+                            $frein_new->typologie = empty($request->typologies) ? false : true;
+                            if ($frein_new->save()) {
+
+                                if (!empty($request->tranches)) {
+                                    $tranches_array = explode(',', $request->tranches); // $tranches_array sera ['5', '2']
+                                    foreach ($tranches_array as $valeur) {
+                                        FreinTrancheHelper::createFreinTranche($valeur, $frein_new->id);
+                                    }
+                                }
+                                if (!empty($request->etages)) {
+                                    $array_etage = explode(',', $request->etages); // $tranches_array sera ['5', '2']
+                                    foreach ($array_etage as $valeur) {
+                                        FreinEtageHelper::createFreinEtage($valeur, $frein_new->id);
+                                    }
+                                }
+                                if (!empty($request->orientations)) {
+                                    $array_orientation = explode(',', $request->orientations); // $tranches_array sera ['5', '2']
+                                    foreach ($array_orientation as $valeur) {
+                                        FreinOrientationHelper::createFreinOrientation($valeur, $frein_new->id);
+                                    }
+                                }
+                                if (!empty($request->typologies)) {
+                                    $array_typologie = explode(',', $request->typologies); // $tranches_array sera ['5', '2']
+                                    foreach ($array_typologie as $valeur) {
+                                        FreinTypologieHelper::createFreinTypologie($valeur, $frein_new->id);
+                                    }
+                                }
+                                if (!empty($request->vues)) {
+                                    $array_vue = explode(',', $request->vues); // $tranches_array sera ['5', '2']
+                                    foreach ($array_vue as $valeur) {
+                                        FreinVueHelper::createFreinVue($valeur,
+                                        $frein_new->id);
+                                    }
+                                }
+                                $t_f->setConnection('temp');
+                                //desactiver par appel et re create new frein
+                                $t_f->frein_id=$frein_new->id;
+                                $t_f->save();
+                            }
+                            $frein->setConnection('temp');
+                            //desactiver par appel et re create new frein
+                            $frein->etat = 5;
+                            if ($frein->save()) {
+                                //destroy frein bien
+                                FreinBienHelper::destroyFreinBien($frein_id);
+                                //notification des biens disponible pour ce frein
+                                NotificationHelper::destroy_notif_bien_dispo_frein($frein->visite_id);
+                            }
+
+                        }
+
+                    }
+                    else{
+                            //interesse
+                            if ($request->rdv != null) {
+                                //Config::set('broadcasting.default', 'pusher_3');
+
+                                $data_notif = [
+                                    'lien' => '/visites/show/' . $frein->visite->origin_id,
+                                    'date' => $request->rdv,
+                                    'type' => 2,
+                                    'description' => 'RDV VISITE',
+                                    'user_id' => Auth::guard('api')->user()->id,
+                                    'role' => null,
+                                    'visite_id' => $frein->visite->getAttribute('id'),
+                                    'prospect_id' => $frein->visite->prospect_id,
+                                    'projet_id' => $frein->visite->projet_id,
+
+                                ];
+                                $notif_helper = new NotificationHelper();
+                                $notif_helper->storeNotification($request->merge($data_notif));
+
+                               // broadcast(new NotificationEvent($frein->visite->id));
+                                $rdv = new Relance_Rdv_visite();
+                                $rdv->setConnection('temp');
+                                $rdv->type = 2; //rdv
+                                $rdv->rdv = $request->rdv;
+                                $rdv->type_traitement = 0; //0 non_traite 1//mnuelle 2// auto //3 nouvel relance_rdv
+                                $rdv->user_id = $userAuth->value('id');
+                                $rdv->visite_id = $frein->visite->id;
+                                if($rdv->save()){
+                                    $t_f->setConnection('temp');
+                                    $t_f->relance_rdv_id=$rdv->id;
+                                    $t_f->save();
+                                }
+
+                            }
+                            $bien = new BienController();
+                            $bien->prereserverBien($request->bien_id, $frein->visite_id, null);
+                            $frein->etat = 3;
+                            if ($frein->save()) {
+                                //destroy frein bien
+                                FreinBienHelper::destroyFreinBien($frein_id);
+                                //notification des biens disponible pour ce frein
+                                NotificationHelper::destroy_notif_bien_dispo_frein($frein->visite_id);
+                            }
+
+                    }
+
+                }
 
             return response()->json(['message' => $frein], 200);
 
