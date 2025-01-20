@@ -118,7 +118,7 @@ class SocieteController extends Controller
             Config::set('broadcasting.default', 'pusher_1');
             // $societes = Societe::all();
             broadcast(new NewSocieteEvent($societe->id));
-            return response()->json(['message' => $societe], 200);
+            return response()->json(['societe' => $societe], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
