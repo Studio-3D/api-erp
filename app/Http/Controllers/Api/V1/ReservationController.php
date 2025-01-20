@@ -37,6 +37,8 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use \NumberFormatter;
 use App\Models\Desistement;
+use Illuminate\Validation\Rule;
+
 class ReservationController extends Controller
 {
     /**
@@ -249,6 +251,13 @@ class ReservationController extends Controller
                     return response()->json(['error_33' => 'le bien choisi :' . $bien_prop->propriete_dite_bien . ' est en cours de proposition  par : ' . $bien_prop->is_proposed->user->name . ' ' . $bien_prop->is_proposed->user->prenom], 333);
                 }
 
+            }
+            if ($request->has('code_reservation')) {
+                $request->validate([
+                    'code_reservation' => [
+                        Rule::unique('reservations')->where('etat',1)->whereNull('deleted_at'),
+                    ],
+                ]);
             }
             $reservation = new Reservation();
             $reservation->setConnection('temp');
@@ -579,13 +588,15 @@ class ReservationController extends Controller
         if (Auth::guard('api')->check()) {
 
             DatabaseHelper::Config();
-            $pj = PiecesJointe::on('temp')->where('reservation_id', $id)->get();
+            $reservation=Reservation::on('temp')->findOrFail($id);
+            if($reservation->etat==1){
+                $data=$reservation->piece_jointe;
+            }else{
+                $data=$reservation->piece_jointe_desiste;
+            }
             return response()->json([
-                'data' =>  $pj,
-
-
+                'data' => $data,
             ], 200);
-
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -632,9 +643,16 @@ class ReservationController extends Controller
 
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
+            $reservation = Reservation::on('temp')->findOrFail($id);
+            if ($request->has('code_reservation')) {
+                $request->validate([
+                    'code_reservation' => [
+                        Rule::unique('reservations')->ignore($reservation->id)->where('etat',1)->whereNull('deleted_at'),
+                    ],
+                ]);
+            }
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            $reservation = Reservation::on('temp')->findOrFail($id);
             $old_bien_id = $reservation->bien_id;
             //test si le user connecte celui qui a  fait la proposition /etat du bien
             if ($old_bien_id != $request->input('bien_id')) {

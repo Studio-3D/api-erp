@@ -386,6 +386,10 @@ class AvanceController extends Controller
                 //2 traitement avance
                 Config::set('broadcasting.default', 'pusher_5');
                 broadcast(new NotifMenuEvent(2));
+                if($avance->echeance<=Carbon::now()){
+                    //5 echeances
+                    broadcast(new NotifMenuEvent(5));
+                }
                 if ($avance->reservation->user->role == RoleEnum::COMMERCIAL->value) {
                     Config::set('broadcasting.default', 'pusher_3');
 
