@@ -14,10 +14,11 @@ use App\Http\Controllers\Api\V1\CpsController as V1CpsController;
 use App\Http\Controllers\Api\V1\CreditsController as V1CreditsController;
 use App\Http\Controllers\Api\V1\DecompteController as V1DecompteController;
 use App\Http\Controllers\Api\V1\DesistementController as V1DesistementController;
+use App\Http\Controllers\Api\V1\EcheancesTrancheController as V1EchancesTrancheCleController;
 use App\Http\Controllers\Api\V1\EncaissementController as V1EncaissementController;
-use App\Http\Controllers\Api\V1\EnumController as V1EnumController;
 use App\Http\Controllers\Api\V1\FactureController as V1FactureController;
 use App\Http\Controllers\Api\V1\FournisseurController as V1FournisseurController;
+use App\Http\Controllers\Api\V1\FreinController as V1FreinController;
 use App\Http\Controllers\Api\V1\HomeController as V1HomeController;
 use App\Http\Controllers\Api\V1\ImmeubleController as V1ImmeubleController;
 use App\Http\Controllers\Api\V1\ObjectifController as V1ObjectifsController;
@@ -27,6 +28,8 @@ use App\Http\Controllers\Api\V1\PrestatairesController as V1PrestatairesControll
 use App\Http\Controllers\Api\V1\ProjetController as V1ProjetController;
 use App\Http\Controllers\Api\V1\ProspectController as V1ProspectController;
 use App\Http\Controllers\Api\V1\ReclamationController as V1ReclamationsController;
+use App\Http\Controllers\Api\V1\ReclamationSavController as V1ReclamationsSavController;
+use App\Http\Controllers\Api\V1\RemboursementController as V1RemboursementController;
 use App\Http\Controllers\Api\V1\RemiseCleController as V1RemiseCleController;
 use App\Http\Controllers\Api\V1\ReservationController as V1ReservationController;
 use App\Http\Controllers\Api\V1\ServicesPrestatairesController as V1ServicesPrestatairesController;
@@ -38,26 +41,17 @@ use App\Http\Controllers\Api\V1\TypeBienController as V1TypeBienController;
 use App\Http\Controllers\Api\V1\TypeFreinController as V1TypeFreinController;
 use App\Http\Controllers\Api\V1\TypeProjetController as V1TypeProjetController;
 use App\Http\Controllers\Api\V1\TypologieController as V1TypologieController;
+use App\Http\Controllers\Api\V1\UploadBienController as V1UploadBienController;
 use App\Http\Controllers\Api\V1\UserController as V1UserController;
 use App\Http\Controllers\Api\V1\VisiteController as V1VisiteController;
-use App\Http\Controllers\Api\V1\ReclamationSavController as V1ReclamationsSavController;
-use App\Http\Controllers\Api\V1\EcheancesTrancheController as V1EchancesTrancheCleController;
-use App\Http\Controllers\Api\V1\RemboursementController as V1RemboursementController;
-use App\Http\Controllers\Api\V1\UploadBienController as V1UploadBienController;
-use App\Http\Controllers\Api\V1\FreinController as V1FreinController;
-
-
 use App\Http\Controllers\Api\V1\VueController as V1VueController;
 use App\Http\Controllers\AquereurController;
-use App\Http\Controllers\AvanceController;
 use App\Http\Controllers\BanqueController;
 use App\Http\Controllers\BienController;
 use App\Http\Controllers\BlocController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CompositionBienController;
-use App\Http\Controllers\DesistementController;
 use App\Http\Controllers\EnumController;
-use App\Http\Controllers\ExcelDataController;
 use App\Http\Controllers\Facebook\FacebookController;
 use App\Http\Controllers\FreinController;
 use App\Http\Controllers\ImmeubleController;
@@ -68,7 +62,6 @@ use App\Http\Controllers\PartenaireController;
 use App\Http\Controllers\PiecesJointeController;
 use App\Http\Controllers\ProjetController;
 use App\Http\Controllers\ProspectController;
-use App\Http\Controllers\RemboursementController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\SocieteController;
 use App\Http\Controllers\SourceController;
@@ -78,7 +71,6 @@ use App\Http\Controllers\TypeFreinController;
 use App\Http\Controllers\TypeProjetController;
 use App\Http\Controllers\TypologieController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\VisiteController;
 use App\Http\Controllers\VueController;
 use App\Http\Controllers\WhatsApp\WhatsAppController;
 use Illuminate\Support\Facades\Route;
@@ -157,7 +149,6 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('projets', V1ProjetController::class);
         Route::get('get_projets_users/{societe_id}/{user_id}', [V1ProjetController::class, 'get_projets_user'])->name('');
 
-
         //l'API tranches
         Route::resource('tranches', V1TrancheController::class);
         Route::get('projets/{idprojet}/tranches', [V1TrancheController::class, 'indexByProjet']);
@@ -179,8 +170,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('projets/{idprojet}/getBiensByTranche_tva', [V1BienController::class, 'getBiensByTranche_tva'])->name('');
 
         Route::get('projets/{idprojet}/pre_reservations', [V1BienController::class, 'pre_reservations_index']);
-        Route::get('projets/{idprojet}/getEtatByType_projet/{type_id}', [V1BienController::class, 'getEtatByType_projet'])->name('getEtatByType_projet');
-        
+        Route::get('getEtatBien_ByType/{idprojet}/{type_id}', [V1BienController::class, 'getEtatBien_ByType'])->name('getEtatBien_ByType');
+
         //l'API compositionbiens
         Route::resource('compositionBiens', V1CompositionBienController::class);
 
@@ -196,11 +187,11 @@ Route::middleware('auth:api')->group(function () {
         Route::get('get_historiques_visite/{origin_id}', [V1VisiteController::class, 'get_historiques'])->name('get_historiques');
 
         /****************************Frein*****************************/
-       Route::resource('frein', V1FreinController::class);
-       Route::get('projets/{idprojet}/get_clients_freins', [V1FreinController::class, 'get_clients_freins'])->name('');
-       Route::get('biens_by_frein/{id}', [V1FreinController::class, 'biens_by_frein'])->name('');
-       Route::put('traiter_bien_frein/{frein_id}', [V1FreinController::class, 'traiter_bien_frein'])->name('');
-       Route::put('desactiver_freins/{id}', [V1FreinController::class, 'desactiver_freins'])->name('');
+        Route::resource('frein', V1FreinController::class);
+        Route::get('projets/{idprojet}/get_clients_freins', [V1FreinController::class, 'get_clients_freins'])->name('');
+        Route::get('biens_by_frein/{id}', [V1FreinController::class, 'biens_by_frein'])->name('');
+        Route::put('traiter_bien_frein/{frein_id}', [V1FreinController::class, 'traiter_bien_frein'])->name('');
+        Route::put('desactiver_freins/{id}', [V1FreinController::class, 'desactiver_freins'])->name('');
 
         //l'API prospect
         Route::resource('prospects', V1ProspectController::class);
@@ -242,7 +233,6 @@ Route::middleware('auth:api')->group(function () {
         Route::put('traiter_reservation/{id}', [V1ReservationController::class, 'traiter_reservation'])->name('');
         Route::get('relancer_reservation/{id}', [V1ReservationController::class, 'relancer_reservation'])->name('');
         Route::get('get_pj_res/{id}', [V1ReservationController::class, 'get_pj_res'])->name('');
-
 
         //l'api desistement
         Route::resource('desistements', V1DesistementController::class);
@@ -342,12 +332,10 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('/RemiseCles', V1RemiseCleController::class);
         Route::get('projets/{idprojet}/RemiseCles', [V1RemiseCleController::class, 'indexByProjet']);
 
-
         //ReclamationsClients
         Route::resource('ReclamationsClients', V1ReclamationsController::class);
-       // Route::get('projets/{idprojet}/ReclamationsClients ', [V1ReclamationsController::class, 'indexByProjet']);
+        // Route::get('projets/{idprojet}/ReclamationsClients ', [V1ReclamationsController::class, 'indexByProjet']);
         Route::put('traiter_reclamation_client/{id}', [V1ReclamationsController::class, 'traiter_reclamation_client'])->name('');
-
 
         //Echéances Tranche
 
@@ -355,7 +343,6 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('/EcheancesTranche', V1EchancesTrancheCleController::class);
         Route::get('projets/{idprojet}/EcheancesTranche', [V1EchancesTrancheCleController::class, 'indexByProjet']);
         Route::get('list_echeances_byTrancheId/{id}', [V1EchancesTrancheCleController::class, 'list_echeances_byTrancheId']);
-
 
         //Remboursement
 
@@ -369,10 +356,9 @@ Route::middleware('auth:api')->group(function () {
 
         //IMPORT Bien by Excel
         Route::post('upload_excel_bien', [V1UploadBienController::class, 'upload'])->name('');
-           //Dashboad
+        //Dashboad
         Route::get('dashboard/{projet_id}/{de}/{a}', [V1HomeController::class, 'dashboard'])->name('');
-            //pre reservation
-
+        //pre reservation
 
     });
 
@@ -402,9 +388,9 @@ Route::middleware('auth:api')->group(function () {
     Route::post('addUserProjet/{id}', [UserController::class, 'addUserProjet'])->name('addUserProjet');
     Route::get('get_users', [UserController::class, 'get_users'])->name('get_users');
     Route::get('get_commerciaux', [UserController::class, 'get_commerciaux'])->name('get_users');
-   /*  Route::post('sendEmail', [UserController::class, 'sendEmail']);
+    /*  Route::post('sendEmail', [UserController::class, 'sendEmail']);
     Route::post('resendEmail', [UserController::class, 'resendEmail']);
- */
+     */
 
     Route::post('/reset', [UserController::class, 'reset']);
 
@@ -544,7 +530,7 @@ Route::middleware('auth:api')->group(function () {
     Route::put('refuseAvance/{id}', [AvanceController::class, 'refuseAvance'])->name('refuseAvance');
     Route::get('getAvances_by_Reservation/{reservation_id}', [AvanceController::class, 'getAvances_by_Reservation'])->name('getAvances_by_Reservation');
     Route::get('historiques_avance/{date}/{id}', [AvanceController::class, 'historiques_avance'])->name('');
-   Route::get('get_notif_avances_att_validation/{projet_id}', [AvanceController::class, 'get_notif_avances_att_validation'])->name('');
+    Route::get('get_notif_avances_att_validation/{projet_id}', [AvanceController::class, 'get_notif_avances_att_validation'])->name('');
     //Route::get('avances_by_etat/{projet_id}/{etat}', [AvanceController::class, 'get_avances_by_etat'])->name('');
     //Route::put('traiter_avance/{id}', [AvanceController::class, 'traiter_avance'])->name('');
     Route::get('avances_rejets/{projet_id}', [AvanceController::class, 'get_avances_rejets'])->name('');
@@ -561,14 +547,14 @@ Route::middleware('auth:api')->group(function () {
 
     /*************************************Reservation***************************** */
     Route::resource('reservation', ReservationController::class);
-  //  Route::get('reservations/{projet_id}', [ReservationController::class, 'index'])->name('reservations');
-  //  Route::get('getAllInformationsReservation/{id}', [ReservationController::class, 'getAllInformationsReservation'])->name('getAllInformationsReservation');
+    //  Route::get('reservations/{projet_id}', [ReservationController::class, 'index'])->name('reservations');
+    //  Route::get('getAllInformationsReservation/{id}', [ReservationController::class, 'getAllInformationsReservation'])->name('getAllInformationsReservation');
     Route::get('getReservationssByProjet/{id}', [ReservationController::class, 'getReservationssByProjet'])->name('getReservationssByProjet');
     Route::get('getDossiers/{projet_id}/{dos_id}', [ReservationController::class, 'get_dossiers'])->name('');
-   // Route::get('search_reservation_by_code/{code_res}', [ReservationController::class, 'search_reservation_by_code']);
-   // Route::put('traiter_reservation/{id}', [ReservationController::class, 'traiter_reservation'])->name('');
-   // Route::get('get_notif_reservation_att_validation/{projet_id}', [ReservationController::class, 'get_notif_reservation_att_validation'])->name('');
-   // Route::get('reservations_rejets/{projet_id}', [ReservationController::class, 'get_reservations_rejets'])->name('');
+    // Route::get('search_reservation_by_code/{code_res}', [ReservationController::class, 'search_reservation_by_code']);
+    // Route::put('traiter_reservation/{id}', [ReservationController::class, 'traiter_reservation'])->name('');
+    // Route::get('get_notif_reservation_att_validation/{projet_id}', [ReservationController::class, 'get_notif_reservation_att_validation'])->name('');
+    // Route::get('reservations_rejets/{projet_id}', [ReservationController::class, 'get_reservations_rejets'])->name('');
 
     /******************************Typologie **********************/
     Route::get('get_typologiesByProjet/{id}', [TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');
@@ -605,34 +591,34 @@ Route::middleware('auth:api')->group(function () {
 
     /********************************DesistemenController*********** */
     //Route::resource('desistement', DesistementController::class);
-   // Route::get('get_historiques_desistement_by_reservation/{code_desistement}', [DesistementController::class, 'get_historiques_desistement_by_reservation'])->name('');
-   // Route::put('validation_desistement/{id}', [DesistementController::class, 'validation_desitement'])->name('');
-   // Route::get('get_notif_dst_commercial/{projet_id}', [DesistementController::class, 'get_notif_dst_commercial'])->name('');
-   // Route::get('get_notif_dst_admin/{projet_id}', [DesistementController::class, 'get_notif_dst_admin'])->name('');
-   // Route::get('get_notif_dst_att_validation_par_type/{projet_id}', [DesistementController::class, 'get_notif_dst_att_validation_par_type'])->name('');
-   // Route::get('get_desistements/{projet_id}/{type}/{etat}', [DesistementController::class, 'get_desistements'])->name('');
-  //  Route::post('desistement/corriger_desistement', [DesistementController::class, 'store'])->name('');
+    // Route::get('get_historiques_desistement_by_reservation/{code_desistement}', [DesistementController::class, 'get_historiques_desistement_by_reservation'])->name('');
+    // Route::put('validation_desistement/{id}', [DesistementController::class, 'validation_desitement'])->name('');
+    // Route::get('get_notif_dst_commercial/{projet_id}', [DesistementController::class, 'get_notif_dst_commercial'])->name('');
+    // Route::get('get_notif_dst_admin/{projet_id}', [DesistementController::class, 'get_notif_dst_admin'])->name('');
+    // Route::get('get_notif_dst_att_validation_par_type/{projet_id}', [DesistementController::class, 'get_notif_dst_att_validation_par_type'])->name('');
+    // Route::get('get_desistements/{projet_id}/{type}/{etat}', [DesistementController::class, 'get_desistements'])->name('');
+    //  Route::post('desistement/corriger_desistement', [DesistementController::class, 'store'])->name('');
     //Route::get('get_dossiers_by_bien/{bien_id}', [DesistementController::class, 'get_dossiers_by_bien'])->name('');
 
     //penalites
-   // Route::get('penalites/{projet_id}/{etat}', [DesistementController::class, 'get_all_penalites'])->name('');
-   // Route::put('traiter_penalite/{id}', [DesistementController::class, 'traiter_penalite'])->name('');
-  //  Route::get('show_penalite/{id}', [DesistementController::class, 'show_penalite'])->name('');
-   // Route::post('penalites/corriger_penalite', [DesistementController::class, 'corriger_penalite'])->name('');
-  //  Route::get('get_notif_penalite_admin/{projet_id}', [DesistementController::class, 'get_notif_pen_admin'])->name('');
-   // Route::get('get_notif_penalite_commercial/{projet_id}', [DesistementController::class, 'get_notif_pen_commercial'])->name('');
-  //  Route::get('get_historiques_penalites/{desistement_id}', [DesistementController::class, 'get_historiques_penalites_by_desId'])->name('');
+    // Route::get('penalites/{projet_id}/{etat}', [DesistementController::class, 'get_all_penalites'])->name('');
+    // Route::put('traiter_penalite/{id}', [DesistementController::class, 'traiter_penalite'])->name('');
+    //  Route::get('show_penalite/{id}', [DesistementController::class, 'show_penalite'])->name('');
+    // Route::post('penalites/corriger_penalite', [DesistementController::class, 'corriger_penalite'])->name('');
+    //  Route::get('get_notif_penalite_admin/{projet_id}', [DesistementController::class, 'get_notif_pen_admin'])->name('');
+    // Route::get('get_notif_penalite_commercial/{projet_id}', [DesistementController::class, 'get_notif_pen_commercial'])->name('');
+    //  Route::get('get_historiques_penalites/{desistement_id}', [DesistementController::class, 'get_historiques_penalites_by_desId'])->name('');
 
     /******************************************* */
 
     //Route::resource('remboursement', RemboursementController::class);
-   // Route::get('get_remboursements/{projet_id}/{etat}', [RemboursementController::class, 'index'])->name('');
-  //  Route::get('get_detail_transfert/{reservation_id}', [RemboursementController::class, 'get_detail_transfert'])->name('');
-  //  Route::post('traiter_demande_pre_rembourse/{id}', [RemboursementController::class, 'traiter_demande_pre_rembourse'])->name('');
- //   Route::get('get_notif_demande_pre_remboursement/{projet_id}', [RemboursementController::class, 'get_notif_demande_pre_remboursement'])->name('');
-  //  Route::post('traiter_accuse/{id}', [RemboursementController::class, 'traiter_accuse'])->name('');
-  //  Route::post('traiter_decaissement/{id}', [RemboursementController::class, 'traiter_decaissement'])->name('');
-   // Route::get('get_remboursements_dos_transfert/{projet_id}', [RemboursementController::class, 'get_remboursements_dos_transfert'])->name('');
+    // Route::get('get_remboursements/{projet_id}/{etat}', [RemboursementController::class, 'index'])->name('');
+    //  Route::get('get_detail_transfert/{reservation_id}', [RemboursementController::class, 'get_detail_transfert'])->name('');
+    //  Route::post('traiter_demande_pre_rembourse/{id}', [RemboursementController::class, 'traiter_demande_pre_rembourse'])->name('');
+    //   Route::get('get_notif_demande_pre_remboursement/{projet_id}', [RemboursementController::class, 'get_notif_demande_pre_remboursement'])->name('');
+    //  Route::post('traiter_accuse/{id}', [RemboursementController::class, 'traiter_accuse'])->name('');
+    //  Route::post('traiter_decaissement/{id}', [RemboursementController::class, 'traiter_decaissement'])->name('');
+    // Route::get('get_remboursements_dos_transfert/{projet_id}', [RemboursementController::class, 'get_remboursements_dos_transfert'])->name('');
 
     /*************************************Actualites***************************** */
     Route::get('historiques/{date}/{id}/{type}', [ActualiteController::class, 'get_historique'])->name('');
