@@ -225,17 +225,28 @@ class BienController extends Controller
                 ];
 
                 $biens = $biens->items();
-
-                $counts = DB::connection('temp')
-                ->table('biens')->selectRaw("
+                $countAll = DB::connection('temp')
+                ->table('biens')
+                ->selectRaw("
                     etat,
                     COUNT(*) as total
                 ")
                 ->where('projet_id', $projet_id)
-                ->whereNull('deleted_at')
-                ->groupBy('etat')
-                ->get()
-                ->keyBy('etat');
+                ->whereNull('deleted_at');
+
+                if ($tranche_id = request()->tranche_id) {
+                    $countAll->where('tranche_id', $tranche_id);
+                }
+                if ($bloc_id = request()->bloc_id) {
+                    $countAll->where('bloc_id', $bloc_id);
+                }
+                if ($immeuble_id = request()->immeuble_id) {
+                    $countAll->where('immeuble_id', $immeuble_id);
+                }
+
+                $counts = $countAll->groupBy('etat')
+                    ->get()
+                    ->keyBy('etat');
 
                 return response()->json([
                     'data' => $biens,
@@ -556,7 +567,7 @@ class BienController extends Controller
             if ($bien->save()) {
                 $this->libere_bien_frein($bien->id);
             }
-            HistoriqueBienHelper::createHistoriqueBien(4, "bloquer", $bien_id, Auth::guard('api')->user()->id, null, null,null,null);
+            HistoriqueBienHelper::createHistoriqueBien(4, "bloquer", $bien_id, Auth::guard('api')->user()->id, null, null);
 
             return response()->json(['message' => $bien], 200);
 
@@ -599,7 +610,7 @@ class BienController extends Controller
                         //to admin et commerciaux
                         Config::set('broadcasting.default', 'pusher_3');
                         $data_notif = [
-                            'lien' => '/remboursements/demande',
+                            'lien' => '/remboursements/AttAccuseCheque',
                             'date' => Carbon::now(),
                             'type' => 19,
                             'description' => 'bien desisté est vendu',
@@ -616,7 +627,7 @@ class BienController extends Controller
                         if( $bien->desistement->user->role==3){
 
                             $data_notif = [
-                                'lien' => '/remboursements/demande',
+                                'lien' => '/remboursements/AttAccuseCheque',
                                 'date' => Carbon::now(),
                                 'type' => 19,
                                 'description' => 'bien desisté est vendu',
@@ -659,7 +670,7 @@ class BienController extends Controller
                 }
 
                 $this->libere_bien_frein($bien->id);
-                HistoriqueBienHelper::createHistoriqueBien(3, "reserver", $bien_id, Auth::guard('api')->user()->id, $visite_id, $reservation_id,null,null);
+                HistoriqueBienHelper::createHistoriqueBien(3, "reserver", $bien_id, Auth::guard('api')->user()->id, $visite_id, $reservation_id);
             }
 
             return response()->json(['message' => $bien], 200);
@@ -669,10 +680,9 @@ class BienController extends Controller
         }
     }
 
-    public function prereserverBien($bien_id, $visite_id, $t_appel_id,$desistement_id)
+    public function prereserverBien($bien_id, $visite_id, $appel_id)
     {
         if (RoleHelper::ACSup()) {
-            //$appel_id=>traitement_appel_id
             DatabaseHelper::Config();
             $bien = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat = EtatBien::PRE_RESERVATION->name;
@@ -689,113 +699,28 @@ class BienController extends Controller
                 $bien_visite_pre_reserve->setConnection('temp');
                 $bien_visite_pre_reserve->bien_id = $bien_id;
                 $bien_visite_pre_reserve->visite_id = $visite_id;
-                $bien_visite_pre_reserve->appel_id = $t_appel_id;
-                $bien_visite_pre_reserve->desistement_id = $desistement_id;
+                $bien_visite_pre_reserve->appel_id = $appel_id;
                 $bien_visite_pre_reserve->code_pre_reserve = $code;
                 $bien_visite_pre_reserve->save();
                 //liber bien fron frein_bien
                 $this->libere_bien_frein($bien->id);
 
             }
+
             if($visite_id!=null){
                 HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id, $visite_id, null,null,null);
             }elseif($t_appel_id!=null){
                 //$appel_id=>traitement_appel_id
-                HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id,null, null,null,$t_appel_id);
+                HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id,null,null,null,$t_appel_id);
             }elseif($desistement_id!=null){
-                HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id, $visite_id, null,$desistement_id,null);
+                HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id,null, null,$desistement_id,null);
             }
+
             return response()->json(['message' => $bien], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-    }
-
-    public function pre_reservations_index(Request $request, $projet_id)
-    {
-        if (Auth::guard('api')->check()) {
-            $size = $request->input('size', null);
-            $page = $request->input('page', null);
-            DatabaseHelper::Config();
-
-            // Démarrer la requête directement sur le modèle
-            $query = PreReservation::on('temp')->with('desistement','bien','visite','visite.rdv_relation','t_appel','t_appel.rdv');
-            $query->whereHas('bien', function ($subQuery) use ($projet_id) {
-                $subQuery->where('projet_id', $projet_id);
-            });
-            $query->whereHas('visite', function ($subQuery)  {
-                $subQuery->where('statut',1)->where('etat',1);
-            });
-            //appels
-            //desistement (pas la peine)
-            if ($request->filled('bien')) {
-                $query->whereHas('bien', function ($request)  {
-                    $subQuery->where('propriete_dite_bien', 'like', '%' . $request->input('bien') . '%');
-                });
-            }
-
-            if ($request->filled('prospect')) {
-                $query->whereHas('visite.prospect', function ($q) use ($request) {
-                    $q->where('nom', 'like', '%' . $request->input('prospect') . '%')
-                    ->orWhere('prenom', 'like', '%' . $request->input('prospect') . '%');});
-                $query->orwhereHas('t_appel.appel.prospect', function ($q) use ($request) {
-                        $q->where('nom', 'like', '%' . $request->input('prospect') . '%')
-                        ->orWhere('prenom', 'like', '%' . $request->input('prospect') . '%');});
-            }
-
-            if ($request->filled('respo')) {
-                $query->whereHas('visite.user', function ($q) use ($request) {
-                    $q->where(function ($q) use ($request) {
-                        $q->where('name', 'like', '%' . $request->input('respo') . '%')
-                            ->orWhere('prenom', 'like', '%' . $request->input('respo') . '%');
-                    });
-                });
-                $query->orwhereHas('t_appel.user', function ($q) use ($request) {
-                    $q->where(function ($q) use ($request) {
-                        $q->where('name', 'like', '%' . $request->input('respo') . '%')
-                            ->orWhere('prenom', 'like', '%' . $request->input('respo') . '%');
-                    });
-                });
-                $query->orwhereHas('desistement.user', function ($q) use ($request) {
-                    $q->where(function ($q) use ($request) {
-                        $q->where('name', 'like', '%' . $request->input('respo') . '%')
-                            ->orWhere('prenom', 'like', '%' . $request->input('respo') . '%');
-                    });
-                });
-            }
-
-            /*if ($request->filled('date')) {
-                $start = Carbon::parse($request->input('date'));
-                $query->whereDate('date_pre_reserve', $start);
-            }*/
-            if ($request->filled('code_pre')) {
-                $query->where('code_pre_reserve', 'like', '%' . $request->input('code_pre') . '%');
-            }
-
-            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
-                $biens = $query->orderBy('created_at', 'desc')
-                    ->paginate($size, ['*'], 'page', $page);
-
-                // Extraire les propriétés du paginateur
-                $pagination = [
-                    'currentPage' => $biens->currentPage(),
-                    'totalItems' => $biens->total(),
-                    'totalPages' => $biens->lastPage(),
-                ];
-
-                // Extraire les éléments d'utilisateur du paginateur
-                $biens = $biens->items();
-
-                // Retourner la réponse simplifiée
-                return response()->json([
-                    'data' => $biens,
-                    'pagination' => $pagination,
-                ], 200);
-            }
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
     }
 
     public function libere_bien_frein($id)
@@ -1060,26 +985,37 @@ class BienController extends Controller
         }
     }
 
-    public function getEtatByType_projet($projet_id, $type_id)
+    public function getEtatBien_ByType(Request $request, $projet_id, $type_id)
     {
         if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
-            DatabaseHelper::Config(); // Assurez-vous que la connexion est bien configurée
+            DatabaseHelper::Config();
 
-            // Exécuter la requête SQL avec le constructeur de requêtes
-            $counts = DB::connection('temp')
+            $query = DB::connection('temp')
                 ->table('biens')
                 ->selectRaw("etat, COUNT(*) as total")
                 ->where('projet_id', $projet_id)
                 ->where('type_id', $type_id)
-                ->whereNull('deleted_at')
-                ->groupBy('etat')
-                ->get();
+                ->whereNull('deleted_at');
 
-            // Retourner les données au format JSON
+            if ($tranche_id = $request->input('tranche_id')) {
+                $query->where('tranche_id', $tranche_id);
+            }
+            if ($bloc_id = $request->input('bloc_id')) {
+                $query->where('bloc_id', $bloc_id);
+            }
+            if ($immeuble_id = $request->input('immeuble_id')) {
+                $query->where('immeuble_id', $immeuble_id);
+            }
+
+            $counts = $query->groupBy('etat')
+                ->get()
+                ->keyBy('etat');
+
             return response()->json(['data' => $counts], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
         }
+
+        // Retour en cas d'accès non autorisé
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
 
 

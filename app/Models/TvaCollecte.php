@@ -25,7 +25,7 @@ class TvaCollecte extends Model
     }
     public function encaissement()
     {
-        return $this->belongsTo(Encaissement::class, 'encaissement_id');
+        return $this->belongsTo(Encaissement::class, 'encaissement_id')->withTrashed();
     }
     public function user()
     {

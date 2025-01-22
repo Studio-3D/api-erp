@@ -418,6 +418,9 @@ class DesistementController extends Controller
                 }
                 //changement de bien store avance with pieces jointes
                 elseif ($request->type == TypeDesistement::Changement_De_Bien->value) {
+                     //set bien Pré-Réservé
+                     $bien_c = new BienController();
+                     $bien_c->prereserverBien($request->bien_id_new, null, null,$desistement->id);
                     if ($request->montant_a_ajouter > 0) {
 
                         if ($request->file('files_avance')) {
@@ -649,6 +652,13 @@ class DesistementController extends Controller
 
                             Bien_Helper::libererBien($request->bien_id_ancien, null, $desistement->id);
 
+                            //set tva collecte to 4 to ancien
+                            if(count($desistement->Bien_ancien->tva_collectes)>0){
+                                foreach($desistement->Bien_ancien->tva_collectes as $t_c){
+                                    $t_c->etat=4;
+                                    $t_c->save();
+                                }
+                            }
                             //si sum_avances >0
                             if ($request->type_remb != null) {
                                 if ($remboursement->mode_rembourse == 'transfert' || $remboursement->mode_rembourse == 'transfert_rem_direct' || $remboursement->mode_rembourse == 'transfert_rem_apres_vente') {
@@ -1069,9 +1079,6 @@ class DesistementController extends Controller
                     //CHANGEMENT DE BIEN
 
                     elseif ($type == TypeDesistement::Changement_De_Bien->value) {
-                        //set bien Pré-Réservé
-                        $bien_c = new BienController();
-                        $bien_c->prereserverBien($request->bien_id_new, null, null,$desistement->id);
                         //replicate reservation
                         $resv_ancien = Reservation::on('temp')->findOrFail($request->reservation_id);
                         //coppier ancien reservation meme code _reservation
@@ -1092,6 +1099,19 @@ class DesistementController extends Controller
                             $resv_ancien->code_desistement = $code_desist_reservation;
 
                             if ($resv_ancien->save()) {
+                                $anc_st_res = StatutReservation::on('temp')->where('reservation_id',$resv_ancien->id)->get();
+                                if(count($anc_st_res)>0){
+                                    foreach($anc_st_res as $st_old){
+                                        $st_new = $st_old->replicate();
+                                        $st_new->setConnection('temp');
+                                        $st_new->reservation_id = $resv_new->id;
+                                        $st_new->created_at = Carbon::now();
+                                        $st_new->updated_at = Carbon::now();
+                                        if($st_new->save()){
+                                            $st_old->delete();
+                                        }
+                                    }
+                                }
                                 //replicate piece jointe
                                 $pj_ancien = PiecesJointe::on('temp')->where('reservation_id', $request->reservation_id)->get();
                                 if (count($pj_ancien) > 0) {
@@ -1236,7 +1256,13 @@ class DesistementController extends Controller
 
                         //libration de l'ancien bien
                         Bien_Helper::libererBien($request->bien_id_ancien, null, $desistement->id);
-
+                        //set tva collecte to 4 to ancien
+                        if(count($desistement->Bien_ancien->tva_collectes)>0){
+                            foreach($desistement->Bien_ancien->tva_collectes as $t_c){
+                                $t_c->etat=4;
+                                $t_c->save();
+                            }
+                        }
                         //validation du desistement et add reservation_id_new
                         $desistement->reservation_id_new = $resv_new->id;
                         if ($desistement->save()) {
@@ -1585,7 +1611,6 @@ class DesistementController extends Controller
 
     public function validation_desitement($id,Request $request){
         if(RoleHelper::AdminSup()){
-
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -1681,6 +1706,14 @@ class DesistementController extends Controller
                                     }
                                     // store histo desi
                                     $this->store_historique_desistement(null,$desistement->id,$desistement->bien_id_ancien,$code_desist_reservation,Carbon::now());
+                            }
+                        }
+
+                         //set tva collecte to 4 to ancien
+                         if(count($desistement->Bien_ancien->tva_collectes)>0){
+                            foreach($desistement->Bien_ancien->tva_collectes as $t_c){
+                                $t_c->etat=4;
+                                $t_c->save();
                             }
                         }
                     }
@@ -2043,7 +2076,7 @@ class DesistementController extends Controller
                     //CHANGEMENT DE BIEN
 
                     elseif($desistement->type==TypeDesistement::Changement_De_Bien->value){
-                        //set bien Pré-Réservé
+                        //set bien Pré-
                         $bien_c=new BienController();
                         $bien_c->prereserverBien($desistement->bien_id_new,null,null,$desistement->id);
                         //replicate reservation
@@ -2067,7 +2100,6 @@ class DesistementController extends Controller
 
                             if($resv_ancien->save()){
                                 //replicate statut res
-
                                 $anc_st_res = StatutReservation::on('temp')->where('reservation_id',$desistement->reservation_id)->get();
                                 if(count($anc_st_res)>0){
                                     foreach($anc_st_res as $st_old){
@@ -2236,6 +2268,13 @@ class DesistementController extends Controller
                             //libration de l'ancien bien
                             Bien_Helper::libererBien($desistement->bien_id_ancien,null,$desistement->id);
 
+                            //set tva collecte to 4 to ancien
+                            if(count($desistement->Bien_ancien->tva_collectes)>0){
+                                foreach($desistement->Bien_ancien->tva_collectes as $t_c){
+                                    $t_c->etat=4;
+                                    $t_c->save();
+                                }
+                            }
 
 
                     //validation du desistement et add reservation_id_new
