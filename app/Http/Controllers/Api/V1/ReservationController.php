@@ -339,6 +339,8 @@ class ReservationController extends Controller
                             'civilite' => $request->civilite,
                             'situation_familliale' => $request->situation_familliale,
                             'type_client' => 1,
+                            'projet_id' => $request->projet_id,
+
                         ];
                         $clientRequest->merge($dataClient);
                         $clientData = $clientController->store($clientRequest);

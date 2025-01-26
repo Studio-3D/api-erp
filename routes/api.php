@@ -171,6 +171,7 @@ Route::middleware('auth:api')->group(function () {
 
         Route::get('projets/{idprojet}/pre_reservations', [V1BienController::class, 'pre_reservations_index']);
         Route::get('getEtatBien_ByType/{idprojet}/{type_id}', [V1BienController::class, 'getEtatBien_ByType'])->name('getEtatBien_ByType');
+        Route::get('/getTotalsStatistique', [V1BienController::class, 'getTotalsStatistique'])->name('getTotalsStatistique');
 
         //l'API compositionbiens
         Route::resource('compositionBiens', V1CompositionBienController::class);
