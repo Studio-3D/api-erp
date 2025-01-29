@@ -30,6 +30,9 @@ use App\Http\Helpers\NotificationHelper;
 use App\Events\NotificationEvent;
 use Carbon\Carbon;
 use App\Enum\RoleEnum;
+use App\Models\TypeBien;
+use App\Models\Typologie;
+use App\Models\Vue;
 use Illuminate\Support\Facades\DB;
 
 class BienController extends Controller
@@ -225,33 +228,10 @@ class BienController extends Controller
                 ];
 
                 $biens = $biens->items();
-                $countAll = DB::connection('temp')
-                ->table('biens')
-                ->selectRaw("
-                    etat,
-                    COUNT(*) as total
-                ")
-                ->where('projet_id', $projet_id)
-                ->whereNull('deleted_at');
-
-                if ($tranche_id = request()->tranche_id) {
-                    $countAll->where('tranche_id', $tranche_id);
-                }
-                if ($bloc_id = request()->bloc_id) {
-                    $countAll->where('bloc_id', $bloc_id);
-                }
-                if ($immeuble_id = request()->immeuble_id) {
-                    $countAll->where('immeuble_id', $immeuble_id);
-                }
-
-                $counts = $countAll->groupBy('etat')
-                    ->get()
-                    ->keyBy('etat');
-
+                
                 return response()->json([
                     'data' => $biens,
                     'pagination' => $pagination,
-                    'counts' => $counts,
                 ], 200);
             } else {
                 // Return all results if pagination parameters are not provided or invalid
@@ -985,18 +965,203 @@ class BienController extends Controller
         }
     }
 
-    public function getEtatBien_ByType(Request $request, $projet_id, $type_id)
-    {
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
-            DatabaseHelper::Config();
+    public function getTotalsStatistique(Request $request)
+{
+    if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+        DatabaseHelper::Config();
 
-            $query = DB::connection('temp')
+        $query = DB::connection('temp')
+            ->table('biens')
+            ->selectRaw("etat, COUNT(*) as total")
+            //->where('projet_id', $request->input('projet_id'))
+            ->whereNull('deleted_at');
+            if ($request->filled('propriete_dite_bien')) {
+                $query->where('propriete_dite_bien', 'like', '%' . $request->input('propriete_dite_bien') . '%');
+            }
+
+            if ($request->filled('niveau')) {
+                $query->where('niveau', 'like', '%' . $request->input('niveau') . '%');
+            }
+            if ($request->filled('orientation')) {
+                $query->where('orientation', 'like', '%' . $request->input('orientation') . '%');
+            }
+
+            if ($request->filled('etat')) {
+                $query->where('etat', 'like', '%' . $request->input('etat') . '%');
+            }
+            if ($request->filled('etat_bien') && $request->input('etat_bien')!="null" ) {
+                $query->where('etat',  $request->input('etat_bien') );
+            }
+            if ($request->filled('prix_min')) {
+                $query->where('prix', '>=', $request->input('prix_min'));
+            }
+
+            if ($request->filled('prix_max')) {
+                $query->where('prix', '<=', $request->input('prix_max'));
+            }
+
+            if ($request->filled('superficie_min')) {
+                $query->where('superficie_habitable', '>=', $request->input('superficie_min'));
+            }
+
+            if ($request->filled('superficie_max')) {
+                $query->where('superficie_habitable', '<=', $request->input('superficie_max'));
+            }
+            
+            if ($request->filled('type')) {
+                $type = TypeBien::on('temp')->where('type', $request->type)->first();
+                if ($type) {
+                    $query->where('type_id', $type->id);
+                }
+            }
+            if ($request->filled('tranche')) {
+                $tranche = Tranche::on('temp')->where('nom', $request->tranche)->first();
+                if ($tranche) {
+                    $query->where('tranche_id', $tranche->id);
+                }
+            }
+            if ($request->filled('bloc')) {
+                $bloc = Bloc::on('temp')->where('nom', $request->bloc)->first();
+                if ($bloc) {
+                    $query->where('bloc_id', $bloc->id);
+                }
+            }
+            if ($request->filled('immeuble')) {
+                $immeuble = Immeuble::on('temp')->where('nom', $request->immeuble)->first();
+                if ($immeuble) {
+                    $query->where('immeuble_id', $immeuble->id);
+                }
+            }
+
+            if ($request->filled('vue')) {
+                $vue = Vue::on('temp')->where('vue', $request->vue)->first();
+                if ($vue) {
+                    $query->where('vue_id', $vue->id);
+                }
+            }
+            if ($request->filled('typologie')) {
+                $typologie = Typologie::on('temp')->where('typologie', $request->typologie)->first();
+                if ($typologie) {
+                    $query->where('typologie_id', $typologie->id);
+                }
+            }
+           
+            if ($tranche_id = $request->input('projet_id')) {
+                $query->where('projet_id', $request->projet_id);
+            }
+            if ($tranche_id = $request->input('tranche_id')) {
+                $query->where('tranche_id', $tranche_id);
+            }
+            if ($bloc_id = $request->input('bloc_id')) {
+                $query->where('bloc_id', $bloc_id);
+            }
+            if ($immeuble_id = $request->input('immeuble_id')) {
+                $query->where('immeuble_id', $immeuble_id);
+            }
+
+        $counts = $query->groupBy('etat')
+            ->get()
+            ->keyBy('etat');
+
+        // Calcul du total général
+        $totalGeneral = $counts->sum('total');
+
+        return response()->json([
+            'data' => $counts,
+            'total' => $totalGeneral,
+        ], 200); // Retirez la virgule supplémentaire ici
+    }
+
+    // Retour en cas d'accès non autorisé
+    return response()->json(['error' => 'Unauthorized'], 401);
+}
+
+
+public function getEtatBien_ByType(Request $request, $projet_id, $type_id)
+{
+    if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+        DatabaseHelper::Config();
+
+        $query = DB::connection('temp')
                 ->table('biens')
                 ->selectRaw("etat, COUNT(*) as total")
                 ->where('projet_id', $projet_id)
                 ->where('type_id', $type_id)
                 ->whereNull('deleted_at');
+            if ($request->filled('propriete_dite_bien')) {
+                $query->where('propriete_dite_bien', 'like', '%' . $request->input('propriete_dite_bien') . '%');
+            }
 
+            if ($request->filled('niveau')) {
+                $query->where('niveau', 'like', '%' . $request->input('niveau') . '%');
+            }
+            if ($request->filled('orientation')) {
+                $query->where('orientation', 'like', '%' . $request->input('orientation') . '%');
+            }
+
+            if ($request->filled('etat')) {
+                $query->where('etat', 'like', '%' . $request->input('etat') . '%');
+            }
+            if ($request->filled('etat_bien') && $request->input('etat_bien')!="null" ) {
+                $query->where('etat',  $request->input('etat_bien') );
+            }
+            if ($request->filled('prix_min')) {
+                $query->where('prix', '>=', $request->input('prix_min'));
+            }
+
+            if ($request->filled('prix_max')) {
+                $query->where('prix', '<=', $request->input('prix_max'));
+            }
+
+            if ($request->filled('superficie_min')) {
+                $query->where('superficie_habitable', '>=', $request->input('superficie_min'));
+            }
+
+            if ($request->filled('superficie_max')) {
+                $query->where('superficie_habitable', '<=', $request->input('superficie_max'));
+            }
+            
+            if ($request->filled('type')) {
+                $type = TypeBien::on('temp')->where('type', $request->type)->first();
+                if ($type) {
+                    $query->where('type_id', $type->id);
+                }
+            }
+            if ($request->filled('tranche')) {
+                $tranche = Tranche::on('temp')->where('nom', $request->tranche)->first();
+                if ($tranche) {
+                    $query->where('tranche_id', $tranche->id);
+                }
+            }
+            if ($request->filled('bloc')) {
+                $bloc = Bloc::on('temp')->where('nom', $request->bloc)->first();
+                if ($bloc) {
+                    $query->where('bloc_id', $bloc->id);
+                }
+            }
+            if ($request->filled('immeuble')) {
+                $immeuble = Immeuble::on('temp')->where('nom', $request->immeuble)->first();
+                if ($immeuble) {
+                    $query->where('immeuble_id', $immeuble->id);
+                }
+            }
+
+            if ($request->filled('vue')) {
+                $vue = Vue::on('temp')->where('vue', $request->vue)->first();
+                if ($vue) {
+                    $query->where('vue_id', $vue->id);
+                }
+            }
+            if ($request->filled('typologie')) {
+                $typologie = Typologie::on('temp')->where('typologie', $request->typologie)->first();
+                if ($typologie) {
+                    $query->where('typologie_id', $typologie->id);
+                }
+            }
+           
+            if ($tranche_id = $request->input('projet_id')) {
+                $query->where('projet_id', $request->projet_id);
+            }
             if ($tranche_id = $request->input('tranche_id')) {
                 $query->where('tranche_id', $tranche_id);
             }
@@ -1011,7 +1176,13 @@ class BienController extends Controller
                 ->get()
                 ->keyBy('etat');
 
-            return response()->json(['data' => $counts], 200);
+            // Calcul du total général
+            $totalGeneral = $counts->sum('total');
+
+            return response()->json([
+                'data' => $counts,
+                'total' => $totalGeneral,
+            ], 200); // Retirez la virgule supplémentaire ici
         }
 
         // Retour en cas d'accès non autorisé
