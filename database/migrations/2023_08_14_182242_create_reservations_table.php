@@ -20,8 +20,8 @@ return new class extends Migration
             $table->integer('nb_acquereurs');
             $table->string('code_reservation')->nullable();
             $table->double('prix');
-            $table->enum('mode_financement',[ModeFinancement::Comptant->value,ModeFinancement::Crédit->value,ModeFinancement::Indécis->value]);
-            $table->enum('statut',[StatutReservationEnum::Validé->value,StatutReservationEnum::Refusé->value,StatutReservationEnum::En_Attente->value]);
+            $table->enum('mode_financement',[ModeFinancement::Comptant->value,ModeFinancement::Crédit->value,ModeFinancement::Indécis->value])->comment('1=>comptant 2=>credit 3=>indecis');
+            $table->enum('statut',[StatutReservationEnum::Validé->value,StatutReservationEnum::Refusé->value,StatutReservationEnum::En_Attente->value])->comment('1=>valide 2=>refusé 3=>en_attent');
             $table->date('date_reservation');
             $table->string('commentaire')->nullable();
             $table->integer('etat')->default(1)

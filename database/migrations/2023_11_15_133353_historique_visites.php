@@ -20,10 +20,10 @@ return new class extends Migration
             $table->string('commentaire')->nullable(); // car en peut recoit des vistes sans commentaire.
             $table->boolean('notifie')->default(false)->nullable();
             $table->integer('action');//1 modifiction /2 suppression
-            $table->enum('interet',[InteretEnum::Intéressé->value,InteretEnum::Réceptif->value,InteretEnum::Perdu->value]);
-            $table->enum('mode_relance',[TypeNotificationEnum::Sms->value,TypeNotificationEnum::Appel->value,TypeNotificationEnum::Email->value])->nullable();
+            $table->enum('interet',[InteretEnum::Intéressé->value,InteretEnum::Réceptif->value,InteretEnum::Perdu->value])->comment('1=>interesse 2=>recpetif 3=>perdu 4=>injoignable');
+            $table->enum('mode_relance',[TypeNotificationEnum::Sms->value,TypeNotificationEnum::Appel->value,TypeNotificationEnum::Email->value])->nullable()->comment('1=>sms 2=>appel  3=>email');
             $table->date('date_relance')->nullable();
-            $table->enum('statut',[StatutVisiteEnum::Pré_Réservation->value,StatutVisiteEnum::Vendu->value,StatutVisiteEnum::Pré_Réservation_Perdu->value,StatutVisiteEnum::Réservation_Perdu->value])->nullable();
+            $table->enum('statut',[StatutVisiteEnum::Pré_Réservation->value,StatutVisiteEnum::Vendu->value,StatutVisiteEnum::Pré_Réservation_Perdu->value,StatutVisiteEnum::Réservation_Perdu->value])->nullable()->comment('1=>Pre reservation 2=>Vendu 3=>Pre reservation perdu 4=> reservation perdu  5=>Pré_Réservation_Vendu');
             $table->dateTime('rdv')->nullable();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('bien_id')->nullable()->constrained('biens')->onDelete('cascade');

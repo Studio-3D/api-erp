@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create('statut_reservations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('reservation_id')->constrained('reservations')->onDelete('cascade');
-            $table->enum('statut',[StatutReservationEnum::Validé->value,StatutReservationEnum::Refusé->value]);
+            $table->enum('statut',[StatutReservationEnum::Validé->value,StatutReservationEnum::Refusé->value])->comment('1=>valide 2=>refusé 3=>en_attent');;
             $table->foreignId('user_id_valider')->constrained('users')->onDelete('cascade');
             $table->dateTime('date_validation')->nullable();
             $table->string('commentaire')->nullable();

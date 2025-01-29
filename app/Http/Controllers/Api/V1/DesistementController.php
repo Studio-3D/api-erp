@@ -1256,6 +1256,9 @@ class DesistementController extends Controller
 
                         //libration de l'ancien bien
                         Bien_Helper::libererBien($request->bien_id_ancien, null, $desistement->id);
+                        //reserver le new bien
+                        $bien_c=new BienController();
+                        $bien_c->reserverBien($request->bien_id_new,null,null);
                         //set tva collecte to 4 to ancien
                         if(count($desistement->Bien_ancien->tva_collectes)>0){
                             foreach($desistement->Bien_ancien->tva_collectes as $t_c){
@@ -1463,101 +1466,125 @@ class DesistementController extends Controller
             $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
             $array = array();
+            // SI LE bien un seul reservation sans desistement etat intial
+            $reservation=Reservation::on('temp')->withSum('avances','montant')->where('bien_id',$bien_id)->where('etat',1)->where('code_desistement',null)->get();
+            if(count($reservation)>0){
+                $data_s = $reservation->map(function ($dt) {
+                    return [
+                        'histo' => [
+                                'date' =>$dt->created_at,
+                                'reservation_id' =>$dt->id,
+                                'reservation' => $dt,
+                                'desistement' => null,
+                            ],
+                            'desisteurs' => null,
+                            'au_profits' => null,
+                            'new_aquereur_desistement' => null,
+                            'bien_new_propriete' => null,
+                            'sum_avances' => null,
+                            'penalite_montant' => null,
+                    ];
 
-            $data = HistoriqueDesistement::on('temp')->where('bien_id', $bien_id)->orderBy('date', 'asc')->get();
-            $data_s = $data->map(function ($dt) {
-                $desisteurs = null;
-                $au_profits = null;
-                $data_nv_aq = null;
-                $bien_new_propriete = null;
-                $sum_avances = null;
-                $penalite_montant = null;
-                if ($dt->desistement_id != null) {
-                    //si ligne desistement
+                });
+            }else{
+                //si le bien a fait un desistement
+                $data = HistoriqueDesistement::on('temp')->where('bien_id', $bien_id)->orderBy('date', 'asc')->get();
+                $data_s = $data->map(function ($dt) {
+                    $desisteurs = null;
+                    $au_profits = null;
+                    $data_nv_aq = null;
+                    $bien_new_propriete = null;
+                    $sum_avances = null;
+                    $penalite_montant = null;
+                    if ($dt->desistement_id != null) {
+                        //si ligne desistement
 
-                    $aquereur_desisteurs = AquereurDesistement::on('temp')->where('desistement_id', $dt->desistement_id)->where('type', 'desisteur')->get();
-                    $aquereur_profit = AquereurDesistement::on('temp')->where('desistement_id', $dt->desistement_id)->where('type', 'au_profit')->get();
+                        $aquereur_desisteurs = AquereurDesistement::on('temp')->where('desistement_id', $dt->desistement_id)->where('type', 'desisteur')->get();
+                        $aquereur_profit = AquereurDesistement::on('temp')->where('desistement_id', $dt->desistement_id)->where('type', 'au_profit')->get();
 
-                    if (count($aquereur_desisteurs) > 0) {
-                        $desisteurs = $aquereur_desisteurs->map(function ($aq_dt) {
-                            return [
-                                'client_nom' => $aq_dt->client->nom,
-                                'client_prenom' => $aq_dt->client->prenom,
-                                'client_percent' => $aq_dt->aquereur->pourcentage,
-                                'type' => $aq_dt->type,
-                            ];
-                        });
+                        if (count($aquereur_desisteurs) > 0) {
+                            $desisteurs = $aquereur_desisteurs->map(function ($aq_dt) {
+                                return [
+                                    'client_nom' => $aq_dt->client->nom,
+                                    'client_prenom' => $aq_dt->client->prenom,
+                                    'client_percent' => $aq_dt->aquereur->pourcentage,
+                                    'type' => $aq_dt->type,
+                                ];
+                            });
+                        }
+
+                        if (count($aquereur_profit) > 0) {
+
+                            $au_profits = $aquereur_profit->map(function ($aq_dt) {
+                                return [
+                                    'client_nom' => $aq_dt->client->nom,
+                                    'client_prenom' => $aq_dt->client->prenom,
+                                    'client_percent' => $aq_dt->aquereur->pourcentage,
+                                    'type' => $aq_dt->type,
+                                ];
+                            });
+                        }
+
+                        $nv_aquereur_desistement = NouvelAquereurDesistement::on('temp')->where('desistement_id', $dt->desistement_id)->get();
+                        if (count($nv_aquereur_desistement) > 0) {
+                            $data_nv_aq = $nv_aquereur_desistement->map(function ($aq_nv) {
+                                return [
+                                    'nv_client_cin' => $aq_nv->cin,
+                                    'nv_client_nom' => $aq_nv->nom,
+                                    'nv_client_prenom' => $aq_nv->prenom,
+                                    'nv_client_telephone' => $aq_nv->telephone,
+                                    'nv_client_percent' => $aq_nv->pourcentage,
+                                ];
+                            });
+                        } else {
+                            $data_nv_aq = null;
+                        }
+                        if ($dt->desistement->bien_id_new != null) {
+                            $bien = Bien::on('temp')->findorfail($dt->desistement->bien_id_new);
+                            $bien_new_propriete = $bien->propriete_dite_bien;
+                        }
+
+                        //penalite
+                        $penalite = PenaliteDesistement::on('temp')->where('desistement_id', $dt->desistement_id)->get()->first();
+                        if ($penalite != null) {
+                            $penalite_montant = $penalite->montant;
+
+                        }
+
+                    }
+                    if ($dt->reservation_id != null) {
+                        $sum_avances = Avance::on('temp')->where('reservation_id', $dt->reservation_id)->where('statut', 1)->withTrashed()->sum('montant');
                     }
 
-                    if (count($aquereur_profit) > 0) {
+                    //array
+                    return [
+                        'histo' => $dt,
+                        'desisteurs' => $desisteurs,
+                        'au_profits' => $au_profits,
+                        'new_aquereur_desistement' => $data_nv_aq,
+                        'bien_new_propriete' => $bien_new_propriete,
+                        'sum_avances' => $sum_avances,
+                        'penalite_montant' => $penalite_montant,
+                    ];
+                });
+            }
 
-                        $au_profits = $aquereur_profit->map(function ($aq_dt) {
-                            return [
-                                'client_nom' => $aq_dt->client->nom,
-                                'client_prenom' => $aq_dt->client->prenom,
-                                'client_percent' => $aq_dt->aquereur->pourcentage,
-                                'type' => $aq_dt->type,
-                            ];
-                        });
-                    }
 
-                    $nv_aquereur_desistement = NouvelAquereurDesistement::on('temp')->where('desistement_id', $dt->desistement_id)->get();
-                    if (count($nv_aquereur_desistement) > 0) {
-                        $data_nv_aq = $nv_aquereur_desistement->map(function ($aq_nv) {
-                            return [
-                                'nv_client_cin' => $aq_nv->cin,
-                                'nv_client_nom' => $aq_nv->nom,
-                                'nv_client_prenom' => $aq_nv->prenom,
-                                'nv_client_telephone' => $aq_nv->telephone,
-                                'nv_client_percent' => $aq_nv->pourcentage,
-                            ];
-                        });
-                    } else {
-                        $data_nv_aq = null;
-                    }
-                    if ($dt->desistement->bien_id_new != null) {
-                        $bien = Bien::on('temp')->findorfail($dt->desistement->bien_id_new);
-                        $bien_new_propriete = $bien->propriete_dite_bien;
-                    }
+           // return response()->json($data_s->toArray());
 
-                    //penalite
-                    $penalite = PenaliteDesistement::on('temp')->where('desistement_id', $dt->desistement_id)->get()->first();
-                    if ($penalite != null) {
-                        $penalite_montant = $penalite->montant;
+            $data_mm = PaginationHelper::paginate_array($data_s->toArray(), $size, $page, $request->url());
+                $items = $data_mm->items();
 
-                    }
-
-                }
-                if ($dt->reservation_id != null) {
-                    $sum_avances = Avance::on('temp')->where('reservation_id', $dt->reservation_id)->where('statut', 1)->withTrashed()->sum('montant');
-                }
-
-                //array
-                return [
-                    'histo' => $dt,
-                    'desisteurs' => $desisteurs,
-                    'au_profits' => $au_profits,
-                    'new_aquereur_desistement' => $data_nv_aq,
-                    'bien_new_propriete' => $bien_new_propriete,
-                    'sum_avances' => $sum_avances,
-                    'penalite_montant' => $penalite_montant,
+                $pagination = [
+                    'currentPage' => $data_mm->currentPage(),
+                    'totalItems' => $data_mm->total(),
+                    'totalPages' => $data_mm->lastPage(),
                 ];
-            });
 
-
-             $data_mm = PaginationHelper::paginate_array($data_s->toArray(), $size, $page, $request->url());
-            $items = $data_mm->items();
-
-            $pagination = [
-                'currentPage' => $data_mm->currentPage(),
-                'totalItems' => $data_mm->total(),
-                'totalPages' => $data_mm->lastPage(),
-            ];
-
-            return response()->json([
-                'data' => $items,
-                'pagination' => $pagination,
-            ], 200);
+                return response()->json([
+                    'data' => $items,
+                    'pagination' => $pagination,
+                ], 200);
 
 
 
@@ -2267,7 +2294,9 @@ class DesistementController extends Controller
 
                             //libration de l'ancien bien
                             Bien_Helper::libererBien($desistement->bien_id_ancien,null,$desistement->id);
-
+                            //reserver le new bien
+                            $bien_c=new BienController();
+                            $bien_c->reserverBien($request->bien_id_new,null,null);
                             //set tva collecte to 4 to ancien
                             if(count($desistement->Bien_ancien->tva_collectes)>0){
                                 foreach($desistement->Bien_ancien->tva_collectes as $t_c){

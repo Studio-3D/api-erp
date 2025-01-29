@@ -140,6 +140,27 @@ class TypeBienController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+    public function store_multiple_type_biens (Request $request)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $dataArray_donneesTypeBien = json_decode($request->input('donneesTypeBien', '[]'), true);
+            if ($dataArray_donneesTypeBien) {
+                    foreach ($dataArray_donneesTypeBien as $typeBien) {
+                        $typebien = new typebien();
+                        $typebien->setConnection('temp');
+                        $typebien->type = $typeBien['type'];
+                        $typebien->projet_id = $request->projet_id;
+                        $typebien->save();
+                    }
+                }
+            //get all type biens created
+            $type_biens=typebien::on('temp')->where('projet_id',$request->projet_id)->get();
+            return response()->json(['type_biens' => $type_biens], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
 
     /**
      * Display the specified resource.

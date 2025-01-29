@@ -266,7 +266,7 @@ class NotificationController extends Controller
             $i=0;
             if(RoleHelper::AdminSup()){
 
-               $all_notifications=Notification::on('temp')->with('prospect','user','reservation','avance','bien','TraitementAppel')
+               $all_notifications=Notification::on('temp')->with('projet','prospect','user','reservation','avance','bien','TraitementAppel')
                ->where(function ($query) {
                 $query->where('role',RoleEnum::ADMIN->value)
                     ->orwhere('user_id',Auth::guard('api')->user()->id)
@@ -279,7 +279,7 @@ class NotificationController extends Controller
                 ;})->where('deleted_at',null)->count();
 
             }else{
-                $all_notifications=Notification::on('temp')->with('prospect','user','reservation','avance','bien')->where('projet_id',$projet_id)->where('user_id',Auth::guard('api')->user()->id)->withTrashed()->whereDate('date', '<=', Carbon::now())->orderBy('date','desc')->get();
+                $all_notifications=Notification::on('temp')->with('projet','prospect','user','reservation','avance','bien')->where('projet_id',$projet_id)->where('user_id',Auth::guard('api')->user()->id)->withTrashed()->whereDate('date', '<=', Carbon::now())->orderBy('date','desc')->get();
                 $new_notifications_count=Notification::on('temp')->where('projet_id',$projet_id)->where('deleted_at',null)->where('user_id',Auth::guard('api')->user()->id)->count();
                 }
            return response()->json(['all_notifications' => $all_notifications,'new_notifications_count'=>$new_notifications_count]);

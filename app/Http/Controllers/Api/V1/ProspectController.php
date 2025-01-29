@@ -314,7 +314,7 @@ class ProspectController extends Controller
             ini_set('memory_limit', '-1');
 
             $data = $request->input('jsonData');
-
+            if(count($data)>0){
                 foreach($data as $row)
                 {
                     $prospect_cin=0;
@@ -373,11 +373,12 @@ class ProspectController extends Controller
                         $prospect->ville =empty($row['ville'])?null:$row['ville'];;
                         $prospect->save();
                         return response()->json('done');
-
                     }
 
                 }
-
+            }else{
+            return response()->json(['error' => 'Le fichier doit être rempli.'], 400);
+                }
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

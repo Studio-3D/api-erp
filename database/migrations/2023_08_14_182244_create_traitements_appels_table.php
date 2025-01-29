@@ -20,7 +20,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->integer('type_appel')->comment('1 entrant /2 sortant');
             $table->dateTime('date');
-            $table->enum('interet',[InteretEnumAppel::Intéressé->value,InteretEnumAppel::Réceptif->value,InteretEnumAppel::Perdu->value,InteretEnumAppel::Injoignable->value]);
+            $table->enum('interet',[InteretEnumAppel::Intéressé->value,InteretEnumAppel::Réceptif->value,InteretEnumAppel::Perdu->value,InteretEnumAppel::Injoignable->value])->comment('1=>interesse 2=>recpetif 3=>perdu 4=>injoignable');
             $table->integer('etat')->comment('0 recu /1 traite 2/injoignable');
             $table->dateTime('date_traitement')->nullable();
             $table->foreignId('tranche_id')->nullable()->constrained('tranches')->onDelete('cascade');

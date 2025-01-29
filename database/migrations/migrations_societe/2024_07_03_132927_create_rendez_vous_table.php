@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('rendez_vous', function (Blueprint $table) {
             $table->id();
             $table->foreignId('reservation_id')->nullable()->constrained('reservations')->onDelete('cascade');
-            $table->enum('statut',[StatutRdvEnum::En_Attente->value,StatutRdvEnum::Validé->value,StatutRdvEnum::Refusé->value,StatutRdvEnum::Raté->value]);
+            $table->enum('statut',[StatutRdvEnum::En_Attente->value,StatutRdvEnum::Validé->value,StatutRdvEnum::Refusé->value,StatutRdvEnum::Raté->value])->comment('1=>en attente 2=>valide 3=>refuse 4=>raté');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->dateTime('rdv')->nullable();
             $table->dateTime('date_validation')->nullable();

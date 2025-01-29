@@ -16,7 +16,7 @@ return new class extends Migration
     {
         Schema::create('clients', function (Blueprint $table) {
             $table->id();
-            $table->enum('type_client',[TypeClient::Particulier->name,TypeClient::Société->name]);
+            $table->enum('type_client',[TypeClient::Particulier->name,TypeClient::Société->name])->comment('1=>particulier 2=>societe');
             $table->string('code_client')->nullable();
             $table->string('nom');
             $table->string('prenom');
@@ -38,9 +38,10 @@ return new class extends Migration
             $table->date('date_mariage')->nullable();
             $table->string('nom_responsable')->nullable();
             $table->string('relation_familliale')->nullable();
-            $table->enum('situation_familliale',[SituationFamilliale::Célibataire->name,SituationFamilliale::Marié->name,SituationFamilliale::Divorcé->name,SituationFamilliale::Veuf->name]);
+            $table->enum('situation_familliale',[SituationFamilliale::Célibataire->name,SituationFamilliale::Marié->name,SituationFamilliale::Divorcé->name,SituationFamilliale::Veuf->name])->comment('1=>celebataire 2=>Marie 3=>Divorcé 4=>veuf');
             $table->string('nom_pere')->nullable();
             $table->string('nom_mere')->nullable();
+            $table->string('password')->nullable();
             $table->foreignId('partenaire_id')->constrained('partenaires')->nullable()->onDelete('cascade');
             $table->foreignId('prospect_id')->constrained('prospects')->nullable()->onDelete('cascade');
             $table->timestamps();
@@ -53,6 +54,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('client');
+        Schema::dropIfExists('clients');
     }
 };

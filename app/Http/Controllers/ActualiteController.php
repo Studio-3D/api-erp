@@ -156,7 +156,7 @@ class ActualiteController extends Controller
             ->select('avances.montant','biens.propriete_dite_bien','tranches.nom as tranche_nom','blocs.nom as bloc_nom','immeubles.nom as immeuble_nom')
             ->where('avances.user_id',$us_id)
             ->where('reservations.projet_id', $request->projet_id)
-            ->whereBetween('avances.created_at', [$dt, $a_dt])
+            ->whereBetween('avances.date_reglement', [$dt, $a_dt])
             ->get();
             $sum_avances=0;
             if(count($avances_bien)>0){
@@ -169,7 +169,7 @@ class ActualiteController extends Controller
             ->join('biens', 'biens.id', '=', 'reservations.bien_id')
             ->where('avances.user_id',$us_id)
             ->where('reservations.projet_id', $request->projet_id)
-            ->whereBetween('avances.created_at', [Carbon::parse($dt)->subDays(5), Carbon::parse($a_dt)->subDays(5)])
+            ->whereBetween('avances.date_reglement', [Carbon::parse($dt)->subDays(5), Carbon::parse($a_dt)->subDays(5)])
             ->sum('avances.montant');
 
             $remboursements=Remboursement::on('temp')
@@ -319,7 +319,7 @@ class ActualiteController extends Controller
             ->leftjoin('immeubles', 'immeubles.id', '=', 'biens.immeuble_id')
             ->select('avances.montant','biens.propriete_dite_bien','tranches.nom as tranche_nom','blocs.nom as bloc_nom','immeubles.nom as immeuble_nom')
             ->where('reservations.projet_id', $request->projet_id)
-            ->whereBetween('avances.created_at', [$dt, $a_dt])
+            ->whereBetween('avances.date_reglement', [$dt, $a_dt])
             ->get();
             $sum_avances=0;
             if(count($avances_bien)>0){
@@ -369,7 +369,7 @@ class ActualiteController extends Controller
                 ->join('reservations', 'reservations.id', '=', 'avances.reservation_id')
                 ->join('biens', 'biens.id', '=', 'reservations.bien_id')
                 ->where('reservations.projet_id', $request->projet_id)
-                ->whereBetween('avances.created_at', [Carbon::parse($dt)->subDays(5),Carbon::parse($a_dt)->subDays(5)])
+                ->whereBetween('avances.date_reglement', [Carbon::parse($dt)->subDays(5),Carbon::parse($a_dt)->subDays(5)])
                 ->sum('avances.montant');
             return response()->json([
                 'admin'=>1,
@@ -487,7 +487,7 @@ class ActualiteController extends Controller
                 ->leftjoin('blocs', 'blocs.id', '=', 'biens.bloc_id')
                 ->leftjoin('immeubles', 'immeubles.id', '=', 'biens.immeuble_id')
                 ->select('avances.montant','biens.propriete_dite_bien','tranches.nom as tranche_nom','blocs.nom as bloc_nom','immeubles.nom as immeuble_nom')
-                ->whereDate('avances.created_at',$date)->get();
+                ->whereDate('avances.date_reglement',$date)->get();
                 $sum_avances=0;
                     if(count($histo)>0){
                     foreach($histo as $av){
@@ -508,7 +508,7 @@ class ActualiteController extends Controller
                 ->leftjoin('blocs', 'blocs.id', '=', 'biens.bloc_id')
                 ->leftjoin('immeubles', 'immeubles.id', '=', 'biens.immeuble_id')
                 ->select('avances.montant','biens.propriete_dite_bien','tranches.nom as tranche_nom','blocs.nom as bloc_nom','immeubles.nom as immeuble_nom')
-                ->where('avances.user_id',$userAuth->value('id'))->whereDate('avances.created_at',$date)->get();
+                ->where('avances.user_id',$userAuth->value('id'))->whereDate('avances.date_reglement',$date)->get();
 
                 $sum_avances=0;
                     if(count($histo)>0){

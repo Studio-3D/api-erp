@@ -13,6 +13,10 @@ use App\Models\Relance_Rdv_visite;
 use App\Models\Societe;
 use App\Models\User;
 use Carbon\Carbon;
+use App\Models\Import;
+use App\Models\Projet;
+use App\Http\Helpers\ImportExcelHelper;
+
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config; // Mail à envoyer
@@ -367,6 +371,54 @@ class DatabaseHelper
         }
     }
 
+    public static function import_fichiers($databases)
+    {
+        Config::set('broadcasting.default', 'pusher_3');
+
+        foreach ($databases as $database) {
+            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+
+            // Switch to the temporary database
+            $connection = DatabaseHelper::Connection_database($databaseName);
+            config(['database.connections.temp' => $connection]);
+            DB::connection('temp')->setDatabaseName($connection['database']);
+            DB::reconnect('temp');
+
+            //
+
+            if (Schema::connection('temp')->hasTable('imports')) {
+                $imports=Import::on('temp')->where('statut','0')->get();
+                \Log::info("import des fichiers  du base de donne'. $databaseName.");
+                foreach($imports as $imp){
+                    $projet = Projet::on('temp')->findOrfail($imp->projet_id);
+                    if($projet->nbre_tranches>0 && $projet->nbre_blocs>0 && $projet->nbre_immeubles>0){
+                        \Log::info("enter in projet '. $imp->projet_id.");
+                        ImportExcelHelper::ImportStockByProjet(null,$imp->data,$imp->projet_id,1);
+                        $imp->setConnection('temp');
+                        $imp->statut='1';
+                        $imp->save();
+                        \Log::info("sort projet_id '. $imp->projet_id.");
+                        $data_notif = [
+                            'lien' => '/projets/show/' . $imp->projet_id,
+                            'date' => Carbon::now(),
+                            'type' => 29,
+                            'description' => 'Fichier des Biens Importé ',
+                            'user_id' => $imp->user->user_id_origin,
+                            'projet_id' => $imp->projet_id,
+
+                        ];
+                        $notif_helper = new NotificationHelper();
+                        $req=new \Illuminate\Http\Request();
+                        $notif_helper->storeNotification($req->merge($data_notif));
+
+                    }
+                }
+            }
+
+
+        }
+    }
+
 
     public static function liberer_bien_pre_reserve($databases)
     {
@@ -407,7 +459,8 @@ class DatabaseHelper
 
                                 ];
                                 $notif_helper = new NotificationHelper();
-                                $notif_helper->storeNotification($request->merge($data_notif));
+                                $req=new \Illuminate\Http\Request();
+                                $notif_helper->storeNotification($req->merge($data_notif));
 
                             }
                             /* else{

@@ -143,6 +143,7 @@ class ClientController extends Controller
             $client->nom_mere = $request->nom_mere;
             $client->prospect_id = $request->prospect_id;
             $client->code_client = $request->cin.'_'.$request->nom.'_'.$request->prenom;
+            $client->password = '01020304';
             if ($client->save()) {
                 if($client->prospect_id!=null){
                   $prospect = Prospect::on('temp')->findorfail($client->prospect_id);
@@ -150,7 +151,7 @@ class ClientController extends Controller
                   $prospect->save();
                 }
                 //store info to database client
-                $db_client = DB::connection('mysql_client')->table('users')->insert(['code_client' => $request->cin.'_'.$request->nom, 'name'=>$request->nom,'prenom'=>$request->prenom,'email'=>$request->email,'password'=>Hash::make('01020304'),'gender'=>$request->civilite,'client_id'=>$client->id]);
+                $db_client = DB::connection('mysql_client')->table('users')->insert(['code_client' => $request->cin.'_'.$request->nom, 'name'=>$request->nom,'prenom'=>$request->prenom,'email'=>$request->email,'password'=>Hash::make($client->password),'gender'=>$request->civilite,'client_id'=>$client->id]);
                 return $client;
             }
         }
