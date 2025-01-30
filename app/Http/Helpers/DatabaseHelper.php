@@ -389,11 +389,44 @@ class DatabaseHelper
             if (Schema::connection('temp')->hasTable('imports')) {
                 $imports=Import::on('temp')->where('statut','0')->get();
                 \Log::info("import des fichiers  du base de donne'. $databaseName.");
+
                 foreach($imports as $imp){
+                    $store=0;
                     $projet = Projet::on('temp')->findOrfail($imp->projet_id);
                     if($projet->nbre_tranches>0 && $projet->nbre_blocs>0 && $projet->nbre_immeubles>0){
                         \Log::info("enter in projet '. $imp->projet_id.");
                         ImportExcelHelper::ImportStockByProjet(null,$imp->data,$imp->projet_id,1);
+                        $store=1;
+                    }elseif($projet->nbre_tranches==0 && $projet->nbre_blocs==0 && $projet->nbre_immeubles==0){
+                        ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBlocAndImmeuble(null,$imp->data,$imp->projet_id,1);
+                        $store=1;
+
+                    }elseif($projet->nbre_blocs==0 && $projet->nbre_tranches==0 && $projet->nbre_immeubles>0){
+                        ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBloc(null,$imp->data,$imp->projet_id,1);
+                        $store=1;
+                    }
+                    elseif($projet->nbre_tranches==0 && $projet->nbre_immeubles==0 && $projet->nbre_blocs>0){
+                        ImportExcelHelper::ImportStockByProjetWithoutTrancheAndImmeuble(null,$imp->data,$imp->projet_id,1);
+                        $store=1;
+                    }
+                    elseif($projet->nbre_tranches==0 && $projet->nbre_blocs>0 && $projet->nbre_immeubles>0){
+                        ImportExcelHelper::ImportStockByProjetWithoutTranche(null,$imp->data,$imp->projet_id,1);
+                        $store=1;
+                    }
+                    elseif($projet->nbre_blocs==0 && $projet->nbre_immeubles==0 && $projet->nbre_tranches>0){
+                        ImportExcelHelper::ImportStockByProjetWithoutBlocAndImmeuble(null,$imp->data,$imp->projet_id,1);
+                        $store=1;
+                    }
+                    elseif($projet->nbre_blocs==0 && $projet->nbre_tranches>0 && $projet->nbre_immeubles>0){
+                        ImportExcelHelper::ImportStockByProjetWithoutBloc(null,$imp->data,$imp->projet_id,1);
+                        $store=1;
+                    }
+                    elseif($projet->nbre_immeubles==0 && $projet->nbre_tranches>0 && $projet->nbre_blocs>0){
+                        ImportExcelHelper::ImportStockByProjetWithoutImmeuble(null,$imp->data,$imp->projet_id,1);
+                        $store=1;
+                    }
+
+                    if($store==1){
                         $imp->setConnection('temp');
                         $imp->statut='1';
                         $imp->save();
@@ -410,7 +443,6 @@ class DatabaseHelper
                         $notif_helper = new NotificationHelper();
                         $req=new \Illuminate\Http\Request();
                         $notif_helper->storeNotification($req->merge($data_notif));
-
                     }
                 }
             }
