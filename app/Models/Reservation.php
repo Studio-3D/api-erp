@@ -61,6 +61,10 @@ class Reservation extends Model
     {
         return $this->hasOne(Compromis_vente::class,'reservation_id')->orderby('created_at','asc')->latest();
     }
+    public function contrat_vente()
+    {
+        return $this->hasOne(Contrat_vente::class,'reservation_id')->orderby('created_at','asc')->latest();
+    }
     public function first_avance()
     {
         return $this->hasOne(Avance::class,'reservation_id')->orderby('created_at','asc')->latest();

@@ -436,7 +436,7 @@ class BienController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $bien = bien::on('temp')->with('reservation', 'Bien_tva')->withSum('tva_collectes', 'tva_a_payer')->findOrfail($id);
+            $bien = bien::on('temp')->with('reservation', 'Bien_tva','tva_collectes','tva_collectes_ancien_reservation')->withSum('tva_collectes', 'tva_a_payer')->findOrfail($id);
             return response()->json(['bien' => $bien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -503,9 +503,9 @@ class BienController extends Controller
             DatabaseHelper::Config();
             $bien = bien::on('temp')->findOrfail($id);
             if ($bien->delete()) {
-                return response()->json(['message' => 'bien deleted succesfully'], 200);
+                return response()->json(['message' => 'bien Supprimé avec succès'], 200);
             } else {
-                return response()->json(['message' => 'bien non deleted'], 404);
+                return response()->json(['message' => 'bien non Supprimé'], 404);
             }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -547,7 +547,7 @@ class BienController extends Controller
             if ($bien->save()) {
                 $this->libere_bien_frein($bien->id);
             }
-            HistoriqueBienHelper::createHistoriqueBien(4, "bloquer", $bien_id, Auth::guard('api')->user()->id, null, null);
+            HistoriqueBienHelper::createHistoriqueBien(4, "bloquer", $bien_id, Auth::guard('api')->user()->id, null, null,null,null);
 
             return response()->json(['message' => $bien], 200);
 
@@ -650,7 +650,7 @@ class BienController extends Controller
                 }
 
                 $this->libere_bien_frein($bien->id);
-                HistoriqueBienHelper::createHistoriqueBien(3, "reserver", $bien_id, Auth::guard('api')->user()->id, $visite_id, $reservation_id);
+                HistoriqueBienHelper::createHistoriqueBien(3, "reserver", $bien_id, Auth::guard('api')->user()->id, $visite_id, $reservation_id,null,null);
             }
 
             return response()->json(['message' => $bien], 200);
@@ -660,7 +660,7 @@ class BienController extends Controller
         }
     }
 
-    public function prereserverBien($bien_id, $visite_id, $appel_id)
+    public function prereserverBien($bien_id, $visite_id, $appel_id,$desistement_id)
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
@@ -689,7 +689,7 @@ class BienController extends Controller
 
             if($visite_id!=null){
                 HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id, $visite_id, null,null,null);
-            }elseif($t_appel_id!=null){
+            }elseif($appel_id!=null){
                 //$appel_id=>traitement_appel_id
                 HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id,null,null,null,$t_appel_id);
             }elseif($desistement_id!=null){

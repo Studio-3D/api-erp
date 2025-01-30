@@ -119,6 +119,7 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('typeBiens', V1TypeBienController::class);
         Route::get('projets/{idprojet}/typeBiens', [V1TypeBienController::class, 'indexByProjet']);
         Route::get('get_typeBiensByProjet/{id}', [V1TypeBienController::class, 'get_typeBiensByProjet'])->name('');
+        Route::post('store_multiple_type_biens', [V1TypeBienController::class, 'store_multiple_type_biens'])->name('');
 
         //l'API banques
         Route::resource('banques', V1BanqueController::class);
@@ -358,6 +359,9 @@ Route::middleware('auth:api')->group(function () {
 
         //IMPORT Bien by Excel
         Route::post('upload_excel_bien', [V1UploadBienController::class, 'upload'])->name('');
+        Route::get('projets/{idprojet}/histo_importation', [V1UploadBienController::class, 'histo_importation']);
+        Route::delete('delete_fichier_import/{id}', [V1UploadBienController::class, 'delete_fichier_import'])->name('');
+
         //Dashboad
         Route::get('dashboard/{projet_id}/{de}/{a}', [V1HomeController::class, 'dashboard'])->name('');
         //pre reservation

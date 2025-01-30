@@ -205,10 +205,9 @@ class ComptabiliteController extends Controller
             $size = $request->input('size', null);
             $page = $request->input('page', null);
             DatabaseHelper::Config();
-
             $query = TvaCollecte::on('temp')->with('encaissement','reservation','bien','encaissement.remboursement');
             $query->where('etat', 1);
-
+          
             if ($request->filled('de')) {
                 $start = Carbon::parse($request->input('de'));
                 $query->whereDate('created_at','>=', $start);
@@ -216,6 +215,10 @@ class ComptabiliteController extends Controller
             if ($request->filled('a')) {
                 $end = Carbon::parse($request->input('a'));
                 $query->whereDate('created_at','<=', $end);
+            }
+            if(!$request->filled('de') &&!$request->filled('de')){
+                $query->whereMonth('created_at', Carbon::now()->month)
+            ->whereYear('created_at', Carbon::now()->year);
             }
 
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {

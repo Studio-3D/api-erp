@@ -26,7 +26,7 @@ return new class extends Migration
             $table->double('tva',20,2);
             $table->double('ttc',20,2);
             $table->date('date_paiement');
-            $table->enum('mode_paiement',[ModePaiement::Espèce->value,ModePaiement::Chèque->value,ModePaiement::Chèque_Banque->value,ModePaiement::Chèque_Certifié->value,ModePaiement::Virement->value,ModePaiement::Versement->value]);
+            $table->enum('mode_paiement',[ModePaiement::Espèce->value,ModePaiement::Chèque->value,ModePaiement::Chèque_Banque->value,ModePaiement::Chèque_Certifié->value,ModePaiement::Virement->value,ModePaiement::Versement->value])->comment('1=>espece 2=>cheque 3=>cheque banque 4=>cheque certifie 5=>virement 6=>versement 7=>transfert dossier');
             $table->string('pj_paiement')->nullable();
             $table->bigInteger('numero_paiement')->nullable();
             $table->foreignId('banque_id')->nullable()->constrained('banques')->onDelete('cascade');

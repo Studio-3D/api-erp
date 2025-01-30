@@ -46,7 +46,7 @@ class LivraisonController extends Controller
             $last_rdv = $data->take(1);
             $data_p = PaginationHelper::paginate_array(array_slice($data->toArray(), 1),$perPage,$page,$request->url());
             $reservation=Reservation::on('temp')->findorfail($reservation_id);
-            return response()->json(['last_rdv' => $last_rdv,'historiques' => $data_p,'etat_res'=>$reservation->etat], 200);
+            return response()->json(['last_rdv' => $last_rdv,'historiques' => $data_p,'etat_res'=>$reservation->etat,'contrat_vente'=>$reservation->contrat_vente], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

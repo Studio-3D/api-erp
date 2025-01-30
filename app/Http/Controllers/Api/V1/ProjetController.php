@@ -33,7 +33,7 @@ class ProjetController extends Controller
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             Config::set('broadcasting.default', 'pusher_2');
-            $projets = Projet::on('temp')->orderBy('created_at', 'asc')->get();
+            $projets = Projet::on('temp')->with('typesBien')->orderBy('created_at', 'asc')->get();
             // broadcast(new NewProjectEvent($projets->id));
             return response()->json(['projets' => $projets]);
         } else if (RoleHelper::Com()) {
@@ -41,7 +41,7 @@ class ProjetController extends Controller
             $id_auth = Auth::guard('api')->user()->id;
             $user_id = User::on('temp')->where('user_id_origin', $id_auth)->pluck('id');
             Config::set('broadcasting.default', 'pusher_2');
-            $projets = Projet::on('temp')
+            $projets = Projet::on('temp')->with('typesBien')
                 ->join('user_projets', 'user_projets.projet_id', '=', 'projets.id')
                 ->where('user_projets.user_id', $user_id)
                 ->select('projets.*')
@@ -82,7 +82,7 @@ class ProjetController extends Controller
             $page = $request->input('page', 1);
             DatabaseHelper::Config();
             // Démarrer la requête directement sur le modèle
-            $query = Projet::on('temp');
+            $query = Projet::on('temp')->with('typesBien');
 
             if ($request->filled('nom')) {
                 $query->where('nom', 'like', '%' . $request->input('nom') . '%');
@@ -266,7 +266,7 @@ class ProjetController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $projet = Projet::on('temp')->with('tranche','bloc','immeuble')->withCount(['bloc', 'tranche', 'immeuble', 'bien'])->findOrfail($id);
+            $projet = Projet::on('temp')->with('tranche','bloc','immeuble','typesBien')->withCount(['bloc', 'tranche', 'immeuble', 'bien'])->findOrfail($id);
             return response()->json(['projet' => $projet], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

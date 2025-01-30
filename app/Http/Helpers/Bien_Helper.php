@@ -32,10 +32,11 @@ class Bien_Helper
 
 
     public static function checkAndCreateBienByExcel($projet_id,$tranche_id,$bloc_id,$immeuble_id,$row){
-        DatabaseHelper::Config();
+
+       // DatabaseHelper::Config(); on desactive si on fait import sans cron version ancien
         $bien_count = Bien::on('temp')->where(function ($query) use ($row, $projet_id, $tranche_id, $bloc_id, $immeuble_id) {
-            if (!empty($row['numero'])) {
-                $query->where('propriete_dite_bien', $row['numero']);
+            if (!empty($row['Numero'])) {
+                $query->where('propriete_dite_bien', $row['Numero']);
             }
             if ($immeuble_id !== null) {
                 $query->where('immeuble_id', $immeuble_id);
@@ -57,91 +58,87 @@ class Bien_Helper
             $bien->tranche_id = $tranche_id ?? null;
             $bien->projet_id = $projet_id;
 
-            if (array_key_exists("numero",$row) && $row['numero']!=null ){
-                    $bien->propriete_dite_bien=$row['numero'];
+            if (array_key_exists("Numero",$row) && $row['Numero']!=null ){
+                    $bien->propriete_dite_bien=$row['Numero'];
             }
-            if (str_contains($row['numero'], 'Appt')) {
-                $explode_numero = explode("Appt", $row['numero']);
+            if (str_contains($row['Numero'], 'Appt')) {
+                $explode_numero = explode("Appt", $row['Numero']);
                 $num=$explode_numero[1];
 
-              }elseif(str_contains($row['numero'], 'APP')){
-                $explode_numero = explode("APP", $row['numero']);
+              }elseif(str_contains($row['Numero'], 'APP')){
+                $explode_numero = explode("APP", $row['Numero']);
                 $num=$explode_numero[1];
               }else{
-                 $num=$row['numero'];
+                 $num=$row['Numero'];
               }
             $bien->numero=$num;
-           /* else if (array_key_exists("magasin_num",$row) && $row['magasin_num']!=null){
 
-                    $bien->numero=$row['magasin_num'];
-                    $bien->propriete_dite_bien=$row['magasin_num'];
-            }*/
-            if (str_contains($row['etage'], 'er etage')) {
-                $explode_niveau_1 = explode("er etage", $row['etage']);
+            if (str_contains($row['Etage'], 'er etage')) {
+                $explode_niveau_1 = explode("er etage", $row['Etage']);
                 $nv=$explode_niveau_1[0];
-            }elseif(str_contains($row['etage'], 'er étage')){
-                            $explode_niveau_5 = explode("er étage", $row['etage']);
+            }elseif(str_contains($row['Etage'], 'er étage')){
+                            $explode_niveau_5 = explode("er étage", $row['Etage']);
                             $nv=$explode_niveau_5[0];
-            }elseif(str_contains($row['etage'], 'eme etage')){
-                            $explode_niveau_2 = explode("eme etage", $row['etage']);
+            }elseif(str_contains($row['Etage'], 'eme etage')){
+                            $explode_niveau_2 = explode("eme etage", $row['Etage']);
                             $nv=$explode_niveau_2[0];
 
-            }elseif(str_contains($row['etage'], 'ème etage')){
-                            $explode_niveau_3 = explode("ème etage", $row['etage']);
+            }elseif(str_contains($row['Etage'], 'ème etage')){
+                            $explode_niveau_3 = explode("ème etage", $row['Etage']);
                             $nv=$explode_niveau_3[0];
             }
-            elseif(str_contains($row['etage'], 'ème étage')){
-                            $explode_niveau_4 = explode("ème étage", $row['etage']);
+            elseif(str_contains($row['Etage'], 'ème étage')){
+                            $explode_niveau_4 = explode("ème étage", $row['Etage']);
                             $nv=$explode_niveau_4[0];
             }
-            elseif(str_contains($row['etage'], 'RDC')){
+            elseif(str_contains($row['Etage'], 'RDC')){
                         $nv=0;
             }else{
             $nv=0;
             }
               $bien->niveau=$nv;
 
-            if (array_key_exists("type_local",$row) && $row['type_local']!=null){
+            if (array_key_exists("TypeBien",$row) && $row['TypeBien']!=null){
                 $type=TypeBien::on('temp')->where('projet_id',$projet_id)->get();
                 foreach ($type as $key => $value) {
-                    if ($value->type == $row['type_local']) {
+                    if ($value->id ==intval($row['TypeBien'])) {
                         $bien->type_id=$value->id;
                     }
                 }
             }
-            if (array_key_exists("prix_parking",$row) && $row['prix_parking'] != NULL) {
-                    $bien->prix_parking = $row['prix_parking'];
+            if (array_key_exists("Prix_parking",$row) && $row['Prix_parking'] != NULL) {
+                    $bien->prix_parking = $row['Prix_parking'];
             }else{
                 $bien->prix_parking = 0;
             }
-            if (array_key_exists("prix_box",$row) && $row['prix_box']!= NULL){
-                $bien->prix_box = $row['prix_box'];
+            if (array_key_exists("Prix_box",$row) && $row['Prix_box']!= NULL){
+                $bien->prix_box = $row['Prix_box'];
             } else {
                 $bien->prix_box = 0;
             }
-            if (array_key_exists("balcon",$row)){
-                if ($row['balcon'] == NULL || $row['balcon'] == 'SYNDIC PROPOSE'||$row['balcon']=='SYNDIC PLAN') {
+            if (array_key_exists("Balcon",$row)){
+                if ($row['Balcon'] == NULL || $row['Balcon'] == 'SYNDIC PROPOSE'||$row['Balcon']=='SYNDIC PLAN') {
                     $bien->superficie_balcon = 0;
                     $bien-> superficie_balcon_calculer=0;
                 } else {
-                    $bien->superficie_balcon = $row['balcon'];
-                    $bien-> superficie_balcon_calculer=$row['balcon'];
+                    $bien->superficie_balcon = $row['Balcon'];
+                    $bien-> superficie_balcon_calculer=$row['Balcon'];
                 }
             }
-            if (array_key_exists("terrasse",$row) && $row['terrasse'] != NULL) {
-                    $bien->superficie_terrasse = $row['terrasse'];
-                    $bien->superficie_terrasse_calculer= $row['terrasse'];
+            if (array_key_exists("Terrasse",$row) && $row['Terrasse'] != NULL) {
+                    $bien->superficie_terrasse = $row['Terrasse'];
+                    $bien->superficie_terrasse_calculer= $row['Terrasse'];
             }else{
                 $bien->superficie_terrasse = 0;
                 $bien->superficie_terrasse_calculer=0;
             }
-            if (array_key_exists("superficie_architect",$row) && $row['superficie_architect'] != NULL) {
-            $bien->superficie_architecte =$row['superficie_architect'];
+            if (array_key_exists("Superficie_architect",$row) && $row['Superficie_architect'] != NULL) {
+            $bien->superficie_architecte =$row['Superficie_architect'];
             }else{
                 $bien->superficie_architecte = 0;
             }
-            if(array_key_exists("superficie_habitable",$row) && $row['superficie_habitable'] != NULL) {
-                $bien->superficie_habitable =$row['superficie_habitable'];
+            if(array_key_exists("Superficie_habitable",$row) && $row['Superficie_habitable'] != NULL) {
+                $bien->superficie_habitable =$row['Superficie_habitable'];
             }else{
                 $bien->superficie_habitable = 0;
             }
@@ -150,23 +147,23 @@ class Bien_Helper
             }else{
                 $bien->prix_unitaire=0;
             }
-            if (array_key_exists("orientation",$row) && $row['orientation'] != NULL) {
-                $bien->orientation=$row['orientation'];
+            if (array_key_exists("Orientation",$row) && $row['Orientation'] != NULL) {
+                $bien->orientation=$row['Orientation'];
             }else{
                 $bien->orientation='N';
             }
-            if (array_key_exists("avance_minimale",$row) && $row['avance_minimale'] != NULL) {
-                $bien->avance_minimale=$row['avance_minimale'];
+            if (array_key_exists("Avance_minimale",$row) && $row['Avance_minimale'] != NULL) {
+                $bien->avance_minimale=$row['Avance_minimale'];
             }else{
                 $bien->avance_minimale=0;
             }
-            if (array_key_exists("nbre_facades",$row) && $row['nbre_facades'] != NULL) {
-                $bien->nbre_facades=$row['nbre_facades'];
+            if (array_key_exists("Nombre_facades",$row) && $row['Nombre_facades'] != NULL) {
+                $bien->nbre_facades=$row['Nombre_facades'];
             }else{
                 $bien->nbre_facades=0;
             }
-            if (array_key_exists("superficie",$row) && $row['superficie'] != NULL) {
-                $bien->superficie_total =$row['superficie'];
+            if (array_key_exists("Superficie",$row) && $row['Superficie'] != NULL) {
+                $bien->superficie_total =$row['Superficie'];
             }else{
                 $bien->superficie_total=$bien->superficie_habitable+$bien->superficie_balcon+$bien->superficie_terrasse;
             }
@@ -185,35 +182,35 @@ class Bien_Helper
                 $nb_terasse=0;
                 $nb_buanderie=0;
                 $nb_reception=0;
-                if (array_key_exists("nb_chambre",$row) && $row['nb_chambre'] != NULL) {
-                    $nb_chambre =$row['nb_chambre'];
+                if (array_key_exists("Nombre_chambre",$row) && $row['Nombre_chambre'] != NULL) {
+                    $nb_chambre =$row['Nombre_chambre'];
                 }
-                if (array_key_exists("nb_salon",$row) && $row['nb_salon'] != NULL) {
-                    $nb_salon =$row['nb_salon'];
+                if (array_key_exists("Nombre_salon",$row) && $row['Nombre_salon'] != NULL) {
+                    $nb_salon =$row['Nombre_salon'];
                 }
-                if (array_key_exists("nb_cuisine",$row) && $row['nb_cuisine'] != NULL) {
-                    $nb_cuisine =$row['nb_cuisine'];
+                if (array_key_exists("Nombre_cuisine",$row) && $row['Nombre_cuisine'] != NULL) {
+                    $nb_cuisine =$row['Nombre_cuisine'];
                 }
-                if (array_key_exists("nb_sdb",$row) && $row['nb_sdb'] != NULL) {
-                    $nb_sdb =$row['nb_sdb'];
+                if (array_key_exists("Nombre_sdb",$row) && $row['Nombre_sdb'] != NULL) {
+                    $nb_sdb =$row['Nombre_sdb'];
                 }
-                if (array_key_exists("nb_hall",$row) && $row['nb_hall'] != NULL) {
-                    $nb_hall=$row['nb_hall'];
+                if (array_key_exists("Nombre_hall",$row) && $row['Nombre_hall'] != NULL) {
+                    $nb_hall=$row['Nombre_hall'];
                 }
-                if (array_key_exists("nb_terasse",$row) && $row['nb_terasse'] != NULL) {
-                    $nb_terasse=$row['nb_terasse'];
+                if (array_key_exists("Nombre_terasse",$row) && $row['Nombre_terasse'] != NULL) {
+                    $nb_terasse=$row['Nombre_terasse'];
                 }
-                if (array_key_exists("nb_balcon",$row) && $row['nb_balcon'] != NULL) {
-                    $nb_balcon=$row['nb_balcon'];
+                if (array_key_exists("Nombre_balcon",$row) && $row['Nombre_balcon'] != NULL) {
+                    $nb_balcon=$row['Nombre_balcon'];
                 }
-                if (array_key_exists("nb_buanderie",$row) && $row['nb_buanderie'] != NULL) {
-                    $nb_buanderie=$row['nb_buanderie'];
+                if (array_key_exists("Nombre_buanderie",$row) && $row['Nombre_buanderie'] != NULL) {
+                    $nb_buanderie=$row['Nombre_buanderie'];
                 }
-                if (array_key_exists("nb_placard",$row) && $row['nb_placard'] != NULL) {
-                    $nb_placard=$row['nb_placard'];
+                if (array_key_exists("Nombre_placard",$row) && $row['Nombre_placard'] != NULL) {
+                    $nb_placard=$row['Nombre_placard'];
                 }
-                if (array_key_exists("nb_reception",$row) && $row['nb_reception'] != NULL) {
-                    $nb_reception=$row['nb_reception'];
+                if (array_key_exists("Nombre_reception",$row) && $row['Nombre_reception'] != NULL) {
+                    $nb_reception=$row['Nombre_reception'];
                 }
                 if($nb_chambre!=0||$nb_salon!=0||$nb_cuisine!=0||$nb_sdb!=0||$nb_hall!=0||$nb_placard!=0||$nb_balcon!=0||$nb_terasse!=0||$nb_buanderie!=0||$nb_reception!=0){
                     $compo=new CompositionBien();
@@ -390,7 +387,7 @@ class Bien_Helper
     }
     public static function store_bien_frein($id,$text)
     {
-        if($text!='console'){
+        if($text!='console' && $text!='import'){
             DatabaseHelper::Config();
         }
         $bien=Bien::on('temp')->findorfail($id);

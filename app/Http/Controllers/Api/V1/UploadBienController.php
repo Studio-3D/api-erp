@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Projet;
+use App\Models\Import;
 use App\Http\Helpers\ImportExcelHelper;
 class UploadBienController extends Controller
 {
@@ -17,52 +18,42 @@ class UploadBienController extends Controller
     public function upload(Request $request)
     {
         if (RoleHelper::ACSup()) {
-
-            $projet_id = $request->projetId;
-
             DatabaseHelper::Config();
-
-            $projet = Projet::on('temp')->findOrFail($projet_id);
-
+            $projet_id=$request->projet_id;
+            $projet = Projet::on('temp')->findOrFail($request->projet_id);
             set_time_limit(0);
             ini_set('memory_limit', '-1');
-
-            $data = $request->input('jsonData');
+            $data = json_decode($request->input('jsonData', '[]'), true) ;
 
             $keys = array_keys($data[0]);
-
-            //$importMethod = $this->determineImportMethod($keys);
-
-           // ImportExcelHelper::$importMethod($data, $projet_id);
-
-
-           $hasTranche = in_array('tranche', $keys);
-           $hasBloc = in_array('bloc', $keys);
-           $hasImmeuble = in_array('immeuble', $keys);
+           $hasTranche = in_array('Tranche', $keys);
+           $hasBloc = in_array('Bloc', $keys);
+           $hasImmeuble = in_array('Immeuble', $keys);
            //if excel containe column bloc or immeuble or tranche
+            $console=0;
            if ($hasTranche && $hasBloc && $hasImmeuble) {
-               return ImportExcelHelper::ImportStockByProjet($data,$projet_id);
+               return ImportExcelHelper::ImportStockByProjet($request,$data,$projet_id,$console);
 
            } elseif ($hasTranche && $hasBloc && !$hasImmeuble) {
-            return ImportExcelHelper::ImportStockByProjetWithoutImmeuble($data,$projet_id);
+            return ImportExcelHelper::ImportStockByProjetWithoutImmeuble($request,$data,$projet_id,$console);
 
            } elseif ($hasTranche && !$hasBloc && $hasImmeuble) {
-               return ImportExcelHelper::ImportStockByProjetWithoutBloc($data,$projet_id);
+               return ImportExcelHelper::ImportStockByProjetWithoutBloc($request,$data,$projet_id,$console);
            } elseif ($hasTranche && !$hasBloc && !$hasImmeuble) {
-            return ImportExcelHelper::ImportStockByProjetWithoutBlocAndImmeuble($data,$projet_id);
+            return ImportExcelHelper::ImportStockByProjetWithoutBlocAndImmeuble($request,$data,$projet_id,$console);
 
            } elseif (!$hasTranche && $hasBloc && $hasImmeuble) {
-            return ImportExcelHelper::ImportStockByProjetWithoutTranche($data,$projet_id);
+            return ImportExcelHelper::ImportStockByProjetWithoutTranche($request,$data,$projet_id,$console);
 
            } elseif (!$hasTranche && $hasBloc && !$hasImmeuble) {
-            return ImportExcelHelper::ImportStockByProjetWithoutTrancheAndImmeuble($data,$projet_id);
+            return ImportExcelHelper::ImportStockByProjetWithoutTrancheAndImmeuble($request,$data,$projet_id,$console);
 
            } elseif (!$hasTranche && !$hasBloc && $hasImmeuble) {
-               return ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBloc($data,$projet_id);
+               return ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBloc($request,$data,$projet_id,$console);
            } else {
-               return ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBlocAndImmeuble($data,$projet_id);
+               return ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBlocAndImmeuble($request,$data,$projet_id,$console);
            }
-            return response()->json('done');
+            return response()->json('done stock fichier');
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -70,42 +61,54 @@ class UploadBienController extends Controller
     }
 
 
+    public function histo_importation(Request $request, $projet_id)
+    {
+        if (Auth::guard('api')->check()) {
+            $size = $request->input('size', null);
+            $page = $request->input('page', null);
+            DatabaseHelper::Config();
 
+            // Démarrer la requête directement sur le modèle
+            $query = Import::on('temp')->where('projet_id', $projet_id);
+            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+                $imp = $query->orderBy('created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
 
-       /* private function determineImportMethod($keys) {
-            $hasTranche = in_array('tranche', $keys);
-            $hasBloc = in_array('Bloc', $keys);
-            $hasImmeuble = in_array('immeuble', $keys);
+                // Extraire les propriétés du paginateur
+                $pagination = [
+                    'currentPage' => $imp->currentPage(),
+                    'totalItems' => $imp->total(),
+                    'totalPages' => $imp->lastPage(),
+                ];
 
-            if ($hasTranche && $hasBloc && $hasImmeuble) {
-                return 'ImportStockByProjet';
+                // Extraire les éléments d'utilisateur du paginateur
+                $imp = $imp->items();
 
-
-            } elseif ($hasTranche && $hasBloc && !$hasImmeuble) {
-
-
-                return 'ImportStockByProjetWithoutImmeuble';
-            } elseif ($hasTranche && !$hasBloc && $hasImmeuble) {
-
-
-                return 'ImportStockByProjetWithoutBloc';
-            } elseif ($hasTranche && !$hasBloc && !$hasImmeuble) {
-
-                return 'ImportStockByProjetWithoutBlocAndImmeuble';
-            } elseif (!$hasTranche && $hasBloc && $hasImmeuble) {
-
-                return 'ImportStockByProjetWithoutTranche';
-            } elseif (!$hasTranche && $hasBloc && !$hasImmeuble) {
-
-                return 'ImportStockByProjetWithoutTrancheAndImmeuble';
-            } elseif (!$hasTranche && !$hasBloc && $hasImmeuble) {
-
-                return 'ImportStockByProjetWithoutTrancheAndBloc';
-            } else {
-                return 'ImportStockByProjetWithoutTrancheAndBlocAndImmeuble';
+                // Retourner la réponse simplifiée
+                return response()->json([
+                    'data' => $imp,
+                    'pagination' => $pagination,
+                ], 200);
             }
-        }*/
+        }
 
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    public function delete_fichier_import($id){
+        if(RoleHelper::ACSup()){
+            DatabaseHelper::Config();
+            $import=Import::on('temp')->findOrFail($id);
+            if ($import->delete()) {
+                return response()->json(['message' => 'fichier Supprimé avec succès '], 200);
+            } else {
+                return response()->json(['message' => 'fichier  non supprimé'], 404);
+            }
+
+        }
+
+        return response()->json(['error'=>'Unauthorized'],401);
+    }
 
     /**
      * Store a newly created resource in storage.
@@ -123,7 +126,7 @@ class UploadBienController extends Controller
     /**
      * Update the specified resource in storage.
      */
-  
+
 
     /**
      * Remove the specified resource from storage.
