@@ -45,6 +45,9 @@ use App\Http\Controllers\Api\V1\UploadBienController as V1UploadBienController;
 use App\Http\Controllers\Api\V1\UserController as V1UserController;
 use App\Http\Controllers\Api\V1\VisiteController as V1VisiteController;
 use App\Http\Controllers\Api\V1\VueController as V1VueController;
+use App\Http\Controllers\Api\V1\EcheanceProjetController as V1EcheanceProjetController;
+
+
 use App\Http\Controllers\AquereurController;
 use App\Http\Controllers\BanqueController;
 use App\Http\Controllers\BienController;
@@ -364,7 +367,11 @@ Route::middleware('auth:api')->group(function () {
 
         //Dashboad
         Route::get('dashboard/{projet_id}/{de}/{a}', [V1HomeController::class, 'dashboard'])->name('');
-        //pre reservation
+        //ECheancesProjet
+        Route::resource('echeancesProjet', V1EcheanceProjetController::class);
+        Route::get('projets/{idprojet}/echeancesProjet', [V1EcheanceProjetController::class, 'indexByProjet']);
+
+
 
     });
 
