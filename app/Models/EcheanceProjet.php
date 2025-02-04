@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class EcheanceProjet extends Model
 {
+    //Etape Projet
     use HasFactory;
 
     use SoftDeletes;

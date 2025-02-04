@@ -45,7 +45,7 @@ use App\Http\Controllers\Api\V1\UploadBienController as V1UploadBienController;
 use App\Http\Controllers\Api\V1\UserController as V1UserController;
 use App\Http\Controllers\Api\V1\VisiteController as V1VisiteController;
 use App\Http\Controllers\Api\V1\VueController as V1VueController;
-use App\Http\Controllers\Api\V1\EcheanceProjetController as V1EcheanceProjetController;
+use App\Http\Controllers\Api\V1\EtapeProjetController as V1EtapeProjetController;
 
 
 use App\Http\Controllers\AquereurController;
@@ -151,8 +151,8 @@ Route::middleware('auth:api')->group(function () {
 
         //l'API partenare
         Route::resource('projets', V1ProjetController::class);
-        Route::get('get_projets_users/{societe_id}/{user_id}', [V1ProjetController::class, 'get_projets_user'])->name('');
-
+       // Route::get('get_projets_users/{societe_id}/{user_id}', [V1ProjetController::class, 'get_projets_user'])->name('');
+       Route::get('get_projets_users/{user_id}', [V1ProjetController::class, 'get_projets_user'])->name('');
         //l'API tranches
         Route::resource('tranches', V1TrancheController::class);
         Route::get('projets/{idprojet}/tranches', [V1TrancheController::class, 'indexByProjet']);
@@ -367,9 +367,9 @@ Route::middleware('auth:api')->group(function () {
 
         //Dashboad
         Route::get('dashboard/{projet_id}/{de}/{a}', [V1HomeController::class, 'dashboard'])->name('');
-        //ECheancesProjet
-        Route::resource('echeancesProjet', V1EcheanceProjetController::class);
-        Route::get('projets/{idprojet}/echeancesProjet', [V1EcheanceProjetController::class, 'indexByProjet']);
+        //EtapesProjet
+        Route::resource('etapesProjet', V1EtapeProjetController::class);
+        Route::get('projets/{idprojet}/etapesProjet', [V1EtapeProjetController::class, 'indexByProjet']);
 
 
 
