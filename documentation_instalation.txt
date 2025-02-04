@@ -1,0 +1,94 @@
+
+Documentation pour l'installation du Backend
+Cette documentation décrit les étapes nécessaires pour installer et configurer le backend d'un projet ERP Immobilier.
+**Backend Installation Documentation**
+
+1. **Cloner le projet depuis le dépôt GitHub :**
+   ```bash
+   git clone https://github.com/ERPImmobilier/api_0.1.git
+   ```
+
+2. **Ajouter l'origine du dépôt :**
+   ```bash
+   git remote add origin https://github.com/ERPImmobilier/api_0.1.git
+   ```
+
+3. **Initialiser Git dans le répertoire local :**
+   ```bash
+   git init
+   ```
+
+4. **Installer les dépendances PHP avec Composer :**
+   ```bash
+   composer install
+   ```
+   Si tu rencontres des problèmes d'autoload, utilise cette commande pour régénérer l'autoload :
+   ```bash
+   composer dump-autoload
+   ```
+
+5. **Générer la clé d'application Laravel :**
+   ```bash
+   php artisan key:generate
+   ```
+
+6. **Appliquer les migrations de la base de données :**
+   ```bash
+   php artisan migrate
+   ```
+
+7. **Créer une société manuellement avec la raison sociale "erp_Studio4d_1" :**
+   (Cette étape peut être faite via l'interface ou en ajoutant la société manuellement dans la base de données via un client comme phpMyAdmin).
+
+8. **Initialiser les données de test avec un seeder pour les utilisateurs :**
+   ```bash
+   php artisan db:seed --class=UserSeeder
+   ```
+
+9. **Installer Laravel Passport pour l'authentification API :**
+   ```bash
+   php artisan passport:install
+   ```
+   Si tu rencontres l'erreur suivante :
+   ```
+   Personal access client not found. Please create one.
+   ```
+   Tu peux résoudre ce problème en créant un client d'accès personnel avec cette commande :
+   ```bash
+   php artisan passport:client --personal
+   ```
+
+---
+
+### Installation de Websockets
+
+10. **Installer la dépendance Laravel Websockets :**
+    ```bash
+    composer require beyondcode/laravel-websockets
+    ```
+
+11. **Publier les migrations pour Websockets :**
+    ```bash
+    php artisan vendor:publish --provider="BeyondCode\LaravelWebSockets\WebSocketsServiceProvider" --tag="migrations"
+    ```
+
+12. **Publier la configuration de Websockets :**
+    ```bash
+    php artisan vendor:publish --provider="BeyondCode\LaravelWebSockets\WebSocketsServiceProvider" --tag="config"
+    ```
+
+13. **Installer Pusher PHP Server :**
+    ```bash
+    composer require pusher/pusher-php-server
+    ```
+
+---
+14. - Placer le fichier `.env` à la racine du projet
+
+15. **Lancer le serveur de développement Laravel :**
+    ```bash
+    php artisan serve
+    ```
+
+---
+

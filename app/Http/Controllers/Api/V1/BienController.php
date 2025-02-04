@@ -134,6 +134,92 @@ class BienController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
+    public function pre_reservations_index(Request $request, $projet_id)
+    {
+        if (Auth::guard('api')->check()) {
+            $size = $request->input('size', null);
+            $page = $request->input('page', null);
+            DatabaseHelper::Config();
+
+            // Démarrer la requête directement sur le modèle
+            $query = PreReservation::on('temp')->with('desistement','bien','visite','visite.rdv_relation','t_appel','t_appel.rdv');
+            $query->whereHas('bien', function ($subQuery) use ($projet_id) {
+                $subQuery->where('projet_id', $projet_id);
+            });
+            $query->whereHas('visite', function ($subQuery)  {
+                $subQuery->where('statut',1)->where('etat',1);
+            });
+            //appels
+            //desistement (pas la peine)
+            if ($request->filled('bien')) {
+                $query->whereHas('bien', function ($request)  {
+                    $subQuery->where('propriete_dite_bien', 'like', '%' . $request->input('bien') . '%');
+                });
+            }
+
+            if ($request->filled('prospect')) {
+                $query->whereHas('visite.prospect', function ($q) use ($request) {
+                    $q->where('nom', 'like', '%' . $request->input('prospect') . '%')
+                    ->orWhere('prenom', 'like', '%' . $request->input('prospect') . '%');});
+                $query->orwhereHas('t_appel.appel.prospect', function ($q) use ($request) {
+                        $q->where('nom', 'like', '%' . $request->input('prospect') . '%')
+                        ->orWhere('prenom', 'like', '%' . $request->input('prospect') . '%');});
+            }
+
+            if ($request->filled('respo')) {
+                $query->whereHas('visite.user', function ($q) use ($request) {
+                    $q->where(function ($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->input('respo') . '%')
+                            ->orWhere('prenom', 'like', '%' . $request->input('respo') . '%');
+                    });
+                });
+                $query->orwhereHas('t_appel.user', function ($q) use ($request) {
+                    $q->where(function ($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->input('respo') . '%')
+                            ->orWhere('prenom', 'like', '%' . $request->input('respo') . '%');
+                    });
+                });
+                $query->orwhereHas('desistement.user', function ($q) use ($request) {
+                    $q->where(function ($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->input('respo') . '%')
+                            ->orWhere('prenom', 'like', '%' . $request->input('respo') . '%');
+                    });
+                });
+            }
+
+            /*if ($request->filled('date')) {
+                $start = Carbon::parse($request->input('date'));
+                $query->whereDate('date_pre_reserve', $start);
+            }*/
+            if ($request->filled('code_pre')) {
+                $query->where('code_pre_reserve', 'like', '%' . $request->input('code_pre') . '%');
+            }
+
+            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+                $biens = $query->orderBy('created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
+
+                // Extraire les propriétés du paginateur
+                $pagination = [
+                    'currentPage' => $biens->currentPage(),
+                    'totalItems' => $biens->total(),
+                    'totalPages' => $biens->lastPage(),
+                ];
+
+                // Extraire les éléments d'utilisateur du paginateur
+                $biens = $biens->items();
+
+                // Retourner la réponse simplifiée
+                return response()->json([
+                    'data' => $biens,
+                    'pagination' => $pagination,
+                ], 200);
+            }
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
     public function indexByProjet(Request $request, $projet_id)
     {
         if (Auth::guard('api')->check()) {
@@ -228,7 +314,7 @@ class BienController extends Controller
                 ];
 
                 $biens = $biens->items();
-                
+
                 return response()->json([
                     'data' => $biens,
                     'pagination' => $pagination,
@@ -1007,7 +1093,7 @@ class BienController extends Controller
             if ($request->filled('superficie_max')) {
                 $query->where('superficie_habitable', '<=', $request->input('superficie_max'));
             }
-            
+
             if ($request->filled('type')) {
                 $type = TypeBien::on('temp')->where('type', $request->type)->first();
                 if ($type) {
@@ -1045,7 +1131,7 @@ class BienController extends Controller
                     $query->where('typologie_id', $typologie->id);
                 }
             }
-           
+
             if ($tranche_id = $request->input('projet_id')) {
                 $query->where('projet_id', $request->projet_id);
             }
@@ -1120,7 +1206,7 @@ public function getEtatBien_ByType(Request $request, $projet_id, $type_id)
             if ($request->filled('superficie_max')) {
                 $query->where('superficie_habitable', '<=', $request->input('superficie_max'));
             }
-            
+
             if ($request->filled('type')) {
                 $type = TypeBien::on('temp')->where('type', $request->type)->first();
                 if ($type) {
@@ -1158,7 +1244,7 @@ public function getEtatBien_ByType(Request $request, $projet_id, $type_id)
                     $query->where('typologie_id', $typologie->id);
                 }
             }
-           
+
             if ($tranche_id = $request->input('projet_id')) {
                 $query->where('projet_id', $request->projet_id);
             }

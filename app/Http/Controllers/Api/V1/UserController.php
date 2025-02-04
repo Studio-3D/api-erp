@@ -197,10 +197,10 @@ class UserController extends Controller
                     FichierHelper::ajouter_fichier($request->photo, $societe->raison_sociale_concatene, $user->societe_id, 'users', $photo);
 
                 }
-
                 $dataArray_projets = json_decode($request->input('selectedProjets', '[]'), true);
 
-                $this->createSubUser($request, $user->id, $user->photo, $dataArray_projets);
+
+                $this->createSubUser($request, $user->id, $user->photo, $dataArray_projets==null?[]:$dataArray_projets);
 
                 //send accces par email to user
 
@@ -480,7 +480,7 @@ class UserController extends Controller
             return response()->json(['error' =>"Nous n'avons pas trouvé de compte associé à cette adresse e-mail."], 404);
         }
 
-        
+
         DB::table('password_reset_tokens')
             ->where('email', $user->email)
             ->delete();
@@ -539,7 +539,7 @@ class UserController extends Controller
         Mail::to($user->email)->send(new ResetPasswordMail($resetUrl, $confirmationCode));
 
         return response()->json(['message' => 'Password reset email sent']);
-    
+
     }
 
     public function resetPassword(Request $request, $token)
