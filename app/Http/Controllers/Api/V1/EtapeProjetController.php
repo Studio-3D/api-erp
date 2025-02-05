@@ -14,7 +14,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use App\Models\Societe;
 use Illuminate\Support\Facades\File;
-class EcheanceProjetController extends Controller
+class EtapeProjetController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -161,9 +161,9 @@ class EcheanceProjetController extends Controller
             DatabaseHelper::Config();
             $ech = EcheanceProjet::on('temp')->findOrFail($id);
             if ($ech->delete()) {
-                return response()->json(['message' => 'Echéance Supprimé avec succés'], 200);
+                return response()->json(['message' => 'Etape Supprimé avec succés'], 200);
             } else {
-                return response()->json(['message' => 'Echeance Non Suprimé'], 400);
+                return response()->json(['message' => 'Etape Non Suprimé'], 400);
             }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

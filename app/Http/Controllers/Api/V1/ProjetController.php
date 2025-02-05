@@ -55,7 +55,7 @@ class ProjetController extends Controller
         }
     }
 
-    public function get_projets_user($societe_id,$user_id)
+    /*public function get_projets_user($societe_id,$user_id)
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config($societe_id);
@@ -71,8 +71,23 @@ class ProjetController extends Controller
         else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-    }
+    }*/
 
+    public function get_projets_user($user_id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            $projets = Projet::on('temp')->orderBy('created_at', 'asc')->get();
+            if($user_id!=0){
+                $projets_user=UserProjet::on('temp')->with('projet')->where('user_id',$user_id)->get();
+            }
+            return response()->json(['projets' => $projets,'projets_user'=>$projets_user]);
+        }
+
+        else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
 
     public function index(Request $request)
     {

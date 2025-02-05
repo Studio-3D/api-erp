@@ -227,10 +227,8 @@ class UserController extends Controller
             DatabaseHelper::Config();
             $user = User::on('temp')->where('user_id_origin', $id)->first();
         }
-        /* if (!$user) {
-        return response()->json(['message' => 'Utilisateur non trouvé'], 200);
-        }*/
-        return response()->json(['user' => $user], 200);
+        return response()->json(['user' => $user]);
+
     }
     public function update(UpdateUserRequest $request, $id)
     {
@@ -330,6 +328,7 @@ class UserController extends Controller
                 $user->photo = $photo;
             }
             if ($user->save()) {
+
                 // Update the user in the 'temp' database connection (assuming this is what you intend to do)
                 DatabaseHelper::Config($user->societe_id);
                 $user_societes = User::on('temp')->where('user_id_origin', $user->id)->first();
@@ -341,15 +340,48 @@ class UserController extends Controller
                         $user_societes->save();
                     }
                 }
-                //modifier user projet
-                $user_projets = UserProjet::on('temp')->where('user_id', $user_societes->id)->delete();
+                //update user database fils
+                $user = User::on('temp')->findOrFail($user_societes->id);
+                $user->setConnection('temp');
+                $user->name = $request->name;
+                $user->prenom = $request->prenom;
+                $user->email = $request->email;
+                $user->gender = $request->gender;
+                $user->role = $request->role;
+                $user->phone = $request->phone;
+                $user->cin = $request->cin;
+                $user->fonction = $request->fonction;
+                $user->date_embauche = $request->date_embauche;
+                $user->niveau_etude = $request->niveau_etude;
+                $user->adresse = $request->adresse;
+                $user->cnss = $request->cnss;
+                $user->is_actif = $request->is_actif;
+                $user->nb_appel_recu = $request->nb_appel_recu;
+                $user->nb_appel_traite = $request->nb_appel_traite;
+                $user->solde_conge = $request->solde_conge;
+                $user->save();
 
-                if (!empty($request->selectedProjets)) {
-                    $projets_array = explode(',', $request->selectedProjets); // $projets_array sera ['5', '2']
-                    foreach ($projets_array as $valeur) {
-                        UserProjetHelper::createUserProjet($valeur, $user_societes->id);
+                if (RoleHelper::Admin()){
+                    //modifier user projet
+                    $user_projets = UserProjet::on('temp')->where('user_id', $user_societes->id)->delete();
+                    // par id du prjet
+                    if($request->user_has_already_projets=='1'){
+                            if (!empty($request->selectedProjets)) {
+                                $projets_array = explode(',', $request->selectedProjets); // $projets_array sera ['5', '2']
+                                foreach ($projets_array as $id_projet) {
+                                    UserProjetHelper::createUserProjet($id_projet, $user_societes->id);
+                                }
+                            }
+                    }else{
+                        //par projet global
+                        //[{'projet_values'],{'prjet_2_value}]
+                        $dataArray_projets = json_decode($request->input('selectedProjets', '[]'), true);
+                        foreach ($dataArray_projets as $valeur) {
+                            UserProjetHelper::createUserProjet($valeur['id'],$user_societes->id);
+                        }
                     }
                 }
+
                 if ($old_email != $request->email) {
                     $to_email = $user->email;
                     $data = array('password' => 'Votre Ancien Password', 'sexe' => $request->gender, 'nom' => $request->name, 'prenom' => $request->prenom, 'email' => $request->email);
