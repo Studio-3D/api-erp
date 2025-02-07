@@ -12,7 +12,7 @@ use App\Models\User;
 use Carbon\Carbon;
 
 use App\Models\Fournisseur;
-
+use App\Models\Prestataire;
 use App\Models\Societe;
 use Illuminate\Support\Facades\File;
 class ServicesPrestatairesController extends Controller
@@ -147,6 +147,13 @@ class ServicesPrestatairesController extends Controller
         if (RoleHelper::AdminSup() ) {
             DatabaseHelper::Config();
             $ser = ServicesPrestataires::on('temp')->findOrFail($id);
+            $prestataires=Prestataire::on('temp')->where('service_id',$id)->get();
+            if(count($prestataires)>0){
+                foreach($prestataires as $pre){
+                    $preController = new PrestatairesController();
+                    $preController->destroy($pre->id);
+                }
+            }
             if ($ser->delete()) {
                 return response()->json(['message' => 'Service Supprimé avec succés'], 200);
             } else {

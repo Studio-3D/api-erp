@@ -63,7 +63,7 @@ class TypeBienController extends Controller
 
             DatabaseHelper::Config();
 
-            $query = TypeBien::on('temp')->where('projet_id', $projet_id);
+            $query = TypeBien::on('temp')->with('bien','type_biens_appels')->where('projet_id', $projet_id);
 
             if ($request->filled('type')) {
                 $query->where('type', 'like', '%' . $request->input('type') . '%');
@@ -222,9 +222,9 @@ class TypeBienController extends Controller
             $typebien = typebien::on('temp')->findOrfail($id);
 
             if ($typebien->delete()) {
-                return response()->json(['message' => 'ce type de bien deleted succesfully'], 200);
+                return response()->json(['message' => 'Ce type de bien a été supprimé avec succès'], 200);
             } else {
-                return response()->json(['message' => 'ce type de bien non deleted'], 404);
+                return response()->json(['message' => 'ce type de bien n\'a pas été  supprimé'], 404);
             }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

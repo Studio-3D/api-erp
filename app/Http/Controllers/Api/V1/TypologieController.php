@@ -63,7 +63,7 @@ class TypologieController extends Controller
 
             DatabaseHelper::Config();
 
-            $query = Typologie::on('temp')->where('projet_id', $projet_id);
+            $query = Typologie::on('temp')->with('frein_typologies','bien')->where('projet_id', $projet_id);
 
 
 

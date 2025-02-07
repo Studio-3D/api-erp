@@ -64,7 +64,7 @@ class VueController extends Controller
 
             DatabaseHelper::Config();
 
-            $query = Vue::on('temp')->where('projet_id', $projet_id);
+            $query = Vue::on('temp')->with('bien','frein_vue')->where('projet_id', $projet_id);
 
             if ($request->filled('vue')) {
                 $query->where('vue', 'like', '%' . $request->input('vue') . '%');

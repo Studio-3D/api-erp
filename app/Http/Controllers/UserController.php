@@ -609,7 +609,7 @@ class UserController extends Controller
         Mail::to($user->email)->send(new ResetPasswordMail($resetUrl, $confirmationCode));
 
         return response()->json(['message' => 'Password reset email sent']);
-    
+
     }
 
     public function resetPassword(Request $request, $token)
@@ -635,7 +635,7 @@ class UserController extends Controller
                 ->delete();
 
             return response()->json(['message' => 'Password reset successful']);
-        
+
     }
 
     public function reset(Request $request)
@@ -644,15 +644,15 @@ class UserController extends Controller
             'current_password' => 'required',
             'new_password' => 'required|confirmed',
         ]);
-    
+
         $user = auth()->user();
-    
+
         if (!Hash::check($request->current_password, $user->password)) {
             return response()->json(['error' => 'Ancien mot de passe incorrect'], 400);
         }
-    
+
         $user->update(['password' => Hash::make($request->new_password)]);
-    
+
         return response()->json(['message' => 'Mot de passe réinitialisé avec succès'], 200);
     }
     public function validateToken($token)

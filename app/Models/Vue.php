@@ -25,4 +25,8 @@ class Vue extends Model
     {
         return $this->hasMany(Bien::class);
     }
+    public function frein_vue()
+    {
+        return $this->hasMany(FreinVue::class);
+    }
 }

@@ -1240,7 +1240,10 @@ class AvanceController extends Controller
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $avances = Avance::on('temp')->where('reservation_id', $reservation_id)->get();
+            $avances = Avance::on('temp') ->where(function ($query)use ($reservation_id){
+                $query->where('reservation_id',$reservation_id)
+                    ->orwhere('reservation_id_ancien',$reservation_id);})
+            ->get();
             foreach ($avances as $av) {
                 //fiche transmission
                 $fich_transmission = FicheTransmission::on('temp')->where('avance_id', $av->id)->get();

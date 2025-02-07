@@ -24,4 +24,8 @@ class Typologie extends Model
     {
         return $this->hasMany(Bien::class);
     }
+    public function frein_typologies()
+    {
+        return $this->hasMany(FreinTypologie::class);
+    }
 }

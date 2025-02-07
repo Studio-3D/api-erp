@@ -38,4 +38,17 @@ class Client extends Model
         return $this->belongsTo(Partenaire::class,'partenaire_id');
     }
 
+
+    public function aquereur_desistement()
+    {
+       return $this->hasMany(AquereurDesistement::class);
+    }
+
+    public function reclamation()
+    {
+        return $this->hasMany(Reclamation::class);
+    }
+
+
+
 }

@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Reclamation;
+
 use Carbon\Carbon;
 use App\Models\Societe;
 use Illuminate\Support\Facades\File;
@@ -214,7 +216,14 @@ class PrestatairesController extends Controller
         if (RoleHelper::AdminSup() ) {
             DatabaseHelper::Config();
             $pre = Prestataire::on('temp')->findOrFail($id);
-            if ($pre->delete()) {
+            $reclamations=Reclamation::on('temp')->where('prestataire_id',$id)->get();
+            if(count($reclamations)>0){
+                foreach($reclamations as $rec){
+                    $recController = new ReclamationSavController();
+                    $recController->destroy($rec->id);
+                }
+            }
+             if ($pre->delete()) {
                 return response()->json(['message' => 'prestataire Supprimé avec succés'], 200);
             } else {
                 return response()->json(['message' => 'prestataire Non Suprimé'], 400);

@@ -26,7 +26,7 @@ class UpdateSocieteRequest extends FormRequest
             // 'raison_sociale' => 'min:3',
             'raison_sociale' => [
                 'min:3',
-                Rule::unique('societes')->ignore($this->societe),
+                Rule::unique('societes')->ignore($this->societe)->whereNull('deleted_at'),
             ],
             'nom_contact' => 'min:3',
             'tel' => 'string|min:10|max:14|nullable',

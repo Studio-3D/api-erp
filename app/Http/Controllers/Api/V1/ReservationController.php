@@ -38,6 +38,14 @@ use Illuminate\Support\Facades\Storage;
 use \NumberFormatter;
 use App\Models\Desistement;
 use Illuminate\Validation\Rule;
+use App\Models\TraitementAppel;
+use App\Models\HistoriqueBien;
+use App\Models\PreReservation;
+use App\Models\HistoriqueDesistement;
+use App\Models\Rendez_vous;
+
+use App\Models\Compromis_vente;
+use App\Models\Contrat_vente;
 
 class ReservationController extends Controller
 {
@@ -853,6 +861,7 @@ class ReservationController extends Controller
 
             //bien disponible
             Bien_Helper::libererBien($reservation->bien_id, null, null);
+            //avance et encaissements
             $avanceController = new AvanceController();
             $avanceController->destoryUsingReservationId($id);
             $tvaColletes = new ComptabiliteController();
@@ -863,18 +872,141 @@ class ReservationController extends Controller
             $pjController->destoryFileUsingReservationId($id, $user_societes, $societe);
             $notif = new NotificationController();
             $notif->destory_force_by_column_id('reservation', $id);
-            $desistements=Desistement::on('temp')->where('reservation_id',$id)->get();
-            foreach($desistements as $des){
-                if($des->penalite_desistement!=null){
-                    $des->penalite_desistement->delete();
-                }
-                if(count($des->remboursement)>0){
-                    foreach($des->remboursement as $remb){
-                        $remb->delete();
+             //desistements
+             $desistements=Desistement::on('temp')->where(function ($query)use ($id){
+                $query->where('reservation_id',$id)
+                    ->orwhere('reservation_id_new',$id);})
+                ->get();
+                if(count($desistements)>0){
+
+                    //biens desistements_id
+                    foreach($desistements as $des){
+                         $biens=Bien::on('temp')->where('desistement_id',$des->id)->get();
+                         if(count($biens)>0){
+                            foreach($biens as $bi){
+                                $bi->setConnection('temp');
+                                $bi->desistement_id=null;
+                                $bi->save();
+                            }
+                         }
+
+                        if($des->penalite_desistement!=null){
+                            $des->penalite_desistement->delete();
+                        }
+                        if(count($des->remboursement)>0){
+                            foreach($des->remboursement as $remb){
+                                $remb->delete();
+                            }
+                        }
+                        if(count($des->aquereurs_desisteurs)>0){
+                            foreach($des->aquereurs_desisteurs as $aq){
+                                $aq->delete();
+                            }
+                        }
+                        if(count($des->aquereurs_non_desisteurs)>0){
+                            foreach($des->aquereurs_non_desisteurs as $aqn){
+                                $aqn->delete();
+                            }
+                        }
+                        if(count($des->aquereurs_profits)>0){
+                            foreach($des->aquereurs_profits as $aqpr){
+                                $aqpr->delete();
+                            }
+                        }
+                        if(count($des->aquereurs_partiel)>0){
+                            foreach($des->aquereurs_partiel as $aqp){
+                                $aqp->delete();
+                            }
+                        }
+                        if(count($des->nouvel_aquereurs_desistements)>0){
+                            foreach($des->nouvel_aquereurs_desistements as $n_aq){
+                                $naq->delete();
+                            }
+                        }
+                        if(count($des->Piece_jointes)>0){
+                            foreach($des->Piece_jointes as $pj_d){
+                                $pj_d->delete();
+                            }
+                        }
+                        $hdes=HistoriqueDesistement::on('temp')->where('desistement_id',$des->id)->get();
+                        if(count($hdes)>0){
+                           foreach($hdes as $hbi){
+                               $hbi->delete();
+                           }
+                        }
+
+
+                        $hbiens=HistoriqueBien::on('temp')->where('desistement_id',$des->id)->get();
+                        if(count($hbiens)>0){
+                           foreach($hbiens as $hbi){
+                               $hbi->delete();
+                           }
+                        }
+
+                        $avances=Avance::on('temp')->where('desistement_id',$des->id)->get();
+                        if(count($avances)>0){
+                           foreach($avances as $av){
+                               $av->setConnection('temp');
+                               $av->desistement_id=null;
+                               $av->save();
+                           }
+                        }
+                        $pre=PreReservation::on('temp')->where('desistement_id',$des->id)->get();
+                        if(count($pre)>0){
+                           foreach($pre as $hbi){
+                               $hbi->delete();
+                           }
+                        }
+
+                        $des->delete();
                     }
+                    //
                 }
-                $des->delete();
+
+            $traitement_appels=TraitementAppel::on('temp')->where('reservation_id',$id)->get();
+            if(count($traitement_appels)>0){
+                foreach($traitement_appels as $tr_ap){
+                    $tr_ap->delete();
+                }
             }
+            $histo_b=HistoriqueBien::on('temp')->where('reservation_id',$id)->get();
+            if(count($histo_b)>0){
+                foreach($histo_b as $h_id){
+                    $h_id->delete();
+                }
+            }
+            $histo_r=HistoReservation::on('temp')->where('reservation_id',$id)->get();
+            if(count($histo_r)>0){
+                foreach($histo_r as $h_r){
+                    $h_r->delete();
+                }
+            }
+            $st_r=StatutReservation::on('temp')->where('reservation_id',$id)->get();
+            if(count($st_r)>0){
+                foreach($st_r as $st){
+                    $st->delete();
+                }
+            }
+            $rdv=Rendez_vous::on('temp')->where('reservation_id',$id)->get();
+            if(count($rdv)>0){
+                foreach($rdv as $rd){
+                    $rd->delete();
+                }
+            }
+            $comp=Compromis_vente::on('temp')->where('reservation_id',$id)->get();
+            if(count($comp)>0){
+                foreach($comp as $c){
+                    $c->delete();
+                }
+            }
+            $cont=Contrat_vente::on('temp')->where('reservation_id',$id)->get();
+            if(count($cont)>0){
+                foreach($cont as $cn){
+                    $cn->delete();
+                }
+            }
+
+
 
             if ($reservation->delete()) {
                 return response()->json(['message' => 'reservation supprimée avec succès.'], 200);

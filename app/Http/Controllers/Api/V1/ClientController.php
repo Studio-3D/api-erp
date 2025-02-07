@@ -103,7 +103,7 @@ class ClientController extends Controller
             DatabaseHelper::Config();
 
             // Démarrer la requête directement sur le modèle
-            $query = client::on('temp')->where('projet_id', $projet_id);
+            $query = client::on('temp')->with('aquereur','prospect','aquereur_desistement','reclamation')->where('projet_id', $projet_id);
             $query->where(function ($q) use ($request) {
                 if ($request->filled('telephone')) {
                     $q->where(function ($subQuery) use ($request) {

@@ -25,12 +25,12 @@ class TypeProjetController extends Controller
             DatabaseHelper::Config();
 
             // Démarrer la requête directement sur le modèle
-            $query = TypeProjet::on('temp');
+            $query = TypeProjet::on('temp')->with('projet');
 
             if ($request->filled('type')) {
                 $query->where('type', 'like', '%' . $request->input('type') . '%');
             }
-            
+
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
 
                 $typeProjets = $query->orderBy('created_at', 'desc')
@@ -58,7 +58,7 @@ class TypeProjetController extends Controller
 
                 return response()->json(['typeProjets' => $typeProjets], 200);
             }
-            
+
         }
 
         return response()->json(['error' => 'Unauthorized'], 401);
@@ -149,9 +149,9 @@ class TypeProjetController extends Controller
             DatabaseHelper::Config();
             $typeprojet = typeprojet::on('temp')->findOrfail($id);
             if ($typeprojet->delete()) {
-                return response()->json(['message' => 'ce type de projet deleted succesfully'], 200);
+                return response()->json(['message' => 'Ce type de projet a été supprimé avec succès.'], 200);
             } else {
-                return response()->json(['message' => 'ce type de projet non deleted'], 404);
+                return response()->json(['message' => 'Ce type de projet n\'a pas été  supprimésupprimé'], 404);
             }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

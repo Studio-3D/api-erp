@@ -13,6 +13,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\File;
 use App\Models\Societe;
+use App\Models\Facture;
 
 
 class FournisseurController extends Controller
@@ -184,6 +185,12 @@ class FournisseurController extends Controller
          if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable()) {
              DatabaseHelper::Config();
              $fourn = Fournisseur::on('temp')->findOrFail($id);
+             $factures=Facture::on('temp')->where('fournisseur_id',$id)->get();
+             if(count($factures>0)){
+                foreach($factures as $fact){
+                    $fact->delete();
+                }
+             }
              if ($fourn->delete()) {
                  return response()->json(['message' => 'Fournisseur supprimé avec succès'], 200);
              } else {

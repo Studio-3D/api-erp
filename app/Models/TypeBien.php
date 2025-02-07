@@ -17,6 +17,13 @@ class TypeBien extends Model
     protected $dates = ['deleted_at'];
     public function bien()
     {
-        return $this->hasMany(Bien::class);
+        return $this->hasMany(Bien::class,'type_id','id');
+
+    }
+
+    public function type_biens_appels()
+    {
+        return $this->hasMany(TypeBienAppel::class,'type_bien_id','id');
+
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
-use App\Http\Controllers\ActualiteController;
+
+use App\Http\Controllers\Api\V1\ActualiteController as V1ActualiteController;
 use App\Http\Controllers\Api\V1\AppelController as V1AppelController;
 use App\Http\Controllers\Api\V1\AquereurController as V1AquereurController;
 use App\Http\Controllers\Api\V1\AvanceController as V1AvanceController;
@@ -48,11 +49,8 @@ use App\Http\Controllers\Api\V1\VueController as V1VueController;
 use App\Http\Controllers\Api\V1\EtapeProjetController as V1EtapeProjetController;
 
 
-use App\Http\Controllers\AquereurController;
-use App\Http\Controllers\BanqueController;
 use App\Http\Controllers\BienController;
 use App\Http\Controllers\BlocController;
-use App\Http\Controllers\ClientController;
 use App\Http\Controllers\CompositionBienController;
 use App\Http\Controllers\EnumController;
 use App\Http\Controllers\Facebook\FacebookController;
@@ -67,14 +65,10 @@ use App\Http\Controllers\ProjetController;
 use App\Http\Controllers\ProspectController;
 use App\Http\Controllers\ReservationController;
 use App\Http\Controllers\SocieteController;
-use App\Http\Controllers\SourceController;
 use App\Http\Controllers\TrancheController;
-use App\Http\Controllers\TypeBienController;
 use App\Http\Controllers\TypeFreinController;
-use App\Http\Controllers\TypeProjetController;
 use App\Http\Controllers\TypologieController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\VueController;
 use App\Http\Controllers\WhatsApp\WhatsAppController;
 use Illuminate\Support\Facades\Route;
 
@@ -113,6 +107,7 @@ Route::middleware('auth:api')->group(function () {
         Route::put('desactivateUser/{id}', [V1UserController::class, 'desactivateUser'])->name('desactivateUser');
         Route::get('commerciaux_objectif/{projet_id}', [V1UserController::class, 'list_commerciaux_objectif'])->name('');
         Route::get('commerciaux/{projet_id}', [V1UserController::class, 'list_commerciaux'])->name('');
+        Route::get('get_commerciaux', [V1UserController::class, 'get_commerciaux'])->name('get_users');
 
         // l'API societes
         Route::resource('societes', V1SocieteController::class);
@@ -126,6 +121,8 @@ Route::middleware('auth:api')->group(function () {
 
         //l'API banques
         Route::resource('banques', V1BanqueController::class);
+     //   Route::get('get_banques', [V1BanqueController::class, 'get_banques'])->name('get_banques');
+
         //l'API VUES
         Route::resource('vues', V1VueController::class);
         Route::get('projets/{idprojet}/vues', [V1VueController::class, 'indexByProjet']);
@@ -142,7 +139,7 @@ Route::middleware('auth:api')->group(function () {
 
         //l'API source
         Route::resource('sources', V1SourceController::class);
-        Route::get('get_sources', [V1SourceController::class, 'get_sources'])->name('get_sources');
+        Route::get('get_sources', [V1SourceController::class, 'index'])->name('get_sources');
 
         //l'API partenaire
         Route::resource('partenaires', V1PartenaireController::class);
@@ -151,6 +148,7 @@ Route::middleware('auth:api')->group(function () {
 
         //l'API partenare
         Route::resource('projets', V1ProjetController::class);
+        Route::get('get_projets', [V1ProjetController::class, 'get_projets'])->name('get_projets');
        // Route::get('get_projets_users/{societe_id}/{user_id}', [V1ProjetController::class, 'get_projets_user'])->name('');
        Route::get('get_projets_users/{user_id}', [V1ProjetController::class, 'get_projets_user'])->name('');
         //l'API tranches
@@ -239,6 +237,7 @@ Route::middleware('auth:api')->group(function () {
         Route::put('traiter_reservation/{id}', [V1ReservationController::class, 'traiter_reservation'])->name('');
         Route::get('relancer_reservation/{id}', [V1ReservationController::class, 'relancer_reservation'])->name('');
         Route::get('get_pj_res/{id}', [V1ReservationController::class, 'get_pj_res'])->name('');
+        Route::get('getDossiers/{projet_id}/{dos_id}', [v1ReservationController::class, 'get_dossiers'])->name('');
 
         //l'api desistement
         Route::resource('desistements', V1DesistementController::class);
@@ -370,7 +369,10 @@ Route::middleware('auth:api')->group(function () {
         //EtapesProjet
         Route::resource('etapesProjet', V1EtapeProjetController::class);
         Route::get('projets/{idprojet}/etapesProjet', [V1EtapeProjetController::class, 'indexByProjet']);
-
+        //Actualite
+        /*************************************Actualites***************************** */
+        Route::get('historiques/{date}/{id}/{type}', [v1ActualiteController::class, 'get_historique'])->name('');
+        Route::get('actualites/{projet_id}/{user_id}/{de_date}/{a_date}', [V1ActualiteController::class, 'index'])->name('');
 
 
     });
@@ -400,22 +402,17 @@ Route::middleware('auth:api')->group(function () {
     Route::post('logout', [UserController::class, 'logout'])->name('logout');
     Route::post('addUserProjet/{id}', [UserController::class, 'addUserProjet'])->name('addUserProjet');
     Route::get('get_users', [UserController::class, 'get_users'])->name('get_users');
-    Route::get('get_commerciaux', [UserController::class, 'get_commerciaux'])->name('get_users');
     /*  Route::post('sendEmail', [UserController::class, 'sendEmail']);
     Route::post('resendEmail', [UserController::class, 'resendEmail']);
      */
 
     Route::post('/reset', [UserController::class, 'reset']);
 
-    /*************************************Projet***************************** */
+    /*************************************Projet***************************** *
     Route::resource('projet', ProjetController::class);
-    Route::resource('typeProjet', TypeProjetController::class);
-    Route::get('get_typeProjets', [TypeProjetController::class, 'get_typeProjets'])->name('get_typeProjets');
     Route::post('restoreProjet/{id}', [ProjetController::class, 'restoreProjet'])->name('restoreProjet');
     Route::get('getTrashedProjets', [ProjetController::class, 'getTrashedProjets'])->name('getTrashedProjets');
-    Route::post('restoreTypeProjet/{id}', [TypeProjetController::class, 'restoreTypeProjet'])->name('restoreTypeBien');
-    Route::get('getTrashedTypesProjet', [TypeProjetController::class, 'getTrashedTypesProjet'])->name('getTrashedTypesProjet');
-    Route::get('get_projets', [ProjetController::class, 'get_projets'])->name('get_projets');
+    Route::get('get_projets', [ProjetController::class, 'get_projets'])->name('get_projets');*/
     /*************************************Tranche***************************** */
     Route::resource('tranche', TrancheController::class);
     Route::get('tranches/{projet_id}', [TrancheController::class, 'index'])->name('tranches');
@@ -474,17 +471,9 @@ Route::middleware('auth:api')->group(function () {
     Route::get('getBiensByBlocpaginate/{id}', [BienController::class, 'getBiensByBlocpaginate'])->name('getBiensByBlocpaginate');
     Route::get('getBiensByImmeublepaginate/{id}', [BienController::class, 'getBiensByImmeublepaginate'])->name('getBiensByImmeublepaginate');
     /***********************************Type biens******************************** */
-    Route::resource('typeBien', TypeBienController::class);
-    Route::get('get_typeBiens', [TypeBienController::class, 'get_typeBiens'])->name('get_typeBiens');
-    Route::get('get_typeBiensByProjet/{id}', [TypeBienController::class, 'get_typeBiensByProjet'])->name('get_typeBiensByProjet');
-    Route::post('restoreTypeBien/{id}', [TypeBienController::class, 'restoreTypeBien'])->name('restoreTypeBien');
-    Route::get('getTrashedTypesBien', [TypeBienController::class, 'getTrashedTypesBien'])->name('getTrashedTypesBien');
-    Route::get('TypeBiens/{projet_id}', [TypeBienController::class, 'index'])->name('TypeBiens');
+
 
     /*************************************type_Freins***************************** */
-    Route::resource('type_freins', TypeFreinController::class);
-    Route::get('get_typeFreins', [TypeFreinController::class, 'get_typeFreins'])->name('get_typeFreins');
-    Route::post('restoreTypeFrein/{id}', [TypeFreinController::class, 'restoreTypeFrein'])->name('restoreTypeFrein');
 
     /*************************************Prospect***************************** */
 
@@ -498,57 +487,25 @@ Route::middleware('auth:api')->group(function () {
     Route::get('VisitesByprospect/{prospect_id}', [ProspectController::class, 'VisitesByprospect']);
 
     /*************************************Source***************************** */
-    Route::resource('sources', SourceController::class);
-    Route::get('get_sources', [SourceController::class, 'get_sources'])->name('get_sources');
 
     /*************************************Vue***************************** */
-    Route::resource('vue', VueController::class);
-    Route::get('get_vuesByProjet/{id}', [VueController::class, 'get_vuesByProjet'])->name('get_vuesByProjet');
-    Route::get('vues/{projet_id}', [VueController::class, 'index'])->name('vues');
 
     /*************************************Partenaires***************************** */
-    Route::resource('partenaire', PartenaireController::class);
-    Route::get('partenaires/{projet_id}', [PartenaireController::class, 'index'])->name('');
-    Route::get('get_partenaires/{projet_id}', [PartenaireController::class, 'get_partenaires'])->name('get_partenaires');
 
     /*************************************Typologie***************************** */
-    Route::resource('typologie', TypologieController::class);
-    Route::get('get_typologiesByProjet/{id}', [TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');
-    Route::get('typologies/{projet_id}', [TypologieController::class, 'index'])->name('typologies');
-    /*************************************Banque***************************** */
-    Route::resource('banque', BanqueController::class);
-    Route::get('get_banques', [BanqueController::class, 'get_banques'])->name('get_banques');
+  /*************************************Banque***************************** */
 
     /*************************************Client***************************** */
-    Route::resource('client', ClientController::class);
-    Route::get('get_clients', [ClientController::class, 'get_clients'])->name('get_clients');
-    Route::get('getClient_by_projet/{projet_id}', [ClientController::class, 'getClient_by_projet'])->name('getClient_by_projet');
+   // Route::resource('client', ClientController::class);
+   // Route::get('get_clients', [ClientController::class, 'get_clients'])->name('get_clients');
+   // Route::get('getClient_by_projet/{projet_id}', [ClientController::class, 'getClient_by_projet'])->name('getClient_by_projet');
 
-    Route::get('search_client_by_cin/{cin}', [ClientController::class, 'search_client_by_cin']);
-    Route::get('search_client_by_phone/{phone}', [ClientController::class, 'search_client_by_phone']);
-    Route::get('ReservationsByClient/{client_id}', [ClientController::class, 'ReservationsByClient']);
-    Route::get('VisitesByClient/{client_id}', [ClientController::class, 'VisitesByClient']);
 
-    /*************************************Aquereurs***************************** */
-    Route::resource('aquereur', AquereurController::class);
-    Route::get('aquereurs/{projet_id}', [AquereurController::class, 'index'])->name('aquereurs');
-    Route::delete('destoryAquereurUsingReservationId/{reservation_id}', [AquereurController::class, 'destroyAquerreursByReservationId'])->name('destoryAquereurUsingReservationId');
-    Route::get('getAquereur_by_Reservation/{reservation_id}', [AquereurController::class, 'getAquereur_by_Reservation'])->name('getAquereur_by_Reservation');
+    /*************************************Aquereurs*****************************
+
 
     /*************************************Avances*****************************
-    Route::resource('avance', AvanceController::class);
-    Route::get('avances/{projet_id}', [AvanceController::class, 'index'])->name('avances');
-    Route::delete('destoryUsingReservationId/{reservation_id}', [AvanceController::class, 'destoryUsingReservationId'])->name('destoryUsingReservationId');
-    Route::put('valideAvance/{id}', [AvanceController::class, 'valideAvance'])->name('valideAvance');
-    Route::put('refuseAvance/{id}', [AvanceController::class, 'refuseAvance'])->name('refuseAvance');
-    Route::get('getAvances_by_Reservation/{reservation_id}', [AvanceController::class, 'getAvances_by_Reservation'])->name('getAvances_by_Reservation');
-    Route::get('historiques_avance/{date}/{id}', [AvanceController::class, 'historiques_avance'])->name('');
-    Route::get('get_notif_avances_att_validation/{projet_id}', [AvanceController::class, 'get_notif_avances_att_validation'])->name('');
-    //Route::get('avances_by_etat/{projet_id}/{etat}', [AvanceController::class, 'get_avances_by_etat'])->name('');
-    //Route::put('traiter_avance/{id}', [AvanceController::class, 'traiter_avance'])->name('');
-    Route::get('avances_rejets/{projet_id}', [AvanceController::class, 'get_avances_rejets'])->name('');
-    Route::get('get_echeances/{projet_id}', [AvanceController::class, 'get_echeances'])->name('');
-    Route::get('get_echeances_menu/{projet_id}', [AvanceController::class, 'get_echeances_menu'])->name('');*/
+
 
     /*************************************PiecesJointe***************************** */
     Route::resource('piecesjointe', PiecesJointeController::class);
@@ -559,15 +516,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('files_docs/{docs}', [PiecesJointeController::class, 'files_docs'])->name('files_docs');
 
     /*************************************Reservation***************************** */
-    Route::resource('reservation', ReservationController::class);
-    //  Route::get('reservations/{projet_id}', [ReservationController::class, 'index'])->name('reservations');
-    //  Route::get('getAllInformationsReservation/{id}', [ReservationController::class, 'getAllInformationsReservation'])->name('getAllInformationsReservation');
-    Route::get('getReservationssByProjet/{id}', [ReservationController::class, 'getReservationssByProjet'])->name('getReservationssByProjet');
-    Route::get('getDossiers/{projet_id}/{dos_id}', [ReservationController::class, 'get_dossiers'])->name('');
-    // Route::get('search_reservation_by_code/{code_res}', [ReservationController::class, 'search_reservation_by_code']);
-    // Route::put('traiter_reservation/{id}', [ReservationController::class, 'traiter_reservation'])->name('');
-    // Route::get('get_notif_reservation_att_validation/{projet_id}', [ReservationController::class, 'get_notif_reservation_att_validation'])->name('');
-    // Route::get('reservations_rejets/{projet_id}', [ReservationController::class, 'get_reservations_rejets'])->name('');
 
     /******************************Typologie **********************/
     Route::get('get_typologiesByProjet/{id}', [TypologieController::class, 'get_typologiesByProjet'])->name('get_typologiesByProjet');
@@ -633,9 +581,7 @@ Route::middleware('auth:api')->group(function () {
     //  Route::post('traiter_decaissement/{id}', [RemboursementController::class, 'traiter_decaissement'])->name('');
     // Route::get('get_remboursements_dos_transfert/{projet_id}', [RemboursementController::class, 'get_remboursements_dos_transfert'])->name('');
 
-    /*************************************Actualites***************************** */
-    Route::get('historiques/{date}/{id}/{type}', [ActualiteController::class, 'get_historique'])->name('');
-    Route::get('actualites/{projet_id}/{user_id}/{de_date}/{a_date}', [ActualiteController::class, 'index'])->name('');
+
     /***********************************Livraison*******************/
     /*******rdv notaire*** */
 
