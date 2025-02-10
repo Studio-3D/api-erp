@@ -22,8 +22,7 @@ class StoreSocieteRequest extends FormRequest
     public function rules(): array
     {
         return [
-
-            'raison_sociale' => 'required|unique:societes|min:3',
+            'raison_sociale' => 'required|unique:societes,raison_sociale,NULL,id,deleted_at,NULL|nullable',
             'nom_contact' => 'required|min:3',
             'prenom_contact' => 'required|min:3',
             'tel' => 'min:10|max:14|nullable',

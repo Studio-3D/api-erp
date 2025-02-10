@@ -11,6 +11,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Carbon\Carbon;
+use App\Models\Facture;
 
 
 class DecompteController extends Controller
@@ -176,6 +177,12 @@ class DecompteController extends Controller
         if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable()) {
             DatabaseHelper::Config();
             $dec = Decompte::on('temp')->findOrFail($id);
+                $factures=Facture::on('temp')->where('decompte_id',$id)->get();
+                if(count($factures>0)){
+                foreach($factures as $fact){
+                    $fact->delete();
+                }
+                }
             if ($dec->delete()) {
                 return response()->json(['message' => 'Décompte supprimé avec succès'], 200);
             } else {

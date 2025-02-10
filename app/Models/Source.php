@@ -14,4 +14,9 @@ class Source extends Model
     protected $table='sources';
     protected $dates=['deleted_at'];
 
+    public function prospect()
+    {
+        return $this->hasMany(Prospect::class,'source','id');
+    }
+
 }

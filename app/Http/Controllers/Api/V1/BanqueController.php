@@ -16,6 +16,20 @@ class BanqueController extends Controller
     /**
      * Display a listing of the resource.
      */
+    public function get_banques()
+    {
+        if (RoleHelper::Superadmin() && Auth::guard('api')->user()->societe_id == 1) {
+            $banques = Banque::all();
+            return response()->json(['banques' => $banques]);
+        } else {
+            DatabaseHelper::Config();
+            $banques = Banque::on('temp')->get();
+            return response()->json(['banques' => $banques], 200);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+    
     public function index(Request $request)
     {
         if (Auth::guard('api')->check()) {
@@ -24,7 +38,7 @@ class BanqueController extends Controller
             DatabaseHelper::Config();
 
             // Démarrer la requête directement sur le modèle
-            $query = Banque::on('temp');
+            $query = Banque::on('temp')->with('avance','HistoriqueAvance','desistements','penalite_desistements','remboursements','factures','credits');
 
             if ($request->filled('nom')) {
                 $query->where('nom', 'like', '%' . $request->input('nom') . '%');

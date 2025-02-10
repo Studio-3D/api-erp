@@ -18,7 +18,7 @@ class TypeProjet extends Model
 
     public function projet()
     {
-        return $this->hasMany(Projet::class);
+        return $this->hasMany(Projet::class,'type_id','id');
     }
-    
+
 }

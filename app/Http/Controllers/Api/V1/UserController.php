@@ -32,6 +32,17 @@ class UserController extends Controller
      * PUT    /{id}   update
      * DELETE /{id}   destroy
      */
+    public function get_commerciaux()
+    {
+        if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            //->where('role',3)
+            $users = User::on('temp')->get();
+            return response()->json(['users' => $users], 200);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
 
     public function list_commerciaux_objectif($projet_id)
     {

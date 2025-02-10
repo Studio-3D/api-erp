@@ -78,7 +78,7 @@ class StatistiquesController extends Controller
                                     $data['type_id']
                                 ];
                             }
-                $types_biens=TypeBien::on('temp')->get();
+                $types_biens=TypeBien::on('temp')->where('projet_id',$request->projet_id)->get();
                 $array_type_date_desistement=[];
                 $nb_desistement_par_type=Desistement::on('temp')
                             ->select(DB::Raw("DATE(created_at) as day,count(id) as count ,type"))
@@ -279,7 +279,7 @@ class StatistiquesController extends Controller
                                     $data['type_id']
                                 ];
                             }
-                $types_biens=TypeBien::on('temp')->get();
+                $types_biens=TypeBien::on('temp')->where('projet_id',$request->projet_id)->get();
                 $array_type_date_desistement=[];
                 $nb_desistement_par_type=Desistement::on('temp')
                             ->select(DB::Raw("DATE(created_at) as day,count(id) as count ,type"))

@@ -25,7 +25,7 @@ class SourceController extends Controller
             DatabaseHelper::Config();
 
             // Démarrer la requête directement sur le modèle
-            $query = Source::on('temp');
+            $query = Source::on('temp')->with('prospect');
 
             if ($request->filled('source')) {
                 $query->where('source', 'like', '%' . $request->input('source') . '%');

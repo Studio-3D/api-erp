@@ -83,7 +83,7 @@ class PartenaireController extends Controller
 
             DatabaseHelper::Config();
 
-            $query = Partenaire::on('temp')->where('projet_id', $projet_id);
+            $query = Partenaire::on('temp')->with('client','prospect')->where('projet_id', $projet_id);
 
             if ($request->filled('description')) {
                 $query->where('description', 'like', '%' . $request->input('description') . '%');
@@ -206,7 +206,7 @@ class PartenaireController extends Controller
             $partenaire = Partenaire::on('temp')->findOrfail($id);
 
             if ($partenaire->delete()) {
-                return response()->json(['message' => 'ce Partenaire est supprimé succesfully'], 200);
+                return response()->json(['message' => 'ce Partenaire est supprimé avec Succés'], 200);
             } else {
                 return response()->json(['message' => 'ce Partenaire non supprimé'], 404);
             }
