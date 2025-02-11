@@ -1,13 +1,17 @@
 <?php
 
 namespace App\Http\Controllers\Api\V1;
-use App\Events\NotifMenuEvent;
+
 use App\Enum\EtatBien;
+use App\Enum\RoleEnum;
+use App\Events\NotificationEvent;
+use App\Events\NotifMenuEvent;
 use App\Events\PropositionUpdated;
 use App\Http\Controllers\Controller;
 use App\Http\Helpers\Bien_Helper;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\HistoriqueBienHelper;
+use App\Http\Helpers\NotificationHelper;
 use App\Http\Helpers\PaginationHelper;
 use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreBienRequest;
@@ -20,19 +24,16 @@ use App\Models\HistoriqueBien;
 use App\Models\Immeuble;
 use App\Models\PreReservation;
 use App\Models\Proposition;
-use App\Models\Tranche;
 use App\Models\Remboursement;
+use App\Models\Tranche;
+use App\Models\TypeBien;
+use App\Models\Typologie;
 use App\Models\User;
+use App\Models\Vue;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
-use App\Http\Helpers\NotificationHelper;
-use App\Events\NotificationEvent;
-use Carbon\Carbon;
-use App\Enum\RoleEnum;
-use App\Models\TypeBien;
-use App\Models\Typologie;
-use App\Models\Vue;
 use Illuminate\Support\Facades\DB;
 
 class BienController extends Controller
@@ -142,17 +143,17 @@ class BienController extends Controller
             DatabaseHelper::Config();
 
             // Démarrer la requête directement sur le modèle
-            $query = PreReservation::on('temp')->with('desistement','bien','visite','visite.rdv_relation','t_appel','t_appel.rdv');
+            $query = PreReservation::on('temp')->with('desistement', 'bien', 'visite', 'visite.rdv_relation', 't_appel', 't_appel.rdv');
             $query->whereHas('bien', function ($subQuery) use ($projet_id) {
                 $subQuery->where('projet_id', $projet_id);
             });
-            $query->whereHas('visite', function ($subQuery)  {
-                $subQuery->where('statut',1)->where('etat',1);
+            $query->whereHas('visite', function ($subQuery) {
+                $subQuery->where('statut', 1)->where('etat', 1);
             });
             //appels
             //desistement (pas la peine)
             if ($request->filled('bien')) {
-                $query->whereHas('bien', function ($request)  {
+                $query->whereHas('bien', function ($request) {
                     $subQuery->where('propriete_dite_bien', 'like', '%' . $request->input('bien') . '%');
                 });
             }
@@ -160,10 +161,12 @@ class BienController extends Controller
             if ($request->filled('prospect')) {
                 $query->whereHas('visite.prospect', function ($q) use ($request) {
                     $q->where('nom', 'like', '%' . $request->input('prospect') . '%')
-                    ->orWhere('prenom', 'like', '%' . $request->input('prospect') . '%');});
+                        ->orWhere('prenom', 'like', '%' . $request->input('prospect') . '%');
+                });
                 $query->orwhereHas('t_appel.appel.prospect', function ($q) use ($request) {
-                        $q->where('nom', 'like', '%' . $request->input('prospect') . '%')
-                        ->orWhere('prenom', 'like', '%' . $request->input('prospect') . '%');});
+                    $q->where('nom', 'like', '%' . $request->input('prospect') . '%')
+                        ->orWhere('prenom', 'like', '%' . $request->input('prospect') . '%');
+                });
             }
 
             if ($request->filled('respo')) {
@@ -188,8 +191,8 @@ class BienController extends Controller
             }
 
             /*if ($request->filled('date')) {
-                $start = Carbon::parse($request->input('date'));
-                $query->whereDate('date_pre_reserve', $start);
+            $start = Carbon::parse($request->input('date'));
+            $query->whereDate('date_pre_reserve', $start);
             }*/
             if ($request->filled('code_pre')) {
                 $query->where('code_pre_reserve', 'like', '%' . $request->input('code_pre') . '%');
@@ -244,8 +247,8 @@ class BienController extends Controller
             if ($request->filled('etat')) {
                 $query->where('etat', 'like', '%' . $request->input('etat') . '%');
             }
-            if ($request->filled('etat_bien') && $request->input('etat_bien')!="null" ) {
-                $query->where('etat',  $request->input('etat_bien') );
+            if ($request->filled('etat_bien') && $request->input('etat_bien') != "null") {
+                $query->where('etat', $request->input('etat_bien'));
             }
             if ($request->filled('prix_min')) {
                 $query->where('prix', '>=', $request->input('prix_min'));
@@ -485,7 +488,19 @@ class BienController extends Controller
             $bien->superficie_terrasse_calculer = $request->superficie_terrasse_calculer;
             $bien->superficie_balcon_calculer = $request->superficie_balcon_calculer;
             $bien->superficie_balcon = $request->superficie_balcon;
-
+            if ($request->superficie_habitable == 0) {
+                $bien->prix = 
+                    floatval($request->prix_unitaire) * 
+                    (
+                        floatval($request->superficie_terrasse_calculer) +
+                        floatval($request->superficie_architecte) + // Remplace superficie_habitable par superficie_architecte
+                        floatval($request->superficie_balcon_calculer) +
+                        floatval($request->superficie_jardin_calculer)
+                    ) +
+                    floatval($request->prix_box) +
+                    floatval($request->prix_parking);
+            }
+            
             if ($request->bloc_id && ($request->tranche_id === null || !$request->tranche_id)) {
                 $bloc = Bloc::on('temp')->findOrfail($request->bloc_id);
                 $bien->tranche_id = $bloc->tranche_id;
@@ -500,8 +515,8 @@ class BienController extends Controller
                     $bien->bloc_id = $immeuble->bloc_id;
                 }
             }
+            
             if ($bien->save()) {
-
                 if ($bien->etat == 'disponible') {
                     Bien_Helper::store_bien_frein($bien->id,null);
                 }
@@ -522,7 +537,7 @@ class BienController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $bien = bien::on('temp')->with('reservation', 'Bien_tva','tva_collectes','tva_collectes_ancien_reservation')->withSum('tva_collectes', 'tva_a_payer')->findOrfail($id);
+            $bien = bien::on('temp')->with('reservation', 'Bien_tva', 'tva_collectes', 'tva_collectes_ancien_reservation')->withSum('tva_collectes', 'tva_a_payer')->findOrfail($id);
             return response()->json(['bien' => $bien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -633,7 +648,7 @@ class BienController extends Controller
             if ($bien->save()) {
                 $this->libere_bien_frein($bien->id);
             }
-            HistoriqueBienHelper::createHistoriqueBien(4, "bloquer", $bien_id, Auth::guard('api')->user()->id, null, null,null,null);
+            HistoriqueBienHelper::createHistoriqueBien(4, "bloquer", $bien_id, Auth::guard('api')->user()->id, null, null, null, null);
 
             return response()->json(['message' => $bien], 200);
 
@@ -645,34 +660,35 @@ class BienController extends Controller
     public function reserverBien($bien_id, $visite_id, $reservation_id)
     {
         if (RoleHelper::AdminSup()) {
-            $request=new \Illuminate\Http\Request();
+            $request = new \Illuminate\Http\Request();
             DatabaseHelper::Config();
             $bien = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat = EtatBien::RESERVATION->value;
 
-            if($bien->save()){
+            if ($bien->save()) {
 
-                $action=0;
+                $action = 0;
                 //si bien est desisté on fait remboursement etat=1 en on envoie notification du bien desisté est vendu
-                if ($bien->desistement_id!=NULL) {
-                    $remboursements = Remboursement::on('temp')->where('desistement_id',$bien->desistement_id)
-                    ->where('etat',0)->where('statut',0)
-                    ->where(function ($query) {
-                        $query->where('mode_rembourse', 'apres_vente')
-                            ->orwhere('mode_rembourse', 'transfert_rem_apres_vente')
-                        ;})
-                    ->get();
+                if ($bien->desistement_id != null) {
+                    $remboursements = Remboursement::on('temp')->where('desistement_id', $bien->desistement_id)
+                        ->where('etat', 0)->where('statut', 0)
+                        ->where(function ($query) {
+                            $query->where('mode_rembourse', 'apres_vente')
+                                ->orwhere('mode_rembourse', 'transfert_rem_apres_vente')
+                            ;
+                        })
+                        ->get();
 
-                    foreach($remboursements as $remb){
-                       // $remb->setConnection('temp');
-                        $remb->etat=1;
+                    foreach ($remboursements as $remb) {
+                        // $remb->setConnection('temp');
+                        $remb->etat = 1;
                         $remb->save();
-                        $action=1;
+                        $action = 1;
                     }
                     //notif menu demande pre remboursement
                     Config::set('broadcasting.default', 'pusher_5');
                     broadcast(new NotifMenuEvent(4));
-                    if($action==1){
+                    if ($action == 1) {
                         //to admin et commerciaux
                         Config::set('broadcasting.default', 'pusher_3');
                         $data_notif = [
@@ -680,28 +696,28 @@ class BienController extends Controller
                             'date' => Carbon::now(),
                             'type' => 19,
                             'description' => 'bien desisté est vendu',
-                            'role'=>RoleEnum::ADMIN->value,
-                            'projet_id'=>$bien->projet_id,
-                            'bien_id'=>$bien_id,
-                            'reservation_id'=>$reservation_id
+                            'role' => RoleEnum::ADMIN->value,
+                            'projet_id' => $bien->projet_id,
+                            'bien_id' => $bien_id,
+                            'reservation_id' => $reservation_id,
 
                         ];
                         $notif_helper = new NotificationHelper();
                         $notif_helper->storeNotification($request->merge($data_notif));
                         broadcast(new NotificationEvent(0));
 
-                        if( $bien->desistement->user->role==3){
+                        if ($bien->desistement->user->role == 3) {
 
                             $data_notif = [
                                 'lien' => '/remboursements/AttAccuseCheque',
                                 'date' => Carbon::now(),
                                 'type' => 19,
                                 'description' => 'bien desisté est vendu',
-                                'role'=>RoleEnum::COMMERCIAL->value,
-                                'user_id'=>$bien->desistement->user->user_id_origin,
-                                'projet_id'=>$bien->projet_id,
-                                'bien_id'=>$bien_id,
-                                'reservation_id'=>$reservation_id
+                                'role' => RoleEnum::COMMERCIAL->value,
+                                'user_id' => $bien->desistement->user->user_id_origin,
+                                'projet_id' => $bien->projet_id,
+                                'bien_id' => $bien_id,
+                                'reservation_id' => $reservation_id,
 
                             ];
                             $notif_helper = new NotificationHelper();
@@ -711,32 +727,31 @@ class BienController extends Controller
                         }
 
                     }
-                       //on vide la column desistement_id car il est vendu et si le bien a des ancien tva on archive pour affichier tva collecte de l'ancien Reservation
+                    //on vide la column desistement_id car il est vendu et si le bien a des ancien tva on archive pour affichier tva collecte de l'ancien Reservation
 
-                       $bien->desistement_id=null;
-                       if($bien->save()){
-                             //set tva collecte ancien to archive 4==>5
-                             if(count($bien->tva_collectes_ancien_reservation)>0){
-                               foreach($bien->tva_collectes_ancien_reservation as $t_c_a){
-                                   $t_c_a->setConnection('temp');
-                                   $t_c_a->delete();
-                               }
-                           }
-                           //set tva collecte to 4
-                           if(count($bien->tva_collectes)>0){
-                               foreach($bien->tva_collectes as $t_c){
-                                   $t_c->setConnection('temp');
-                                   $t_c->etat=4;
-                                   $t_c->save();
-                               }
-                           }
+                    $bien->desistement_id = null;
+                    if ($bien->save()) {
+                        //set tva collecte ancien to archive 4==>5
+                        if (count($bien->tva_collectes_ancien_reservation) > 0) {
+                            foreach ($bien->tva_collectes_ancien_reservation as $t_c_a) {
+                                $t_c_a->setConnection('temp');
+                                $t_c_a->delete();
+                            }
+                        }
+                        //set tva collecte to 4
+                        if (count($bien->tva_collectes) > 0) {
+                            foreach ($bien->tva_collectes as $t_c) {
+                                $t_c->setConnection('temp');
+                                $t_c->etat = 4;
+                                $t_c->save();
+                            }
+                        }
 
-
-                       }
+                    }
                 }
 
                 $this->libere_bien_frein($bien->id);
-                HistoriqueBienHelper::createHistoriqueBien(3, "reserver", $bien_id, Auth::guard('api')->user()->id, $visite_id, $reservation_id,null,null);
+                HistoriqueBienHelper::createHistoriqueBien(3, "reserver", $bien_id, Auth::guard('api')->user()->id, $visite_id, $reservation_id, null, null);
             }
 
             return response()->json(['message' => $bien], 200);
@@ -746,7 +761,7 @@ class BienController extends Controller
         }
     }
 
-    public function prereserverBien($bien_id, $visite_id, $appel_id,$desistement_id)
+    public function prereserverBien($bien_id, $visite_id, $appel_id, $desistement_id)
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
@@ -773,13 +788,13 @@ class BienController extends Controller
 
             }
 
-            if($visite_id!=null){
-                HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id, $visite_id, null,null,null);
-            }elseif($appel_id!=null){
+            if ($visite_id != null) {
+                HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id, $visite_id, null, null, null);
+            } elseif ($appel_id != null) {
                 //$appel_id=>traitement_appel_id
-                HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id,null,null,null,$t_appel_id);
-            }elseif($desistement_id!=null){
-                HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id,null, null,$desistement_id,null);
+                HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id, null, null, null, $t_appel_id);
+            } elseif ($desistement_id != null) {
+                HistoriqueBienHelper::createHistoriqueBien(2, "pre_reserver", $bien_id, Auth::guard('api')->user()->id, null, null, $desistement_id, null);
             }
 
             return response()->json(['message' => $bien], 200);
@@ -1052,127 +1067,14 @@ class BienController extends Controller
     }
 
     public function getTotalsStatistique(Request $request)
-{
-    if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
-        DatabaseHelper::Config();
+    {
+        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
 
-        $query = DB::connection('temp')
-            ->table('biens')
-            ->selectRaw("etat, COUNT(*) as total")
-            //->where('projet_id', $request->input('projet_id'))
-            ->whereNull('deleted_at');
-            if ($request->filled('propriete_dite_bien')) {
-                $query->where('propriete_dite_bien', 'like', '%' . $request->input('propriete_dite_bien') . '%');
-            }
-
-            if ($request->filled('niveau')) {
-                $query->where('niveau', 'like', '%' . $request->input('niveau') . '%');
-            }
-            if ($request->filled('orientation')) {
-                $query->where('orientation', 'like', '%' . $request->input('orientation') . '%');
-            }
-
-            if ($request->filled('etat')) {
-                $query->where('etat', 'like', '%' . $request->input('etat') . '%');
-            }
-            if ($request->filled('etat_bien') && $request->input('etat_bien')!="null" ) {
-                $query->where('etat',  $request->input('etat_bien') );
-            }
-            if ($request->filled('prix_min')) {
-                $query->where('prix', '>=', $request->input('prix_min'));
-            }
-
-            if ($request->filled('prix_max')) {
-                $query->where('prix', '<=', $request->input('prix_max'));
-            }
-
-            if ($request->filled('superficie_min')) {
-                $query->where('superficie_habitable', '>=', $request->input('superficie_min'));
-            }
-
-            if ($request->filled('superficie_max')) {
-                $query->where('superficie_habitable', '<=', $request->input('superficie_max'));
-            }
-
-            if ($request->filled('type')) {
-                $type = TypeBien::on('temp')->where('type', $request->type)->first();
-                if ($type) {
-                    $query->where('type_id', $type->id);
-                }
-            }
-            if ($request->filled('tranche')) {
-                $tranche = Tranche::on('temp')->where('nom', $request->tranche)->first();
-                if ($tranche) {
-                    $query->where('tranche_id', $tranche->id);
-                }
-            }
-            if ($request->filled('bloc')) {
-                $bloc = Bloc::on('temp')->where('nom', $request->bloc)->first();
-                if ($bloc) {
-                    $query->where('bloc_id', $bloc->id);
-                }
-            }
-            if ($request->filled('immeuble')) {
-                $immeuble = Immeuble::on('temp')->where('nom', $request->immeuble)->first();
-                if ($immeuble) {
-                    $query->where('immeuble_id', $immeuble->id);
-                }
-            }
-
-            if ($request->filled('vue')) {
-                $vue = Vue::on('temp')->where('vue', $request->vue)->first();
-                if ($vue) {
-                    $query->where('vue_id', $vue->id);
-                }
-            }
-            if ($request->filled('typologie')) {
-                $typologie = Typologie::on('temp')->where('typologie', $request->typologie)->first();
-                if ($typologie) {
-                    $query->where('typologie_id', $typologie->id);
-                }
-            }
-
-            if ($tranche_id = $request->input('projet_id')) {
-                $query->where('projet_id', $request->projet_id);
-            }
-            if ($tranche_id = $request->input('tranche_id')) {
-                $query->where('tranche_id', $tranche_id);
-            }
-            if ($bloc_id = $request->input('bloc_id')) {
-                $query->where('bloc_id', $bloc_id);
-            }
-            if ($immeuble_id = $request->input('immeuble_id')) {
-                $query->where('immeuble_id', $immeuble_id);
-            }
-
-        $counts = $query->groupBy('etat')
-            ->get()
-            ->keyBy('etat');
-
-        // Calcul du total général
-        $totalGeneral = $counts->sum('total');
-
-        return response()->json([
-            'data' => $counts,
-            'total' => $totalGeneral,
-        ], 200); // Retirez la virgule supplémentaire ici
-    }
-
-    // Retour en cas d'accès non autorisé
-    return response()->json(['error' => 'Unauthorized'], 401);
-}
-
-
-public function getEtatBien_ByType(Request $request, $projet_id, $type_id)
-{
-    if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
-        DatabaseHelper::Config();
-
-        $query = DB::connection('temp')
+            $query = DB::connection('temp')
                 ->table('biens')
                 ->selectRaw("etat, COUNT(*) as total")
-                ->where('projet_id', $projet_id)
-                ->where('type_id', $type_id)
+            //->where('projet_id', $request->input('projet_id'))
                 ->whereNull('deleted_at');
             if ($request->filled('propriete_dite_bien')) {
                 $query->where('propriete_dite_bien', 'like', '%' . $request->input('propriete_dite_bien') . '%');
@@ -1188,8 +1090,8 @@ public function getEtatBien_ByType(Request $request, $projet_id, $type_id)
             if ($request->filled('etat')) {
                 $query->where('etat', 'like', '%' . $request->input('etat') . '%');
             }
-            if ($request->filled('etat_bien') && $request->input('etat_bien')!="null" ) {
-                $query->where('etat',  $request->input('etat_bien') );
+            if ($request->filled('etat_bien') && $request->input('etat_bien') != "null") {
+                $query->where('etat', $request->input('etat_bien'));
             }
             if ($request->filled('prix_min')) {
                 $query->where('prix', '>=', $request->input('prix_min'));
@@ -1275,5 +1177,116 @@ public function getEtatBien_ByType(Request $request, $projet_id, $type_id)
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
+    public function getEtatBien_ByType(Request $request, $projet_id, $type_id)
+    {
+        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+
+            $query = DB::connection('temp')
+                ->table('biens')
+                ->selectRaw("etat, COUNT(*) as total")
+                ->where('projet_id', $projet_id)
+                ->where('type_id', $type_id)
+                ->whereNull('deleted_at');
+            if ($request->filled('propriete_dite_bien')) {
+                $query->where('propriete_dite_bien', 'like', '%' . $request->input('propriete_dite_bien') . '%');
+            }
+
+            if ($request->filled('niveau')) {
+                $query->where('niveau', 'like', '%' . $request->input('niveau') . '%');
+            }
+            if ($request->filled('orientation')) {
+                $query->where('orientation', 'like', '%' . $request->input('orientation') . '%');
+            }
+
+            if ($request->filled('etat')) {
+                $query->where('etat', 'like', '%' . $request->input('etat') . '%');
+            }
+            if ($request->filled('etat_bien') && $request->input('etat_bien') != "null") {
+                $query->where('etat', $request->input('etat_bien'));
+            }
+            if ($request->filled('prix_min')) {
+                $query->where('prix', '>=', $request->input('prix_min'));
+            }
+
+            if ($request->filled('prix_max')) {
+                $query->where('prix', '<=', $request->input('prix_max'));
+            }
+
+            if ($request->filled('superficie_min')) {
+                $query->where('superficie_habitable', '>=', $request->input('superficie_min'));
+            }
+
+            if ($request->filled('superficie_max')) {
+                $query->where('superficie_habitable', '<=', $request->input('superficie_max'));
+            }
+
+            if ($request->filled('type')) {
+                $type = TypeBien::on('temp')->where('type', $request->type)->first();
+                if ($type) {
+                    $query->where('type_id', $type->id);
+                }
+            }
+            if ($request->filled('tranche')) {
+                $tranche = Tranche::on('temp')->where('nom', $request->tranche)->first();
+                if ($tranche) {
+                    $query->where('tranche_id', $tranche->id);
+                }
+            }
+            if ($request->filled('bloc')) {
+                $bloc = Bloc::on('temp')->where('nom', $request->bloc)->first();
+                if ($bloc) {
+                    $query->where('bloc_id', $bloc->id);
+                }
+            }
+            if ($request->filled('immeuble')) {
+                $immeuble = Immeuble::on('temp')->where('nom', $request->immeuble)->first();
+                if ($immeuble) {
+                    $query->where('immeuble_id', $immeuble->id);
+                }
+            }
+
+            if ($request->filled('vue')) {
+                $vue = Vue::on('temp')->where('vue', $request->vue)->first();
+                if ($vue) {
+                    $query->where('vue_id', $vue->id);
+                }
+            }
+            if ($request->filled('typologie')) {
+                $typologie = Typologie::on('temp')->where('typologie', $request->typologie)->first();
+                if ($typologie) {
+                    $query->where('typologie_id', $typologie->id);
+                }
+            }
+
+            if ($tranche_id = $request->input('projet_id')) {
+                $query->where('projet_id', $request->projet_id);
+            }
+            if ($tranche_id = $request->input('tranche_id')) {
+                $query->where('tranche_id', $tranche_id);
+            }
+            if ($bloc_id = $request->input('bloc_id')) {
+                $query->where('bloc_id', $bloc_id);
+            }
+            if ($immeuble_id = $request->input('immeuble_id')) {
+                $query->where('immeuble_id', $immeuble_id);
+            }
+
+            $counts = $query->groupBy('etat')
+                ->get()
+                ->keyBy('etat');
+
+            // Calcul du total général
+            $totalGeneral = $counts->sum('total');
+
+            return response()->json([
+                'data' => $counts,
+                'total' => $totalGeneral,
+            ], 200); // Retirez la virgule supplémentaire ici
+        }
+
+        // Retour en cas d'accès non autorisé
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
 
 }
