@@ -920,7 +920,7 @@ class ReservationController extends Controller
                         }
                         if(count($des->nouvel_aquereurs_desistements)>0){
                             foreach($des->nouvel_aquereurs_desistements as $n_aq){
-                                $naq->delete();
+                                $n_aq->delete();
                             }
                         }
                         if(count($des->Piece_jointes)>0){
