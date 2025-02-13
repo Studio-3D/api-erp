@@ -43,6 +43,10 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
 use \NumberFormatter;
 use App\Models\TraitementFrein;
+use App\Models\HistoriqueBien;
+use App\Models\PreReservation;
+
+
 
 class VisiteController extends Controller
 {
@@ -1441,6 +1445,30 @@ class VisiteController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $visite = Visite::on('temp')->findOrFail($id);
+
+            //appels
+            $t_appel=new AppelController();
+            $traitement_appels=TraitementAppel::on('temp')->where('visite_id',$id)->get();
+            if(count($traitement_appels)>0){
+                foreach($traitement_appels as $tr){
+                    $t_appel->destroy_t_appel($tr->id,1);
+                }
+            }
+            //historique bien
+            $histo_b=HistoriqueBien::on('temp')->where('visite_id',$id)->get();
+            if(count($histo_b)>0){
+                foreach($histo_b as $h){
+                    $h->delete();
+                }
+            }
+            $pre=PreReservation::on('temp')->where('visite_id',$id)->get();
+            if(count($pre)>0){
+                foreach($pre as $p){
+                    $p->delete();
+                }
+            }
+
+
             if ($visite->interet == InteretEnum::Intéressé->value) {
                 if ($visite->bien_id) {
                     Bien_Helper::libererBien($visite->bien_id, null, null);

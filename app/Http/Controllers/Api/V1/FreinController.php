@@ -296,6 +296,11 @@ class FreinController extends Controller
             //notification des biens disponible pour ce frein
             NotificationHelper::destroy_notif_bien_dispo_frein($frein->visite_id);
 
+            $freinTraitement = TraitementFrein::on('temp')->where('frein_id', $id)->get();
+            foreach ($freinTraitement as $freinTrai) {
+                $freinTrai->delete();
+            }
+            //traitement frein
             if ($frein->delete()) {
                 return response()->json(['message' => 'Frein supprimé avec succès.'], 200);
             } else {
