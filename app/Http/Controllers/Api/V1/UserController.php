@@ -231,18 +231,30 @@ class UserController extends Controller
     public function show($id)
     {
         $userAuth = Auth::guard('api')->user();
-        $user = null;
-        if (RoleHelper::Superadmin()&& $userAuth->societe_id == 1) {
-            $user = User::findOrFail($id)->with(['reservation', 'desistements', 'visites']);
-        } else {
+
+        if (RoleHelper::Superadmin() && $userAuth->societe_id == 1) {
+            // Récupérer l'utilisateur et compter ses relations
+            $user = User::find($id);
+        } else if (RoleHelper::Admin() || (RoleHelper::Superadmin() && $userAuth->societe_id != 1)) {
             DatabaseHelper::Config();
             $user = User::on('temp')
-            ->where('user_id_origin', $id)
-            ->with(['reservation', 'desistements', 'visites'])
-            ->first();        }
-        return response()->json(['user' => $user]);
+                ->with(['projets', 'reservations', 'desistements', 'visites', 'avances', 'compromis_ventes', 'traitement_appels', 'contrat_ventes'])
+                ->withCount(['projets', 'reservations', 'desistements', 'visites', 'avances', 'compromis_ventes', 'traitement_appels', 'contrat_ventes'])
+                ->where('user_id_origin', $id)
+                ->first();
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
 
+        if (!$user) {
+            return response()->json(['message' => 'Utilisateur non trouvé'], 404);
+        }
+
+        return response()->json([
+            'user' => $user,
+        ], 200);
     }
+
     public function update(UpdateUserRequest $request, $id)
     {
 
