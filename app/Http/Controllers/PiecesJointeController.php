@@ -212,10 +212,11 @@ class PiecesJointeController extends Controller
                     $societe = Societe::findOrfail($user_societes->societe_id);
                     $avance = Avance::on('temp')->findOrfail($request->input("avance_id"));
                     $avance->setConnection('temp');
+                    $codeReservation = $avance->reservation->code_reservation;
 
                     // Récupérer le nom du fichier
                     $avance->recu_scanne = $request->file('fichier_scanner')->getClientOriginalName();
-                    $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements');
+                    $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements/' . $codeReservation);
                     File::makeDirectory($directory, 0755, true, true);
                     $request->file('fichier_scanner')->move($directory, $request->file('fichier_scanner')->getClientOriginalName());
 
