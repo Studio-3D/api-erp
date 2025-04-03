@@ -55,7 +55,7 @@ class Projet extends Model
 
    public function userProjet()
    {
-       return $this->hasMany(userProjet::class);
+       return $this->hasMany(UserProjet::class);
    }
    public function typesBien()
    {
