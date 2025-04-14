@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api\V1;
-
+use App\Models\StatutProspect;
 use App\Enum\EtatBien;
 use App\Enum\InteretEnum;
 use App\Enum\StatutVisiteEnum;
@@ -322,6 +322,7 @@ class VisiteController extends Controller
                 $validatedData['cin'] = $request->cin;
                 $validatedData['email'] = $request->email;
                 $validatedData['source'] = $request->source_id;
+                $validatedData['projet_id'] =  $request->selectedProjet;
                 if ($request->source_txt == 'Partenaire') {
                     $validatedData['partenaire_id'] = $request->partenaire_id;
                 } else {
@@ -989,6 +990,15 @@ class VisiteController extends Controller
 
 
             }
+              // store statut du  prospect
+                $statut_pro = new StatutProspect();
+                $statut_pro->setConnection('temp');
+                $statut_pro->prospect_id=$prospect->id;
+                $statut_pro->statut='4';
+                $statut_pro->date_traitement = Carbon::now();
+                $statut_pro->user_id_traite = $userAuth->value('id');
+                $statut_pro->visite_id = $origin_id;
+                $statut_pro->save();
               //send message WhatsApp de bienvenue en cas de n'existe pas de relance ou rendez-vous ou frein
 
               if($msg_sended==0){
