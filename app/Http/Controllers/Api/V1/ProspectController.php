@@ -13,19 +13,87 @@ use App\Models\Prospect;
 use App\Models\Source;
 use App\Models\Visite;
 use App\Models\Notification;
-
+use App\Models\StatutProspect;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use App\Models\TraitementFrein;
 use App\Enum\InteretEnum;
 use App\Enum\StatutVisiteEnum;
+use Illuminate\Support\Facades\Config;
+use App\Events\NotificationEvent;
+use App\Events\NotifMenuEvent;
+use App\Http\Helpers\NotificationHelper;
 
 class ProspectController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
+
+     public function indexByProjet(Request $request,$projet_id)
+    {
+        if (Auth::guard('api')->check()) {
+            $size = $request->input('size', null);
+            $page = $request->input('page', null);
+
+            DatabaseHelper::Config();
+
+            // Démarrer la requête directement sur le modèle
+            $query = prospect::on('temp')->with('client','visites','appels','last_statut')->where('projet_id', $projet_id);
+            $query->where(function ($q) use ($request) {
+                if ($request->filled('telephone')) {
+                    $q->where(function ($subQuery) use ($request) {
+                        $subQuery->where('telephone', 'like', '%' . $request->input('telephone') . '%')
+                            ->orWhere('telephone_num2', 'like', '%' . $request->input('telephone') . '%');
+                    });
+                }
+            });
+            if ($request->filled('cin')) {
+                $query->where('cin', 'like', '%' . $request->input('cin') . '%');
+            }
+            if ($request->filled('nom')) {
+                $query->where('nom', 'like', '%' . $request->input('nom') . '%');
+            }
+            if ($request->filled('prenom')) {
+                $query->where('prenom', 'like', '%' . $request->input('prenom') . '%');
+            }
+
+            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+
+                $prospects = $query->orderBy('created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
+
+                // Extraire les propriétés du paginateur
+                $pagination = [
+                    'currentPage' => $prospects->currentPage(),
+                    'totalItems' => $prospects->total(),
+                    'totalPages' => $prospects->lastPage(),
+                ];
+
+                // Extraire les éléments d'utilisateur du paginateur
+                $prospects = $prospects->items();
+
+                // Retourner la réponse simplifiée
+                return response()->json([
+                    'prospects' => $prospects,
+                    'pagination' => $pagination,
+                ], 200);
+            } else {
+                // Return all results if pagination parameters are not provided or invalid
+                $prospects = $query->orderBy('created_at', 'desc')
+                    ->get();
+
+                return response()->json(['prospects' => $prospects], 200);
+            }
+
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
     public function index(Request $request)
     {
         if (Auth::guard('api')->check()) {
@@ -87,6 +155,130 @@ class ProspectController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
+    public function traiter_prospect($id, Request $request)
+    {
+          // ✅ Validate that 'statut' is required and must not be null
+        $request->validate([
+            'statut' => 'required',
+        ], [
+            'statut.required' => 'Le Statut est Obligatoire.',
+        ]);
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $user = Auth::user();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $prospect = Prospect::on('temp')->findOrFail($id);
+            $ps_statut = new statutProspect();
+            $ps_statut->setConnection('temp');
+            $ps_statut->prospect_id = $id;
+            $ps_statut->statut = $request->statut;
+            $ps_statut->commentaire = $request->commentaire;
+            $ps_statut->user_id_traite = $userAuth->value('id');
+            $ps_statut->date_traitement = Carbon::now();
+            if ($request->statut == 1) {
+                $ps_statut->rdv = $request->rdv;
+            }elseif($request->statut == 3) {
+                $ps_statut->date_rappel = $request->date_rappel;
+            }
+
+          if($ps_statut->save()){
+            if ($request->statut == 2) {
+                //rappel
+                Config::set('broadcasting.default', 'pusher_3');
+                $data_notif = [
+                    'lien' => '/crm/prospects/' . $id,
+                    'date' => $request->date_rappel,
+                    'type' => 30,
+                    'user_id' => Auth::guard('api')->user()->id,
+                    'description' => 'le prospect doit etre rappelé',
+                    'projet_id' => $prospect->projet_id,
+                    'prospect_id' => $id,
+
+                ];
+                $notif_helper = new NotificationHelper();
+                $notif_helper->storeNotification($request->merge($data_notif));
+                broadcast(new NotificationEvent($id));
+
+
+            }
+            if ($request->statut == 1) {
+                //rdv
+                Config::set('broadcasting.default', 'pusher_3');
+                $data_notif = [
+                    'lien' => '/crm/prospects/' . $id,
+                    'date' =>$request->rdv,
+                    'type' => 31,
+                    'user_id' => Auth::guard('api')->user()->id,
+                    'description' => 'le prospect a un rdv',
+                    'projet_id' => $prospect->projet_id,
+                    'prospect_id' => $id,
+
+                ];
+                $notif_helper = new NotificationHelper();
+                $notif_helper->storeNotification($request->merge($data_notif));
+                broadcast(new NotificationEvent($id));
+            }
+          }
+          return response()->json(['message' => 'done'], 200);
+
+
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+    }
+
+    public function get_Historiques_by_prospect($id, Request $request)
+    {
+        if (Auth::guard('api')->check()) {
+            $size = $request->input('size', config('app.default_item_number_perpage')); // Default size if not provided
+            $page = $request->input('page', 1); // Default page if not provided
+
+            DatabaseHelper::Config();
+
+
+            $query = StatutProspect::on('temp')->with('user')->where('prospect_id', $id)->orderBy('date_traitement','desc');
+            // Optional filters (Add more if needed)
+
+            if ($request->filled('date_traitement')) {
+                $start = Carbon::parse($request->input('date'));
+                $query->whereDate('date_traitement' ,$start);
+            }
+
+            if ($request->filled('respo')) {
+                $query->whereHas('user', function ($q) use ($request) {
+                    $q->where(function ($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->input('cc') . '%')
+                            ->orWhere('prenom', 'like', '%' . $request->input('cc') . '%');
+                    });
+                });
+            }
+
+            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+                // Paginate if size and page are valid
+                $historiques = $query->orderBy('created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
+
+                // Add pagination info
+                $pagination = [
+                    'currentPage' => $historiques->currentPage(),
+                    'totalItems' => $historiques->total(),
+                    'totalPages' => $historiques->lastPage(),
+                ];
+
+                $historiques = $historiques->items();
+
+                return response()->json([
+                    'historiques' => $historiques,
+                    'pagination' => $pagination,
+                ], 200);
+            }
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
     /**
      * Show the form for creating a new resource.
      */
@@ -117,6 +309,7 @@ class ProspectController extends Controller
             $prospect->partenaire_id = $request->partenaire_id;
             $prospect->message = $request->message;
             $prospect->ville = $request->ville;
+            $prospect->projet_id = $request->projet_id;
             $prospect->save();
             return $prospect;
 
@@ -321,6 +514,12 @@ class ProspectController extends Controller
 
     public function upload(Request $request)
     {
+        // ✅ Validate that 'jsonData' is required and must not be null
+          $request->validate([
+            'jsonData' => 'required',
+        ], [
+            'jsonData.required' => 'Le champ des données est obligatoire.',
+        ]);
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             set_time_limit(0);
@@ -383,6 +582,7 @@ class ProspectController extends Controller
                         $prospect->source = $source_id;
                         $prospect->partenaire_id =NULL;
                         $prospect->message = NULL;
+                        $prospect->projet_id = $request->projet_id;
                         $prospect->ville =empty($row['ville'])?null:$row['ville'];;
                         $prospect->save();
                         return response()->json('done');

@@ -15,6 +15,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use App\Models\Import;
 use App\Models\Projet;
+use App\Models\StatutProspect;
 use App\Models\WebhookEvent;
 use Illuminate\Support\Facades\Http;
 use App\Http\Helpers\ImportExcelHelper;
@@ -440,9 +441,8 @@ class DatabaseHelper
                                 Log::info(' message de relance whtsap send to prospect'.$user->phone);
 
                             }
+                         }
                     }
-
-                }
                    // Récupérer les relances pour les prospects
                 $rdvs = Relance_Rdv_visite::on('temp')
                     ->with(['visite.prospect','user','visite.projet','visite.bien'])
@@ -469,6 +469,27 @@ class DatabaseHelper
                     }
                 }
 
+                //SEND Msg to user for reminde prosect (table statut_prospects)
+                        // Récupérer les relances pour les users
+                        $rappel_prospects_users = StatutProspect::on('temp')
+                        ->with(['user','prospect'])
+                        ->whereDate('date_reppel', $today)
+                        ->get();
+                        log::info('count'.count($rappel_prospects_users));
+                        if(count($rappel_prospects_users)>0){
+                            foreach ($rappel_prospects_users as $rel) {
+                                $user = $rel->user;
+                                if($user->phone!=null){
+                                    // Assuming the relationship exist
+                                    $prospect = $rappel_prospects_users->prospect->nom .' '.$rappel_prospects_users->prospect->prenom; // Adjust field name as needed
+                                    $phone_prospect=$rappel_prospects_users->prospect->telephone;
+                                    $message = "Bonjour, nous vous rappelons que vous avez une relance à effectuer pour le prospect $prospect. le Numéro telephone est :$phone_prospect";
+                                    DatabaseHelper::sendWhatsAppMessage($user->phone, $message);
+                                    Log::info(' message de relance whtsap send to prospect'.$user->phone);
+
+                                }
+                             }
+                        }
 
 
                 Log::info('Processus de relance et notification terminé pour la base de données ' . $databaseName);
