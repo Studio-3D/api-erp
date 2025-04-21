@@ -108,7 +108,7 @@ class ProjetController extends Controller
             if ($request->filled('nom')) {
                 $query->where('nom', 'like', '%' . $request->input('nom') . '%');
             }
-            if ($request->filled('adresse')) {
+            if ($request->filled('adresse')) { 
                 $query->where('adresse', 'like', '%' . $request->input('adresse') . '%');
             }
             if ($request->filled('code')) {
@@ -250,28 +250,34 @@ class ProjetController extends Controller
                 }
 
                 $all = 0;
-                foreach ($dataArray_users as $valeur) {
-                    if ($valeur['id'] == 'tous') {
-                        $all = 1;
-                        break;
-                    }
-                }
-                if ($all == 1) {
-                    DatabaseHelper::Config();
-                    $users = User::on('temp')->get(['id']);
-                    foreach ($users as $us) {
-                        UserProjetHelper::createUserProjet($projet->id, $us->id);
-                    }
-                    return response()->json(['projet' => $projet], 200);
-                } else {
-
+                if (is_array($dataArray_users)) {
                     foreach ($dataArray_users as $valeur) {
-                        UserProjetHelper::createUserProjet($projet->id, $valeur['id']);
+                        $userId = is_array($valeur) ? ($valeur['id'] ?? null) : $valeur;
+                        
+                        if ($userId == 'tous') {
+                            $all = 1;
+                            break;
+                        }
                     }
-                    broadcast(new NewProjectEvent($projet->id));
-
-                    return response()->json(['projet' => $projet], 200);
-
+                    
+                    if ($all == 1) {
+                        DatabaseHelper::Config();
+                        $users = User::on('temp')->get(['id']);
+                        foreach ($users as $us) {
+                            UserProjetHelper::createUserProjet($projet->id, $us->id);
+                        }
+                        return response()->json(['projet' => $projet], 200);
+                    } else {
+                        foreach ($dataArray_users as $valeur) {
+                            $userId = is_array($valeur) ? ($valeur['id'] ?? null) : $valeur;
+                            
+                            if ($userId) {
+                                UserProjetHelper::createUserProjet($projet->id, $userId);
+                            }
+                        }
+                        broadcast(new NewProjectEvent($projet->id));
+                        return response()->json(['projet' => $projet], 200);
+                    }
                 }
             }
 
