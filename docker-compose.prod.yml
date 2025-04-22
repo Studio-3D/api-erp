@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  # Laravel Application (Production)
+  app:
+    build:
+      context: ./
+      dockerfile: Dockerfile.prod
+    volumes:
+      - ./:/var/www/html
+    expose:
+      - "8000"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=erp-studio3d.cng8secmmw73.eu-north-1.rds.amazonaws.com
+      - DB_PORT=3306
+      - DB_DATABASE=erp_studio5d_1
+      - DB_USERNAME=admin
+      - DB_PASSWORD=Kilo15.35
+    networks:
+      - app-network
+      
+  # Nginx Service (Production only)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS
+    volumes:
+      - ./:/var/www/html
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - app
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
