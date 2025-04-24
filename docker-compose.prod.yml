@@ -21,12 +21,12 @@ services:
       - DB_PASSWORD=Kilo15.35
     networks:
       - app-network
-      
+
   # Nginx Service (Production only)
   nginx:
     image: nginx:alpine
     ports:
-      - "80:80"      # HTTP
+      - "80:80"      # HTTdP
       - "443:443"    # HTTPS
     volumes:
       - ./:/var/www/html
@@ -34,6 +34,21 @@ services:
       - ./nginx/ssl:/etc/nginx/ssl
     depends_on:
       - app
+    networks:
+      - app-network
+
+  # PHPMyAdmin for RDS
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    restart: always
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: erp-studio3d.cng8secmmw73.eu-north-1.rds.amazonaws.com
+      PMA_PORT: 3306
+      PMA_USER: admin
+      PMA_PASSWORD: Kilo15.35
+      PMA_ARBITRARY: 1
     networks:
       - app-network
 
