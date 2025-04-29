@@ -26,6 +26,7 @@ use App\Enum\RoleEnum;
 use App\Models\Frein;
 use App\Models\WebhookEvent;
 
+use App\Http\Controllers\Api\V1\FreinController;
 
 class NotificationController extends Controller
 {
@@ -354,7 +355,7 @@ class NotificationController extends Controller
             if(RoleHelper::AdminSup()){
                 $rel_client_freins=0;
                 $frein=new FreinController();
-                $data_get=$frein->get_clients_freins($projet_id,$request);
+                $data_get=$frein->get_clients_freins($request,$projet_id);
                 foreach($data_get->original as $key => $v){
                     if($key=='count_clients'){
                         $rel_client_freins = $v;
@@ -365,7 +366,7 @@ class NotificationController extends Controller
 
              $rel_client_freins=0;
                 $frein=new FreinController();
-                $data_get=$frein->get_clients_freins($projet_id,$request);
+                $data_get=$frein->get_clients_freins($request,$projet_id);
                 foreach($data_get->original as $key => $v){
                     if($key=='count_clients'){
                         $rel_client_freins = $v;
@@ -425,11 +426,15 @@ class NotificationController extends Controller
     public function destory_force_by_column_id($text,$id){
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
+            $notifications=[];
             if($text=='visite'){
                 $notifications=Notification::on('temp')->where('visite_id',$id)->get();
             }
             elseif($text=='reservation'){
                 $notifications=Notification::on('temp')->where('reservation_id',$id)->get();
+            }
+            elseif($text=='t_appel'){
+                $notifications=Notification::on('temp')->where('traite_appel_id',$id)->get();
             }
             foreach($notifications as $notif){
                 $notif->forceDelete();

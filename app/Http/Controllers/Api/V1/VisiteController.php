@@ -331,7 +331,7 @@ class VisiteController extends Controller
                 $validatedData['telephone'] = $request->telephone;
                 $validatedData['nom'] = $request->nom;
                 $validatedData['prenom'] = $request->prenom;
-                $validatedData['telephone_num2'] = $request->input('telephone_num2');
+                $validatedData['telephone_num2']=$request->telephone_num2=="null"?null:$request->telephone_num2;
                 $validatedData['ville'] = $request->input('ville');
                 $validatedData['origin'] = 'visite';
                 $validatedData['notifie'] = $request->notifie;
@@ -1308,7 +1308,7 @@ class VisiteController extends Controller
                 if (($visite->statut == StatutVisiteEnum::Pré_Réservation->value || $visite->statut == StatutVisiteEnum::Vendu->value) && $visite->bien_id != null) {
                     if ($visite->bien_id != $request->bien_id) {
                         $oldBien = Bien::on('temp')->find($visite->bien_id);
-                        if ($oldBien->etat == 'Pré_Réservation' || $oldBien->etat == 'Vendu') {
+                        if ($oldBien->etat == 'PRE_RESERVATION' || $oldBien->etat == 'VENDU') {
                             Bien_Helper::libererBien($visite->bien_id, null, null);
 
                         }
@@ -1428,13 +1428,42 @@ class VisiteController extends Controller
                     $rdv->save();
                 }
             }
-            //store code pre reserve to table ==>PreReservation
+            /*//store code pre reserve to table ==>PreReservation
             if ($old_visite->statut != StatutVisiteEnum::Pré_Réservation->value) {
                 if ($visite->interet == InteretEnum::Intéressé->value && $visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
                     $bien_c = new BienController();
                     $bien_c->prereserverBien($visite->bien_id, $visite->id, null,null);
+                    HistoriqueBienHelper::createHistoriqueBien(2, "Pre Reserve pour le prospect :" . $prospect->cin . ' ' . $prospect->nom . ' ' . $prospect->prenom, $visite->bien_id, Auth::guard('api')->user()->id, $visite->id, null,null,null);
+
                 }
             }
+            //IF CHANGE BIEN NOT CHANGING STATUT
+            if ($visite->interet == InteretEnum::Intéressé->value && $visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
+                if($old_visite->bien_id!=$visite->bien_id){
+                    //pre reserve le new bien
+                    $bien_c = new BienController();
+                    $bien_c->prereserverBien($visite->bien_id, $visite->id, null,null);
+                    HistoriqueBienHelper::createHistoriqueBien(2, "Pre Reserve pour le prospect :" . $prospect->cin . ' ' . $prospect->nom . ' ' . $prospect->prenom, $visite->bien_id, Auth::guard('api')->user()->id, $visite->id, null,null,null);
+
+                }
+            }*/
+            // Conditions communes
+            $isInteresseEtPreReserve = $visite->interet == InteretEnum::Intéressé->value &&
+                                    $visite->statut == StatutVisiteEnum::Pré_Réservation->value;
+
+            // Condition 1 : Passage en pré-réservation
+            $wasNotPreReserve = $old_visite->statut != StatutVisiteEnum::Pré_Réservation->value;
+
+            // Condition 2 : Changement de bien
+            $bienChanged = $old_visite->bien_id != $visite->bien_id;
+
+            if ($isInteresseEtPreReserve && ($wasNotPreReserve || $bienChanged)) {
+                $bienController = new BienController();
+                $bienController->prereserverBien($visite->bien_id, $visite->id, null, null);
+
+
+            }
+
 
             //if($old_visite->statut!=StatutVisiteEnum::Vendu->value ){
             if ($visite->interet == InteretEnum::Intéressé->value && $visite->statut == StatutVisiteEnum::Vendu->value) {
@@ -1473,8 +1502,8 @@ class VisiteController extends Controller
                     'civilite' => '1',
                     'type_client' => 1,
                     'situation_familliale' => 1,
-                    'sr' => $request->sr,
-                    'check_montant' => $request->check_montant,
+                    'sr' => ($request->sr === 'false' || $request->sr === null) ? 0 : 1,
+                    'check_montant' => ($request->check_montant === 'false' || $request->check_montant === null) ? 0 : 1,
                     'type_encaissement' => 1,
                     'avance' => $request->avance_res,
                     'mode_paiement' => $request->mode_paiement,
@@ -1513,10 +1542,13 @@ class VisiteController extends Controller
 
                 $freinController = new FreinController();
                 if (!$frein_id->isEmpty()) {
+
                     $freinController->update(new UpdateFreinRequest($freinRequest), $frein_id->value('id'));
                 } else {
+
                     $freinRequest['visite_id'] = $visite->id;
                     $freinController->store(new StoreFreinRequest($freinRequest));
+
                 }
             } else {
 

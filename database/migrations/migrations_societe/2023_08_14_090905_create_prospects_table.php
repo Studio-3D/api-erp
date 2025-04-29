@@ -34,51 +34,42 @@ return new class extends Migration
 
         // Add the trigger using DB::unprepared()
         DB::unprepared('
-            CREATE TRIGGER unique_fields_before_insert_or_update
-            BEFORE INSERT ON prospects
-            FOR EACH ROW
-            BEGIN
-                IF NEW.deleted_at IS NULL THEN
-                    IF EXISTS (
-                        SELECT 1
-                        FROM prospects
-                        WHERE cin = NEW.cin AND deleted_at IS NULL
-                    ) THEN
-                        SIGNAL SQLSTATE "45000"
-                        SET MESSAGE_TEXT = "Duplicate CIN found where deleted_at is NULL";
-                    END IF;
-
-                    IF EXISTS (
-                        SELECT 1
-                        FROM prospects
-                        WHERE email = NEW.email AND deleted_at IS NULL
-                    ) THEN
-                        SIGNAL SQLSTATE "45000"
-                        SET MESSAGE_TEXT = "Duplicate Email found where deleted_at is NULL";
-                    END IF;
-
-                    IF EXISTS (
-                        SELECT 1
-                        FROM prospects
-                        WHERE telephone = NEW.telephone AND deleted_at IS NULL
-                    ) THEN
-                        SIGNAL SQLSTATE "45000"
-                        SET MESSAGE_TEXT = "Duplicate Telephone found where deleted_at is NULL";
-                    END IF;
-
-                    IF NEW.telephone_num2 IS NOT NULL THEN
-                        IF EXISTS (
-                            SELECT 1
-                            FROM prospects
-                            WHERE telephone_num2 = NEW.telephone_num2 AND deleted_at IS NULL
-                        ) THEN
-                            SIGNAL SQLSTATE "45000"
-                            SET MESSAGE_TEXT = "Duplicate Telephone Number 2 found where deleted_at is NULL";
-                        END IF;
-                    END IF;
+        CREATE TRIGGER unique_fields_before_insert_or_update
+        BEFORE INSERT ON prospects
+        FOR EACH ROW
+        BEGIN
+            IF NEW.deleted_at IS NULL THEN
+                IF NEW.cin IS NOT NULL AND EXISTS (
+                    SELECT 1 FROM prospects WHERE cin = NEW.cin AND deleted_at IS NULL
+                ) THEN
+                    SIGNAL SQLSTATE "45000"
+                    SET MESSAGE_TEXT = "Duplicate CIN found where deleted_at IS NULL";
                 END IF;
-            END;
-        ');
+
+                IF NEW.email IS NOT NULL AND EXISTS (
+                    SELECT 1 FROM prospects WHERE email = NEW.email AND deleted_at IS NULL
+                ) THEN
+                    SIGNAL SQLSTATE "45000"
+                    SET MESSAGE_TEXT = "Duplicate Email found where deleted_at IS NULL";
+                END IF;
+
+                IF NEW.telephone IS NOT NULL AND EXISTS (
+                    SELECT 1 FROM prospects WHERE telephone = NEW.telephone AND deleted_at IS NULL
+                ) THEN
+                    SIGNAL SQLSTATE "45000"
+                    SET MESSAGE_TEXT = "Duplicate Telephone found where deleted_at IS NULL";
+                END IF;
+
+                IF NEW.telephone_num2 IS NOT NULL AND EXISTS (
+                    SELECT 1 FROM prospects WHERE telephone_num2 = NEW.telephone_num2 AND deleted_at IS NULL
+                ) THEN
+                    SIGNAL SQLSTATE "45000"
+                    SET MESSAGE_TEXT = "Duplicate Telephone Number 2 found where deleted_at IS NULL";
+                END IF;
+            END IF;
+        END;
+    ');
+
     }
 
     /**

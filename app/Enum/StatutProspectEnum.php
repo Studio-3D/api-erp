@@ -10,4 +10,5 @@ Enum StatutProspectEnum:int
     case Injoignable=2;
     case Rappel=3;
     case Convert_visite=4;
+    case nv_appel=5;
 }
