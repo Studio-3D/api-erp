@@ -267,6 +267,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('show_t_appel/{id}', [V1AppelController::class, 'show_t_appel']);
         Route::get('index_traitement_appel/{id}', [V1AppelController::class, 'index_traitement_appel']);
         Route::delete('destroy_t_appel/{id}/{number}', [V1AppelController::class, 'destroy_t_appel'])->name('');
+
         Route::put('traiter_relance_rdv_appel/{id}', [V1AppelController::class, 'traiter_relance_rdv_appel'])->name('');
         Route::get('get_info_cin_unique/{prospect_id}/{cin}', [V1AppelController::class, 'get_info_cin_unique']);
         //RELANCES RDV APPELS

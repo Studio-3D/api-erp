@@ -303,7 +303,7 @@ class ProspectController extends Controller
             $prospect->telephone = $request->telephone;
             $prospect->telephone_num2 = $request->telephone_num2;
             $prospect->email = $request->email;
-            $prospect->origin = 'manuel';
+            $prospect->origin = $request->origin!=null?$request->origin:'manuel';
             $prospect->notifie = $request->notifie;
             $prospect->source = $request->source;
             $prospect->partenaire_id = $request->partenaire_id;

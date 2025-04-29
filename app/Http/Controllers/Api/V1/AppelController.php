@@ -31,6 +31,8 @@ use App\Models\TypeBienAppel;
 use App\Http\Requests\UpdateAppelRequest;
 use App\Http\Requests\UpdateDate_relance_Rdv;
 use App\Events\NotifMenuEvent;
+use App\Models\StatutProspect;
+use App\Http\Controllers\NotificationController;
 
 
 
@@ -261,14 +263,14 @@ class AppelController extends Controller
                 DatabaseHelper::Config();
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
                 $prospect_id=null;
-                if($request->prospect_id=="null"){
+                if($request->prospect_id=="null"||$request->prospect_id==null){
 
                     $validatedData = $request->validated();
                     $validatedData['cin']=$request->cin=="null"?null:$request->cin;
                     $validatedData['nom']=$request->nom=="null"?null:$request->nom;
                     $validatedData['prenom']=$request->prenom=="null"?null:$request->prenom;
                     $validatedData['source']=$request->source=="null"?null:$request->source;
-                    if($request->source_txt == 'PARTENAIRE'){
+                    if($request->source_txt == 'PARTENAIRE'|| $request->source_txt == 'Partenaire'){
                        $validatedData['partenaire_id']=$request->partenaire_id=="null"?null:$request->partenaire_id;
                     }else{
                        $validatedData['partenaire_id']=null;
@@ -278,10 +280,12 @@ class AppelController extends Controller
                     $validatedData['origin']='appel';
                     $validatedData['notifie']=$request->notifie=="null"?null:$request->notifie;
                     $validatedData['ville']=$request->ville=="null"?null:$request->ville;
+                    $validatedData['projet_id']=$request->projet_id;
                     $prospectController = new ProspectController();
                     $prospect = $prospectController->store(new StoreProspectRequest($validatedData));
                 }
                 else{
+
                     //recupere le prospect //modifier info
                     $prospect= Prospect::on('temp')->findorfail($request->prospect_id);
                     //$prospect->cin=$request->cin;
@@ -291,13 +295,14 @@ class AppelController extends Controller
                             $prospect->cin=$request->cin;
                         }
                     }
+                    $prospect->projet_id=$request->projet_id;
                     $prospect->nom= $request->nom=="null"?null:$request->nom;
                     $prospect->prenom=$request->prenom=="null"?null:$request->prenom;
                     $prospect->telephone=  $request->telephone=="null"?null:$request->telephone;
                     $prospect->telephone_num2=$request->telephone_num2=="null"?null:$request->telephone_num2;
                     $prospect->ville= $request->ville=="null"?null:$request->ville;
                     $prospect->source=$request->source=="null"?null:$request->source;;
-                    if ($request->source_txt == 'PARTENAIRE') {
+                    if ($request->source_txt == 'PARTENAIRE'||$request->source_txt == 'Partenaire') {
                     $prospect->partenaire_id = $request->partenaire_id=="null"?null:$request->partenaire_id;
                     }else{
                         $prospect->partenaire_id = null;
@@ -365,7 +370,15 @@ class AppelController extends Controller
                     }
                     }
 
-
+                    // store statut du  prospect
+                    $statut_pro = new StatutProspect();
+                    $statut_pro->setConnection('temp');
+                    $statut_pro->prospect_id=$prospect->id;
+                    $statut_pro->statut='5';
+                    $statut_pro->date_traitement = Carbon::now();
+                    $statut_pro->user_id_traite = $userAuth->value('id');
+                    $statut_pro->appel_id = $appel->id;
+                    $statut_pro->save();
 
                 return response()->json(['message' => 'appel added.'], 200);
 
@@ -403,6 +416,7 @@ class AppelController extends Controller
                 //update info proqspect
                 //recupere le prospect //modifier info
                  $prospect= Prospect::on('temp')->findorfail($request->prospect_id);
+
                  //$prospect->cin=$request->cin;
                  if($request->cin!="null"){
                      $cin_exist=Prospect::on('temp')->where('cin',$request->cin)->where('id','!=',$request->prospect_id)->count();
@@ -416,7 +430,7 @@ class AppelController extends Controller
                  $prospect->telephone_num2=$request->telephone_num2=="null"?null:$request->telephone_num2;
                  $prospect->ville= $request->ville=="null"?null:$request->ville;
                  $prospect->source=$request->source=="null"?null:$request->source;;
-                 if ($request->source_txt == 'PARTENAIRE') {
+                 if ($request->source_txt == 'PARTENAIRE'|| 'Partenaire') {
                  $prospect->partenaire_id = $request->partenaire_id;
                  }else{
                      $prospect->partenaire_id = null;
@@ -665,7 +679,7 @@ class AppelController extends Controller
                 ->count();
             }
 
-            return response()->json(['nb_relances_appels' => $nb_relances_appels], 200);
+            return response()->json(['nb' => $nb_relances_appels], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -696,7 +710,7 @@ class AppelController extends Controller
                 ->count();
             }
 
-            return response()->json(['nb_rdv_appels' => $nb_rdv_appels], 200);
+            return response()->json(['nb' => $nb_rdv_appels], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -942,7 +956,7 @@ class AppelController extends Controller
             $relance = Relance_Rdv_Appel::on('temp')->findOrFail($id);
 
             //if date !=null (nouvelle relance )
-            if($request->date!=null){
+            if($request->date!=null ){
                         $traite_appel_id=$relance->traite_appel_id;
                         $prospect_id=$relance->traite_appel->appel->prospect_id;
                         $old_mode_relance=$relance->mode_relance;
@@ -978,6 +992,7 @@ class AppelController extends Controller
                                 $new_relance->type=2;//rdv
                                 $new_relance->rdv=$request->date;
                             }
+
                             $new_relance->type_traitement=0;//0 non_traite 1//mnuelle 2// auto //3 nouvel relance_rdv
                             $new_relance->traite_appel_id=$traite_appel_id;
                             $new_relance->save();
@@ -1029,6 +1044,7 @@ class AppelController extends Controller
                             return response()->json(['message' => $new_relance], 200);
                         }
             }else{
+
                 // si date ==null la relance /rdv  est traité
 
 
