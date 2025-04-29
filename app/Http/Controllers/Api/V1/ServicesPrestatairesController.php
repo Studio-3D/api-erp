@@ -45,7 +45,7 @@ class ServicesPrestatairesController extends Controller
 
                 // Retourner la réponse simplifiée
                 return response()->json([
-                    'services'   => $ser,
+                    'data'   => $ser,
                     'pagination' => $pagination,
                 ], 200);
             } else {

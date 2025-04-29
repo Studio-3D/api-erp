@@ -62,7 +62,7 @@ class PrestatairesController extends Controller
 
                 // Retourner la réponse simplifiée
                 return response()->json([
-                    'prestataires' => $pre,
+                    'data' => $pre,
                     'pagination'   => $pagination,
                 ], 200);
             } else {
@@ -107,6 +107,7 @@ class PrestatairesController extends Controller
             $pre->adresse    = $request->adresse;
             $pre->service_id = $request->service_id;
             $pre->email      = $request->email;
+            $pre->civilite      = $request->civilite;
             if ($pre->save()) {
                 return response()->json(['prestataire' => $pre], 200);
             }
@@ -189,6 +190,8 @@ class PrestatairesController extends Controller
             $pre->adresse    = $request->adresse;
             $pre->service_id = $request->service_id;
             $pre->email      = $request->email;
+            $pre->civilite      = $request->civilite;
+
             if ($pre->save()) {
                 return response()->json(['prestataire' => $pre], 200);
             }
