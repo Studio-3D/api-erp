@@ -1,6 +1,5 @@
 <?php
 
-
 use App\Http\Controllers\Api\V1\ActualiteController as V1ActualiteController;
 use App\Http\Controllers\Api\V1\AppelController as V1AppelController;
 use App\Http\Controllers\Api\V1\AquereurController as V1AquereurController;
@@ -9,6 +8,7 @@ use App\Http\Controllers\Api\V1\BanqueController as V1BanqueController;
 use App\Http\Controllers\Api\V1\BienController as V1BienController;
 use App\Http\Controllers\Api\V1\BlocController as V1BlocController;
 use App\Http\Controllers\Api\V1\ClientController as V1ClientController;
+use App\Http\Controllers\Api\V1\CommissionController as V1CommissionController;
 use App\Http\Controllers\Api\V1\CompositionBienController as V1CompositionBienController;
 use App\Http\Controllers\Api\V1\ComptabiliteController as V1ComptabiliteController;
 use App\Http\Controllers\Api\V1\CpsController as V1CpsController;
@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\DecompteController as V1DecompteController;
 use App\Http\Controllers\Api\V1\DesistementController as V1DesistementController;
 use App\Http\Controllers\Api\V1\EcheancesTrancheController as V1EchancesTrancheCleController;
 use App\Http\Controllers\Api\V1\EncaissementController as V1EncaissementController;
+use App\Http\Controllers\Api\V1\EtapeProjetController as V1EtapeProjetController;
 use App\Http\Controllers\Api\V1\FactureController as V1FactureController;
 use App\Http\Controllers\Api\V1\FournisseurController as V1FournisseurController;
 use App\Http\Controllers\Api\V1\FreinController as V1FreinController;
@@ -46,17 +47,11 @@ use App\Http\Controllers\Api\V1\UploadBienController as V1UploadBienController;
 use App\Http\Controllers\Api\V1\UserController as V1UserController;
 use App\Http\Controllers\Api\V1\VisiteController as V1VisiteController;
 use App\Http\Controllers\Api\V1\VueController as V1VueController;
-use App\Http\Controllers\Api\V1\EtapeProjetController as V1EtapeProjetController;
-use App\Http\Controllers\Api\V1\CommissionController as V1CommissionController;
-
-
-
 use App\Http\Controllers\EnumController;
 use App\Http\Controllers\Facebook_Instagram\Facebook_InstagramController;
 use App\Http\Controllers\Landing_page\Landing_pageController;
 use App\Http\Controllers\LivraisonController;
 use App\Http\Controllers\NotificationController;
-use App\Http\Controllers\PartenaireController;
 use App\Http\Controllers\SocieteController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WhatsApp\WhatsAppController;
@@ -119,7 +114,7 @@ Route::middleware('auth:api')->group(function () {
 
         //l'API banques
         Route::resource('banques', V1BanqueController::class);
-     //   Route::get('get_banques', [V1BanqueController::class, 'get_banques'])->name('get_banques');
+        //   Route::get('get_banques', [V1BanqueController::class, 'get_banques'])->name('get_banques');
 
         //l'API VUES
         Route::resource('vues', V1VueController::class);
@@ -147,8 +142,8 @@ Route::middleware('auth:api')->group(function () {
         //l'API partenare
         Route::resource('projets', V1ProjetController::class);
         Route::get('get_projets', [V1ProjetController::class, 'get_projets'])->name('get_projets');
-       // Route::get('get_projets_users/{societe_id}/{user_id}', [V1ProjetController::class, 'get_projets_user'])->name('');
-       Route::get('get_projets_users/{user_id}', [V1ProjetController::class, 'get_projets_user'])->name('');
+        // Route::get('get_projets_users/{societe_id}/{user_id}', [V1ProjetController::class, 'get_projets_user'])->name('');
+        Route::get('get_projets_users/{user_id}', [V1ProjetController::class, 'get_projets_user'])->name('');
         //l'API tranches
         Route::resource('tranches', V1TrancheController::class);
         Route::get('projets/{idprojet}/tranches', [V1TrancheController::class, 'indexByProjet']);
@@ -206,7 +201,6 @@ Route::middleware('auth:api')->group(function () {
         Route::get('historiques_prospects/{id}', [V1ProspectController::class, 'get_Historiques_by_prospect'])->name('');
 
         Route::get('projets/{idprojet}/prospects', [V1ClientController::class, 'indexByProjet']);
-
 
         //l'API client
         Route::resource('clients', V1ClientController::class);
@@ -381,12 +375,12 @@ Route::middleware('auth:api')->group(function () {
         Route::get('actualites/{projet_id}/{user_id}/{de_date}/{a_date}', [V1ActualiteController::class, 'index'])->name('');
 
         //Commission
-            //Configurations
+        //Configurations
         Route::resource('commissionsConfigurations', V1CommissionController::class);
         Route::get('configurations_commissions/{idprojet}', [V1CommissionController::class, 'configurations_commissions']);
-            // Montant Fixe
+        // Montant Fixe
         Route::get('commission_montant/{idprojet}', [V1CommissionController::class, 'commission_montant']);
-            //Mensuelle
+        //Mensuelle
         Route::get('projets/{idprojet}/commissions_mensuelle_en_attente', [V1CommissionController::class, 'commissions_mensuelle_en_attente']);
         Route::get('cummulles_commissions/{user_id}', [V1CommissionController::class, 'cummulles_commissions']);
         Route::post('traiter_commission/{comm_id}', [V1CommissionController::class, 'traiter_commission'])->name('');
