@@ -48,6 +48,7 @@ use App\Models\HistoriqueBien;
 use App\Models\PreReservation;
 use Illuminate\Support\Facades\Http;
 
+use App\Http\Controllers\NotificationController;
 
 
 class VisiteController extends Controller
@@ -1029,42 +1030,41 @@ class VisiteController extends Controller
     public function get_propriete_bien_concat($id)
     {
         DatabaseHelper::Config();
-        $b_pr = Bien::on('temp')->findorfail($id);
+        $b_pr = Bien::on('temp')->with(['tranche', 'bloc', 'immeuble'])->findorfail($id);
         $propriete = 0;
+        $nom = '';
 
-        //tranches bloc w immeuble
-        if ($b_pr->tranche_id != null && $b_pr->bloc_id != null && $b_pr->immeuble_id != null) {
-            $propriete = $propriete = $b_pr->tranche->nom . '-' . $b_pr->bloc->nom . '-' . $b_pr->immeuble->nom . '-' . $b_pr->propriete_dite_bien;
+            // Tranche + Bloc + Immeuble
+            if ($b_pr->tranche && $b_pr->bloc && $b_pr->immeuble) {
+                $nom = $b_pr->tranche->nom . '-' . $b_pr->bloc->nom . '-' . $b_pr->immeuble->nom;
+            }
+            // Tranche + Bloc
+            elseif ($b_pr->tranche && $b_pr->bloc && !$b_pr->immeuble) {
+                $nom = $b_pr->tranche->nom . '-' . $b_pr->bloc->nom;
+            }
+            // Tranche + Immeuble
+            elseif ($b_pr->tranche && !$b_pr->bloc && $b_pr->immeuble) {
+                $nom = $b_pr->tranche->nom . '-' . $b_pr->immeuble->nom;
+            }
+            // Bloc + Immeuble
+            elseif (!$b_pr->tranche && $b_pr->bloc && $b_pr->immeuble) {
+                $nom = $b_pr->bloc->nom . '-' . $b_pr->immeuble->nom;
+            }
+            // Bloc only
+            elseif (!$b_pr->tranche && $b_pr->bloc && !$b_pr->immeuble) {
+                $nom = $b_pr->bloc->nom;
+            }
+            // Immeuble only
+            elseif (!$b_pr->tranche && !$b_pr->bloc && $b_pr->immeuble) {
+                $nom = $b_pr->immeuble->nom;
+            }
+            // Tranche only
+            elseif ($b_pr->tranche && !$b_pr->bloc && !$b_pr->immeuble) {
+                $nom = $b_pr->tranche->nom;
+            }
+            return response()->json($nom);
 
         }
-        //tranche bloc
-        elseif ($b_pr->tranche_id != null && $b_pr->bloc_id != null && $b_pr->immeuble_id == null) {
-            $propriete = $b_pr->tranche->nom . '-' . $b_pr->bloc->nom . '-' . $b_pr->propriete_dite_bien;
-        }
-        //tranche immeuble
-        elseif ($b_pr->tranche_id != null && $b_pr->bloc_id == null && $b_pr->immeuble_id != null) {
-            $propriete = $b_pr->tranche->nom . '-' . $b_pr->immeuble->nom . '-' . $b_pr->propriete_dite_bien;
-        }
-        //bloc immeuble
-        elseif ($b_pr->tranche_id == null && $b_pr->bloc_id != null && $b_pr->immeuble_id != null) {
-            $propriete = $b_pr->bloc->nom . '-' . $b_pr->immeuble->nom . '-' . $b_pr->propriete_dite_bien;
-        }
-        //bloc
-        elseif ($b_pr->tranche_id == null && $b_pr->bloc_id != null && $b_pr->immeuble_id == null) {
-            $propriete = $b_pr->bloc->nom . '-' . $b_pr->propriete_dite_bien;
-        }
-        //immeuble
-        elseif ($b_pr->tranche_id == null && $b_pr->bloc_id == null && $b_pr->immeuble_id != null) {
-            $propriete = $b_pr->immeuble->nom . '-' . $b_pr->propriete_dite_bien;
-        }
-        //tranche
-        elseif ($b_pr->tranche_id != null && $b_pr->bloc_id == null && $b_pr->immeuble_id == null) {
-            $propriete = $b_pr->tranche->nom . '-' . $b_pr->propriete_dite_bien;
-        }
-
-        return response()->json($propriete);
-
-    }
 
     public function relance_rdv_by_visite($id)
     {
