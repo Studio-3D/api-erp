@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Api\V1;
 
 use App\Enum\EtatBien;
@@ -16,11 +15,14 @@ use App\Http\Helpers\PaginationHelper;
 use App\Http\Helpers\RoleHelper;
 use App\Http\Requests\StoreBienRequest;
 use App\Http\Requests\UpdateBienRequest;
+use App\Models\Avance;
 use App\Models\Bien;
 use App\Models\Bloc;
+use App\Models\Desistement;
 use App\Models\Frein;
 use App\Models\Frein_Bien;
 use App\Models\HistoriqueBien;
+use App\Models\HistoriqueDesistement;
 use App\Models\Immeuble;
 use App\Models\PreReservation;
 use App\Models\Proposition;
@@ -35,9 +37,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
-use App\Models\Desistement;
-use App\Models\HistoriqueDesistement;
-use App\Models\Avance;
 
 class BienController extends Controller
 {
@@ -47,8 +46,8 @@ class BienController extends Controller
     public function index(Request $request)
     {
         if (Auth::guard('api')->check()) {
-            $size = $request->input('size', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
+            $size      = $request->input('size', config('app.default_item_number_perpage'));
+            $page      = $request->input('page', 1);
             $projet_id = $request->input('projet_id');
             DatabaseHelper::Config();
 
@@ -123,14 +122,14 @@ class BienController extends Controller
 
             $pagination = [
                 'currentPage' => $biens->currentPage(),
-                'totalItems' => $biens->total(),
-                'totalPages' => $biens->lastPage(),
+                'totalItems'  => $biens->total(),
+                'totalPages'  => $biens->lastPage(),
             ];
 
             $biens = $biens->items();
 
             return response()->json([
-                'data' => $biens,
+                'data'       => $biens,
                 'pagination' => $pagination,
             ], 200);
         }
@@ -208,8 +207,8 @@ class BienController extends Controller
                 // Extraire les propriétés du paginateur
                 $pagination = [
                     'currentPage' => $biens->currentPage(),
-                    'totalItems' => $biens->total(),
-                    'totalPages' => $biens->lastPage(),
+                    'totalItems'  => $biens->total(),
+                    'totalPages'  => $biens->lastPage(),
                 ];
 
                 // Extraire les éléments d'utilisateur du paginateur
@@ -217,7 +216,7 @@ class BienController extends Controller
 
                 // Retourner la réponse simplifiée
                 return response()->json([
-                    'data' => $biens,
+                    'data'       => $biens,
                     'pagination' => $pagination,
                 ], 200);
             }
@@ -233,7 +232,7 @@ class BienController extends Controller
             $page = $request->input('page', null);
             DatabaseHelper::Config();
 
-            $query = Bien::on('temp')->where('projet_id', $projet_id)->with(['reservation','last_pre_reservation','visites','freins_biens','encaissements','Bien_tva','tva_collectes','reclamations','remiseCle','traitement_freins']);
+            $query = Bien::on('temp')->where('projet_id', $projet_id)->with(['reservation', 'last_pre_reservation', 'visites', 'freins_biens', 'encaissements', 'Bien_tva', 'tva_collectes', 'reclamations', 'remiseCle', 'traitement_freins']);
 
             // Appliquer les filtres si présents
             if ($request->filled('propriete_dite_bien')) {
@@ -315,14 +314,14 @@ class BienController extends Controller
 
                 $pagination = [
                     'currentPage' => $biens->currentPage(),
-                    'totalItems' => $biens->total(),
-                    'totalPages' => $biens->lastPage(),
+                    'totalItems'  => $biens->total(),
+                    'totalPages'  => $biens->lastPage(),
                 ];
 
                 $biens = $biens->items();
 
                 return response()->json([
-                    'data' => $biens,
+                    'data'       => $biens,
                     'pagination' => $pagination,
                 ], 200);
             } else {
@@ -343,7 +342,7 @@ class BienController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
-            $page = $request->input('page', 1);
+            $page    = $request->input('page', 1);
             if (RoleHelper::AdminSup()) {
                 $biens = Proposition::on('temp')->join('biens', 'biens.id', '=', 'propositions.bien_id')->latest('propositions.created_at')->where('biens.projet_id', $projet_id)->where('biens.etat', 'ENCOURS_DE_PROPOSITION')
                     ->select('propositions.*')
@@ -351,10 +350,10 @@ class BienController extends Controller
                     ->groupby('bien_id');
                 $biens = $biens->map(function ($bn) {
                     return [
-                        'id' => $bn->first()->id,
+                        'id'                  => $bn->first()->id,
                         'propriete_dite_bien' => $bn->first()->bien->propriete_dite_bien,
-                        'responsable' => $bn->first()->user->name . ' ' . $bn->first()->user->prenom,
-                        'created_at' => $bn->first()->created_at,
+                        'responsable'         => $bn->first()->user->name . ' ' . $bn->first()->user->prenom,
+                        'created_at'          => $bn->first()->created_at,
                     ];
                 });
                 $data = PaginationHelper::paginate_array($biens->toArray(), $perPage, $page, $request->url());
@@ -366,10 +365,10 @@ class BienController extends Controller
                     ->groupby('bien_id');
                 $biens = $biens->map(function ($bn) {
                     return [
-                        'id' => $bn->first()->id,
+                        'id'                  => $bn->first()->id,
                         'propriete_dite_bien' => $bn->first()->bien->propriete_dite_bien,
-                        'responsable' => $bn->first()->user->name . ' ' . $bn->first()->user->prenom,
-                        'created_at' => $bn->first()->created_at,
+                        'responsable'         => $bn->first()->user->name . ' ' . $bn->first()->user->prenom,
+                        'created_at'          => $bn->first()->created_at,
                     ];
                 });
                 $data = PaginationHelper::paginate_array($biens->toArray(), $perPage, $page, $request->url());
@@ -423,14 +422,14 @@ class BienController extends Controller
 
                 $pagination = [
                     'currentPage' => $biens->currentPage(),
-                    'totalItems' => $biens->total(),
-                    'totalPages' => $biens->lastPage(),
+                    'totalItems'  => $biens->total(),
+                    'totalPages'  => $biens->lastPage(),
                 ];
 
                 $biens = $biens->items();
 
                 return response()->json([
-                    'data' => $biens,
+                    'data'       => $biens,
                     'pagination' => $pagination,
                 ], 200);
             }
@@ -457,71 +456,71 @@ class BienController extends Controller
             $bien = new bien();
             $bien->setConnection('temp');
 
-            $bien->propriete_dite_bien = $request->propriete_dite_bien;
-            $bien->numero = $request->numero;
-            $bien->niveau = $request->niveau;
-            $bien->orientation = $request->orientation;
-            $bien->conventionne = $request->conventionne;
-            $bien->prix_unitaire = $request->prix_unitaire;
-            $bien->prix = $request->prix;
-            $bien->superficie_architecte = $request->superficie_architecte;
-            $bien->superficie_habitable = $request->superficie_habitable;
-            $bien->superficie_total = $request->superficie_total;
-            $bien->superficie_vendable = $request->superficie_vendable;
-            $bien->nbre_facades = $request->nbre_facades;
-            $bien->superficie_parking = $request->superficie_parking;
-            $bien->superficie_box = $request->superficie_box;
-            $bien->superficie_terrasse = $request->superficie_terrasse;
-            $bien->superficie_jardin = $request->superficie_jardin;
-            $bien->superficie_jardin_calculer = $request->superficie_jardin_calculer;
-            $bien->titre_foncier = $request->titre_foncier;
-            $bien->avance_minimale = $request->avance_minimale;
-            $bien->etat = $request->etat;
-            $bien->type_id = $request->type_id;
-            $bien->projet_id = $request->projet_id;
-            $bien->tranche_id = $request->tranche_id;
-            $bien->bloc_id = $request->bloc_id;
-            $bien->immeuble_id = $request->immeuble_id;
-            $bien->vue_id = $request->vue_id;
-            $bien->typologie_id = $request->typologie_id;
-            $bien->prix_parking = $request->prix_parking;
-            $bien->num_parking = $request->num_parking;
-            $bien->num_box = $request->num_box;
-            $bien->prix_box = $request->prix_box;
+            $bien->propriete_dite_bien          = $request->propriete_dite_bien;
+            $bien->numero                       = $request->numero;
+            $bien->niveau                       = $request->niveau;
+            $bien->orientation                  = $request->orientation;
+            $bien->conventionne                 = $request->conventionne;
+            $bien->prix_unitaire                = $request->prix_unitaire;
+            $bien->prix                         = $request->prix;
+            $bien->superficie_architecte        = $request->superficie_architecte;
+            $bien->superficie_habitable         = $request->superficie_habitable;
+            $bien->superficie_total             = $request->superficie_total;
+            $bien->superficie_vendable          = $request->superficie_vendable;
+            $bien->nbre_facades                 = $request->nbre_facades;
+            $bien->superficie_parking           = $request->superficie_parking;
+            $bien->superficie_box               = $request->superficie_box;
+            $bien->superficie_terrasse          = $request->superficie_terrasse;
+            $bien->superficie_jardin            = $request->superficie_jardin;
+            $bien->superficie_jardin_calculer   = $request->superficie_jardin_calculer;
+            $bien->titre_foncier                = $request->titre_foncier;
+            $bien->avance_minimale              = $request->avance_minimale;
+            $bien->etat                         = $request->etat;
+            $bien->type_id                      = $request->type_id;
+            $bien->projet_id                    = $request->projet_id;
+            $bien->tranche_id                   = $request->tranche_id;
+            $bien->bloc_id                      = $request->bloc_id;
+            $bien->immeuble_id                  = $request->immeuble_id;
+            $bien->vue_id                       = $request->vue_id;
+            $bien->typologie_id                 = $request->typologie_id;
+            $bien->prix_parking                 = $request->prix_parking;
+            $bien->num_parking                  = $request->num_parking;
+            $bien->num_box                      = $request->num_box;
+            $bien->prix_box                     = $request->prix_box;
             $bien->superficie_terrasse_calculer = $request->superficie_terrasse_calculer;
-            $bien->superficie_balcon_calculer = $request->superficie_balcon_calculer;
-            $bien->superficie_balcon = $request->superficie_balcon;
+            $bien->superficie_balcon_calculer   = $request->superficie_balcon_calculer;
+            $bien->superficie_balcon            = $request->superficie_balcon;
             if ($request->superficie_habitable == 0) {
                 $bien->prix =
-                    floatval($request->prix_unitaire) *
-                    (
-                        floatval($request->superficie_terrasse_calculer) +
-                        floatval($request->superficie_architecte) + // Remplace superficie_habitable par superficie_architecte
-                        floatval($request->superficie_balcon_calculer) +
-                        floatval($request->superficie_jardin_calculer)
-                    ) +
-                    floatval($request->prix_box) +
-                    floatval($request->prix_parking);
+                floatval($request->prix_unitaire) *
+                (
+                    floatval($request->superficie_terrasse_calculer) +
+                    floatval($request->superficie_architecte) + // Remplace superficie_habitable par superficie_architecte
+                    floatval($request->superficie_balcon_calculer) +
+                    floatval($request->superficie_jardin_calculer)
+                ) +
+                floatval($request->prix_box) +
+                floatval($request->prix_parking);
             }
 
-            if ($request->bloc_id && ($request->tranche_id === null || !$request->tranche_id)) {
-                $bloc = Bloc::on('temp')->findOrfail($request->bloc_id);
+            if ($request->bloc_id && ($request->tranche_id === null || ! $request->tranche_id)) {
+                $bloc             = Bloc::on('temp')->findOrfail($request->bloc_id);
                 $bien->tranche_id = $bloc->tranche_id;
 
             }
             if ($request->immeuble_id) {
                 $immeuble = Immeuble::on('temp')->findOrfail($request->immeuble_id);
-                if ($request->tranche_id === null || !$request->tranche_id) {
+                if ($request->tranche_id === null || ! $request->tranche_id) {
                     $bien->tranche_id = $immeuble->tranche_id;
                 }
-                if ($request->bloc_id === null || !$request->bloc_id) {
+                if ($request->bloc_id === null || ! $request->bloc_id) {
                     $bien->bloc_id = $immeuble->bloc_id;
                 }
             }
 
             if ($bien->save()) {
                 if ($bien->etat == 'disponible') {
-                    Bien_Helper::store_bien_frein($bien->id,null);
+                    Bien_Helper::store_bien_frein($bien->id, null);
                 }
 
             }
@@ -540,7 +539,7 @@ class BienController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $bien = bien::on('temp')->with('reservation', 'Bien_tva', 'tva_collectes', 'tva_collectes_ancien_reservation','piece_jointes')->withSum('tva_collectes', 'tva_a_payer')->findOrfail($id);
+            $bien = bien::on('temp')->with('reservation', 'Bien_tva', 'tva_collectes', 'tva_collectes_ancien_reservation', 'piece_jointes')->withSum('tva_collectes', 'tva_a_payer')->findOrfail($id);
             return response()->json(['bien' => $bien], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -581,7 +580,7 @@ class BienController extends Controller
 
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            $bien = bien::on('temp')->findOrfail($id);
+            $bien   = bien::on('temp')->findOrfail($id);
             $update = $request->all();
             foreach ($update as $key => $value) {
                 $bien->$key = $value;
@@ -606,184 +605,183 @@ class BienController extends Controller
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $bien = bien::on('temp')->findOrfail($id);
-           //composition
-            if(count($bien->compositionBien)>0){
-                foreach($bien->compositionBien as $c){
+            //composition
+            if (count($bien->compositionBien) > 0) {
+                foreach ($bien->compositionBien as $c) {
                     $c->delete();
                 }
             }
             //visites
-            if(count($bien->all_visites)>0){
-                foreach($bien->all_visites as $v){
-                    $visite=new VisiteController();
+            if (count($bien->all_visites) > 0) {
+                foreach ($bien->all_visites as $v) {
+                    $visite = new VisiteController();
                     $visite->destroy($v->id);
                 }
             }
             //reservations
-            if(count($bien->all_reservations)>0){
-                foreach($bien->all_reservations as $r){
-                    $res=new ReservationController();
+            if (count($bien->all_reservations) > 0) {
+                foreach ($bien->all_reservations as $r) {
+                    $res = new ReservationController();
                     $res->destroy($r->id);
                 }
             }
             //historiques_bien
-            if(count($bien->historiques_biens)>0){
-                foreach($bien->historiques_biens as $r){
-                  $r->delete();
+            if (count($bien->historiques_biens) > 0) {
+                foreach ($bien->historiques_biens as $r) {
+                    $r->delete();
                 }
             }
 
             //pre_reservation
-            if(count($bien->all_pre_reservations)>0){
-                foreach($bien->all_pre_reservations as $a){
-                  $a->delete();
+            if (count($bien->all_pre_reservations) > 0) {
+                foreach ($bien->all_pre_reservations as $a) {
+                    $a->delete();
                 }
             }
             //notification
             $notif = new NotificationController();
             $notif->destory_force_by_column_id('bien', $id);
             //proposition
-            if(count($bien->all_propositions)>0){
-                foreach($bien->all_propositions as $p){
-                  $p->delete();
+            if (count($bien->all_propositions) > 0) {
+                foreach ($bien->all_propositions as $p) {
+                    $p->delete();
                 }
             }
 
             //freins_biens
-            if(count($bien->freins_biens)>0){
-                foreach($bien->freins_biens as $fr){
-                  $fr->delete();
+            if (count($bien->freins_biens) > 0) {
+                foreach ($bien->freins_biens as $fr) {
+                    $fr->delete();
                 }
             }
             //encaissement
-            if(count($bien->encaissements)>0){
-                foreach($bien->encaissements as $en){
-                  $en->delete();
+            if (count($bien->encaissements) > 0) {
+                foreach ($bien->encaissements as $en) {
+                    $en->delete();
                 }
             }
             //histo_reservations
 
-            if(count($bien->histo_reservations)>0){
-                foreach($bien->histo_reservations as $hs){
-                  $hs->delete();
+            if (count($bien->histo_reservations) > 0) {
+                foreach ($bien->histo_reservations as $hs) {
+                    $hs->delete();
                 }
             }
             //desistements
-            $desistements=Desistement::on('temp')->where(function ($query)use ($id){
-                $query->where('bien_id_ancien',$id)
-                    ->orwhere('bien_id_new',$id);})
+            $desistements = Desistement::on('temp')->where(function ($query) use ($id) {
+                $query->where('bien_id_ancien', $id)
+                    ->orwhere('bien_id_new', $id);
+            })
                 ->get();
-                if(count($desistements)>0){
+            if (count($desistements) > 0) {
 
-                    //biens desistements_id
-                    foreach($desistements as $des){
-                         $biens=Bien::on('temp')->where('desistement_id',$des->id)->get();
-                         if(count($biens)>0){
-                            foreach($biens as $bi){
-                                $bi->setConnection('temp');
-                                $bi->desistement_id=null;
-                                $bi->save();
-                            }
-                         }
-
-                        if($des->penalite_desistement!=null){
-                            $des->penalite_desistement->delete();
+                //biens desistements_id
+                foreach ($desistements as $des) {
+                    $biens = Bien::on('temp')->where('desistement_id', $des->id)->get();
+                    if (count($biens) > 0) {
+                        foreach ($biens as $bi) {
+                            $bi->setConnection('temp');
+                            $bi->desistement_id = null;
+                            $bi->save();
                         }
-                        if(count($des->remboursement)>0){
-                            foreach($des->remboursement as $remb){
-                                $remb->delete();
-                            }
-                        }
-                        if(count($des->aquereurs_desisteurs)>0){
-                            foreach($des->aquereurs_desisteurs as $aq){
-                                $aq->delete();
-                            }
-                        }
-                        if(count($des->aquereurs_non_desisteurs)>0){
-                            foreach($des->aquereurs_non_desisteurs as $aqn){
-                                $aqn->delete();
-                            }
-                        }
-                        if(count($des->aquereurs_profits)>0){
-                            foreach($des->aquereurs_profits as $aqpr){
-                                $aqpr->delete();
-                            }
-                        }
-                        if(count($des->aquereurs_partiel)>0){
-                            foreach($des->aquereurs_partiel as $aqp){
-                                $aqp->delete();
-                            }
-                        }
-                        if(count($des->nouvel_aquereurs_desistements)>0){
-                            foreach($des->nouvel_aquereurs_desistements as $n_aq){
-                                $naq->delete();
-                            }
-                        }
-                        if(count($des->Piece_jointes)>0){
-                            foreach($des->Piece_jointes as $pj_d){
-                                $pj_d->delete();
-                            }
-                        }
-                        $hdes=HistoriqueDesistement::on('temp')->where('desistement_id',$des->id)->get();
-                        if(count($hdes)>0){
-                           foreach($hdes as $hbi){
-                               $hbi->delete();
-                           }
-                        }
-
-
-                        $hbiens=HistoriqueBien::on('temp')->where('desistement_id',$des->id)->get();
-                        if(count($hbiens)>0){
-                           foreach($hbiens as $hbi){
-                               $hbi->delete();
-                           }
-                        }
-
-                        $avances=Avance::on('temp')->where('desistement_id',$des->id)->get();
-                        if(count($avances)>0){
-                           foreach($avances as $av){
-                               $av->setConnection('temp');
-                               $av->desistement_id=null;
-                               $av->save();
-                           }
-                        }
-                        $pre=PreReservation::on('temp')->where('desistement_id',$des->id)->get();
-                        if(count($pre)>0){
-                           foreach($pre as $hbi){
-                               $hbi->delete();
-                           }
-                        }
-
-                        $des->delete();
                     }
 
+                    if ($des->penalite_desistement != null) {
+                        $des->penalite_desistement->delete();
+                    }
+                    if (count($des->remboursement) > 0) {
+                        foreach ($des->remboursement as $remb) {
+                            $remb->delete();
+                        }
+                    }
+                    if (count($des->aquereurs_desisteurs) > 0) {
+                        foreach ($des->aquereurs_desisteurs as $aq) {
+                            $aq->delete();
+                        }
+                    }
+                    if (count($des->aquereurs_non_desisteurs) > 0) {
+                        foreach ($des->aquereurs_non_desisteurs as $aqn) {
+                            $aqn->delete();
+                        }
+                    }
+                    if (count($des->aquereurs_profits) > 0) {
+                        foreach ($des->aquereurs_profits as $aqpr) {
+                            $aqpr->delete();
+                        }
+                    }
+                    if (count($des->aquereurs_partiel) > 0) {
+                        foreach ($des->aquereurs_partiel as $aqp) {
+                            $aqp->delete();
+                        }
+                    }
+                    if (count($des->nouvel_aquereurs_desistements) > 0) {
+                        foreach ($des->nouvel_aquereurs_desistements as $n_aq) {
+                            $naq->delete();
+                        }
+                    }
+                    if (count($des->Piece_jointes) > 0) {
+                        foreach ($des->Piece_jointes as $pj_d) {
+                            $pj_d->delete();
+                        }
+                    }
+                    $hdes = HistoriqueDesistement::on('temp')->where('desistement_id', $des->id)->get();
+                    if (count($hdes) > 0) {
+                        foreach ($hdes as $hbi) {
+                            $hbi->delete();
+                        }
+                    }
+
+                    $hbiens = HistoriqueBien::on('temp')->where('desistement_id', $des->id)->get();
+                    if (count($hbiens) > 0) {
+                        foreach ($hbiens as $hbi) {
+                            $hbi->delete();
+                        }
+                    }
+
+                    $avances = Avance::on('temp')->where('desistement_id', $des->id)->get();
+                    if (count($avances) > 0) {
+                        foreach ($avances as $av) {
+                            $av->setConnection('temp');
+                            $av->desistement_id = null;
+                            $av->save();
+                        }
+                    }
+                    $pre = PreReservation::on('temp')->where('desistement_id', $des->id)->get();
+                    if (count($pre) > 0) {
+                        foreach ($pre as $hbi) {
+                            $hbi->delete();
+                        }
+                    }
+
+                    $des->delete();
                 }
 
+            }
 
             //biens_tva
-            if($bien->bien_tva!=null){
+            if ($bien->bien_tva != null) {
                 $bien->bien_tva->delete();
             }
             //tva_collecte
-            if(count($bien->tva_collectes)>0){
-                foreach($bien->tva_collectes as $t_c){
+            if (count($bien->tva_collectes) > 0) {
+                foreach ($bien->tva_collectes as $t_c) {
                     $t_c->forceDelete();
                 }
             }
             //reclamations
-            if(count($bien->reclamations)>0){
-                foreach($bien->reclamations as $t_c){
+            if (count($bien->reclamations) > 0) {
+                foreach ($bien->reclamations as $t_c) {
                     $t_c->delete();
                 }
             }
             //remise cles
-            if($bien->remiseCle!=null){
+            if ($bien->remiseCle != null) {
                 $bien->remiseCle->delete();
             }
             //traitement_frein
 
-            if(count($bien->traitement_freins)>0){
-                foreach($bien->traitement_freins as $t_f){
+            if (count($bien->traitement_freins) > 0) {
+                foreach ($bien->traitement_freins as $t_f) {
                     $t_f->delete();
                 }
             }
@@ -827,7 +825,7 @@ class BienController extends Controller
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            $bien = Bien::on('temp')->findOrFail($bien_id);
+            $bien       = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat = EtatBien::BLOQUE->value;
             if ($bien->save()) {
                 $this->libere_bien_frein($bien->id);
@@ -846,7 +844,7 @@ class BienController extends Controller
         if (RoleHelper::AdminSup()) {
             $request = new \Illuminate\Http\Request();
             DatabaseHelper::Config();
-            $bien = Bien::on('temp')->findOrFail($bien_id);
+            $bien       = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat = EtatBien::RESERVATION->value;
 
             if ($bien->save()) {
@@ -876,13 +874,13 @@ class BienController extends Controller
                         //to admin et commerciaux
                         Config::set('broadcasting.default', 'pusher_3');
                         $data_notif = [
-                            'lien' => '/remboursements/AttAccuseCheque',
-                            'date' => Carbon::now(),
-                            'type' => 19,
-                            'description' => 'bien desisté est vendu',
-                            'role' => RoleEnum::ADMIN->value,
-                            'projet_id' => $bien->projet_id,
-                            'bien_id' => $bien_id,
+                            'lien'           => '/remboursements/AttAccuseCheque',
+                            'date'           => Carbon::now(),
+                            'type'           => 19,
+                            'description'    => 'bien desisté est vendu',
+                            'role'           => RoleEnum::ADMIN->value,
+                            'projet_id'      => $bien->projet_id,
+                            'bien_id'        => $bien_id,
                             'reservation_id' => $reservation_id,
 
                         ];
@@ -893,14 +891,14 @@ class BienController extends Controller
                         if ($bien->desistement->user->role == 3) {
 
                             $data_notif = [
-                                'lien' => '/remboursements/AttAccuseCheque',
-                                'date' => Carbon::now(),
-                                'type' => 19,
-                                'description' => 'bien desisté est vendu',
-                                'role' => RoleEnum::COMMERCIAL->value,
-                                'user_id' => $bien->desistement->user->user_id_origin,
-                                'projet_id' => $bien->projet_id,
-                                'bien_id' => $bien_id,
+                                'lien'           => '/remboursements/AttAccuseCheque',
+                                'date'           => Carbon::now(),
+                                'type'           => 19,
+                                'description'    => 'bien desisté est vendu',
+                                'role'           => RoleEnum::COMMERCIAL->value,
+                                'user_id'        => $bien->desistement->user->user_id_origin,
+                                'projet_id'      => $bien->projet_id,
+                                'bien_id'        => $bien_id,
                                 'reservation_id' => $reservation_id,
 
                             ];
@@ -949,10 +947,10 @@ class BienController extends Controller
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $bien = Bien::on('temp')->findOrFail($bien_id);
+            $bien       = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat = EtatBien::PRE_RESERVATION->name;
             if ($bien->save()) {
-                $code = '';
+                $code          = '';
                 $biens_get_pre = PreReservation::on('temp')->orderByRaw("CAST(code_pre_reserve as UNSIGNED) DESC")
                     ->get('code_pre_reserve')->first();
                 if ($biens_get_pre != null) {
@@ -962,9 +960,9 @@ class BienController extends Controller
                 }
                 $bien_visite_pre_reserve = new PreReservation();
                 $bien_visite_pre_reserve->setConnection('temp');
-                $bien_visite_pre_reserve->bien_id = $bien_id;
-                $bien_visite_pre_reserve->visite_id = $visite_id;
-                $bien_visite_pre_reserve->appel_id = $appel_id;
+                $bien_visite_pre_reserve->bien_id          = $bien_id;
+                $bien_visite_pre_reserve->visite_id        = $visite_id;
+                $bien_visite_pre_reserve->appel_id         = $appel_id;
                 $bien_visite_pre_reserve->code_pre_reserve = $code;
                 $bien_visite_pre_reserve->save();
                 //liber bien fron frein_bien
@@ -993,7 +991,7 @@ class BienController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
 
-            $array_fr_id = array();
+            $array_fr_id = [];
 
             $frein_biens = Frein_Bien::on('temp')->where('bien_id', $id)->get();
             if (count($frein_biens) > 0) {
@@ -1010,7 +1008,7 @@ class BienController extends Controller
                     for ($i = 0; $i <= sizeof($array_fr_id) - 1; $i++) {
                         $frein_id_count = Frein_Bien::on('temp')->where('frein_id', $array_fr_id[$i])->count();
                         if ($frein_id_count == 0) {
-                            $frein = Frein::on('temp')->findOrFail($array_fr_id[$i]);
+                            $frein       = Frein::on('temp')->findOrFail($array_fr_id[$i]);
                             $frein->etat = 1; //reset etat frein to 1 (no bien disponible)
                             $frein->save();
                         }
@@ -1095,7 +1093,7 @@ class BienController extends Controller
             if ($old_id != 0) {
                 Bien_Helper::libererBien($old_id, null, null);
             }
-            $bien = Bien::on('temp')->findOrFail($bien_id);
+            $bien       = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat = EtatBien::ENCOURS_DE_PROPOSITION->value;
             if ($bien->save()) {
                 $bien_propose = new Proposition();
@@ -1143,40 +1141,40 @@ class BienController extends Controller
                     $query->where('etat', 'DISPONIBLE')->orwhere('etat', 'ENCOURS_DE_PROPOSITION');
                 })
                 ->where('projet_id', $projet_id)->get();
-            $biens = array();
+            $biens = [];
             foreach ($biens_pr as $b_pr) {
                 //tranches bloc w immeuble
                 if ($b_pr->tranche_id != null && $b_pr->bloc_id != null && $b_pr->immeuble_id != null) {
-                    array_push($biens, array('id' => $b_pr->id, 'propriete_dite_bien' => $b_pr->tranche->nom . '-' . $b_pr->bloc->nom . '-' . $b_pr->immeuble->nom . '-' . $b_pr->propriete_dite_bien, 'etat' => $b_pr->etat, 'prix' => $b_pr->prix, 'avance_minimale' => $b_pr->avance_minimale, 'prix_unitaire' => $b_pr->prix_unitaire, 'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer, 'superficie_jardin_calculer' => $b_pr->superficie_jardin_calculer, 'superficie_balcon_calculer' => $b_pr->superficie_balcon_calculer, 'superficie_habitable' => $b_pr->superficie_habitable, 'prix_box' => $b_pr->prix_box, 'prix_parking' => $b_pr->prix_parking, 'is_proposed' => $b_pr->is_proposed));
+                    array_push($biens, ['id' => $b_pr->id, 'propriete_dite_bien' => $b_pr->tranche->nom . '-' . $b_pr->bloc->nom . '-' . $b_pr->immeuble->nom . '-' . $b_pr->propriete_dite_bien, 'etat' => $b_pr->etat, 'prix' => $b_pr->prix, 'avance_minimale' => $b_pr->avance_minimale, 'prix_unitaire' => $b_pr->prix_unitaire, 'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer, 'superficie_jardin_calculer' => $b_pr->superficie_jardin_calculer, 'superficie_balcon_calculer' => $b_pr->superficie_balcon_calculer, 'superficie_habitable' => $b_pr->superficie_habitable, 'prix_box' => $b_pr->prix_box, 'prix_parking' => $b_pr->prix_parking, 'is_proposed' => $b_pr->is_proposed]);
                 }
 
                 //tranche bloc
                 elseif ($b_pr->tranche_id != null && $b_pr->bloc_id != null && $b_pr->immeuble_id == null) {
 
-                    array_push($biens, array('id' => $b_pr->id, 'propriete_dite_bien' => $b_pr->tranche->nom . '-' . $b_pr->bloc->nom . '-' . $b_pr->propriete_dite_bien, 'etat' => $b_pr->etat, 'prix' => $b_pr->prix, 'avance_minimale' => $b_pr->avance_minimale, 'prix_unitaire' => $b_pr->prix_unitaire, 'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer, 'superficie_jardin_calculer' => $b_pr->superficie_jardin_calculer, 'superficie_balcon_calculer' => $b_pr->superficie_balcon_calculer, 'superficie_habitable' => $b_pr->superficie_habitable, 'prix_box' => $b_pr->prix_box, 'prix_parking' => $b_pr->prix_parking, 'is_proposed' => $b_pr->is_proposed));
+                    array_push($biens, ['id' => $b_pr->id, 'propriete_dite_bien' => $b_pr->tranche->nom . '-' . $b_pr->bloc->nom . '-' . $b_pr->propriete_dite_bien, 'etat' => $b_pr->etat, 'prix' => $b_pr->prix, 'avance_minimale' => $b_pr->avance_minimale, 'prix_unitaire' => $b_pr->prix_unitaire, 'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer, 'superficie_jardin_calculer' => $b_pr->superficie_jardin_calculer, 'superficie_balcon_calculer' => $b_pr->superficie_balcon_calculer, 'superficie_habitable' => $b_pr->superficie_habitable, 'prix_box' => $b_pr->prix_box, 'prix_parking' => $b_pr->prix_parking, 'is_proposed' => $b_pr->is_proposed]);
                 }
 
                 //tranche immeuble
                 elseif ($b_pr->tranche_id != null && $b_pr->bloc_id == null && $b_pr->immeuble_id != null) {
 
-                    array_push($biens, array('id' => $b_pr->id, 'propriete_dite_bien' => $b_pr->tranche->nom . '-' . $b_pr->immeuble->nom . '-' . $b_pr->propriete_dite_bien, 'etat' => $b_pr->etat, 'prix' => $b_pr->prix, 'avance_minimale' => $b_pr->avance_minimale, 'prix_unitaire' => $b_pr->prix_unitaire, 'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer, 'superficie_jardin_calculer' => $b_pr->superficie_jardin_calculer, 'superficie_balcon_calculer' => $b_pr->superficie_balcon_calculer, 'superficie_habitable' => $b_pr->superficie_habitable, 'prix_box' => $b_pr->prix_box, 'prix_parking' => $b_pr->prix_parking, 'is_proposed' => $b_pr->is_proposed));
+                    array_push($biens, ['id' => $b_pr->id, 'propriete_dite_bien' => $b_pr->tranche->nom . '-' . $b_pr->immeuble->nom . '-' . $b_pr->propriete_dite_bien, 'etat' => $b_pr->etat, 'prix' => $b_pr->prix, 'avance_minimale' => $b_pr->avance_minimale, 'prix_unitaire' => $b_pr->prix_unitaire, 'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer, 'superficie_jardin_calculer' => $b_pr->superficie_jardin_calculer, 'superficie_balcon_calculer' => $b_pr->superficie_balcon_calculer, 'superficie_habitable' => $b_pr->superficie_habitable, 'prix_box' => $b_pr->prix_box, 'prix_parking' => $b_pr->prix_parking, 'is_proposed' => $b_pr->is_proposed]);
                 }
                 //bloc immeuble
                 elseif ($b_pr->tranche_id == null && $b_pr->bloc_id != null && $b_pr->immeuble_id != null) {
-                    array_push($biens, array('id' => $b_pr->id, 'propriete_dite_bien' => $b_pr->bloc->nom . '-' . $b_pr->immeuble->nom . '-' . $b_pr->propriete_dite_bien, 'etat' => $b_pr->etat, 'prix' => $b_pr->prix, 'avance_minimale' => $b_pr->avance_minimale, 'prix_unitaire' => $b_pr->prix_unitaire, 'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer, 'superficie_jardin_calculer' => $b_pr->superficie_jardin_calculer, 'superficie_balcon_calculer' => $b_pr->superficie_balcon_calculer, 'superficie_habitable' => $b_pr->superficie_habitable, 'prix_box' => $b_pr->prix_box, 'prix_parking' => $b_pr->prix_parking, 'is_proposed' => $b_pr->is_proposed));
+                    array_push($biens, ['id' => $b_pr->id, 'propriete_dite_bien' => $b_pr->bloc->nom . '-' . $b_pr->immeuble->nom . '-' . $b_pr->propriete_dite_bien, 'etat' => $b_pr->etat, 'prix' => $b_pr->prix, 'avance_minimale' => $b_pr->avance_minimale, 'prix_unitaire' => $b_pr->prix_unitaire, 'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer, 'superficie_jardin_calculer' => $b_pr->superficie_jardin_calculer, 'superficie_balcon_calculer' => $b_pr->superficie_balcon_calculer, 'superficie_habitable' => $b_pr->superficie_habitable, 'prix_box' => $b_pr->prix_box, 'prix_parking' => $b_pr->prix_parking, 'is_proposed' => $b_pr->is_proposed]);
                 }
                 //bloc
                 elseif ($b_pr->tranche_id == null && $b_pr->bloc_id != null && $b_pr->immeuble_id == null) {
-                    array_push($biens, array('id' => $b_pr->id, 'propriete_dite_bien' => $b_pr->bloc->nom . '-' . $b_pr->propriete_dite_bien, 'etat' => $b_pr->etat, 'prix' => $b_pr->prix, 'avance_minimale' => $b_pr->avance_minimale, 'prix_unitaire' => $b_pr->prix_unitaire, 'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer, 'superficie_jardin_calculer' => $b_pr->superficie_jardin_calculer, 'superficie_balcon_calculer' => $b_pr->superficie_balcon_calculer, 'superficie_habitable' => $b_pr->superficie_habitable, 'prix_box' => $b_pr->prix_box, 'prix_parking' => $b_pr->prix_parking, 'is_proposed' => $b_pr->is_proposed));
+                    array_push($biens, ['id' => $b_pr->id, 'propriete_dite_bien' => $b_pr->bloc->nom . '-' . $b_pr->propriete_dite_bien, 'etat' => $b_pr->etat, 'prix' => $b_pr->prix, 'avance_minimale' => $b_pr->avance_minimale, 'prix_unitaire' => $b_pr->prix_unitaire, 'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer, 'superficie_jardin_calculer' => $b_pr->superficie_jardin_calculer, 'superficie_balcon_calculer' => $b_pr->superficie_balcon_calculer, 'superficie_habitable' => $b_pr->superficie_habitable, 'prix_box' => $b_pr->prix_box, 'prix_parking' => $b_pr->prix_parking, 'is_proposed' => $b_pr->is_proposed]);
                 }
                 //immeuble
                 elseif ($b_pr->tranche_id == null && $b_pr->bloc_id == null && $b_pr->immeuble_id != null) {
-                    array_push($biens, array('id' => $b_pr->id, 'propriete_dite_bien' => $b_pr->immeuble->nom . '-' . $b_pr->propriete_dite_bien, 'etat' => $b_pr->etat, 'prix' => $b_pr->prix, 'avance_minimale' => $b_pr->avance_minimale, 'prix_unitaire' => $b_pr->prix_unitaire, 'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer, 'superficie_jardin_calculer' => $b_pr->superficie_jardin_calculer, 'superficie_balcon_calculer' => $b_pr->superficie_balcon_calculer, 'superficie_habitable' => $b_pr->superficie_habitable, 'prix_box' => $b_pr->prix_box, 'prix_parking' => $b_pr->prix_parking, 'is_proposed' => $b_pr->is_proposed));
+                    array_push($biens, ['id' => $b_pr->id, 'propriete_dite_bien' => $b_pr->immeuble->nom . '-' . $b_pr->propriete_dite_bien, 'etat' => $b_pr->etat, 'prix' => $b_pr->prix, 'avance_minimale' => $b_pr->avance_minimale, 'prix_unitaire' => $b_pr->prix_unitaire, 'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer, 'superficie_jardin_calculer' => $b_pr->superficie_jardin_calculer, 'superficie_balcon_calculer' => $b_pr->superficie_balcon_calculer, 'superficie_habitable' => $b_pr->superficie_habitable, 'prix_box' => $b_pr->prix_box, 'prix_parking' => $b_pr->prix_parking, 'is_proposed' => $b_pr->is_proposed]);
                 }
                 //tranche
                 elseif ($b_pr->tranche_id != null && $b_pr->bloc_id == null && $b_pr->immeuble_id == null) {
                     //$b_pr->tranche->nom!=null?$b_pr->tranche->nom: ' '
-                    array_push($biens, array('ok'=>$b_pr->propriete_dite_bien,'id' => $b_pr->id, 'propriete_dite_bien' =>  '-' . $b_pr->propriete_dite_bien, 'etat' => $b_pr->etat, 'prix' => $b_pr->prix, 'avance_minimale' => $b_pr->avance_minimale, 'prix_unitaire' => $b_pr->prix_unitaire, 'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer, 'superficie_jardin_calculer' => $b_pr->superficie_jardin_calculer, 'superficie_balcon_calculer' => $b_pr->superficie_balcon_calculer, 'superficie_habitable' => $b_pr->superficie_habitable, 'prix_box' => $b_pr->prix_box, 'prix_parking' => $b_pr->prix_parking, 'is_proposed' => $b_pr->is_proposed));
+                    array_push($biens, ['ok' => $b_pr->propriete_dite_bien, 'id' => $b_pr->id, 'propriete_dite_bien' => '-' . $b_pr->propriete_dite_bien, 'etat' => $b_pr->etat, 'prix' => $b_pr->prix, 'avance_minimale' => $b_pr->avance_minimale, 'prix_unitaire' => $b_pr->prix_unitaire, 'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer, 'superficie_jardin_calculer' => $b_pr->superficie_jardin_calculer, 'superficie_balcon_calculer' => $b_pr->superficie_balcon_calculer, 'superficie_habitable' => $b_pr->superficie_habitable, 'prix_box' => $b_pr->prix_box, 'prix_parking' => $b_pr->prix_parking, 'is_proposed' => $b_pr->is_proposed]);
                 }
 
             }
@@ -1188,6 +1186,23 @@ class BienController extends Controller
 
         }
     }
+
+    //pour test
+    /* public function getBiens_Vendu_ByProjet_Concat($projet_id, $text)
+    {
+
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+
+            $biens = Bien::on('temp')->where('projet_id', $projet_id)->where('etat', EtatBien::DISPONIBLE->name)->get();
+
+            return response()->json(['biens' => $biens], 200);
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+
+        }
+    } */
 
     public function getBiens_Vendu_ByProjet_Concat($projet_id, $text)
     {
@@ -1353,7 +1368,7 @@ class BienController extends Controller
             $totalGeneral = $counts->sum('total');
 
             return response()->json([
-                'data' => $counts,
+                'data'  => $counts,
                 'total' => $totalGeneral,
             ], 200); // Retirez la virgule supplémentaire ici
         }
@@ -1465,7 +1480,7 @@ class BienController extends Controller
             $totalGeneral = $counts->sum('total');
 
             return response()->json([
-                'data' => $counts,
+                'data'  => $counts,
                 'total' => $totalGeneral,
             ], 200); // Retirez la virgule supplémentaire ici
         }

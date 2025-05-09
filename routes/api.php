@@ -79,10 +79,8 @@ Route::post('/resetPassword/{token}', [UserController::class, 'resetPassword']);
 
 Route::post('/webhook_whtsp', [WhatsAppController::class, 'webhook_whtsp']);
 Route::post('/send_landing_page', [Landing_pageController::class, 'send_landing_page']);
-Route::post('/webhookFcb_Insta', [Facebook_InstagramController::class,'handleWebhook']);
-Route::get('/webhookFcb_Insta', [Facebook_InstagramController::class,'verify']);
-
-
+Route::post('/webhookFcb_Insta', [Facebook_InstagramController::class, 'handleWebhook']);
+Route::get('/webhookFcb_Insta', [Facebook_InstagramController::class, 'verify']);
 
 Route::middleware('auth:api')->group(function () {
 
@@ -331,7 +329,8 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('/ReclamationsSav', V1ReclamationsSavController::class);
         Route::get('projets/{idprojet}/ReclamationsSav', [V1ReclamationsSavController::class, 'indexByProjet']);
         Route::get('getBiens_Vendu_ByProjet_Concat/{id}/{text}', [V1BienController::class, 'getBiens_Vendu_ByProjet_Concat'])->name('');
-        Route::put('traiter_reclamation_sav/{id}', [V1ReclamationsSavController::class, 'traiter_reclamation'])->name('');
+        Route::post('traiter_reclamation_sav/{id}', [V1ReclamationsSavController::class, 'traiter_reclamation'])->name('');
+        Route::post('resoudre_reclamation_sav/{id}', [V1ReclamationsSavController::class, 'resoudre_reclamation'])->name('');
 
         //Remise Cles
         Route::resource('/RemiseCles', V1RemiseCleController::class);
