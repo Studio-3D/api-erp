@@ -199,6 +199,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('historiques_prospects/{id}', [V1ProspectController::class, 'get_Historiques_by_prospect'])->name('');
         Route::get('projets/{idprojet}/prospects', [V1ProspectController::class, 'indexByProjet']);
 
+
         //l'API client
         Route::resource('clients', V1ClientController::class);
         Route::get('search_client_by_cin/{cin}', [V1ClientController::class, 'search_client_by_cin']);

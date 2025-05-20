@@ -186,7 +186,7 @@ class FournisseurController extends Controller
              DatabaseHelper::Config();
              $fourn = Fournisseur::on('temp')->findOrFail($id);
              $factures=Facture::on('temp')->where('fournisseur_id',$id)->get();
-             if(count($factures>0)){
+             if(count($factures)>0){
                 foreach($factures as $fact){
                     $fact->delete();
                 }

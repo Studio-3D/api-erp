@@ -133,6 +133,7 @@ class ReclamationSavController extends Controller
      */
     public function store(StoreReclamationRequest $request)
     {
+        return response()->json($request);
         if(RoleHelper::AdminSup()){
             DatabaseHelper::Config();
             $user = Auth::user();
