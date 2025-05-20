@@ -1188,7 +1188,7 @@ class BienController extends Controller
     }
 
     //pour test
-    /* public function getBiens_Vendu_ByProjet_Concat($projet_id, $text)
+    public function getBiens_Vendu_ByProjet_Concat($projet_id, $text)
     {
 
         if (RoleHelper::AdminSup()) {
@@ -1202,9 +1202,9 @@ class BienController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
 
         }
-    } */
+    }
 
-    public function getBiens_Vendu_ByProjet_Concat($projet_id, $text)
+    /* public function getBiens_Vendu_ByProjet_Concat($projet_id, $text)
     {
 
         if (RoleHelper::ACSup()) {
@@ -1264,7 +1264,7 @@ class BienController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
 
         }
-    }
+    } */
 
     public function getTotalsStatistique(Request $request)
     {
