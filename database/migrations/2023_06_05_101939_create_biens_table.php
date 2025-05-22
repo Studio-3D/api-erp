@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('propriete_dite_bien');
             $table->string('numero');
             $table->integer('niveau');
-            $table->enum('orientation', [OrientationEnum::N->name, OrientationEnum::E->name, OrientationEnum::S->name, OrientationEnum::O->name, OrientationEnum::N_E->name, OrientationEnum::N_O->name,OrientationEnum::O_E->name, OrientationEnum::O_S->name, OrientationEnum::E_S->name]);
+            $table->enum('orientation', [OrientationEnum::N->name, OrientationEnum::E->name, OrientationEnum::S->name, OrientationEnum::O->name, OrientationEnum::N_E->name, OrientationEnum::N_O->name,OrientationEnum::S_E->name, OrientationEnum::S_O->name]);
             $table->boolean('conventionne')->nullable();
             $table->double('prix_unitaire', 12, 2);
             $table->double('prix', 20, 2);
@@ -29,6 +29,8 @@ return new class extends Migration
             $table->float('superficie_box')->nullable();
             $table->float('superficie_terrasse')->nullable();
             $table->double('superficie_jardin',12,2)->nullable();
+            $table->double('superficie_total',12,2)->nullable();
+
             $table->string('titre_foncier')->nullable();
             $table->enum('etat',allowed: [EtatBien::DISPONIBLE->name,EtatBien::PRE_RESERVATION->name,EtatBien::RESERVATION->name,EtatBien::BLOQUE->name,EtatBien::VENDU->name,EtatBien::ENCOURS_DE_PROPOSITION->name]); //1=disponible, 2=pré-réservé, 3=réservé, 4=bloqué
             $table->timestamps();

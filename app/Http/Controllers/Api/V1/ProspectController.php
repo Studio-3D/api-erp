@@ -43,6 +43,7 @@ class ProspectController extends Controller
 
             // Démarrer la requête directement sur le modèle
             $query = prospect::on('temp')->with('client','visites','appels','last_statut')->where('projet_id', $projet_id);
+             if ($request->filled('telephone')) {
             $query->where(function ($q) use ($request) {
                 if ($request->filled('telephone')) {
                     $q->where(function ($subQuery) use ($request) {
@@ -50,7 +51,7 @@ class ProspectController extends Controller
                             ->orWhere('telephone_num2', 'like', '%' . $request->input('telephone') . '%');
                     });
                 }
-            });
+            });}
             if ($request->filled('cin')) {
                 $query->where('cin', 'like', '%' . $request->input('cin') . '%');
             }
@@ -110,7 +111,6 @@ class ProspectController extends Controller
         if (Auth::guard('api')->check()) {
             $size = $request->input('size', null);
             $page = $request->input('page', null);
-
             DatabaseHelper::Config();
 
             // Démarrer la requête directement sur le modèle
@@ -209,7 +209,6 @@ class ProspectController extends Controller
                 $notif_helper = new NotificationHelper();
                 $notif_helper->storeNotification($request->merge($data_notif));
                 broadcast(new NotificationEvent($id));
-
 
             }
             if ($request->statut == 1) {
