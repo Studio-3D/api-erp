@@ -387,7 +387,7 @@ class ReservationController extends Controller
                     if ($dataArray_oldClients) {
                         foreach ($dataArray_oldClients as $clientInfo) {
                             $dataAquereur = [
-                                'pourcentage' => $clientInfo['pourcentage1'],
+                                 'pourcentage' => $clientInfo['pourcentage1'] ?? $clientInfo['pourcentage'] ?? 0, // Fallback to 0 if neither exists
                                 'client_id' => $clientInfo['id'],
                                 'reservation_id' => $reservation->id,
                             ];
@@ -658,7 +658,7 @@ class ReservationController extends Controller
      */
     public function update(UpdateReservationRequest $request, $id)
     {
-        //return response()->json(['reservation' => $request->all(),$request->input('bien_id'),$request->bien_id], 404);
+
 
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
@@ -768,7 +768,7 @@ class ReservationController extends Controller
                 if ($dataArray_oldClients) {
                     foreach ($dataArray_oldClients as $clientInfo) {
                         $dataAquereur = [
-                            'pourcentage' => $clientInfo['pourcentage1'],
+                            'pourcentage' => $clientInfo['pourcentage1'] ?? $clientInfo['pourcentage'] ?? 0, // Fallback to 0 if neither exists
                             'client_id' => $clientInfo['id'],
                             'reservation_id' => $reservation->id,
                         ];
