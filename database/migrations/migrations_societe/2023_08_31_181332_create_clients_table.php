@@ -46,6 +46,8 @@ return new class extends Migration
             $table->foreignId('partenaire_id')->nullable()->constrained('partenaires')->onDelete('cascade');
             $table->foreignId('prospect_id')->nullable()->constrained('prospects')->onDelete('cascade');
             $table->foreignId(column: 'projet_id')->constrained('projets')->onDelete('cascade');
+                        $table->timestamps();
+
             $table->softDeletes();
         });
     }
