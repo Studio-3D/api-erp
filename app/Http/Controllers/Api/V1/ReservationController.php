@@ -463,6 +463,15 @@ class ReservationController extends Controller
                 }
 
             }
+              //store to historique reservation
+                        $histo = new HistoReservation();
+                        $histo->setConnection('temp');
+                        $histo->reservation_id = $reservation->id;
+                        $histo->user_id = $userAuth->value('id');
+                        $histo->bien_id = $request->bien_id;
+                        $histo->action=2;
+                        $histo->description='Création du Réservation';
+                        $histo->save();
             return response()->json(['reservation' => $reservation], 200);
 
         }
@@ -713,6 +722,8 @@ class ReservationController extends Controller
                         $histo->reservation_id = $reservation->id;
                         $histo->user_id = $userAuth->value('id');
                         $histo->bien_id = $old_bien_id;
+                        $histo->action=1;
+                        $hist->description='Changement de Bien';
                         $histo->save();
                         //store notif to all commerciaux
                         $commerciaux = User::on('temp')->where('role', 3)->get();
@@ -821,6 +832,15 @@ class ReservationController extends Controller
                 }
                 //store new pieces jointes
             }
+            //store to historique reservation
+                        $histo = new HistoReservation();
+                        $histo->setConnection('temp');
+                        $histo->reservation_id = $reservation->id;
+                        $histo->user_id = $userAuth->value('id');
+                        $histo->bien_id =$request->input('bien_id');
+                        $histo->action=3;
+                        $histo->description='Modification du Réservation';
+                        $histo->save();
             return response()->json(['reservation' => $reservation], 200);
         }
         return response()->json(['error', 'Unauthorized'], 401);

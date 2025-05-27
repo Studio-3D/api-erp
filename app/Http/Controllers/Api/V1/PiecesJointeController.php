@@ -268,7 +268,7 @@ class PiecesJointeController extends Controller
 
         // Vérifier si le dossier existe
         if (!is_dir($directory)) {
-            return response()->json(['error' => 'Le dossier spécifié n\'existe pas'], 404);
+            return response()->json([]);
         }
 
         // Obtenir la liste des fichiers dans le dossier

@@ -14,8 +14,10 @@ return new class extends Migration
         Schema::create('historique_reservations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('reservation_id')->constrained('reservations')->onDelete('cascade');
-            $table->foreignId('bien_id')->constrained('biens')->onDelete('cascade');
+            $table->foreignId('bien_id')->nullable()->constrained('biens')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->string('action')->comment('1=>Changement de Bien 2==>creation reservation 3 Modification Réservation');
+            $table->string('description');
             $table->timestamps();
             $table->softDeletes();
 
