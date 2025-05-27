@@ -11,14 +11,15 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
+    public function up(): void 
+
     {
         Schema::create('biens', function (Blueprint $table) {
             $table->id();
             $table->string('propriete_dite_bien');
             $table->string('numero');
             $table->integer('niveau');
-            $table->enum('orientation', [OrientationEnum::N->name, OrientationEnum::E->name, OrientationEnum::S->name, OrientationEnum::O->name, OrientationEnum::N_E->name, OrientationEnum::N_O->name, OrientationEnum::S_E->name, OrientationEnum::S_O->name]);
+            $table->enum('orientation', [OrientationEnum::N->name, OrientationEnum::E->name, OrientationEnum::S->name, OrientationEnum::O->name, OrientationEnum::N_E->name, OrientationEnum::N_O->name,OrientationEnum::S_E->name, OrientationEnum::S_O->name]);
             $table->boolean('conventionne')->default(false);
             $table->double('prix_unitaire', 12, 2);
             $table->double('prix', 20, 2);
@@ -52,6 +53,7 @@ return new class extends Migration
             $table->integer('desistement_id')->nullable();
             $table->timestamps();
             $table->softDeletes();
+
 
         });
     }

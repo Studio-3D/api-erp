@@ -387,7 +387,7 @@ class ReservationController extends Controller
                     if ($dataArray_oldClients) {
                         foreach ($dataArray_oldClients as $clientInfo) {
                             $dataAquereur = [
-                                'pourcentage' => $clientInfo['pourcentage1'],
+                                 'pourcentage' => $clientInfo['pourcentage1'] ?? $clientInfo['pourcentage'] ?? 0, // Fallback to 0 if neither exists
                                 'client_id' => $clientInfo['id'],
                                 'reservation_id' => $reservation->id,
                             ];
@@ -463,6 +463,15 @@ class ReservationController extends Controller
                 }
 
             }
+              //store to historique reservation
+                        $histo = new HistoReservation();
+                        $histo->setConnection('temp');
+                        $histo->reservation_id = $reservation->id;
+                        $histo->user_id = $userAuth->value('id');
+                        $histo->bien_id = $request->bien_id;
+                        $histo->action=2;
+                        $histo->description='Création du Réservation';
+                        $histo->save();
             return response()->json(['reservation' => $reservation], 200);
 
         }
@@ -658,7 +667,7 @@ class ReservationController extends Controller
      */
     public function update(UpdateReservationRequest $request, $id)
     {
-        //return response()->json(['reservation' => $request->all(),$request->input('bien_id'),$request->bien_id], 404);
+
 
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
@@ -713,6 +722,8 @@ class ReservationController extends Controller
                         $histo->reservation_id = $reservation->id;
                         $histo->user_id = $userAuth->value('id');
                         $histo->bien_id = $old_bien_id;
+                        $histo->action=1;
+                        $hist->description='Changement de Bien';
                         $histo->save();
                         //store notif to all commerciaux
                         $commerciaux = User::on('temp')->where('role', 3)->get();
@@ -768,7 +779,7 @@ class ReservationController extends Controller
                 if ($dataArray_oldClients) {
                     foreach ($dataArray_oldClients as $clientInfo) {
                         $dataAquereur = [
-                            'pourcentage' => $clientInfo['pourcentage1'],
+                            'pourcentage' => $clientInfo['pourcentage1'] ?? $clientInfo['pourcentage'] ?? 0, // Fallback to 0 if neither exists
                             'client_id' => $clientInfo['id'],
                             'reservation_id' => $reservation->id,
                         ];
@@ -821,6 +832,15 @@ class ReservationController extends Controller
                 }
                 //store new pieces jointes
             }
+            //store to historique reservation
+                        $histo = new HistoReservation();
+                        $histo->setConnection('temp');
+                        $histo->reservation_id = $reservation->id;
+                        $histo->user_id = $userAuth->value('id');
+                        $histo->bien_id =$request->input('bien_id');
+                        $histo->action=3;
+                        $histo->description='Modification du Réservation';
+                        $histo->save();
             return response()->json(['reservation' => $reservation], 200);
         }
         return response()->json(['error', 'Unauthorized'], 401);
