@@ -7,6 +7,7 @@ use App\Events\NotificationEvent;
 use App\Events\NotifMenuEvent;
 use App\Events\PropositionUpdated;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\NotificationController;
 use App\Http\Helpers\Bien_Helper;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\HistoriqueBienHelper;
@@ -37,8 +38,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
-
-use App\Http\Controllers\NotificationController;
 
 class BienController extends Controller
 {
@@ -234,7 +233,7 @@ class BienController extends Controller
             $page = $request->input('page', null);
             DatabaseHelper::Config();
 
-            $query = Bien::on('temp')->where('projet_id', $projet_id)->with(['reservation','last_pre_reservation','visites','freins_biens','encaissements','Bien_Tva','tva_collectes','reclamations','remiseCle','traitement_freins']);
+            $query = Bien::on('temp')->where('projet_id', $projet_id)->with(['reservation', 'last_pre_reservation', 'visites', 'freins_biens', 'encaissements', 'Bien_Tva', 'tva_collectes', 'reclamations', 'remiseCle', 'traitement_freins']);
 
             // Appliquer les filtres si présents
             if ($request->filled('propriete_dite_bien')) {
@@ -1137,63 +1136,62 @@ class BienController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
 
-            $biens_pr = Bien::on('temp')->with(['tranche', 'bloc', 'immeuble','is_proposed'])
+            $biens_pr = Bien::on('temp')->with(['tranche', 'bloc', 'immeuble', 'is_proposed'])
                 ->where(function ($query) {
                     $query->where('etat', 'DISPONIBLE')->orwhere('etat', 'ENCOURS_DE_PROPOSITION');
                 })
                 ->where('projet_id', $projet_id)->get();
 
-                $biens = [];
+            $biens = [];
 
-                foreach ($biens_pr as $b_pr) {
-                    $nom = '';
+            foreach ($biens_pr as $b_pr) {
+                $nom = '';
 
-                    // Tranche + Bloc + Immeuble
-                    if ($b_pr->tranche && $b_pr->bloc && $b_pr->immeuble) {
-                        $nom = $b_pr->tranche->nom . '-' . $b_pr->bloc->nom . '-' . $b_pr->immeuble->nom;
-                    }
-                    // Tranche + Bloc
-                    elseif ($b_pr->tranche && $b_pr->bloc && !$b_pr->immeuble) {
-                        $nom = $b_pr->tranche->nom . '-' . $b_pr->bloc->nom;
-                    }
-                    // Tranche + Immeuble
-                    elseif ($b_pr->tranche && !$b_pr->bloc && $b_pr->immeuble) {
-                        $nom = $b_pr->tranche->nom . '-' . $b_pr->immeuble->nom;
-                    }
-                    // Bloc + Immeuble
-                    elseif (!$b_pr->tranche && $b_pr->bloc && $b_pr->immeuble) {
-                        $nom = $b_pr->bloc->nom . '-' . $b_pr->immeuble->nom;
-                    }
-                    // Bloc only
-                    elseif (!$b_pr->tranche && $b_pr->bloc && !$b_pr->immeuble) {
-                        $nom = $b_pr->bloc->nom;
-                    }
-                    // Immeuble only
-                    elseif (!$b_pr->tranche && !$b_pr->bloc && $b_pr->immeuble) {
-                        $nom = $b_pr->immeuble->nom;
-                    }
-                    // Tranche only
-                    elseif ($b_pr->tranche && !$b_pr->bloc && !$b_pr->immeuble) {
-                        $nom = $b_pr->tranche->nom;
-                    }
-
-
-                    $biens[] = [
-                        'id' => $b_pr->id,
-                        'propriete_dite_bien' => $nom . '-' . $b_pr->propriete_dite_bien,
-                        'etat' => $b_pr->etat,
-                        'prix' => $b_pr->prix,
-                        'avance_minimale' => $b_pr->avance_minimale,
-                        'prix_unitaire' => $b_pr->prix_unitaire,
-                        'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer,
-                        'superficie_jardin_calculer' => $b_pr->superficie_jardin_calculer,
-                        'superficie_balcon_calculer' => $b_pr->superficie_balcon_calculer,
-                        'superficie_habitable' => $b_pr->superficie_habitable,
-                        'prix_box' => $b_pr->prix_box,
-                        'prix_parking' => $b_pr->prix_parking,
-                        'is_proposed' => $b_pr->is_proposed,
-                    ];
+                // Tranche + Bloc + Immeuble
+                if ($b_pr->tranche && $b_pr->bloc && $b_pr->immeuble) {
+                    $nom = $b_pr->tranche->nom . '-' . $b_pr->bloc->nom . '-' . $b_pr->immeuble->nom;
                 }
+                // Tranche + Bloc
+                elseif ($b_pr->tranche && $b_pr->bloc && ! $b_pr->immeuble) {
+                    $nom = $b_pr->tranche->nom . '-' . $b_pr->bloc->nom;
+                }
+                // Tranche + Immeuble
+                elseif ($b_pr->tranche && ! $b_pr->bloc && $b_pr->immeuble) {
+                    $nom = $b_pr->tranche->nom . '-' . $b_pr->immeuble->nom;
+                }
+                // Bloc + Immeuble
+                elseif (! $b_pr->tranche && $b_pr->bloc && $b_pr->immeuble) {
+                    $nom = $b_pr->bloc->nom . '-' . $b_pr->immeuble->nom;
+                }
+                // Bloc only
+                elseif (! $b_pr->tranche && $b_pr->bloc && ! $b_pr->immeuble) {
+                    $nom = $b_pr->bloc->nom;
+                }
+                // Immeuble only
+                elseif (! $b_pr->tranche && ! $b_pr->bloc && $b_pr->immeuble) {
+                    $nom = $b_pr->immeuble->nom;
+                }
+                // Tranche only
+                elseif ($b_pr->tranche && ! $b_pr->bloc && ! $b_pr->immeuble) {
+                    $nom = $b_pr->tranche->nom;
+                }
+
+                $biens[] = [
+                    'id'                           => $b_pr->id,
+                    'propriete_dite_bien'          => $nom . '-' . $b_pr->propriete_dite_bien,
+                    'etat'                         => $b_pr->etat,
+                    'prix'                         => $b_pr->prix,
+                    'avance_minimale'              => $b_pr->avance_minimale,
+                    'prix_unitaire'                => $b_pr->prix_unitaire,
+                    'superficie_terrasse_calculer' => $b_pr->superficie_terrasse_calculer,
+                    'superficie_jardin_calculer'   => $b_pr->superficie_jardin_calculer,
+                    'superficie_balcon_calculer'   => $b_pr->superficie_balcon_calculer,
+                    'superficie_habitable'         => $b_pr->superficie_habitable,
+                    'prix_box'                     => $b_pr->prix_box,
+                    'prix_parking'                 => $b_pr->prix_parking,
+                    'is_proposed'                  => $b_pr->is_proposed,
+                ];
+            }
 
             return response()->json(['biens' => $biens], 200);
 

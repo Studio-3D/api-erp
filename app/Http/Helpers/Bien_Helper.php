@@ -34,21 +34,7 @@ class Bien_Helper
     public static function checkAndCreateBienByExcel($projet_id,$tranche_id,$bloc_id,$immeuble_id,$row){
 
        // DatabaseHelper::Config(); on desactive si on fait import sans cron version ancien
-        $bien_count = Bien::on('temp')->where(function ($query) use ($row, $projet_id, $tranche_id, $bloc_id, $immeuble_id) {
-            if (!empty($row['Numero'])) {
-                $query->where('propriete_dite_bien', $row['Numero']);
-            }
-            if ($immeuble_id !== null) {
-                $query->where('immeuble_id', $immeuble_id);
-            }
-            if ($bloc_id !== null) {
-                    $query->where('bloc_id', $bloc_id);
-            }
-            if ($tranche_id !== null) {
-                $query->where('tranche_id', $tranche_id);
-            }
-            $query->where('projet_id', $projet_id);
-        })->count();
+        $bien_count = 0;
 
         if ($bien_count == 0) {
             $bien= new  Bien();
@@ -99,13 +85,25 @@ class Bien_Helper
               $bien->niveau=$nv;
 
             if (array_key_exists("Type bien",$row) && $row['Type bien']!=null){
-                $type=TypeBien::on('temp')->where('projet_id',$projet_id)->get();
+                $type = TypeBien::on('temp')->where('projet_id', $projet_id)->get();
+                $typeFound = false;
                 foreach ($type as $key => $value) {
-                    if ($value->id ==intval($row['Type bien'])) {
-                        $bien->type_id=$value->id;
+                    if ($value->id == intval($row['Type bien'])) {
+                        $bien->type_id = $value->id;
+                        $typeFound = true;
+                        break;
                     }
                 }
+                if (!$typeFound) {
+                    throw new \Exception("Type de bien invalide ou non trouvé");
+                }
+            } else {
+                throw new \Exception("Type de bien manquant");
             }
+            if (!array_key_exists("Numero", $row) || empty($row["Numero"])) {
+                throw new \Exception("Numéro du bien manquant");
+            }
+
             if (array_key_exists("Prix parking",$row) && $row['Prix parking'] != NULL) {
                     $bien->prix_parking = $row['Prix parking'];
             }else{
