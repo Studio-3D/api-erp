@@ -423,14 +423,14 @@ class AvanceController extends Controller
                 $encaiss->date_encaissement = $request->date_encaiss;
                 $encaiss->user_id_valider = $userAuth->value('id');
                 if($encaiss->save()){
-                    if($bien->Bien_tva!=null){
+                    if($bien->Bien_Tva!=null){
                         $data=[
                             'montant'=>$avance->montant,
                             'prix'=>$bien->prix,
-                            'qp_terrain_valeur'=>$bien->Bien_tva->qp_terrain_valeur,
+                            'qp_terrain_valeur'=>$bien->Bien_Tva->qp_terrain_valeur,
                             'ancien_tva_collectes'=>$bien->tva_collectes,
                             'tva_collectes_sum_tva_a_payer'=>$bien->tva_collectes_sum_tva_a_payer,
-                            'tva_bien'=>$bien->Bien_tva->tva,
+                            'tva_bien'=>$bien->Bien_Tva->tva,
                             'reservation_id'=>$avance->reservation_id,
                             'bien_id'=>$bien->id,
                             'type'=>'avances',
@@ -713,14 +713,14 @@ class AvanceController extends Controller
                          //calcul du tva collecte
                             if($encaiss->save()){
                                 //get tva du bien
-                                if($bien->Bien_tva!=null){
+                                if($bien->Bien_Tva!=null){
                                     $data=[
                                         'montant'=>$avance->montant,
                                         'prix'=>$bien->prix,
-                                        'qp_terrain_valeur'=>$bien->Bien_tva->qp_terrain_valeur,
+                                        'qp_terrain_valeur'=>$bien->Bien_Tva->qp_terrain_valeur,
                                         'ancien_tva_collectes'=>$bien->tva_collectes,
                                         'tva_collectes_sum_tva_a_payer'=>$bien->tva_collectes_sum_tva_a_payer,
-                                        'tva_bien'=>$bien->Bien_tva->tva,
+                                        'tva_bien'=>$bien->Bien_Tva->tva,
                                         'reservation_id'=>$avance->reservation_id,
                                         'bien_id'=>$bien->id,
                                         'type'=>'avances',
@@ -1027,7 +1027,7 @@ class AvanceController extends Controller
                             $encaiss->user_id_valider = $userAuth->value('id');
                             if($encaiss->save()){
                                 //get tva du bien
-                                if($bien->Bien_tva!=null){
+                                if($bien->Bien_Tva!=null){
                                     //supprime ancien tva collecte by encaisse _id
                                     $tva_collecte=TvaCollecte::on('temp')->where('encaissement_id',$encaiss->id)->first();
                                     if($tva_collecte!=null){
@@ -1035,10 +1035,10 @@ class AvanceController extends Controller
                                         $data=[
                                             'montant'=>$avance->montant,
                                             'prix'=>$bien->prix,
-                                            'qp_terrain_valeur'=>$bien->Bien_tva->qp_terrain_valeur,
+                                            'qp_terrain_valeur'=>$bien->Bien_Tva->qp_terrain_valeur,
                                             'ancien_tva_collectes'=>$bien->tva_collectes,
                                             'tva_collectes_sum_tva_a_payer'=>$bien->tva_collectes_sum_tva_a_payer,
-                                            'tva_bien'=>$bien->Bien_tva->tva,
+                                            'tva_bien'=>$bien->Bien_Tva->tva,
                                             'reservation_id'=>$avance->reservation_id,
                                             'bien_id'=>$bien->id,
                                             'type'=>'avances',
@@ -1062,14 +1062,14 @@ class AvanceController extends Controller
                             $encaiss->date_encaissement =$request->date_encaissement;
                             $encaiss->user_id_valider = $userAuth->value('id');
                             if($encaiss->save()){
-                                if($bien->Bien_tva!=null){
+                                if($bien->Bien_Tva!=null){
                                     $data=[
                                         'montant'=>$avance->montant,
                                         'prix'=>$bien->prix,
-                                        'qp_terrain_valeur'=>$bien->Bien_tva->qp_terrain_valeur,
+                                        'qp_terrain_valeur'=>$bien->Bien_Tva->qp_terrain_valeur,
                                         'ancien_tva_collectes'=>$bien->tva_collectes,
                                         'tva_collectes_sum_tva_a_payer'=>$bien->tva_collectes_sum_tva_a_payer,
-                                        'tva_bien'=>$bien->Bien_tva->tva,
+                                        'tva_bien'=>$bien->Bien_Tva->tva,
                                         'reservation_id'=>$avance->reservation_id,
                                         'bien_id'=>$bien->id,
                                         'type'=>'avances',

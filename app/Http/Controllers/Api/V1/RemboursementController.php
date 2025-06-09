@@ -319,14 +319,14 @@ class RemboursementController extends Controller
                 $encaiss->date_encaissement =$request->date_decaissement;
                 $encaiss->user_id_valider = $userAuth->value('id');
                 if($encaiss->save()){
-                    if($bien->Bien_tva!=null){
+                    if($bien->Bien_Tva!=null){
                         $data=[
                             'montant'=>$remboursement->montant_a_rembourser,
                             'prix'=>$bien->prix,
-                            'qp_terrain_valeur'=>$bien->Bien_tva->qp_terrain_valeur,
+                            'qp_terrain_valeur'=>$bien->Bien_Tva->qp_terrain_valeur,
                             'ancien_tva_collectes'=>$bien->tva_collectes,
                             'tva_collectes_sum_tva_a_payer'=>$bien->tva_collectes_sum_tva_a_payer,
-                            'tva_bien'=>$bien->Bien_tva->tva,
+                            'tva_bien'=>$bien->Bien_Tva->tva,
                             'reservation_id'=>$remboursement->reservation_id,
                             'bien_id'=>$bien->id,
                             'type'=>'remboursements',

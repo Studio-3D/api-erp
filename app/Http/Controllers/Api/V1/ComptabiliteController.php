@@ -155,8 +155,8 @@ class ComptabiliteController extends Controller
     }
     public function get_totaux($tranche_id){
         DatabaseHelper::Config();
-        $total_tva = Bien_tva::on('temp')->where('tranche_id',$tranche_id)->sum('tva');
-        $total_prix_ttc = Bien_tva::on('temp')->where('tranche_id',$tranche_id)->sum('prix_ttc');
+        $total_tva = Bien_Tva::on('temp')->where('tranche_id',$tranche_id)->sum('tva');
+        $total_prix_ttc = Bien_Tva::on('temp')->where('tranche_id',$tranche_id)->sum('prix_ttc');
         return response()->json(['total_tva' => $total_tva,'total_prix_ttc'=>$total_prix_ttc]);
     }
     public function get_tva_collecte_par_bien (Request $request,$projet_id){
