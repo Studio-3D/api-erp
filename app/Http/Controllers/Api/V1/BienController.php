@@ -17,6 +17,7 @@ use App\Http\Requests\StoreBienRequest;
 use App\Http\Requests\UpdateBienRequest;
 use App\Models\Avance;
 use App\Models\Bien;
+use App\Models\BienMedia;
 use App\Models\Bloc;
 use App\Models\Desistement;
 use App\Models\Frein;
@@ -37,6 +38,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 use App\Http\Controllers\NotificationController;
 
@@ -1505,4 +1508,131 @@ class BienController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
+    /**
+     * Upload media for a specific bien
+     */
+    public function uploadMedia(Request $request, $id)
+    {
+        if (!RoleHelper::ACSup()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        DatabaseHelper::Config();
+        $bien = Bien::on('temp')->findOrFail($id);
+
+        $request->validate([
+            'media' => 'required|file|mimes:jpeg,jpg,png,gif,mp4,mov,avi|max:10240', // 10MB max
+            'title' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'is_featured' => 'nullable|boolean',
+        ]);
+
+        if ($request->hasFile('media')) {
+            $file = $request->file('media');
+            $fileName = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+            $filePath = $file->storeAs('biens/' . $bien->id . '/media', $fileName, 'public');
+
+            $fileType = Str::startsWith($file->getMimeType(), 'image/') ? 'image' : 'video';
+
+            $media = new BienMedia();
+            $media->setConnection('temp');
+            $media->bien_id = $bien->id;
+            $media->file_path = $filePath;
+            $media->file_type = $fileType;
+            $media->mime_type = $file->getMimeType();
+            $media->original_name = $file->getClientOriginalName();
+            $media->title = $request->title ?? null;
+            $media->description = $request->description ?? null;
+            $media->is_featured = $request->is_featured ?? false;
+            $media->save();
+
+            // Update the bien description if provided
+            if ($request->has('description_bien')) {
+                $bien->description = $request->description_bien;
+                $bien->save();
+            }
+
+            return response()->json([
+                'message' => 'Media uploaded successfully',
+                'media' => $media,
+                'url' => route('media.show', ['path' => $filePath])
+            ], 201);
+        }
+
+        return response()->json(['error' => 'No file uploaded'], 400);
+    }
+
+    /**
+     * Get all media for a specific bien
+     */
+    public function getMedia($id)
+    {
+        if (!Auth::guard('api')->check()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        DatabaseHelper::Config();
+        $media = BienMedia::on('temp')->where('bien_id', $id)->get();
+
+        return response()->json([
+            'media' => $media->map(function($item) {
+                return [
+                    'id' => $item->id,
+                    'file_type' => $item->file_type,
+                    'title' => $item->title,
+                    'description' => $item->description,
+                    'is_featured' => $item->is_featured,
+                    'url' => route('media.show', ['path' => $item->file_path]),
+                    'created_at' => $item->created_at,
+                ];
+            }),
+        ], 200);
+    }
+
+    /**
+     * Delete a media file
+     */
+    public function deleteMedia($id, $mediaId)
+    {
+        if (!RoleHelper::ACSup()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        DatabaseHelper::Config();
+        $media = BienMedia::on('temp')->where('bien_id', $id)->findOrFail($mediaId);
+        
+        // Delete the file from storage
+        if (Storage::disk('public')->exists($media->file_path)) {
+            Storage::disk('public')->delete($media->file_path);
+        }
+        
+        $media->delete();
+        
+        return response()->json(['message' => 'Media deleted successfully'], 200);
+    }
+
+    /**
+     * Update the description of a bien
+     */
+    public function updateDescription(Request $request, $id)
+    {
+        if (!RoleHelper::ACSup()) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        DatabaseHelper::Config();
+        $bien = Bien::on('temp')->findOrFail($id);
+        
+        $request->validate([
+            'description' => 'required|string',
+        ]);
+        
+        $bien->description = $request->description;
+        $bien->save();
+        
+        return response()->json([
+            'message' => 'Description updated successfully',
+            'bien' => $bien
+        ], 200);
+    }
 }

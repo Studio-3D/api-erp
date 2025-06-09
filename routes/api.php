@@ -55,6 +55,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SocieteController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WhatsApp\WhatsAppController;
+use App\Http\Controllers\TikTok\TikTokApiController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -83,8 +84,6 @@ Route::post('/webhookFcb_Insta', [Facebook_InstagramController::class, 'handleWe
 Route::get('/webhookFcb_Insta', [Facebook_InstagramController::class, 'verify']);
 
 Route::middleware('auth:api')->group(function () {
-
-    //Il est nécessaire de versionner l'API pour garantir son évolutivité et une gestion efficace des modifications futures.
     Route::prefix('v1')->group(function () {
         /********************Social Netxork*********************/
         Route::post('/postTo_Social_Network', [Facebook_InstagramController::class, 'postTo_Social_Network']);
@@ -161,6 +160,12 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('libererBien/{id}', [V1BienController::class, 'libererBien_function'])->name('libererBien');
         Route::put('setPropostionBien/{id}/{old_id}', [V1BienController::class, 'setPropostionBien'])->name('');
         Route::get('projets/{idprojet}/getBiensByTranche_tva', [V1BienController::class, 'getBiensByTranche_tva'])->name('');
+
+        // endpoints Media pour biens
+        Route::post('biens/{id}/media', [V1BienController::class, 'uploadMedia']);
+        Route::get('biens/{id}/media', [V1BienController::class, 'getMedia']);
+        Route::delete('biens/{id}/media/{mediaId}', [V1BienController::class, 'deleteMedia']);
+        Route::put('biens/{id}/description', [V1BienController::class, 'updateDescription']);
 
         Route::get('projets/{idprojet}/pre_reservations', [V1BienController::class, 'pre_reservations_index']);
         Route::get('getEtatBien_ByType/{idprojet}/{type_id}', [V1BienController::class, 'getEtatBien_ByType'])->name('getEtatBien_ByType');
@@ -386,6 +391,13 @@ Route::middleware('auth:api')->group(function () {
         Route::get('projets/{idprojet}/commissions_traites', [V1CommissionController::class, 'commissions_traites']);
         Route::get('projets/{idprojet}/commissions_cumuls_by_projet', [V1CommissionController::class, 'commissions_cumuls_by_projet']);
 
+        // TikTok API Integration - streamlined endpoints
+        Route::post('/tiktok/publish', [TikTokApiController::class, 'publishContent']);
+        Route::get('/tiktok/status', [TikTokApiController::class, 'checkPublishStatus']);
+
+        // LinkedIn integration
+        Route::post('/linkedin/access-token', [App\Http\Controllers\LinkedIn\LinkedInController::class, 'getAccessToken']);
+        Route::post('/linkedin/share', [App\Http\Controllers\LinkedIn\LinkedInController::class, 'sharePost']);
     });
 
     /*************************************Société***************************** */

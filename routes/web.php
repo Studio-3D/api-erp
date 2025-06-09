@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\MediaController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -20,4 +21,8 @@ Route::get('/', function () {
     return 'aaa';
 }); */
 //pour le tester en postman http://127.0.0.1:8000/test
+
+Route::get('/media/{path}', [MediaController::class, 'show'])
+    ->where('path', '.*')
+    ->name('media.show');
 
