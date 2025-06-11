@@ -102,6 +102,12 @@ class BienController extends Controller
                     $subQuery->where('nom', $request->input('immeuble'));
                 });
             }
+            if ($request->filled('type_id')) {
+                $query->where('type_id', $request->input('type_id'));
+            }
+            if ($request->filled('num')) {
+                $query->where('numero', 'like', '%' . $request->input('num') . '%');
+            }
             if ($request->filled('type')) {
                 $query->whereHas('typeBien', function ($subQuery) use ($request) {
                     $subQuery->where('type', $request->input('type'));
@@ -159,6 +165,9 @@ class BienController extends Controller
                 $query->whereHas('bien', function ($subQuery) use ($request) {
                     $subQuery->where('propriete_dite_bien', 'like', '%' . $request->input('bien') . '%');
                 });
+            }
+            if ($request->filled('num')) {
+                $query->where('numero', 'like', '%' . $request->input('num') . '%');
             }
 
             if ($request->filled('prospect')) {
@@ -250,6 +259,7 @@ class BienController extends Controller
             if ($request->filled('etat')) {
                 $query->where('etat', 'like', '%' . $request->input('etat') . '%');
             }
+            
             if ($request->filled('etat_bien') && $request->input('etat_bien') != "null") {
                 $query->where('etat', $request->input('etat_bien'));
             }
@@ -276,6 +286,12 @@ class BienController extends Controller
             }
             if ($request->filled('immeuble_id')) {
                 $query->where('immeuble_id', $request->input('immeuble_id'));
+            }
+            if ($request->filled('type_id')) {
+                $query->where('type_id', $request->input('type_id'));
+            }
+            if ($request->filled('num')) {
+                $query->where('numero', 'like', '%' . $request->input('num') . '%');
             }
             if ($request->filled('tranche')) {
                 $query->whereHas('tranche', function ($subQuery) use ($request) {

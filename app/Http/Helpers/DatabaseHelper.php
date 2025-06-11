@@ -570,8 +570,8 @@ class DatabaseHelper
 
                     if($store==1){
                         $imp->setConnection('temp');
-                        /* $imp->statut='1';
-                        $imp->save(); */
+                        //$imp->statut='1';
+                        //$imp->save();
                         \Log::info("sort projet_id '. $imp->projet_id.");
                         Config::set('broadcasting.default', 'pusher_3');
                         $data_notif = [

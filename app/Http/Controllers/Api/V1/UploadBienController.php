@@ -133,6 +133,17 @@ class UploadBienController extends Controller
         //
     }
 
+    public function show($id)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $import = Import::on('temp')->findOrfail($id);
+            return response()->json(['import' => $import], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
     /**
      * Update the specified resource in storage.
      */

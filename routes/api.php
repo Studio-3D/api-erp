@@ -359,6 +359,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('get_remboursements_dos_transfert/{projet_id}', [V1RemboursementController::class, 'get_remboursements_dos_transfert'])->name('');
 
         //IMPORT Bien by Excel
+        Route::resource('/histo_importation', V1UploadBienController::class);
         Route::post('upload_excel_bien', [V1UploadBienController::class, 'upload'])->name('');
         Route::get('projets/{idprojet}/histo_importation', [V1UploadBienController::class, 'histo_importation']);
         Route::delete('delete_fichier_import/{id}', [V1UploadBienController::class, 'delete_fichier_import'])->name('');
