@@ -15,10 +15,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
-            $table->enum('statut',[0,1,2])->comment('0=>en cours 1=>success 2=>echoué');
+            $table->enum('statut', [0, 1, 2])->comment('0=>en cours 1=>success 2=>echoué');
             $table->string('commentaire')->nullable();
             $table->string('fichier');
             $table->json('data');
+            $table->integer('ligne_echou')->nullable();
+            $table->text('message_echou')->nullable();
+            $table->timestamp('date_echou')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

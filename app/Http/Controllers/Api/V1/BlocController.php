@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
@@ -9,7 +8,6 @@ use App\Http\Requests\StoreBlocRequest;
 use App\Http\Requests\UpdateBlocRequest;
 use App\Models\Bloc;
 use App\Models\TraitementAppel;
-
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -21,8 +19,8 @@ class BlocController extends Controller
     public function index(Request $request)
     {
         if (Auth::guard('api')->check()) {
-            $size = $request->input('size', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
+            $size      = $request->input('size', config('app.default_item_number_perpage'));
+            $page      = $request->input('page', 1);
             $projet_id = $request->input('projet_id');
             DatabaseHelper::Config();
 
@@ -46,14 +44,14 @@ class BlocController extends Controller
 
             $pagination = [
                 'currentPage' => $blocs->currentPage(),
-                'totalItems' => $blocs->total(),
-                'totalPages' => $blocs->lastPage(),
+                'totalItems'  => $blocs->total(),
+                'totalPages'  => $blocs->lastPage(),
             ];
 
             $blocs = $blocs->items();
 
             return response()->json([
-                'data' => $blocs,
+                'data'       => $blocs,
                 'pagination' => $pagination,
             ], 200);
         }
@@ -74,6 +72,9 @@ class BlocController extends Controller
             if ($request->filled('nom')) {
                 $query->where('nom', 'like', '%' . $request->input('nom') . '%');
             }
+            if ($request->filled('titre_foncier')) {
+                $query->where('titre_foncier', 'like', '%' . $request->input('titre_foncier') . '%');
+            }
             if ($request->filled('tranche_id')) {
                 $query->where('tranche_id', $request->input('tranche_id'));
             }
@@ -90,14 +91,14 @@ class BlocController extends Controller
 
                 $pagination = [
                     'currentPage' => $blocs->currentPage(),
-                    'totalItems' => $blocs->total(),
-                    'totalPages' => $blocs->lastPage(),
+                    'totalItems'  => $blocs->total(),
+                    'totalPages'  => $blocs->lastPage(),
                 ];
 
                 $blocs = $blocs->items();
 
                 return response()->json([
-                    'data' => $blocs,
+                    'data'       => $blocs,
                     'pagination' => $pagination,
                 ], 200);
             } else {
@@ -130,12 +131,12 @@ class BlocController extends Controller
             DatabaseHelper::Config();
             $bloc = new Bloc();
             $bloc->setConnection('temp');
-            $bloc->nom = $request->nom;
-            $bloc->titre_foncier = $request->titre_foncier;
-            $bloc->projet_id = $request->projet_id;
-            $bloc->tranche_id = $request->tranche_id;
+            $bloc->nom            = $request->nom;
+            $bloc->titre_foncier  = $request->titre_foncier;
+            $bloc->projet_id      = $request->projet_id;
+            $bloc->tranche_id     = $request->tranche_id;
             $bloc->nbre_immeubles = $request->nbre_immeubles ? $request->nbre_immeubles : 0;
-            $bloc->nbre_biens = $request->nbre_biens ? $request->nbre_biens : 0;
+            $bloc->nbre_biens     = $request->nbre_biens ? $request->nbre_biens : 0;
             $bloc->save();
             return response()->json(['message' => $bloc], 200);
         } else {
@@ -179,7 +180,7 @@ class BlocController extends Controller
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            $bloc = Bloc::on('temp')->findOrfail($id);
+            $bloc   = Bloc::on('temp')->findOrfail($id);
             $update = $request->all();
             foreach ($update as $key => $value) {
                 $bloc->$key = $value;
@@ -200,22 +201,21 @@ class BlocController extends Controller
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $bloc = Bloc::on('temp')->findOrfail($id);
-            if (count($bloc->immeuble)>0){
-                $imme=new ImmeubleController();
-                foreach($bloc->immeuble as $imm){
+            if (count($bloc->immeuble) > 0) {
+                $imme = new ImmeubleController();
+                foreach ($bloc->immeuble as $imm) {
                     $imme->destroy($imm->id);
-                                    }
+                }
             }
             //traitement_appel
-            $traitement_appels=TraitementAppel::on('temp')->where('bloc_id',$id)->get();
-            if(count($traitement_appels)>0){
-                foreach($traitement_appels as $tr){
-                    $appel=new AppelController();
-                    $appel->destroy_t_appel($tr->id,1);
+            $traitement_appels = TraitementAppel::on('temp')->where('bloc_id', $id)->get();
+            if (count($traitement_appels) > 0) {
+                foreach ($traitement_appels as $tr) {
+                    $appel = new AppelController();
+                    $appel->destroy_t_appel($tr->id, 1);
                 }
 
             }
-
 
             if ($bloc->delete()) {
                 return response()->json(['message' => 'bloc supprimé avec Succés'], 200);
