@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('bien_id')->nullable()->constrained('biens')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('action')->comment('1=>Changement de Bien 2==>creation reservation 3 Modification Réservation');
-            $table->string('description');
+            $table->json('description')->nullable();
             $table->timestamps();
             $table->softDeletes();
 

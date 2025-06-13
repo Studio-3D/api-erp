@@ -14,7 +14,10 @@ class HistoReservation extends Model
 
     protected $dates = ['deleted_at'];
     protected $with = ['user', 'bien'];
-
+    //pour repmir les json par array
+    protected $casts = [
+        'description' => 'array',
+    ];
     public function reservation()
     {
         return $this->belongsTo(Reservation::class ,'reservation_id');

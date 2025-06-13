@@ -83,7 +83,7 @@ class Reservation extends Model
     }
     public function historiques()
     {
-        return $this->hasMany(HistoReservation::class,'reservation_id');
+        return $this->hasMany(HistoReservation::class,'reservation_id')->orderby('created_at','desc');
     }
 
     public function desistements_valide()

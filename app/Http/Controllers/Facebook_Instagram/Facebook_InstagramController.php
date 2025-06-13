@@ -55,6 +55,7 @@ class Facebook_InstagramController extends Controller
                     $file = $request->file('mediaFile');
                     $description = $request->description;
                     $type_media = null;
+                    $selectedNetworks = explode(',', $network);
 
                    // En mode parcourir, l'utilisateur sélectionne un fichier qui est ensuite uploadé dans le stockage. Après l'upload, on récupère son URL ainsi que son type (photo ou vidéo).                    if ($mode == 'parcourir') {
                     if ($mode == 'parcourir') {
@@ -91,11 +92,11 @@ class Facebook_InstagramController extends Controller
                        }
                     }
                     /* 1 ==> WhatsApp, 2 ==> Instagram, 3 ==> Facebook */
-                    if (str_contains($network, '3')) {
+                    if (in_array(3, $selectedNetworks)) {
                         //your facebok page Id
                         $pageId = 537798629425112;
                        // $accessToken = 'YOUR_FACEBOOK_ACCESS_TOKEN';
-                        $accessToken='EAAI3GumKq0oBO4ZC9XRiXExUc2bvQ4yNtG25am68sUZBawMjOg98j9lnOZBxzWgIRZAZBWCmy8TrCnZAK6gyIkAVG1NiTkoJZAmCsnBUcdHlVaiQw2geVjnMvuT6hM4KI7HvWQyaQDMMZAvzp9LvK902rcJZCzBsoZAxpt5TOSukJ3Yef31H7tRwjvqImIY57aFveXFTQJa3BVuZCLVmQp3ZBmDCo9TK';
+                        $accessToken='EAAI3GumKq0oBO8PCKJ2HRgYxo5Sj76yzENkuPcmHNr3rf8BgHplOOKzfCgXnOi1oWjXmy01mnQyoZBbdjvnjo2n0e6LIl6CTXrmZBgS7ILcy7OTSOw5iglZCbP2xV1KBuPIl38q7UZAMnQclUDBsDmrDpbKZCJ4cS2XFPZBn5cmPCA9ZBWJiSmThnYHvZC8V209qe4XmF69zZAruWiRTuRyrnltmMmFzdUrFX';
                         if ($mode == 'existante') {
                             $url = str_replace('\/\/', '/', $request->img_existant_url);
                             $text = 'photos';
@@ -122,11 +123,11 @@ class Facebook_InstagramController extends Controller
                         'caption' => $request->description,
                      ]));   */
 
-                    if (str_contains($network, '2')) {
+                    if (in_array(2, $selectedNetworks)) {
                         //your instagram Id
                         $pageId = 17841454841928506;
                         //$accessToken = 'YOUR_INSTAGRAM_ACCESS_TOKEN';
-                        $accessToken='EAAI3GumKq0oBOwvTWZAa8BYDCxzjwAgmeSE0DBoxndSsrUrGhAedIZCmYwkLD2H8OJaeQ7Q4Tzghlbobax0Dp3Y6gkDlIwpxNeSU6ObWv63bXC99cdGZCpqksjHKmMOMKYGtkWwCGX1dzPuY7pCElz3RFxQcpZAanfz9nbZBCJMI8b7uq0ohCHCKO';
+                        $accessToken='EAAI3GumKq0oBOwR9zOWzWaZAbaerwAtt53MblzVA4vCTq8bPGrHZCV5cXAqPTZAJyZAiPoYBaakZAu2LyApnTxqZADQVq6gkdT4dUGg0KhRHJo5ycqwBbDFPZBKtuNAJoWKr93ZApxiEeo1Riwr848yxdP6AKpUEZBMSChj5ecbtrZBTYD7PKj4LQsYx3Wp3Rnr7eNDRF6tKn5Gv3KNLEAu2n4ls4e6ulcX4jkKksZD';
 
                         if ($mode == 'existante') {
                             $url = $request->img_existant_url;
@@ -152,7 +153,7 @@ class Facebook_InstagramController extends Controller
 
                     }
 
-                    if (str_contains($network, '1')) {
+                    if (in_array(1, $selectedNetworks)) {
                         $instanceId =env('INSTANCE_ID_ULTRA_MSG');  // Replace with your instance ID
                         $token = env('TOKEN_ULTRA_MSG');  // Replace with your token
                         $to = $request->phoneNumber;  // Ensure $request contains phoneNumber
@@ -182,7 +183,10 @@ class Facebook_InstagramController extends Controller
                         }*/
                     }
 
+                    // Only return invalid if no valid networks were processed
+                    if (!array_intersect($selectedNetworks, [1, 2, 3])) {
                         return response()->json(['success' => false, 'message' => 'Invalid social network selection'], 400);
+                    }
 
 
                 } catch (\Exception $e) {
