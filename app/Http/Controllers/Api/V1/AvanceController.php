@@ -564,8 +564,6 @@ class AvanceController extends Controller
 
             if ($avance->save()) {
 
-
-
                 //store statut_avances table=>si validé
                 if($avance->statut==StatutReservationEnum::Validé->value ){
                     $st_avance = new StatutAvancePenalite();
@@ -573,7 +571,7 @@ class AvanceController extends Controller
                     $st_avance->avance_id=$avance->id;
                     $st_avance->user_id_valider = $userAuth->value('id');
                     $st_avance->date_validation = Carbon::now();
-                    $st_avance->date_encaissement = $request->date_encaissement;
+                    $st_avance->date_encaissement = $request->date_encaissement=="null"?null:$request->date_encaissement;
                     $st_avance->num_remise = $request->num_remise=="null"?null:$request->num_remise;
                     $st_avance->save();
                 }
@@ -591,7 +589,7 @@ class AvanceController extends Controller
                         $user_connecter = $userAuth->value('user_id_origin');
                         $user_societes = User::where('id', $user_connecter)->first();
                         $societe = Societe::findOrfail($user_societes->societe_id);
-        
+
                         // Récupérer le nom du fichier
                         $fileName = $file->getClientOriginalName();
                         $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements' . '/' . $reservation->code_reservation);
@@ -604,7 +602,7 @@ class AvanceController extends Controller
                             'avance_id' => $avance->id,
                             'active' => 1,
                         ];
-        
+
                         $pieceJointeRequest->merge($datapieceJointe);
                         $piecesJointeController->store($pieceJointeRequest);
                     }
@@ -739,7 +737,7 @@ class AvanceController extends Controller
             Config::set('broadcasting.default', 'pusher_5');
             broadcast(new NotifMenuEvent(2));
             }
-            return $avance;
+            return response()->json(['avance' => $avance], 200);
 
         }
         return response()->json(['error' => 'Unauthorized'], 201);
@@ -832,6 +830,7 @@ class AvanceController extends Controller
      */
     public function update(UpdateAvanceRequest $request, $id)
     {
+
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $user = Auth::user();
@@ -998,8 +997,8 @@ class AvanceController extends Controller
                                     $st_avance->avance_id=$avance->id;
                                     $st_avance->user_id_valider = $userAuth->value('id');
                                     $st_avance->date_validation = Carbon::now();
-                                    $st_avance->date_encaissement = $request->date_encaissement;
-                                    $st_avance->num_remise =$request->num_remise=="null"?null:$request->num_remise;
+                                    $st_avance->date_encaissement = $request->date_encaissement=="null"?null:$request->date_encaissement;
+                                    $st_avance->num_remise = $request->num_remise=="null"?null:$request->num_remise;
                                     $st_avance->save();
                                 }
 

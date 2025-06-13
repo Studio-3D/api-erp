@@ -64,7 +64,7 @@ class ReservationController extends Controller
             $avances = Avance::on('temp')->select('reservation_id', DB::raw('SUM(avances.montant) as sum_avances'))
                 ->groupby('reservation_id');
 
-            $reservations = Reservation::on('temp')->with('desistement_att_validation_rejete', 'last_statut', 'first_avance')
+            $reservations = Reservation::on('temp')->with('desistement_att_validation_rejete', 'last_statut', 'first_avance','contrat_vente')
                 ->joinSub($avances, 'avances_req', function ($join) {
                     $join->on('avances_req.reservation_id', '=', 'reservations.id');
                 })
@@ -88,7 +88,7 @@ class ReservationController extends Controller
             DatabaseHelper::Config();
 
 
-            $query = Reservation::on('temp')->withSum('avances','montant')->with('desistement_att_validation_rejete','last_statut','first_avance')
+            $query = Reservation::on('temp')->withSum('avances','montant')->with('desistement_att_validation_rejete','last_statut','first_avance','contrat_vente')
             ->orderBy('created_at', 'desc')
                 ->where('projet_id', $projet_id)
                 ->where('etat', 1);
@@ -567,7 +567,7 @@ class ReservationController extends Controller
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $reservation = Reservation::on('temp')->with('desistements_ancien')->findOrFail($id);
+            $reservation = Reservation::on('temp')->with('desistements_ancien','rdv','avances','last_statut','contrat_vente')->findOrFail($id);
 
             //get nom propriete _dite_bien concat
             $propriete = null;
@@ -672,6 +672,8 @@ class ReservationController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $reservation = Reservation::on('temp')->findOrFail($id);
+              // Store original values before any changes
+            $originalAttributes = $reservation->getOriginal();
             if ($request->has('code_reservation')) {
                 $request->validate([
                     'code_reservation' => [
@@ -691,6 +693,52 @@ class ReservationController extends Controller
                 }
 
             }
+          $changes = [];
+        // Define your finance modes enum
+        $financeModes = [
+            1 => ['code' => 1, 'label' => 'Comptant'],
+            2 => ['code' => 2, 'label' => 'Crédit'],
+            3 => ['code' => 3, 'label' => 'Indécis'],
+        ];
+
+        // Track changes for each field
+        $fieldsToTrack = [
+            'nb_acquereurs', 'code_reservation', 'prix', 'mode_financement',
+            'date_reservation', 'commentaire', 'prix_remise', 'prix_forfetaire'
+        ];
+
+            foreach ($fieldsToTrack as $field) {
+                if ($request->has($field)) {
+                    $newValue = $request->input($field);
+                    $oldValue = $reservation->$field;
+
+                    if ($newValue != $oldValue) {
+                        // Special handling for mode_financement
+                        if ($field == 'mode_financement') {
+                            $changes[$field] = [
+                                'old' => isset($financeModes[$oldValue]) ? $financeModes[$oldValue]['label'] : $oldValue,
+                                'new' => isset($financeModes[$newValue]) ? $financeModes[$newValue]['label'] : $newValue
+                            ];
+                        }
+                         else {
+                            $changes[$field] = [
+                                'old' => $oldValue,
+                                'new' => $newValue
+                            ];
+                        }
+                    }
+                }
+            }
+            // Handle bien change separately
+            if ($old_bien_id != $request->input('bien_id')) {
+                $oldBien = Bien::on('temp')->find($old_bien_id);
+                $newBien = Bien::on('temp')->find($request->input('bien_id'));
+
+                $changes['bien'] = [
+                    'old' => $oldBien ? $oldBien->propriete_dite_bien : $old_bien_id,
+                    'new' => $newBien ? $newBien->propriete_dite_bien : $request->input('bien_id')
+                ];
+            }
             $reservation->setConnection('temp');
             $reservation->nb_acquereurs = $request->input('nb_acquereurs');
             $reservation->code_reservation = $request->input('code_reservation');
@@ -708,9 +756,11 @@ class ReservationController extends Controller
             $reservation->bien_id = $request->input('bien_id');
 
             if ($reservation->save()) {
+
                 if (RoleHelper::AdminSup()) {
                     //admin /sup admin peut changer le bien et les avances
                     if ($old_bien_id != $request->input('bien_id')) {
+
                         //reserver new bien
                         $bienController = new BienController();
                         $bienController->reserverBien($request->input('bien_id'), null, $reservation->id);
@@ -723,7 +773,7 @@ class ReservationController extends Controller
                         $histo->user_id = $userAuth->value('id');
                         $histo->bien_id = $old_bien_id;
                         $histo->action=1;
-                        $hist->description='Changement de Bien';
+                        $histo->description = json_encode(['bien' => $changes['bien']]);
                         $histo->save();
                         //store notif to all commerciaux
                         $commerciaux = User::on('temp')->where('role', 3)->get();
@@ -748,8 +798,18 @@ class ReservationController extends Controller
                     }
                 }
 
+                 // Track acquereurs changes
+                $old_aquereurs = Aquereur::on('temp')->with('client')->where('reservation_id', $id)->get();
+               // Then map to include client names
+                $old_aquereurs_data = $old_aquereurs->map(function($aq) {
+                    return [
+                        'client_id' => $aq->client_id,
+                        'client_nom' => $aq->client->nom ?? null, // Add null coalescing for safety
+                        'client_prenom' => $aq->client->prenom ?? null,
+                        'pourcentage' => $aq->pourcentage
+                    ];
+                })->toArray();
                 //delete aquereurs
-                $old_aquereurs = Aquereur::on('temp')->where('reservation_id', $id)->get();
                 foreach ($old_aquereurs as $aq) {
                     $aq->forceDelete();
                 }
@@ -762,6 +822,8 @@ class ReservationController extends Controller
                 $dataArrayString = $request->input('oldClients', '[]');
 
                 $dataArray_oldClients = json_decode($dataArrayString, true); // Ensure it's an array
+                 // history
+                $new_aquereurs = [];
 
                 if ($dataArray_clients) {
                     foreach ($dataArray_clients as $clientInfo) {
@@ -774,10 +836,21 @@ class ReservationController extends Controller
                         ];
                         $aquereurRequest->merge($dataAquereur);
                         $aquereurController->store($aquereurRequest);
+                         // history
+                      // Add to new aquereurs array
+                        $new_aquereurs[] = [
+                            'client_id' => $clientData->id,
+                            'nom' => $clientData->nom,
+                            'prenom' => $clientData->prenom,
+                            'pourcentage' => $clientInfo['pourcentage']
+                        ];
                     }
                 }
                 if ($dataArray_oldClients) {
                     foreach ($dataArray_oldClients as $clientInfo) {
+                         // Get existing client
+                        $client = Client::on('temp')->find($clientInfo['id']);
+
                         $dataAquereur = [
                             'pourcentage' => $clientInfo['pourcentage1'] ?? $clientInfo['pourcentage'] ?? 0, // Fallback to 0 if neither exists
                             'client_id' => $clientInfo['id'],
@@ -785,7 +858,21 @@ class ReservationController extends Controller
                         ];
                         $aquereurRequest->merge($dataAquereur);
                         $aquereurController->store($aquereurRequest);
-                    }
+                         // history
+                        // Add to new aquereurs array
+                                $new_aquereurs[] = [
+                                    'client_id' => $clientInfo['id'],
+                                    'nom' => $client->nom,
+                                    'prenom' => $client->prenom,
+                                    'pourcentage' => $clientInfo['pourcentage1'] ?? $clientInfo['pourcentage'] ?? 0
+                                ];                    }
+                }
+                // Add acquereurs changes to changes array if they changed  // history
+                if ($old_aquereurs_data != $new_aquereurs) {
+                    $changes['acquereurs'] = [
+                        'old' => $old_aquereurs_data,
+                        'new' => $new_aquereurs
+                    ];
                 }
 
                 //****edit piece jointe***
@@ -794,14 +881,18 @@ class ReservationController extends Controller
 
                 if (!$request->file('files_reservation')) {
                     $pjController = new PiecesJointeController();
-                    $pjController->destoryFileUsingReservationId($id, $societe);
+                    $pjController->destoryFileUsingReservationId($id,$reservation->code_reservation,$societe);
                 }
                 if ($request->file('files_reservation')) {
 
                     //*delete old piece jointe**
 
                     $pjController = new PiecesJointeController();
-                    $pjController->destoryFileUsingReservationId($id, $societe);
+                     $old_files = $pjController->getFilesUsingReservationId($id,$societe);
+
+                    $pjController->destoryFileUsingReservationId($id,$request->input('code_reservation'), $societe);
+                   //
+                   $new_files = [];
                     foreach ($request->file('files_reservation') as $file) {
                         $piecesJointeController = new PiecesJointeController();
                         $pieceJointeRequest = new StorePiecesJointeRequest();
@@ -812,7 +903,7 @@ class ReservationController extends Controller
                         $fileType = $file->getClientOriginalExtension();
 
                         // Déplacer le fichier vers le répertoire de destination
-                        $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations');
+                        $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations/'.$reservation->code_reservation);
                         File::makeDirectory($directory, 0755, true, true);
 
                         $file->move($directory, $Myfile);
@@ -827,20 +918,30 @@ class ReservationController extends Controller
 
                         $pieceJointeRequest->merge($datapieceJointe);
                         $piecesJointeController->store($pieceJointeRequest);
-
+                        // history
+                        $new_files[] = $Myfile;
                     }
+                    // Add file changes to changes array
+                        $changes['files'] = [
+                            'old' => $old_files->pluck('fichier')->toArray(),
+                            'new' => $new_files
+                        ];
                 }
+
                 //store new pieces jointes
             }
-            //store to historique reservation
-                        $histo = new HistoReservation();
-                        $histo->setConnection('temp');
-                        $histo->reservation_id = $reservation->id;
-                        $histo->user_id = $userAuth->value('id');
-                        $histo->bien_id =$request->input('bien_id');
-                        $histo->action=3;
-                        $histo->description='Modification du Réservation';
-                        $histo->save();
+                        // Store history with all changes
+            if (!empty($changes)) {
+                $histo = new HistoReservation();
+                $histo->setConnection('temp');
+                $histo->reservation_id = $reservation->id;
+                $histo->user_id = $userAuth->value('id');
+                $histo->bien_id = $request->input('bien_id');
+                $histo->action = 3;
+                $histo->description = 'Modification du Réservation';
+                $histo->description = json_encode($changes);
+                $histo->save();
+            }
             return response()->json(['reservation' => $reservation], 200);
         }
         return response()->json(['error', 'Unauthorized'], 401);
@@ -898,7 +999,7 @@ class ReservationController extends Controller
             $aquereurController = new AquereurController();
             $aquereurController->destroyAquerreursByReservationId($id);
             $pjController = new PiecesJointeController();
-            $pjController->destoryFileUsingReservationId($id, $user_societes, $societe);
+            $pjController->destoryFileUsingReservationId($id, $reservation->code_reservation,$societe);
             $notif = new NotificationController();
             $notif->destory_force_by_column_id('reservation', $id);
              //desistements

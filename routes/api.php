@@ -314,7 +314,12 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('objectifs', V1ObjectifsController::class);
         Route::get('projets/{idprojet}/objectifs', [V1ObjectifsController::class, 'indexByProjet']);
         //piecejointe
+
+        Route::get('files_docs_by_code/{docs}/{code}', [V1PiecesJointeController::class, 'files_docs_by_code'])->name('files_docs_by_code');
+
         Route::get('files_docs/{docs}', [V1PiecesJointeController::class, 'files_docs'])->name('files_docs');
+       Route::post('scanner_file', [V1PiecesJointeController::class, 'scanner_file'])->name('scanner_file');
+
         //sav
         Route::resource('ServicesPrestataires', V1ServicesPrestatairesController::class);
         Route::get('services', [V1ServicesPrestatairesController::class, 'get_services']);
@@ -455,6 +460,8 @@ Route::middleware('auth:api')->group(function () {
     Route::put('traiter_rdv_reservation/{rdv_id}', [LivraisonController::class, 'traiter_rdv_reservation'])->name('');
     Route::delete('destroy_rdv_reservation/{id}', [LivraisonController::class, 'destroy_rdv_reservation'])->name('');
     Route::get('get_rdv_notaire_menu/{projet_id}', [LivraisonController::class, 'get_rdv_notaire_menu'])->name('');
+   //Rendez Vous
+    Route::get('creneaux-occupes', [LivraisonController::class, 'getCreneauxOccupes']);
 
     /************compromis vente******/
 
