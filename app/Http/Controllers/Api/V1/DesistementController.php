@@ -610,7 +610,8 @@ class DesistementController extends Controller
 
                         // Récupérer le nom du fichier
                         $fileName = $file->getClientOriginalName();
-                        $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/desistement');
+                                                        $directory = public_path('Docs/' . $societe->raison_sociale_concatene . '_' . $societe->id  . '/desistements' . '/' . $reservation->code_reservation);
+
                         File::makeDirectory($directory, 0755, true, true);
                         $file->move($directory, $fileName);
                         $fileType = $file->getClientOriginalExtension();
@@ -922,8 +923,9 @@ class DesistementController extends Controller
                                                     'telephone_num2' => $prospect_exist->telephone_num2,
                                                     'notifie' => $prospect_exist->notifie,
                                                     'civilite' => '1',
-                                                    'situation_familliale' => 'Célibataire',
+                                                    'situation_familliale' => '1',
                                                     'type_client' => 1,
+                                                    'projet_id'=>$request->projet_id
                                                 ];
                                             } else {
                                                 //new client
@@ -934,9 +936,10 @@ class DesistementController extends Controller
                                                     'telephone_num1' => $info->telephone,
                                                     'telephone_num2' => null,
                                                     'notifie' => 0,
-                                                    'civilite' => 'Mr',
-                                                    'situation_familliale' => 'Célibataire',
+                                                     'civilite' => '1',
+                                                    'situation_familliale' => '1',
                                                     'type_client' => 1,
+                                                      'projet_id'=>$request->projet_id
                                                 ];
                                             }
 
@@ -1026,9 +1029,10 @@ class DesistementController extends Controller
                                                     'telephone_num1' => $info->telephone,
                                                     'telephone_num2' => $prospect_exist->telephone_num2,
                                                     'notifie' => $prospect_exist->notifie,
-                                                    'civilite' => 'Mr',
-                                                    'situation_familliale' => 'Célibataire',
+                                                    'civilite' => '1',
+                                                    'situation_familliale' => '1',
                                                     'type_client' => 1,
+                                                      'projet_id'=>$request->projet_id
                                                 ];
                                             } else {
                                                 //new client
@@ -1039,9 +1043,10 @@ class DesistementController extends Controller
                                                     'telephone_num1' => $info->telephone,
                                                     'telephone_num2' => null,
                                                     'notifie' => 0,
-                                                    'civilite' => 'Mr',
-                                                    'situation_familliale' => 'Célibataire',
+                                                  'civilite' => '1',
+                                                    'situation_familliale' => '1',
                                                     'type_client' => 1,
+                                                      'projet_id'=>$request->projet_id
                                                 ];
                                             }
 
@@ -1944,9 +1949,10 @@ class DesistementController extends Controller
                                                             'telephone_num1'=>$info->telephone,
                                                             'telephone_num2'=>$prospect_exist->telephone_num2,
                                                             'notifie'=>$prospect_exist->notifie,
-                                                            'civilite'=>'Mr',
-                                                            'situation_familliale'=>'Célibataire',
+                                                             'civilite' => '1',
+                                                    'situation_familliale' => '1',
                                                             'type_client'=>1,
+                                                              'projet_id'=>$request->projet_id
                                                         ];
                                                     }else{
                                                         //new client
@@ -1957,9 +1963,10 @@ class DesistementController extends Controller
                                                             'telephone_num1'=>$info->telephone,
                                                             'telephone_num2'=>null,
                                                             'notifie'=>0,
-                                                            'civilite'=>'Mr',
-                                                            'situation_familliale'=>'Célibataire',
+                                                             'civilite' => '1',
+                                                    'situation_familliale' => '1',
                                                             'type_client'=>1,
+                                                              'projet_id'=>$request->projet_id
                                                         ];
                                                     }
 
@@ -2050,9 +2057,10 @@ class DesistementController extends Controller
                                                             'telephone_num1'=>$info->telephone,
                                                             'telephone_num2'=>$prospect_exist->telephone_num2,
                                                             'notifie'=>$prospect_exist->notifie,
-                                                            'civilite'=>'Mr',
-                                                            'situation_familliale'=>'Célibataire',
+                                                            'civilite' => '1',
+                                                    'situation_familliale' => '1',
                                                             'type_client'=>1,
+                                                              'projet_id'=>$request->projet_id
                                                         ];
                                                     }else{
                                                         //new client
@@ -2063,9 +2071,10 @@ class DesistementController extends Controller
                                                             'telephone_num1'=>$info->telephone,
                                                             'telephone_num2'=>null,
                                                             'notifie'=>0,
-                                                            'civilite'=>'Mr',
-                                                            'situation_familliale'=>'Célibataire',
+                                                            'civilite' => '1',
+                                                    'situation_familliale' => '1',
                                                             'type_client'=>1,
+                                                              'projet_id'=>$request->projet_id
                                                         ];
                                                     }
 

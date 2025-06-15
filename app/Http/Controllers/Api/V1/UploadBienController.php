@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Projet;
 use App\Models\Import;
+use Carbon\Carbon;
+
 use App\Http\Helpers\ImportExcelHelper;
 class UploadBienController extends Controller
 {
@@ -70,6 +72,14 @@ class UploadBienController extends Controller
 
             // Démarrer la requête directement sur le modèle
             $query = Import::on('temp')->where('projet_id', $projet_id);
+            if ($request->filled('date')) {
+                $start = Carbon::parse($request->input('date'));
+                $query->whereDate('created_at', $start);
+            }
+
+            if ($request->filled('statut')) {
+                $query->where('statut', 'like', '%' . $request->input('statut') . '%');
+            }
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
                 $imp = $query->orderBy('created_at', 'desc')
                     ->paginate($size, ['*'], 'page', $page);
@@ -121,6 +131,17 @@ class UploadBienController extends Controller
     public function edit(string $id)
     {
         //
+    }
+
+    public function show($id)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $import = Import::on('temp')->findOrfail($id);
+            return response()->json(['import' => $import], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
 
     /**

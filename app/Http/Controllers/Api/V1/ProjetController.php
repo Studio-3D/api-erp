@@ -96,95 +96,65 @@ class ProjetController extends Controller
     }
 
     public function index(Request $request)
-    {
-
-        if (RoleHelper::AdminSup()) {
-            $size = $request->input('size', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
-            DatabaseHelper::Config();
-            // Démarrer la requête directement sur le modèle
-            $query = Projet::on('temp')->with('typesBien');
-
-            if ($request->filled('nom')) {
-                $query->where('nom', 'like', '%' . $request->input('nom') . '%');
-            }
-            if ($request->filled('adresse')) { 
-                $query->where('adresse', 'like', '%' . $request->input('adresse') . '%');
-            }
-            if ($request->filled('code')) {
-                $query->where('code', 'like', '%' . $request->input('code') . '%');
-            }
-            if ($request->filled('type')) {
-                $query->whereHas('TypeProjet', function ($subQuery) use ($request) {
-                    $subQuery->where('type', 'like', '%' . $request->input('type') . '%');
-                });
-            }
-
-            $projets = $query->orderBy('created_at', 'desc')
-                ->paginate($size, ['*'], 'page', $page);
-
-            // Extraire les propriétés du paginateur
-            $pagination = [
-                'currentPage' => $projets->currentPage(),
-                'totalItems' => $projets->total(),
-                'totalPages' => $projets->lastPage(),
-            ];
-
-            // Extraire les éléments d'utilisateur du paginateur
-            $projets = $projets->items();
-
-            // Retourner la réponse simplifiée
-            return response()->json([
-                'projets' => $projets,
-                'pagination' => $pagination,
-            ], 200);
-        } else if (RoleHelper::Com()) {
-            $size = $request->input('size', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
-            DatabaseHelper::Config();
-
-            $id_auth = Auth::guard('api')->user()->id;
-            $user_id = User::on('temp')->where('user_id_origin', $id_auth)->pluck('id');
-            $query = Projet::on('temp');
-
-            if ($request->filled('nom')) {
-                $query->where('nom', 'like', '%' . $request->input('nom') . '%');
-            }
-            if ($request->filled('adresse')) {
-                $query->where('adresse', 'like', '%' . $request->input('adresse') . '%');
-            }
-            if ($request->filled('code')) {
-                $query->where('code', 'like', '%' . $request->input('code') . '%');
-            }
-            if ($request->filled('type')) {
-                $query->where('type_id', 'like', '%' . $request->input('type') . '%');
-            }
-
-            $projets = $query->orderBy('created_at', 'desc')
-                ->join('user_projets', 'user_projets.projet_id', '=', 'projets.id')
-                ->where('user_projets.user_id', $user_id)
-                ->select('projets.*')
-                ->paginate($size, ['*'], 'page', $page);
-
-            // Extraire les propriétés du paginateur
-            $pagination = [
-                'currentPage' => $projets->currentPage(),
-                'totalItems' => $projets->total(),
-                'totalPages' => $projets->lastPage(),
-            ];
-
-            // Extraire les éléments d'utilisateur du paginateur
-            $projets = $projets->items();
-
-            // Retourner la réponse simplifiée
-            return response()->json([
-                'projets' => $projets,
-                'pagination' => $pagination,
-            ], 200);
-        }
-
+{
+    if (!RoleHelper::AdminSup() && !RoleHelper::Com()) {
         return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+    $size = $request->input('size', null);
+    $page = $request->input('page', null);
+    DatabaseHelper::Config();
+
+    // Démarrer la requête
+    $query = Projet::on('temp')->with('typesBien');
+
+    // Appliquer les filtres
+    if ($request->filled('nom')) {
+        $query->where('nom', 'like', '%' . $request->input('nom') . '%');
+    }
+    if ($request->filled('adresse')) {
+        $query->where('adresse', 'like', '%' . $request->input('adresse') . '%');
+    }
+    if ($request->filled('code')) {
+        $query->where('code', 'like', '%' . $request->input('code') . '%');
+    }
+    if ($request->filled('type')) {
+        $query->where('type_id', 'like', '%' . $request->input('type') . '%');
+    }
+    if ($request->filled('date')) {
+        $query->whereDate('created_at', $request->input('date'));
+    }
+
+    // Restriction si rôle Commercial
+    if (RoleHelper::Com()) {
+        $id_auth = Auth::guard('api')->user()->id;
+        $user_id = User::on('temp')->where('user_id_origin', $id_auth)->pluck('id');
+
+        $query->join('user_projets', 'user_projets.projet_id', '=', 'projets.id')
+            ->whereIn('user_projets.user_id', $user_id)
+            ->select('projets.*'); // nécessaire pour éviter l'ambiguïté avec les colonnes
+    }
+
+    // Appliquer la pagination
+    if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+        $projetsPaginated = $query->orderBy('created_at', 'desc')
+            ->paginate($size, ['*'], 'page', $page);
+
+        return response()->json([
+            'projets' => $projetsPaginated->items(),
+            'pagination' => [
+                'currentPage' => $projetsPaginated->currentPage(),
+                'totalItems' => $projetsPaginated->total(),
+                'totalPages' => $projetsPaginated->lastPage(),
+            ],
+        ]);
+    } else {
+        // Sans pagination
+        $projets = $query->orderBy('created_at', 'desc')->get();
+        return response()->json(['projets' => $projets]);
+    }
+}
+
 
     /**
      * Show the form for creating a new resource.
@@ -342,34 +312,24 @@ class ProjetController extends Controller
             $projet->max_etages = $request->max_etages;
             if ($projet->save()) {
 
-                $user_projets = UserProjet::on('temp')->where('projet_id', $id)->delete();
-                $all = 0;
-                if (!empty($request->selectedUsers )) {
+                // Supprime les anciens liens user_projet liés à ce projet
+                UserProjet::on('temp')->where('projet_id', $id)->delete();
 
-                    $array_user = explode(',', $request->selectedUsers); // $tranches_array sera ['5', '2']
+                if (!empty($request->selectedUsers)) {
+                    // Décoder la chaîne JSON en tableau PHP
+                    $array_user = json_decode($request->selectedUsers, true);
 
-                foreach ($array_user as $valeur) {
-                    if ($valeur == 'tous') {
-                        $all = 1;
-                        break;
-                    }
-                }
-                if ($all == 1) {
-                    DatabaseHelper::Config();
-                    $users = User::on('temp')->get(['id']);
-                    foreach ($users as $us) {
-                        UserProjetHelper::createUserProjet($projet->id, $us->id);
-                    }
-                    return response()->json(['projet' => $projet], 200);
-                } else {
-                    foreach ($array_user as $valeur) {
-                        UserProjetHelper::createUserProjet($projet->id, $valeur);
-                    }
-                    broadcast(new NewProjectEvent($id));
+                    // Vérifier que c'est bien un tableau
+                    if (is_array($array_user)) {
+                        // Créer les liens user_projet pour chaque utilisateur sélectionné
+                        foreach ($array_user as $userId) {
+                            UserProjetHelper::createUserProjet($projet->id, $userId);
+                        }
+                    }}}
+    
 
-                    return response()->json(['projet' => $projet], 200);
-                }}
-            }
+
+
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
@@ -378,7 +338,162 @@ class ProjetController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+
     public function destroy($id)
+{
+    if (!RoleHelper::AdminSup()) {
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    DatabaseHelper::Config();
+    Config::set('broadcasting.default', 'pusher_2');
+
+    $projet = Projet::on('temp')->findOrFail($id);
+    $projet->setConnection('temp');
+
+    $projet->load([
+        'bloc', 'immeuble', 'bien', 'typesBien', 'typologies',
+        'prospects', 'partenaires', 'visites', 'reservations',
+        'appels', 'clients', 'notifications', 'fournisseurs',
+        'decomptes', 'factures', 'cps', 'credits', 'objectifs',
+        'reclamations', 'remise_cles', 'import', 'echeance_projet'
+    ]);
+
+    // Suppression des tranches
+    $tranches = Tranche::on('temp')->where('projet_id', $id)->get();
+    foreach ($tranches as $tr) {
+        (new TrancheController())->destroy($tr->id);
+    }
+
+    // Suppression des blocs
+    foreach ($projet->bloc as $bloc) {
+        (new BlocController())->destroy($bloc->id);
+    }
+
+    // Suppression des immeubles
+    foreach ($projet->immeuble as $imm) {
+        (new ImmeubleController())->destroy($imm->id);
+    }
+
+    // Suppression des biens
+    foreach ($projet->bien as $bi) {
+        (new BienController())->destroy($bi->id);
+    }
+
+    // Suppression des types de bien
+    foreach ($projet->typesBien as $type) {
+        $type->setConnection('temp')->delete();
+    }
+
+    // Suppression des typologies
+    foreach ($projet->typologies as $typologie) {
+        $typologie->setConnection('temp')->delete();
+    }
+
+    // Suppression des prospects
+    foreach ($projet->prospects as $prospect) {
+        $prospect->setConnection('temp')->delete();
+    }
+
+    // Suppression des affectations utilisateurs
+    $user_projets = UserProjet::on('temp')->where('projet_id', $id)->get();
+    foreach ($user_projets as $userProjet) {
+        $userProjet->delete();
+    }
+
+    // Suppression des partenaires
+    foreach ($projet->partenaires as $partenaire) {
+        $partenaire->setConnection('temp')->delete();
+    }
+
+    // Suppression des visites
+    foreach ($projet->visites as $visite) {
+        (new VisiteController())->destroy($visite->id);
+    }
+
+    // Suppression des réservations
+    foreach ($projet->reservations as $res) {
+        (new ReservationController())->destroy($res->id);
+    }
+
+    // Suppression des appels
+    foreach ($projet->appels as $appel) {
+        (new AppelController())->destroy($appel->id);
+    }
+
+    // Suppression des clients
+    foreach ($projet->clients as $client) {
+        (new ClientController())->destroy($client->id);
+    }
+
+    // Suppression des notifications
+    foreach ($projet->notifications as $notif) {
+        $notif->delete();
+    }
+
+    // Suppression des désistements
+    $desistements = Desistement::on('temp')->where(function ($query) use ($id) {
+        $query->where('bien_id_ancien', $id)->orWhere('bien_id_new', $id);
+    })->get();
+
+    foreach ($desistements as $des) {
+        $biens = Bien::on('temp')->where('desistement_id', $des->id)->get();
+        foreach ($biens as $bien) {
+            $bien->setConnection('temp')->desistement_id = null;
+            $bien->save();
+        }
+
+        $des->penalite_desistement?->delete();
+
+        foreach ($des->remboursement as $item) $item->delete();
+        foreach ($des->aquereurs_desisteurs as $item) $item->delete();
+        foreach ($des->aquereurs_non_desisteurs as $item) $item->delete();
+        foreach ($des->aquereurs_profits as $item) $item->delete();
+        foreach ($des->aquereurs_partiel as $item) $item->delete();
+        foreach ($des->nouvel_aquereurs_desistements as $item) $item->delete();
+        foreach ($des->Piece_jointes as $item) $item->delete();
+
+        $historiques = HistoriqueDesistement::on('temp')->where('desistement_id', $des->id)->get();
+        foreach ($historiques as $hist) $hist->delete();
+
+        $hist_biens = HistoriqueBien::on('temp')->where('desistement_id', $des->id)->get();
+        foreach ($hist_biens as $hist) $hist->delete();
+
+        $avances = Avance::on('temp')->where('desistement_id', $des->id)->get();
+        foreach ($avances as $av) {
+            $av->setConnection('temp')->desistement_id = null;
+            $av->save();
+        }
+
+        $preRes = PreReservation::on('temp')->where('desistement_id', $des->id)->get();
+        foreach ($preRes as $pr) $pr->delete();
+
+        $des->delete();
+    }
+
+    // Suppression des autres entités simples
+    foreach ($projet->fournisseurs as $item) $item->delete();
+    foreach ($projet->decomptes as $item) $item->delete();
+    foreach ($projet->factures as $item) $item->delete();
+    foreach ($projet->cps as $item) $item->delete();
+    foreach ($projet->credits as $item) $item->delete();
+    foreach ($projet->objectifs as $item) $item->delete();
+    foreach ($projet->reclamations as $item) $item->delete();
+    foreach ($projet->remise_cles as $item) $item->delete();
+    foreach ($projet->import as $item) $item->delete();
+    foreach ($projet->echeance_projet as $item) $item->delete();
+
+    // Suppression finale du projet
+    if ($projet->delete()) {
+        //broadcast(new NewProjectEvent($id));
+        return response()->json(['message' => 'Projet supprimé avec succès'], 200);
+    }
+
+    return response()->json(['message' => "Projet n'a pas été supprimé"], 404);
+}
+
+//il y a bcp des prb dans cette destroy
+    /* public function destroy($id)
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
@@ -646,7 +761,7 @@ class ProjetController extends Controller
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-    }
+    } */
 
     public function restoreProjet($projet_id)
     {

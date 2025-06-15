@@ -25,6 +25,10 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Api\V1\ReservationController;
+use App\Models\CreneauxOccupes;
+use Symfony\Component\HttpFoundation\StreamedResponse;
+
+use DB;
 
 class LivraisonController extends Controller
 {
@@ -45,7 +49,7 @@ class LivraisonController extends Controller
             $last_rdv = $data->take(1);
             $data_p = PaginationHelper::paginate_array(array_slice($data->toArray(), 1), $perPage, $page, $request->url());
             $reservation = Reservation::on('temp')->findorfail($reservation_id);
-            return response()->json(['last_rdv' => $last_rdv, 'historiques' => $data_p, 'etat_res' => $reservation->etat, 'contrat_vente' => $reservation->contrat_vente], 200);
+            return response()->json(['last_rdv' => $last_rdv,'rdv'=>$data, 'historiques' => $data_p, 'etat_res' => $reservation->etat, 'contrat_vente' => $reservation->contrat_vente], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -53,58 +57,130 @@ class LivraisonController extends Controller
         }
 
     }
+    // creneau occupes rdv
+        public function getCreneauxOccupes(Request $request)
+        {
 
-    public function store_rdv_reservation($id, Request $request)
-    {
-
-        if (RoleHelper::ACSup()) {
-
-            $user = Auth::user();
             DatabaseHelper::Config();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+
+            // Ensuite vérifiez le rôle
+            if (!RoleHelper::ACSup()) {
+                return response()->json(['error' => 'Unauthorized'], 403);
+            }
+            $start = Carbon::createFromTimestamp($request->input('start')/1000);
+            $end = Carbon::createFromTimestamp($request->input('end')/1000);
+
+            return CreneauxOccupes::on('temp')->whereBetween('debut', [$start, $end])
+                ->get()
+                ->map(function ($creneau) {
+                    return [
+                        'id' => $creneau->id,
+                        'debut' => $creneau->debut->format('Y-m-d H:i:s'),
+                        'fin' => $creneau->fin->format('Y-m-d H:i:s'),
+                        'disponible' => $creneau->disponible
+                    ];
+                });
+
+
+        }
+
+
+
+
+public function store_rdv_reservation($id, Request $request)
+{
+    $validated = $request->validate([
+        'rdv' => 'required|date',
+        'type' => 'required|string',
+    ]);
+
+    if (RoleHelper::ACSup()) {
+        $user = Auth::user();
+        DatabaseHelper::Config();
+        $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+
+        // Parse the appointment time
+        $rdvTime = Carbon::parse($validated['rdv']);
+        $heureRdv = $rdvTime->format('H:i');
+
+        // Check business hours
+        if ($heureRdv < '08:00' || $heureRdv > '18:00') {
+            return response()->json([
+                'message' => 'Hors des heures ouvrables',
+                'errors' => ['rdv' => ['Veuillez choisir un créneau entre 8h et 18h']]
+            ], 422);
+        }
+
+        // Format dates
+        $dateDebut = $rdvTime->format('Y-m-d H:i:s');
+        $dateFin = $rdvTime->copy()->addMinutes(30)->format('Y-m-d H:i:s'); // Add 30 minutes for end time
+
+        // Check slot availability
+        $creneau = CreneauxOccupes::on('temp')
+            ->where('debut', $dateDebut)
+            ->where('disponible', false)
+            ->first();
+
+        if ($creneau) {
+            return response()->json([
+                'message' => 'Ce créneau n\'est pas disponible',
+                'errors' => ['rdv' => ['Le créneau sélectionné n\'est pas disponible']]
+            ], 422);
+        }
+
+        DB::transaction(function () use ($id, $request, $dateDebut, $dateFin, $userAuth) {
+            // Create appointment
             $rdv = new Rendez_vous();
             $rdv->setConnection('temp');
             $rdv->reservation_id = $id;
-            $rdv->rdv = $request->rdv;
+            $rdv->rdv = $dateDebut;
             $rdv->type = $request->type;
-            $rdv->user_id = $userAuth->value('id');
-            if (RoleHelper::AdminSup()) {
-                $rdv->date_validation = Carbon::now();
-                $rdv->user_id_valider = $userAuth->value('id');
-                $rdv->statut = '1';
-            } else {
-                $rdv->statut = '0';
+            $rdv->user_id = $userAuth->id;
+            $rdv->statut = '1';
+            $rdv->save();
 
-            }
-            if ($rdv->save()) {
-                if (RoleHelper::Com()) {
-                    Config::set('broadcasting.default', 'pusher_5');
-                    //6 demande validation rdv avec notaire
-                    broadcast(new NotifMenuEvent(6));
-                    //store new notification a validé
+            // Mark time slot as occupied
+            $cren = new CreneauxOccupes();
+            $cren->setConnection('temp');
+            $cren->debut = $dateDebut;
+            $cren->fin = $dateFin; // Set the end time
+            $cren->user_id= $userAuth->id;
+            $cren->type=$request->type;
+            $cren->reservation_id=$id;
+            $cren->disponible = false;
+            $cren->save();
+        });
 
-                    $data_notif = [
-                        'lien' => '/reservations/show/' . $id,
-                        'date' => Carbon::now(),
-                        'type' => 22,
-                        'description' => 'Demande validation rdv',
-                        'reservation_id' => $id,
-                        'projet_id' => $rdv->reservation->projet_id,
-                        'role' => RoleEnum::ADMIN->value,
-                    ];
-                    Config::set('broadcasting.default', 'pusher_3');
-                    $notif_helper = new NotificationHelper();
-                    $notif_helper->storeNotification($request->merge($data_notif));
-                    broadcast(new NotificationEvent($id));
-                }
-            }
-            return response()->json(['message' => 'le rdv est ajouter.'], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
+        return response()->json(['message' => 'Rendez-vous enregistré avec succès'], 201);
     }
+}
+
+/*private function genererCreneauxJournee(Carbon $date)
+{
+    $heureDebut = 8; // 8h
+    $heureFin = 18; // 18h
+    $dureeCreneau = 30; // minutes
+
+    $debut = $date->copy()->addHours($heureDebut);
+    $fin = $date->copy()->addHours($heureFin);
+
+    $creneaux = [];
+
+    while ($debut->lt($fin)) {
+        $creneaux[] = [
+            'debut' => $debut->format('Y-m-d H:i:s'),
+            'fin' => $debut->copy()->addMinutes($dureeCreneau)->format('Y-m-d H:i:s'),
+            'disponible' => true,
+            'created_at' => now(),
+            'updated_at' => now()
+        ];
+
+        $debut->addMinutes($dureeCreneau);
+    }
+
+    // Insertion en masse pour meilleure performance
+    CreneauxOccupes::on('temp')->insert($creneaux);
+}*/
     public function update_rdv_reservation($id, Request $request)
     {
 
@@ -293,7 +369,6 @@ class LivraisonController extends Controller
     {
 
         if (RoleHelper::ACSup()) {
-
             $user = Auth::user();
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -582,7 +657,7 @@ class LivraisonController extends Controller
             }
             if ($cont->save()) {
 
-                return response()->json(['cont' => $cont->id], 200);
+                return response()->json(['contrat' => $cont], 200);
 
             } else {
                 return response()->json(['error' => 'Unauthorized'], 401);

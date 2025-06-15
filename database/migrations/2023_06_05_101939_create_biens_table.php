@@ -23,10 +23,10 @@ return new class extends Migration
             $table->boolean('conventionne')->default(false);
             $table->double('prix_unitaire', 12, 2);
             $table->double('prix', 20, 2);
-            $table->double('prix_parking', 12, 2)->nullable();;
-            $table->string('num_parking')->nullable();;
-            $table->string('num_box')->nullable();;
-            $table->double('prix_box', 12, 2)->nullable();;
+            $table->double('prix_parking', 12, 2)->nullable();
+            $table->string('num_parking')->nullable();
+            $table->string('num_box')->nullable();
+            $table->double('prix_box', 12, 2)->nullable();
             $table->double('avance_minimale', 12, 2);
             $table->double('superficie_architecte', 12, 2);
             $table->double('superficie_habitable', 12, 2)->nullable();
