@@ -50,7 +50,6 @@ class Facebook_InstagramController extends Controller
                     $description = $request->description;
                     $type_media = null;
                     $selectedNetworks = explode(',', $network);
-                    $selectedNetworks = explode(',', $network);
 
                    // En mode parcourir, l'utilisateur sélectionne un fichier qui est ensuite uploadé dans le stockage. Après l'upload, on récupère son URL ainsi que son type (photo ou vidéo).                    if ($mode == 'parcourir') {
                     if ($mode == 'parcourir') {
@@ -88,7 +87,6 @@ class Facebook_InstagramController extends Controller
                     }
                     /* 1 ==> WhatsApp, 2 ==> Instagram, 3 ==> Facebook */
                     if (in_array(3, $selectedNetworks)) {
-                    if (in_array(3, $selectedNetworks)) {
                         //your facebok page Id
                         $pageId = 537798629425112;
                         // $accessToken = 'YOUR_FACEBOOK_ACCESS_TOKEN';
@@ -120,7 +118,6 @@ class Facebook_InstagramController extends Controller
                      ]));   */
 
                     if (in_array(2, $selectedNetworks)) {
-                    if (in_array(2, $selectedNetworks)) {
                         //your instagram Id
                         $pageId = 17841454841928506;
                         //$accessToken = 'YOUR_INSTAGRAM_ACCESS_TOKEN';
@@ -150,7 +147,6 @@ class Facebook_InstagramController extends Controller
 
                     }
 
-                    if (in_array(1, $selectedNetworks)) {
                     if (in_array(1, $selectedNetworks)) {
                         $instanceId =env('INSTANCE_ID_ULTRA_MSG');  // Replace with your instance ID
                         $token = env('TOKEN_ULTRA_MSG');  // Replace with your token
@@ -183,10 +179,7 @@ class Facebook_InstagramController extends Controller
 
                     // Only return invalid if no valid networks were processed
                     if (!array_intersect($selectedNetworks, [1, 2, 3])) {
-                    // Only return invalid if no valid networks were processed
-                    if (!array_intersect($selectedNetworks, [1, 2, 3])) {
                         return response()->json(['success' => false, 'message' => 'Invalid social network selection'], 400);
-                    }
                     }
 
 
