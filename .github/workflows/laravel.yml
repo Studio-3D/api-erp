@@ -76,10 +76,10 @@ jobs:
             chmod +x start-prod.sh prod.sh
             
             # Stop any running containers
-            docker-compose -f docker-compose.prod.yml down
+            docker compose -f docker-compose.prod.yml down
             
             # Build and start the production environment
-            docker-compose -f docker-compose.prod.yml up -d --build
+            docker compose -f docker-compose.prod.yml up -d --build
             
             # Check if the containers are running
             docker ps
