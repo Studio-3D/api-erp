@@ -12,7 +12,7 @@ if ! [ -x "$(command -v docker)" ]; then
 fi
 
 # Check if Docker Compose is installed
-if ! [ -x "$(command -v docker-compose)" ]; then
+if ! [ -x "$(command -v docker compose)" ]; then
   echo 'Error: Docker Compose is not installed.' >&2
   exit 1
 fi
@@ -35,17 +35,17 @@ chmod +x prod.sh
 
 # Start the services
 echo "Starting Docker services for production..."
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml up -d
 
 echo "Services started successfully!"
 echo ""
 echo "Your Laravel API is now available at:"
 echo "  - HTTP: http://localhost:80"
-echo "  - HTTPS: https://ec2-16-16-56-93.eu-north-1.compute.amazonaws.com:443"
+echo "  - HTTPS: https://ec2-13-61-150-41.eu-north-1.compute.amazonaws.com:443"
 echo ""
 echo "Note: Since we're using self-signed certificates, you may need to accept"
 echo "      security warnings in your browser when accessing the HTTPS URL."
 echo ""
 echo "To stop the services, run:"
-echo "  docker-compose -f docker-compose.prod.yml down"
+echo "  docker compose -f docker-compose.prod.yml down"
