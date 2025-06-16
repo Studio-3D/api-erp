@@ -1,0 +1,1926 @@
+[33mcommit dcd3a0b7fdea065d792746fbce88d3f27cb9b0ad[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m
+Author: EC2 Default User <ec2-user@ip-172-31-18-179.eu-north-1.compute.internal>
+Date:   Mon Jun 16 01:25:14 2025 +0000
+
+    produciton issues fix
+
+[33mcommit 1506614f7a86b63def821bcbeffa6d4f1914b457[m
+Author: EC2 Default User <ec2-user@ip-172-31-18-179.eu-north-1.compute.internal>
+Date:   Mon Jun 16 01:20:07 2025 +0000
+
+    produciton issues fix
+
+[33mcommit 849fd5cd6a469a886c5961d83f7f51d18e176472[m
+Merge: 262743d 7dbd2c8
+Author: Ayoub <62242044+ayoubms8@users.noreply.github.com>
+Date:   Sun Jun 15 14:33:35 2025 +0100
+
+    Merge pull request #283 from ERPImmobilier/tiktok-integration-update
+    
+    update deployment
+
+[33mcommit 7dbd2c8267dd10f35aef9e922b40c0ff8375c63b[m
+Author: ayoubms8 <ayoub.lemsafi10@gmail.com>
+Date:   Sun Jun 15 15:32:56 2025 +0200
+
+    update deployment
+
+[33mcommit 262743dde4fa6e51eb087d4d21c0d53d66ed80d1[m
+Merge: 7329850 7448083
+Author: Ayoub <62242044+ayoubms8@users.noreply.github.com>
+Date:   Sun Jun 15 14:25:05 2025 +0100
+
+    Merge pull request #282 from ERPImmobilier/tiktok-integration-update
+    
+    fix: update docker-compose commands to use 'docker compose' syntax
+
+[33mcommit 744808370211744b0338781f35c89b77e9bed525[m
+Author: ayoubms8 <ayoub.lemsafi10@gmail.com>
+Date:   Sun Jun 15 15:24:21 2025 +0200
+
+    fix: update docker-compose commands to use 'docker compose' syntax
+
+[33mcommit 7329850cfd1f907d75175a30e9684d897af48192[m
+Merge: 4496724 4e65cd4
+Author: Ayoub <62242044+ayoubms8@users.noreply.github.com>
+Date:   Sun Jun 15 14:21:32 2025 +0100
+
+    Merge pull request #281 from ERPImmobilier/tiktok-integration-update
+    
+    tiktok integration update
+
+[33mcommit 4e65cd49b8fb5872a6624073df2f449f79373f28[m
+Author: ayoubms8 <ayoub.lemsafi10@gmail.com>
+Date:   Sun Jun 15 15:18:43 2025 +0200
+
+    tiktok integration update
+
+[33mcommit 4496724cdbbab1e78da74eadf1cd3eebe8ab72cd[m
+Author: ayoubms8 <ayoub.lemsafi10@gmail.com>
+Date:   Sun Jun 15 13:09:32 2025 +0200
+
+    insta fb fix
+
+[33mcommit 801cdc9e59b909d6c12cb7350cd8cbdc9f7c6de2[m
+Merge: 7542bb1 d14b557
+Author: ayoubms8 <ayoub.lemsafi10@gmail.com>
+Date:   Sun Jun 15 13:09:15 2025 +0200
+
+    Merge branch 'master' of github.com:ERPImmobilier/api_0.1
+
+[33mcommit 7542bb18371b253718a032cda1cbbd27d429fef3[m
+Author: ayoubms8 <ayoub.lemsafi10@gmail.com>
+Date:   Sun Jun 15 13:00:46 2025 +0200
+
+    fb insta fix
+
+[33mcommit d14b5570d8b0fa7711813342863135ba03d80897[m
+Merge: d4293ea 21d83f9
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Jun 13 21:13:29 2025 +0100
+
+    Merge pull request #279 from ERPImmobilier/modif_reservation_creneau_dates_occupes
+    
+    modif_reservation_creneau_dates_occupes
+
+[33mcommit d4293eaa339a3473c90cfa505aa35ac98a71e1d5[m
+Merge: 5833745 4b0d339
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Jun 13 21:13:13 2025 +0100
+
+    Merge pull request #278 from ERPImmobilier/importation_et_fix_stock_prb
+    
+    Importation et fix stock prb
+
+[33mcommit 21d83f90b50a9addede041537075e3029c939a80[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Fri Jun 13 18:56:58 2025 +0100
+
+    modif_reservation_creneau_dates_occupes
+
+[33mcommit 4b0d339bb0f0395309c70edfe088e35a89e3f8f9[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Wed Jun 11 14:14:50 2025 +0100
+
+    importation avec des validation et error echeck et fix prb stock
+
+[33mcommit 58337455c27ee665cce30ee76d09aa883b9492fd[m
+Author: ayoubms8 <ayoub.lemsafi10@gmail.com>
+Date:   Tue Jun 10 03:44:08 2025 +0200
+
+    test update
+
+[33mcommit eb97d8fab84b62b437c41d78fb888ac06a11f8fc[m
+Author: ayoubms8 <ayoub.lemsafi10@gmail.com>
+Date:   Tue Jun 10 03:29:12 2025 +0200
+
+    test update
+
+[33mcommit 365187bf3c7870a25e9c1d3207fef76249174446[m
+Author: ayoubms8 <ayoub.lemsafi10@gmail.com>
+Date:   Tue Jun 10 00:24:05 2025 +0200
+
+    Bien_Tva fix
+
+[33mcommit 5b6e6e1e48bc5e8c04471ddd64042f7ad56d5432[m
+Author: ayoubms8 <ayoub.lemsafi10@gmail.com>
+Date:   Mon Jun 9 23:08:30 2025 +0200
+
+    linkedin and tiktok api integrations
+
+[33mcommit 3300d45e64c04dd620f3ce28d89dc4b2d4e60ddd[m
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Wed Jun 4 16:00:30 2025 +0100
+
+    Update AppelController.php
+
+[33mcommit 05adda3c7163df53b8ea21d1498d35a8456b98a7[m
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Wed Jun 4 15:53:01 2025 +0100
+
+    Update AppelController.php
+
+[33mcommit f46ba432a18ffcffd6ca8d9945c4cbf677391b3e[m
+Merge: 1ed2824 ca281e9
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue May 27 19:14:19 2025 +0100
+
+    Résolution de conflit : on garde la version distante
+
+[33mcommit 1ed282456537852dd2ae1bf5391c7c211a88c5ee[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue May 27 18:53:43 2025 +0100
+
+    biens_import
+
+[33mcommit ca281e900c6272f2484c4649b6ef6964f4943193[m
+Merge: b58601e 627159e
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Tue May 27 02:07:09 2025 +0100
+
+    Merge pull request #277 from ERPImmobilier/modif_migration_histo_res
+    
+    migration histo reservation
+
+[33mcommit 627159e61743efcf7cdb54a251f50a2ee6cc788b[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Tue May 27 02:06:10 2025 +0100
+
+    migration histo reservation
+
+[33mcommit b58601e94d9954a2f778d321b6a3599f2f2765b4[m
+Merge: fcf21ef 8abc2d9
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Mon May 26 18:14:30 2025 +0100
+
+    Merge pull request #276 from ERPImmobilier/trigger_clients
+    
+    trigger
+
+[33mcommit 8abc2d9940540d34d4c6580d0f56745932815f0d[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Mon May 26 18:13:20 2025 +0100
+
+    trigger
+
+[33mcommit fcf21efba46d8f3ea397f958b0b00f5d8bd6799f[m
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Fri May 23 15:55:49 2025 +0100
+
+    Update 2023_08_31_181332_create_clients_table.php
+
+[33mcommit 1c3aa41b396093375376eafcaa5b130303ae2c76[m
+Merge: 9b11597 043b2e2
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Thu May 22 17:38:29 2025 +0100
+
+    Merge pull request #275 from ERPImmobilier/modif_reservation
+    
+     res
+
+[33mcommit 043b2e2dcb33c389852032d2d94ffcb00d457648[m
+Merge: a1458fe 9b11597
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Thu May 22 17:38:20 2025 +0100
+
+    Merge branch 'master' into modif_reservation
+
+[33mcommit a1458fe516652d6b1705167e2ca9a331c82acf05[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Thu May 22 17:34:29 2025 +0100
+
+     res
+
+[33mcommit 9b115973e4e23bc2fc498ba14a21884053439386[m
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Thu May 22 14:27:43 2025 +0100
+
+    Update 2023_06_05_101939_create_biens_table.php
+
+[33mcommit 2f0a7cbd0f1f634923b8bf297cae1eb8d548614d[m
+Author: ayoubms8 <ayoub.lemsafi10@gmail.com>
+Date:   Thu May 22 14:14:50 2025 +0200
+
+    composer update
+
+[33mcommit d78acd07143368afe41d96ccc5e536aa64b1906e[m
+Merge: 8762a43 efd314a
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Tue May 20 11:27:37 2025 +0100
+
+    Merge pull request #274 from ERPImmobilier/reclamationClient_remiseCle
+    
+    reclamation_client et fix prb societe de user connecter et remise cle…
+
+[33mcommit efd314a438b453831682cbf9dc9cca7d0576b7fc[m
+Merge: 0a16647 8762a43
+Author: nabilaIssioui <aissiouinabila@gmail.com>
+Date:   Tue May 20 11:02:31 2025 +0100
+
+    Merge branch 'master' into reclamationClient_remiseCle
+
+[33mcommit 0a16647e5b7b1f8ed83ff819993494615b6a80be[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue May 20 10:42:10 2025 +0100
+
+    reclamation_client et fix prb societe de user connecter et remise cle index
+
+[33mcommit 8762a436995065aa81752fd0d6dfffc920a4edfa[m
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Thu May 15 16:20:32 2025 +0100
+
+    Update StatutProspectEnum.php
+
+[33mcommit e8bad1097508c2a0af71dc4b161369950ffdbaae[m
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Thu May 15 15:42:10 2025 +0100
+
+    Update 2024_10_18_115739_create_reclamations_table.php
+
+[33mcommit 1df7425038215b1c50e4dd874c2a92cf28d2336a[m
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Thu May 15 15:09:50 2025 +0100
+
+    Update 2025_04_10_185607_create_statut_prospects_table.php
+
+[33mcommit dc30309e07829a72fdd5cff11878032da3bc3567[m
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Thu May 15 15:08:33 2025 +0100
+
+    Update 2025_04_10_185607_create_statut_prospects_table.php
+
+[33mcommit c79deb21201f9615bcb28150ae4d91ae8b12d25e[m
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Thu May 15 15:06:27 2025 +0100
+
+    Update 2023_06_05_101939_create_biens_table.php
+
+[33mcommit 2aa9df77326b88521a6391efb29024f6d55b97e7[m
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Thu May 15 15:05:12 2025 +0100
+
+    Update 2023_06_05_101939_create_biens_table.php
+
+[33mcommit fd6a9f5083092a382b76db2ce3d923dbf66d6a14[m
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Wed May 14 17:56:35 2025 +0100
+
+    Update ProspectController.php
+
+[33mcommit 08f2b1a0283c5b1091a17db3607d91f37a19e542[m
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Wed May 14 17:55:35 2025 +0100
+
+    Update api.php
+
+[33mcommit 62f597b4b74ab074e5dbde5b2f7a218dafa2ab08[m
+Merge: 38bb319 7c6ffe1
+Author: Ayoub <62242044+ayoubms8@users.noreply.github.com>
+Date:   Wed May 14 15:43:40 2025 +0100
+
+    Merge pull request #273 from ERPImmobilier/Relance_Rdv_Visite
+    
+    Fixed Relance_Rdv_visite case issue and nb_visite typo
+
+[33mcommit 7c6ffe158cafff13ae6b5525e77eb3500fcbad80[m
+Author: ayoubms8 <ayoub.lemsafi10@gmail.com>
+Date:   Wed May 14 15:28:48 2025 +0100
+
+    Fixed Relance_Rdv_visite case issue and nb_visite typo
+
+[33mcommit 38bb319616b633ffc978bc2e38e3d844d0b414db[m
+Merge: 1bccd70 7b4fe62
+Author: Ayoub <62242044+ayoubms8@users.noreply.github.com>
+Date:   Wed May 14 14:57:59 2025 +0100
+
+    Merge pull request #272 from ERPImmobilier/Bien_tva
+    
+    Fixed bien_tva and facture delete
+
+[33mcommit 7b4fe628efb44b68a04df16c2b56055d21f90ef9[m
+Merge: b4fcce0 1bccd70
+Author: Ayoub <62242044+ayoubms8@users.noreply.github.com>
+Date:   Wed May 14 14:54:47 2025 +0100
+
+    Merge branch 'master' into Bien_tva
+
+[33mcommit b4fcce00a27ed92c51025da2189006cff6098d68[m
+Author: ayoubms8 <ayoub.lemsafi10@gmail.com>
+Date:   Wed May 14 14:52:28 2025 +0100
+
+    Fixed bien_tva and facture delete
+
+[33mcommit 1bccd708bc2e15464b508c9143e010ff69d5091f[m
+Merge: 2118dcf 7e7c059
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Sat May 10 20:02:09 2025 +0100
+
+    Merge pull request #271 from ERPImmobilier/model_sav
+    
+    api traiter resoudre reclamation....
+
+[33mcommit 7e7c05907e3724f420c7ed83c355e970bb8f98cf[m
+Merge: 9d0ee20 2118dcf
+Author: nabilaIssioui <aissiouinabila@gmail.com>
+Date:   Fri May 9 13:16:08 2025 +0100
+
+    Merge branch 'master' into model_sav
+
+[33mcommit 9d0ee20486981b5ab5ef224ed192afc0c93b82fa[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Fri May 9 13:11:54 2025 +0100
+
+    api traiter resoudre reclamation....
+
+[33mcommit 2118dcf1c730750e833d1bd05e817a617ea7b7d4[m
+Merge: 71c92ee 4733cc6
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Mon May 5 17:01:34 2025 +0100
+
+    Merge pull request #270 from ERPImmobilier/modification_prospect_visite
+    
+    modification function getbien_projet_concat
+
+[33mcommit 4733cc6da01d7dd4324edc16afa788e4d952e3e1[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Mon May 5 14:35:11 2025 +0100
+
+    modification function getbien_projet_concat
+
+[33mcommit 71c92ee93ab1c8580b9bd0e551484742e4451533[m
+Merge: 624bf47 c26d00b
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu May 1 12:28:12 2025 +0100
+
+    Merge pull request #269 from ERPImmobilier/modification_prospect_visite
+    
+    crm_filters
+
+[33mcommit 624bf47f8b4aaeb17c1b521380530bece143db3e[m
+Merge: da64860 a747cbc
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu May 1 12:27:19 2025 +0100
+
+    Merge pull request #268 from ERPImmobilier/sav
+    
+    Sav
+
+[33mcommit c26d00b12aa360b3a74c41ae8ee11d254c22b6b5[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Wed Apr 30 17:29:26 2025 +0100
+
+    crm_filters
+
+[33mcommit da6486020b52db91c41210ce7e721c465d80b272[m
+Merge: a5e0f18 674b0d8
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Wed Apr 30 14:09:49 2025 +0100
+
+    Merge pull request #264 from ERPImmobilier/objectifForm
+    
+    Objectif add et update
+
+[33mcommit a747cbc416053ed1792267faf7a1a4f2f3f90eb3[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Wed Apr 30 00:56:47 2025 +0100
+
+    add civilite prestatire
+
+[33mcommit a5e0f181c9891b9eef32d14883073ff50797b8e6[m
+Merge: 8f42371 9616f70
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Tue Apr 29 17:10:13 2025 +0100
+
+    Merge pull request #267 from ERPImmobilier/modification_prospect_visite
+    
+     modification Controller Appel visite frein bien..
+
+[33mcommit 9616f70244ab92de52db974f5302aa4093626f44[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Tue Apr 29 15:58:12 2025 +0100
+
+     modification Controller Appel visite frein bien..
+
+[33mcommit 7fe186ef6fa338d0d7016200fdf72a7250a3acec[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Apr 29 15:06:15 2025 +0100
+
+    sav service prestataire reclamation
+
+[33mcommit 8f423714bb95e6060bd58f3805bc248d73f4268a[m
+Merge: d59c037 a5dfd0c
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Apr 25 10:00:08 2025 +0100
+
+    Merge pull request #266 from ERPImmobilier/CI/CD
+    
+    documentation aws + phpmyadmin container
+
+[33mcommit a5dfd0c7cbfb45d9229d3ddd9298bfe1009e3c6b[m
+Author: Ayoub <62242044+ayoubms8@users.noreply.github.com>
+Date:   Thu Apr 24 17:56:07 2025 +0100
+
+    Update docker-compose.prod.yml
+    
+    Co-authored-by: Copilot <175728472+Copilot@users.noreply.github.com>
+
+[33mcommit 561372cd8e32fa6fd50d556e899af911863d7149[m
+Author: ayoubms8 <ayoub.lemsafi10@gmail.com>
+Date:   Thu Apr 24 17:54:28 2025 +0100
+
+    documentation aws + phpmyadmin container
+
+[33mcommit d59c037ae3ec9e418a464e8f3e6d48a92fe5aeb1[m
+Merge: d19b2a5 c9bc830
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Tue Apr 22 11:01:37 2025 +0100
+
+    Merge pull request #265 from ERPImmobilier/CI/CD
+    
+    CI/CD
+
+[33mcommit c9bc8305be8029d88d4d8fc046c8dee06824dc02[m
+Author: ayoubms8 <ayoub.lemsafi10@gmail.com>
+Date:   Mon Apr 21 18:25:39 2025 +0100
+
+    CI/CD
+
+[33mcommit 674b0d8dd58bcb62bfad18b5e3272966a17a030e[m[33m ([m[1;31morigin/objectifForm[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Mon Apr 14 14:51:44 2025 +0100
+
+    Objectif add et update
+
+[33mcommit d19b2a5c9a36f947d4a6e52824baf4cf3b05c83b[m
+Merge: f8d063a b042d0b
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Mon Apr 14 13:34:48 2025 +0100
+
+    Merge pull request #263 from ERPImmobilier/modification_prospect_visite
+    
+     add traitement prospect et modif dans store update prospect plus del…
+
+[33mcommit b042d0b8c2aa5677e59a4f1cc80407730cbc1bbf[m[33m ([m[1;31morigin/modification_prospect_visite[m[33m)[m
+Merge: 81cf110 f8d063a
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Mon Apr 14 13:32:53 2025 +0100
+
+    Merge branch 'master' into modification_prospect_visite
+
+[33mcommit 81cf1104d40acbccd682d42d67fd112d1c319edd[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Mon Apr 14 13:30:25 2025 +0100
+
+     add traitement prospect et modif dans store update prospect plus delimiter
+
+[33mcommit f8d063a89465be9fa435f3b179402970d4695e47[m
+Merge: 518adb9 7c26d26
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Apr 4 12:07:00 2025 +0000
+
+    Merge pull request #262 from ERPImmobilier/reseaux_sociaux_webhook
+    
+    creat post page facebook/instagram et envoyer des message sur whatsap…
+
+[33mcommit 7c26d26dc77a6b14acf69de5258b083a38a1c449[m[33m ([m[1;31morigin/reseaux_sociaux_webhook[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Thu Apr 3 15:32:50 2025 +0000
+
+    creat post page facebook/instagram et envoyer des message sur whatsapp  et cron job clear webhooktable after 15j / cron job send reminder whstap to prospect /commercial pour relance rdv
+
+[33mcommit 518adb9a3f9a91c4e8ff8ccdf36f369fe2651ef9[m
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Thu Mar 20 23:27:38 2025 +0000
+
+    Update Projet.php
+
+[33mcommit c768fcfc30024151848f60d4d8e3255d104921f6[m
+Merge: bc11594 feb72a6
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Wed Mar 5 14:11:27 2025 +0000
+
+    Merge pull request #260 from ERPImmobilier/fix_prbs
+    
+    Fix prbs
+
+[33mcommit feb72a60961c548149fcf77298196202f8947954[m[33m ([m[1;31morigin/fix_prbs[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Sun Mar 2 14:58:27 2025 +0000
+
+    met des fichier selon code reservation
+
+[33mcommit 88741d7ebdddf9438a764f51ac48c8592dec42b4[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Sun Mar 2 14:58:15 2025 +0000
+
+    met des fichier selon code reservation
+
+[33mcommit ee495b21f8da029ad4767f465371013bb9d0629d[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Sun Mar 2 14:45:02 2025 +0000
+
+    met des fichier selon code reservation
+
+[33mcommit bc11594fb5b34c0a1bb0ee2c2aa9fa1c338767ed[m
+Merge: 4461517 f48c463
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Wed Feb 26 10:09:16 2025 +0000
+
+    Merge pull request #259 from ERPImmobilier/type_freins_autre
+    
+    add selection en module type freins  et remodification en visite
+
+[33mcommit f48c463bf0ce6eed2f3675e8e66f9bf362ef7136[m[33m ([m[1;31morigin/type_freins_autre[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Tue Feb 25 21:39:31 2025 +0000
+
+    add selection en module type freins  et remodification en visite
+
+[33mcommit 4461517533e290065a1438a5d2f1675fda19948a[m
+Merge: d484336 126757d
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Tue Feb 25 12:18:30 2025 +0000
+
+    Merge pull request #257 from ERPImmobilier/commissions_et_test_administration
+    
+    Module commissions et test api adminsitration
+
+[33mcommit 126757d9c6a9ff69777cd6091ed1fc58de896025[m[33m ([m[1;31morigin/commissions_et_test_administration[m[33m)[m
+Merge: 8a2e747 d484336
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Tue Feb 25 12:18:16 2025 +0000
+
+    Merge branch 'master' into commissions_et_test_administration
+
+[33mcommit d484336908a32208560806ee76358ed196b415c9[m
+Merge: 4f144e4 f2661ba
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Tue Feb 25 12:17:13 2025 +0000
+
+    Merge pull request #256 from ERPImmobilier/user_donner
+    
+    User donner
+
+[33mcommit 4f144e47c6b1ef39f336b7c933c8c6b7502ada05[m
+Merge: a039b69 77996b3
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Tue Feb 25 12:16:58 2025 +0000
+
+    Merge pull request #255 from ERPImmobilier/user_show
+    
+    show utilisateur avec les statistiques
+
+[33mcommit acc1f6cb99a43a2068dfb27651ff1c888ec9d9ec[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Feb 25 11:29:18 2025 +0000
+
+    met des fichier selon code reservation
+
+[33mcommit 8a2e74767d8515a2afe707208c0437d25f6edec4[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Mon Feb 24 11:25:24 2025 +0000
+
+    Module commissions et test api adminsitration
+
+[33mcommit f2661ba642efb05451a5ed231f11f6d078b14150[m[33m ([m[1;31morigin/user_donner[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Wed Feb 19 23:29:11 2025 +0100
+
+    les données d'un utilisateur
+
+[33mcommit 77996b34212ab97da8f64634cfc54875d593283e[m[33m ([m[1;31morigin/user_show[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Feb 18 12:58:55 2025 +0100
+
+    show utilisateur avec les statistiques
+
+[33mcommit a039b6980bcaaadfe7f1aae6e40ac03220580ad5[m
+Merge: ac921c4 7af3b0d
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Feb 13 13:22:58 2025 +0100
+
+    Merge pull request #254 from ERPImmobilier/v2_suite_suppression_cascade_stock
+    
+    suppression cascade backend/suppression fichiers front end
+
+[33mcommit 7af3b0db6db17cf4e244e8ee9f48050664abd035[m[33m ([m[1;31morigin/v2_suite_suppression_cascade_stock[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Thu Feb 13 13:07:48 2025 +0100
+
+    suppression cascade backend/suppression fichiers front end
+
+[33mcommit ac921c494c9b3b77021032d0c16c11cc3aef429c[m
+Merge: 57eb43c 08c1b67
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Tue Feb 11 14:44:35 2025 +0100
+
+    Merge pull request #253 from ERPImmobilier/superficie_sup_0
+    
+    Superficie sup 0
+
+[33mcommit 08c1b67119d577ebe85a1918c4bafa0ff4f3b196[m[33m ([m[1;31morigin/superficie_sup_0[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Feb 11 14:00:16 2025 +0100
+
+    source par societe
+
+[33mcommit f9aaf92b65ad78de124e3a30c80d2b38ed01bed0[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Feb 11 13:47:58 2025 +0100
+
+    fix prb superficie super à 0
+
+[33mcommit 708536c7dcaaba1b9dc6683d72a1654b5b168668[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Feb 11 13:41:12 2025 +0100
+
+    Réinitialisation du cache Git pour appliquer .gitignore
+
+[33mcommit 57eb43c2ff3e6df58d7ced9b1562004acceba434[m
+Merge: fee5410 a6339d3
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Mon Feb 10 11:19:16 2025 +0100
+
+    Merge pull request #252 from ERPImmobilier/v1_suppression_en_cascade_suppression_fichier_front_backend
+    
+    suppresion_en cascade et suppression des fichier backend front end
+
+[33mcommit a6339d356ce285527d89172a3a0865b18666ab31[m[33m ([m[1;31morigin/v1_suppression_en_cascade_suppression_fichier_front_backend[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Fri Feb 7 18:06:42 2025 +0100
+
+    suppresion_en cascade et suppression des fichier backend front end
+
+[33mcommit fee5410ad5bf988cf2671582e5081e2dc1b90db1[m
+Merge: aa0363f 4795835
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Wed Feb 5 16:12:23 2025 +0100
+
+    Merge pull request #249 from ERPImmobilier/echeance_projet_text_documentation
+    
+    correction echeance projet en etape projet (frontend) et correction s…
+
+[33mcommit 4795835e24af6ffbdd753fc3903aa6151194a82a[m[33m ([m[1;31morigin/echeance_projet_text_documentation[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Tue Feb 4 18:41:38 2025 +0100
+
+    correction echeance projet en etape projet (frontend) et correction store_updaste_user(projets)
+
+[33mcommit aa0363fa869cd29fae3c3c9b8a3e9e5233a89516[m
+Merge: 1fe5564 eecab27
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Tue Feb 4 13:05:54 2025 +0100
+
+    Merge pull request #248 from ERPImmobilier/echeance_projet_text_documentation
+    
+    module echeances Projet et documentation installation plu des modif(s…
+
+[33mcommit eecab275f91702e915e0bb8a83212173515f49d7[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Mon Feb 3 18:44:40 2025 +0100
+
+    module echeances Projet et documentation installation plu des modif(societe user)
+
+[33mcommit 1fe5564ec3cd9582aa174fca706ec9fad9449967[m
+Merge: 293aa8c 25b7ef4
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Jan 31 12:38:19 2025 +0100
+
+    Merge pull request #247 from ERPImmobilier/suite_import_bien_et_select_Menuitem_Actions
+    
+    suite_import_bien_et_select_Menuitem_Actions
+
+[33mcommit 25b7ef4a5d49d4b547919b154d076c88d9763d94[m[33m ([m[1;31morigin/suite_import_bien_et_select_Menuitem_Actions[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Thu Jan 30 16:42:00 2025 +0100
+
+    suite_import_bien_et_select_Menuitem_Actions
+
+[33mcommit 293aa8cb8acad4e2937abf51a8034b93f69dde0a[m
+Merge: 344364a ddf629e
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Jan 30 12:20:15 2025 +0100
+
+    Merge pull request #246 from ERPImmobilier/importer_bien_by_cronjob_comment_migrations_autre_modif
+    
+    importer_bien_by_cronjob add menu historique importation / add commen…
+
+[33mcommit ddf629e57fcdf3952911da440ae372f69018df83[m[33m ([m[1;31morigin/importer_bien_by_cronjob_comment_migrations_autre_modif[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Wed Jan 29 18:27:27 2025 +0100
+
+    importer_bien_by_cronjob add menu historique importation / add comment to migration (Enum) et autre modif
+
+[33mcommit 344364abde39c617144c94a45e637ed7167ab12f[m
+Merge: e55a0cd 8c85249
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Wed Jan 29 11:52:44 2025 +0100
+
+    Merge pull request #245 from ERPImmobilier/fix_prb_etat_bien_statistique
+    
+    Fix prb etat bien statistique
+
+[33mcommit e55a0cd1dd50aab43cf10a983bf2361f51812852[m
+Merge: 0e9b845 9f10d2f
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Wed Jan 29 11:51:18 2025 +0100
+
+    Merge pull request #244 from ERPImmobilier/fix_prb_societe1
+    
+    Fix prb societe1
+
+[33mcommit 8c852490f15af40e5ba00e2c01357f8130b5c914[m[33m ([m[1;31morigin/fix_prb_etat_bien_statistique[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Sun Jan 26 23:29:58 2025 +0100
+
+    statistique bien
+
+[33mcommit 9f10d2fa8fe676ed73da518dc3b98c94890634a0[m[33m ([m[1;31morigin/fix_prb_societe1[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Fri Jan 24 18:17:04 2025 +0100
+
+    projet_id client
+
+[33mcommit a71b6200a2552f8b069a9858c8ab2911ec00750c[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Fri Jan 24 13:58:17 2025 +0100
+
+    fix prb add societe
+
+[33mcommit 09938256cc95ddc2004f620f4b490806176521bb[m[33m ([m[1;31morigin/fix_prb_societe[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Wed Jan 22 23:28:53 2025 +0100
+
+    fix prb add societe
+
+[33mcommit 0e9b8459d5bfa5c911a7724f11b96d782bca2984[m
+Merge: 253f6ce 533a206
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Mon Jan 20 17:42:12 2025 +0100
+
+    Merge pull request #242 from ERPImmobilier/test_global
+    
+    test et modifications
+
+[33mcommit 533a206323bfc7109bebed7a92fab13894cefae1[m[33m ([m[1;31morigin/test_global[m[33m)[m
+Merge: bd4d35c 253f6ce
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Mon Jan 20 17:42:03 2025 +0100
+
+    Merge branch 'master' into test_global
+
+[33mcommit 253f6cedc09860f9cda046e08a882acb21c08031[m
+Merge: b54a866 a333fb8
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Mon Jan 20 17:40:57 2025 +0100
+
+    Merge pull request #241 from ERPImmobilier/statistique_bienByType
+    
+    statistique bien by type projet tranche bloc imm
+
+[33mcommit bd4d35c4a521fe414f0360ab4dfeec9bed6a612c[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Mon Jan 20 16:19:20 2025 +0100
+
+    test et modifications
+
+[33mcommit a333fb8e057dd3bb1a9d97de9cff0ad877076345[m[33m ([m[1;31morigin/statistique_bienByType[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Sat Jan 18 15:24:06 2025 +0100
+
+    modifier update societe select
+
+[33mcommit e473aa5ffdf13991f3c116fc7a4f69990e445299[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Sat Jan 18 00:00:11 2025 +0100
+
+    statistique bien by type projet tranche bloc imm
+
+[33mcommit b54a8666bad1600d84298b932eb2e0cab302eb48[m
+Merge: b38492e e13f6fe
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Mon Jan 13 11:47:37 2025 +0100
+
+    Merge pull request #240 from ERPImmobilier/suite_menu_pre_reservation
+    
+    suite menu_pre_reservation et remodifie table historique et pre_reser…
+
+[33mcommit e13f6fe27c291473a725c8ff50630a5f8ff7ef37[m[33m ([m[1;31morigin/suite_menu_pre_reservation[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Fri Jan 10 17:51:58 2025 +0100
+
+    suite menu_pre_reservation et remodifie table historique et pre_reservation
+
+[33mcommit b38492e485e2d19ab846c10b7e8f20c889268cb6[m
+Merge: 5846f2f f1f3cf7
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Jan 10 11:12:22 2025 +0100
+
+    Merge pull request #239 from ERPImmobilier/traitement_freins_biens_disponible
+    
+    traitement des freins on cas des biens disponible / test des visites/…
+
+[33mcommit f1f3cf7dab3f7cf468287be390104a3cc88f0b14[m[33m ([m[1;31morigin/traitement_freins_biens_disponible[m[33m)[m
+Merge: 50de07e 5846f2f
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Thu Jan 9 16:49:21 2025 +0100
+
+    Merge branch 'master' into traitement_freins_biens_disponible
+
+[33mcommit 50de07ee469cf30a8a6960d33a5d4ff0425c959b[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Thu Jan 9 16:46:45 2025 +0100
+
+    traitement des freins on cas des biens disponible / test des visites/ demi traiement menu pre reservation
+
+[33mcommit 5846f2ffd07ef59133cb5441916112d9c2f8d927[m
+Author: airout <a.airout@gmail.com>
+Date:   Thu Jan 9 12:02:06 2025 +0100
+
+    fix problem delete societe
+
+[33mcommit 378ab630db82a873484dd1d40bbbe3cc27954f2c[m
+Merge: 46bc87f 80b51d8
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Wed Jan 8 10:59:29 2025 +0100
+
+    Merge pull request #238 from ERPImmobilier/statistique_bien
+    
+    count bien selon etat type et projet
+
+[33mcommit 80b51d883ea80b5815c498efaf6a5b6da29e007c[m[33m ([m[1;31morigin/statistique_bien[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Jan 7 17:24:03 2025 +0100
+
+    count bien selon etat type et projet
+
+[33mcommit 46bc87ff9f5c330f395701b65d832b9d09ce4d9f[m
+Merge: b2df868 a53e764
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Jan 2 13:35:24 2025 +0100
+
+    Merge pull request #237 from ERPImmobilier/reset_passwowrd_forget_password_fix_api
+    
+    api reset_passwowrd_forget_password
+
+[33mcommit a53e76451bc82e2c4494a7a1965b167a2c24b605[m[33m ([m[1;31morigin/reset_passwowrd_forget_password_fix_api[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Thu Jan 2 12:23:07 2025 +0100
+
+    api reset_passwowrd_forget_password
+
+[33mcommit b2df868a705c089142bfaeb45df9c143a73cf2a9[m
+Merge: cd48daf 639d1cd
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Jan 2 11:57:44 2025 +0100
+
+    Merge pull request #236 from ERPImmobilier/import_prospect_routage_frontend_anuler_garder_frein
+    
+    import prospect routage frontend _garder annuler frein on cas de stor…
+
+[33mcommit 639d1cd4a291d111717f1d45a0f36c518745c2cc[m[33m ([m[1;31morigin/import_prospect_routage_frontend_anuler_garder_frein[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Tue Dec 31 22:36:36 2024 +0100
+
+    import prospect routage frontend _garder annuler frein on cas de store n visite
+
+[33mcommit cd48daf7c64925f312b61ec62670faef5f8e5947[m
+Merge: 6fe0428 56f72cf
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Mon Dec 30 13:05:46 2024 +0100
+
+    Merge pull request #235 from ERPImmobilier/login_prb
+    
+    Login prb
+
+[33mcommit 56f72cf41b813d4c018f9de02db0db3ee9b30083[m[33m ([m[1;31morigin/login_prb[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Thu Dec 26 14:28:08 2024 +0100
+
+    prb logn erro
+
+[33mcommit 3e963bdb99e1c64107d36cf09ccae67f85486fc4[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Thu Dec 26 14:25:41 2024 +0100
+
+    prb logn error
+
+[33mcommit 6fe0428288ad628c85ef77bd3e81eee8a669d6e6[m
+Merge: 5eec056 107c686
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Dec 26 12:32:40 2024 +0100
+
+    Merge pull request #234 from ERPImmobilier/optimisation_crm_relance_visite_rdv_visite_freins
+    
+    optimisation_crm_relance_visite_rdv_visite_freins
+
+[33mcommit 107c68609f502fb23cabc6f43292ecb7b7de8c70[m[33m ([m[1;31morigin/optimisation_crm_relance_visite_rdv_visite_freins[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Wed Dec 25 17:51:20 2024 +0100
+
+    optimisation_crm_relance_visite_rdv_visite_freins
+
+[33mcommit 5eec0561013c37ea7706dc99b120d544c1a9190b[m
+Merge: 24b0c29 29cc358
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Dec 20 15:20:40 2024 +0100
+
+    Merge pull request #231 from ERPImmobilier/test_ste_user_crons
+    
+    test module user + send email acces+ profile
+
+[33mcommit 29cc3589b6c6469a475dbfb38e1d5a8b8d17496b[m[33m ([m[1;31morigin/test_ste_user_crons[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Fri Dec 20 15:10:02 2024 +0100
+
+    test module user + send email acces+ profile
+
+[33mcommit 24b0c29a5b2f771e757cecfcb21b85034851d7b9[m
+Merge: 693220c 128b945
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Dec 20 11:09:13 2024 +0100
+
+    Merge pull request #230 from ERPImmobilier/envoyer_email_cc_clients_prospects
+    
+    Envoyer email cc clients prospects
+
+[33mcommit 128b9459a14c934566a7f4f53afc731e0bb4a5fd[m[33m ([m[1;31morigin/envoyer_email_cc_clients_prospects[m[33m)[m
+Merge: 49505dc 693220c
+Author: nabilaIssioui <85562865+nabilaIssioui@users.noreply.github.com>
+Date:   Thu Dec 19 16:12:49 2024 +0100
+
+    Merge branch 'master' into envoyer_email_cc_clients_prospects
+
+[33mcommit 49505dce673049d07331ca652f8f5e4d969a1d25[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Thu Dec 19 16:11:27 2024 +0100
+
+    envyer les emails de rlc rdv et echeance au cc et prospect et clients
+
+[33mcommit 8e042d6b7e4de11c6fc22011892a7a3a887b6c42[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Thu Dec 19 16:10:21 2024 +0100
+
+    envyer les emails de rlc rdv et echeance au cc et prospect et client
+
+[33mcommit daec817d363c3e87a4c367912599764c41663bf7[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Thu Dec 19 16:08:26 2024 +0100
+
+    envyer les emails de rlc rdv et echeance au cc et prospect et client
+
+[33mcommit 693220c53eb0acbae8ed12a3fc3acb75b24ac31b[m
+Merge: 483b8ab e97a1dd
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Dec 19 10:17:19 2024 +0100
+
+    Merge pull request #229 from ERPImmobilier/cron_job_relance_visite_by_email
+    
+    Cron job relance visite by email
+
+[33mcommit e97a1dd5b2cd1a298e50a5ba28c0e9799a732909[m[33m ([m[1;31morigin/cron_job_relance_visite_by_email[m[33m)[m
+Merge: 1d0ae8c 483b8ab
+Author: nabilaIssioui <85562865+nabilaIssioui@users.noreply.github.com>
+Date:   Wed Dec 18 09:16:22 2024 +0100
+
+    Merge branch 'master' into cron_job_relance_visite_by_email
+
+[33mcommit 1d0ae8c98f118c7a6d423f6f3ea045be480fc5c1[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Wed Dec 18 09:13:47 2024 +0100
+
+    relance rdv echeance email to cc avec fix prb logo ste
+
+[33mcommit c7c4674fc0f9990843c5f31bf031bfe766e8b26f[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Dec 17 18:05:52 2024 +0100
+
+    fix prb logo store
+
+[33mcommit 483b8ab3490062454adfbd8be423ecbcc4ea75be[m
+Merge: 32095c5 e4603a7
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Tue Dec 17 11:04:38 2024 +0100
+
+    Merge pull request #228 from ERPImmobilier/dashboard
+    
+    dashboard et filtre par date desistements
+
+[33mcommit e4603a7153f71661f363650b423d28ba0ef493e8[m[33m ([m[1;31morigin/dashboard[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Mon Dec 16 19:47:23 2024 +0100
+
+    dashboard et filtre par date desistements
+
+[33mcommit c99cacf466cc58e386fc736366469cd0d01c0d0e[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Mon Dec 16 00:01:45 2024 +0100
+
+    send mail ech et reg
+
+[33mcommit e5d065f48a8b6bf8cc9aadd4a4d6913a0b867e28[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Thu Dec 12 17:18:55 2024 +0100
+
+    cron job relance visite paremai
+
+[33mcommit 32095c59c5f22991bd79e5e2f49a78d30f0d7441[m
+Merge: ea70814 6d3df83
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Mon Dec 9 12:58:56 2024 +0100
+
+    Merge pull request #227 from ERPImmobilier/test_4_desistement_historique
+    
+    last test desistement
+
+[33mcommit 6d3df83f76a879e5bb510a622f5c5409bef9caa1[m[33m ([m[1;31morigin/test_4_desistement_historique[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Fri Dec 6 21:45:42 2024 +0100
+
+    last test desistement
+
+[33mcommit ea70814426d7b9323fd1647ebf8557be6c2b432e[m
+Merge: cd36970 eed3489
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Wed Dec 4 19:06:56 2024 +0100
+
+    Merge pull request #226 from ERPImmobilier/test_3_import_bien_optimisation_penalite_remboursement
+    
+    import bien par excel et optimisation menu penalite remboursement
+
+[33mcommit eed34896e88c2d7361bbbadd5862e95eca3f3e4f[m[33m ([m[1;31morigin/test_3_import_bien_optimisation_penalite_remboursement[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Wed Dec 4 18:23:03 2024 +0100
+
+    modif_crud_desistement
+
+[33mcommit bf0cef9f0e8f557e3ef687a272e8c7974acd84e5[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Wed Dec 4 14:22:56 2024 +0100
+
+    import bien par excel et optimisation menu penalite remboursement
+
+[33mcommit cd3697065fb1b2b7b2f5033a82190349a2cdc01b[m
+Merge: be6313c 6ce32c7
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Tue Dec 3 14:31:37 2024 +0100
+
+    Merge pull request #225 from ERPImmobilier/export
+    
+    exporter
+
+[33mcommit 6ce32c7f4e2245feecf61e7de6aea8ce509f2876[m[33m ([m[1;31morigin/export[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Dec 3 14:27:16 2024 +0100
+
+    exporter
+
+[33mcommit be6313c835ee961cf5831250ad19829900fe8f16[m
+Merge: e2d086f 22c9204
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Wed Nov 27 14:07:28 2024 +0100
+
+    Merge pull request #224 from ERPImmobilier/optimsation_menu_vente_validation_rejet_echeance
+    
+    optimisation menu vente (validation reservation avance /rejet /echean…
+
+[33mcommit 22c9204cf0c776dc6fdbba33df4b561d5ba87a41[m[33m ([m[1;31morigin/optimsation_menu_vente_validation_rejet_echeance[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Tue Nov 26 17:41:11 2024 +0100
+
+    optimisation menu vente (validation reservation avance /rejet /echeances)
+
+[33mcommit e2d086f2960fb2f17760e639768af2981aeb70b4[m
+Merge: 04671e7 9339938
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Mon Nov 25 09:00:06 2024 +0100
+
+    Merge pull request #223 from ERPImmobilier/idex_aquereur
+    
+    index aquerrue
+
+[33mcommit 04671e7eb531dba28e0b49800a21768af6be67f5[m
+Merge: 9819fbb 8c77755
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Mon Nov 25 08:59:45 2024 +0100
+
+    Merge pull request #222 from ERPImmobilier/test_reservation_modif_2
+    
+    optimiser menu transfert et historiques et rajouter etat valider_atte…
+
+[33mcommit 93399382ee3d90064e32fb403c091cd983a8f071[m[33m ([m[1;31morigin/idex_aquereur[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Sat Nov 23 15:43:13 2024 +0100
+
+    index aquerrue
+
+[33mcommit 8c777553fc80a6d453684d2cde33462042f4ffda[m[33m ([m[1;31morigin/test_reservation_modif_2[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Fri Nov 22 17:18:51 2024 +0100
+
+    optimiser menu transfert et historiques et rajouter etat valider_attent_enaissement dans les avances
+
+[33mcommit 9819fbbe8dced46a20c55d19babd51261cdff280[m
+Merge: f45f289 2cb0188
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Nov 21 12:36:19 2024 +0100
+
+    Merge pull request #221 from ERPImmobilier/test_reservation_
+    
+    test et modification module reservation
+
+[33mcommit 2cb01881992bca5927474ecf8754e16c3902b77b[m[33m ([m[1;31morigin/test_reservation_[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Tue Nov 19 20:58:47 2024 +0100
+
+    test et modification module reservation
+
+[33mcommit f45f28956afeed2854ad70889cf469e50c956e4a[m
+Merge: 37e4333 7eb62e5
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Nov 15 11:23:43 2024 +0100
+
+    Merge pull request #220 from ERPImmobilier/user_edit_prb
+    
+    User edit prb
+
+[33mcommit 37e433396c8fdfc25f86991f2c16c258d49aab3e[m
+Merge: b5b3bcd 6ca4c57
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Nov 15 11:23:24 2024 +0100
+
+    Merge pull request #219 from ERPImmobilier/reclamation_client_echeances_tranche
+    
+     create database client (espace_client) /module Reclamation client /m…
+
+[33mcommit 7eb62e531d559ba3d23ca8e250fd2c88d0369ba9[m[33m ([m[1;31morigin/user_edit_prb[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Fri Nov 15 00:19:19 2024 +0100
+
+    fix prb user index
+
+[33mcommit 36e5232361329bcf8f958b1e2e6c482b40be6971[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Thu Nov 14 23:43:19 2024 +0100
+
+    fix prb edit user
+
+[33mcommit 03d2a6acc6728aab9ccc9f751aa3cc637ca8d0aa[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Thu Nov 14 23:42:21 2024 +0100
+
+    fix prb edit user
+
+[33mcommit 6ca4c5750fbbb6b94d272e4a8998c365703022a1[m[33m ([m[1;31morigin/reclamation_client_echeances_tranche[m[33m)[m
+Merge: b38611d b5b3bcd
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Thu Nov 14 16:22:14 2024 +0100
+
+    Merge branch 'master' into reclamation_client_echeances_tranche
+
+[33mcommit b5b3bcd2a4d0d15e30c71a2ffc48e15edc53ead0[m
+Merge: de2c58e 72a8358
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Nov 14 15:58:09 2024 +0100
+
+    Merge pull request #218 from ERPImmobilier/Prospect_fix
+    
+    Prospect fix
+
+[33mcommit b38611da2099bc0f23dd5500dc8db4cbf5b87f5c[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Thu Nov 14 15:52:04 2024 +0100
+
+     create database client (espace_client) /module Reclamation client /modules Echéances Table
+
+[33mcommit de2c58eacd78b1323bef53e5d57168c198e2d311[m
+Merge: 19d9a0b 39c96bf
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Nov 14 15:50:59 2024 +0100
+
+    Merge pull request #217 from ERPImmobilier/filter_desist
+    
+    Filter desist
+
+[33mcommit 19d9a0bd3e6442266b17c611bd7a12bd46d8a4e7[m
+Merge: acf4abd 42b5d7a
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Nov 14 15:50:31 2024 +0100
+
+    Merge pull request #216 from ERPImmobilier/Reçu_pai
+    
+    fix prbs
+
+[33mcommit 72a8358e39df64bf527bea42cb743506131f44ef[m[33m ([m[1;31morigin/Prospect_fix[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Nov 12 15:27:27 2024 +0100
+
+    prospect prb
+
+[33mcommit 39c96bfc7973b1eee5f5866621a75d023e7e6caf[m[33m ([m[1;31morigin/filter_desist[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Nov 12 00:08:12 2024 +0100
+
+    ajouter des filter pour desistement
+
+[33mcommit 42b5d7a197fe0cc7df70534b6a0b9efb2a647a0e[m[33m ([m[1;31morigin/Reçu_pai[m[33m)[m
+Merge: acfc1c9 acf4abd
+Author: nabilaIssioui <85562865+nabilaIssioui@users.noreply.github.com>
+Date:   Tue Nov 5 23:11:17 2024 +0100
+
+    Merge branch 'master' into Reçu_pai
+
+[33mcommit acfc1c92d59343ef9e7388bebe32cf152b04503f[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Nov 5 23:08:17 2024 +0100
+
+    fix prbs
+
+[33mcommit acf4abdfc0e39d3b86d4d14c06025a89114b1da3[m
+Merge: e11b25d 82520ed
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Oct 25 13:51:24 2024 +0100
+
+    Merge pull request #215 from ERPImmobilier/sav_remise_cle
+    
+    commit_sav_remise_cle
+
+[33mcommit 82520ed3d6e0bf752c33d44014b8c3eae5a2fc3f[m[33m ([m[1;31morigin/sav_remise_cle[m[33m)[m
+Merge: 18a23c5 e11b25d
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Oct 25 13:51:15 2024 +0100
+
+    Merge branch 'master' into sav_remise_cle
+
+[33mcommit e11b25dcc64a47a7a42fa967dfcd4805e5e6e826[m
+Merge: b00b290 241e839
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Oct 25 13:49:34 2024 +0100
+
+    Merge pull request #214 from ERPImmobilier/optimisation_desistement
+    
+    indexbyprojet de desistement
+
+[33mcommit 18a23c540724df7622559169f0f71be6729be3f7[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Thu Oct 24 17:52:09 2024 +0100
+
+    commit_sav_remise_cle
+
+[33mcommit 241e83915e23b409399f2b4215fd1c43440c269b[m[33m ([m[1;31morigin/optimisation_desistement[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Wed Oct 23 22:01:17 2024 +0100
+
+    indexbyprojet de desistement
+
+[33mcommit b00b290bc7f25fe56c1ec7df496c9f9083b99057[m
+Merge: 4c0a92f e4351af
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Oct 17 11:39:49 2024 +0100
+
+    Merge pull request #212 from ERPImmobilier/optimisation_paiement
+    
+    optimiser paiement =met les api getavcbyrsv et gethistoavance comppat…
+
+[33mcommit 4c0a92f1df257ce3019bbfc773f6bc14b0324d95[m
+Merge: df9429b e8c4b8e
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Oct 17 11:39:26 2024 +0100
+
+    Merge pull request #213 from ERPImmobilier/fullcalendar_objectif
+    
+    fullclendar et objectif
+
+[33mcommit e8c4b8ed59de3de09491563fd0e7f44f49b4fa9e[m[33m ([m[1;31morigin/fullcalendar_objectif[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Wed Oct 16 17:41:03 2024 +0100
+
+    fullclendar et objectif
+
+[33mcommit e4351af89961a37037058b9b509dedb26a3a0a53[m[33m ([m[1;31morigin/optimisation_paiement[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Oct 15 02:08:52 2024 +0100
+
+    optimiser paiement =met les api getavcbyrsv et gethistoavance comppatible avec les index de frontends
+
+[33mcommit df9429b8b28c3b32ffbe51270d87dd7d9dca024a[m
+Merge: 4257e56 4cc6958
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Oct 4 12:52:49 2024 +0100
+
+    Merge pull request #211 from ERPImmobilier/statistiques
+    
+    statistiques
+
+[33mcommit 4257e560543297afc507e5eb0b5781d126fd3972[m
+Merge: 3ae788d 1d61344
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Oct 4 12:52:10 2024 +0100
+
+    Merge pull request #210 from ERPImmobilier/optimisation_reservation
+    
+    optimiser reservation avec le filter et fix appel traitement
+
+[33mcommit 4cc6958892a6eb1a15c770ab0e2906fb05a5cafe[m[33m ([m[1;31morigin/statistiques[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Thu Oct 3 16:10:20 2024 +0100
+
+    statistiques
+
+[33mcommit 1d61344aafddc326da8da411a7439931069d3275[m[33m ([m[1;31morigin/optimisation_reservation[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Wed Oct 2 16:20:59 2024 +0100
+
+    optimiser reservation avec le filter et fix appel traitement
+
+[33mcommit 3ae788d9de6b5bee2f2cb1d41b496d5fdea40fec[m
+Merge: cfa741b 0971fee
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Mon Sep 30 10:37:32 2024 +0100
+
+    Merge pull request #207 from ERPImmobilier/optimiser_form_visite
+    
+    optimisation visite at fixer les prb des forms visite
+
+[33mcommit cfa741be6327cfe60535e14c96f66b978a98435e[m
+Merge: 6d753b8 531f06b
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Mon Sep 30 10:37:08 2024 +0100
+
+    Merge pull request #209 from ERPImmobilier/etat_fournisseur_credit
+    
+    Fournisseurs et ses modules et credits
+
+[33mcommit 531f06bb1b7683a226e3014212803bddb64cb37c[m[33m ([m[1;31morigin/etat_fournisseur_credit[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Thu Sep 26 21:56:19 2024 +0100
+
+    Fournisseurs et ses modules et credits
+
+[33mcommit 0971feeeacc116c7725a4c920a033bebca2cbde6[m[33m ([m[1;31morigin/optimiser_form_visite[m[33m)[m
+Merge: ed7d72a bf4fec1
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Thu Sep 19 12:49:52 2024 +0100
+
+    Merge branch 'optimiser_form_visite' of https://github.com/ERPImmobilier/api_0.1 into optimiser_form_visite
+
+[33mcommit ed7d72abe1a17feea0d3d32731f354c1d8d4864c[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Thu Sep 19 12:48:51 2024 +0100
+
+    fix prb frein visite form
+
+[33mcommit bf4fec18aae227314ef51c61e82dcb3049bf98cb[m
+Merge: 71911f3 6d753b8
+Author: nabilaIssioui <85562865+nabilaIssioui@users.noreply.github.com>
+Date:   Thu Sep 19 11:58:06 2024 +0100
+
+    Merge branch 'master' into optimiser_form_visite
+
+[33mcommit 6d753b8d8b5ac4bf791524507c179ba2d7050155[m
+Merge: 6c42c4f 83a864e
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Sep 19 11:43:45 2024 +0100
+
+    Merge pull request #208 from ERPImmobilier/tva_tva_collecte_coefficient
+    
+    tva tva collecte coefficient tva mensuelle
+
+[33mcommit 83a864e30f422bcdd9891d2a86ccdd691e499507[m[33m ([m[1;31morigin/tva_tva_collecte_coefficient[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Wed Sep 18 18:23:28 2024 +0100
+
+    tva tva collecte coefficient tva mensuelle
+
+[33mcommit 71911f30b3d1d82f36d88eb97283a9d31fea41c6[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Fri Sep 13 22:08:02 2024 +0100
+
+    optimisation visite at fixer les prb des forms visite
+
+[33mcommit 6c42c4fc721a437f8fcd887d060c25b120695271[m
+Merge: 2d56b26 979260f
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Sep 5 13:47:53 2024 +0100
+
+    Merge pull request #206 from ERPImmobilier/relances_rdv_appels
+    
+    relances rdv appel in menu crm
+
+[33mcommit 2d56b26bb22b7d573bea820149c11ae02daec836[m
+Merge: e96b81e 4698e6c
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Sep 5 13:47:39 2024 +0100
+
+    Merge pull request #205 from ERPImmobilier/optimiser_client
+    
+    Optimiser client
+
+[33mcommit e96b81e0ec9a5257ff943b8df05609e038901618[m
+Merge: 92efb37 7f3d8d1
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Sep 5 13:47:28 2024 +0100
+
+    Merge pull request #204 from ERPImmobilier/optimiser_prospect
+    
+    optimisation prospect
+
+[33mcommit 979260fafe7ad4a02c227905fdf7a7710078b9d8[m[33m ([m[1;31morigin/relances_rdv_appels[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Wed Sep 4 21:55:43 2024 +0100
+
+    relances rdv appel in menu crm
+
+[33mcommit 4698e6cd11e64865270fd08842ca539a52918a2b[m[33m ([m[1;31morigin/optimiser_client[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Wed Sep 4 13:23:06 2024 +0100
+
+    optimisation client
+
+[33mcommit 7f3d8d100a01aa0387d8eb168743ae17ff850f72[m[33m ([m[1;31morigin/optimiser_prospect[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Sep 3 14:01:15 2024 +0100
+
+    optimisation prospect
+
+[33mcommit 92efb37dea38222fa3ab6a0de78eb97e97b00c67[m[33m ([m[1;31morigin/Encaissements[m[33m)[m
+Merge: d27ebd7 a99b77a
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Tue Sep 3 08:55:31 2024 +0100
+
+    Merge pull request #203 from ERPImmobilier/encaissements
+    
+    module encaissement show_client_prospect
+
+[33mcommit a99b77a2ec9f4fc686d7ff8e09393218c11f564e[m[33m ([m[1;31morigin/encaissements[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Mon Sep 2 18:16:36 2024 +0100
+
+    module encaissement show_client_prospect
+
+[33mcommit d27ebd7efaf8c5a6514ffbbf999ae033db546c21[m
+Merge: 224dec1 68b44ee
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri Aug 30 11:45:13 2024 +0100
+
+    Merge pull request #202 from ERPImmobilier/visites_appels
+    
+    optimisation dialogue et route search prospect by params
+
+[33mcommit 68b44ee50ac5ac5535cc3af77e56452e7a7e9367[m[33m ([m[1;31morigin/visites_appels[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Thu Aug 29 23:59:28 2024 +0100
+
+    optimisation dialogue et route search prospect by params
+
+[33mcommit 224dec189f49a70141b6df54274f2bc1d0b6b231[m
+Merge: 7e54598 40da7c9
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Aug 29 09:15:47 2024 +0100
+
+    Merge pull request #200 from ERPImmobilier/optimiser_visite_ADD
+    
+    Optimiser visite add
+
+[33mcommit 40da7c944792ac4a1a1ea5d02e099a3750b85d96[m[33m ([m[1;31morigin/optimiser_visite_ADD[m[33m)[m
+Merge: 2f528e6 7e54598
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Aug 29 09:15:41 2024 +0100
+
+    Merge branch 'master' into optimiser_visite_ADD
+
+[33mcommit 7e545985783502d59f4a1effb38c5eade1842433[m
+Merge: 6e1185d 650f2fe
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Aug 29 09:05:45 2024 +0100
+
+    Merge pull request #201 from ERPImmobilier/appels
+    
+    module appels
+
+[33mcommit 650f2fe2bc58fe1dfe10af6c22043c41ce37d266[m[33m ([m[1;31morigin/appels[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Fri Aug 23 17:17:57 2024 +0100
+
+    module appels
+
+[33mcommit 2f528e641203c41673406363af0858e7b2eb7abd[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Fri Aug 23 14:11:08 2024 +0100
+
+    optimisation de model visite2
+
+[33mcommit 7ced3bd0dd443669d800268388f6f457d2b5f63c[m[33m ([m[1;31morigin/optimiser_visite[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Fri Aug 23 14:09:43 2024 +0100
+
+    optimisation de model visite1
+
+[33mcommit f339ed949358b96bc509a078fb39e88f8cc02dbf[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Fri Aug 23 14:09:28 2024 +0100
+
+    optimisation de model visite
+
+[33mcommit 6e1185d511e2b3717920c7c0f3e98165718d8a55[m
+Merge: 6fb1e73 c8cba9c
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Aug 1 14:50:37 2024 +0100
+
+    Merge pull request #199 from ERPImmobilier/compromis_contrat_vente
+    
+    modif_compromis_contrat_vente
+
+[33mcommit c8cba9ccaf95bcc42f80710ee6ede0d910005140[m[33m ([m[1;31morigin/compromis_contrat_vente[m[33m)[m
+Merge: 7651be6 6fb1e73
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Aug 1 14:50:32 2024 +0100
+
+    Merge branch 'master' into compromis_contrat_vente
+
+[33mcommit 6fb1e734bab005d747b39937fd52504e5f6443c4[m
+Merge: 2416081 46d770a
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Aug 1 14:49:27 2024 +0100
+
+    Merge pull request #198 from ERPImmobilier/optimiser_visite
+    
+    Optimiser visite
+
+[33mcommit 7651be6637a8faaa8328200399ba5e56f0c03833[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Thu Aug 1 13:37:20 2024 +0100
+
+    modif_compromis_contrat_vente
+
+[33mcommit 46d770af0dcbf4d4990f4ef7af7f359d51c5736e[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Jul 30 11:32:30 2024 +0100
+
+    indexByProjet visite
+
+[33mcommit c9012e91b5e5f199c6241977dcb570086f909d80[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Mon Jul 29 18:54:54 2024 +0100
+
+    index visite avec filter
+
+[33mcommit 241608115cfa9eb43ea656a17e4ab33649785648[m
+Merge: f39db7c 6f3a44f
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Tue Jul 23 16:55:02 2024 +0100
+
+    Merge pull request #197 from ERPImmobilier/rdv_notaire_et_compromis_vente
+    
+     rdv notaire et compromis de vente
+
+[33mcommit 6f3a44fd075d234c6755f0a8cdd74fba666814af[m[33m ([m[1;31morigin/rdv_notaire_et_compromis_vente[m[33m)[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Tue Jul 23 16:45:45 2024 +0100
+
+     rdv notaire et compromis de vente
+
+[33mcommit f39db7cda7e1f8b3142af8cbbb58dd9f0a165db0[m
+Merge: 8d7262e 97b8331
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Jul 18 09:38:34 2024 +0100
+
+    Merge pull request #196 from ERPImmobilier/show_bien_societe
+    
+    show user et societe
+
+[33mcommit 97b83315dd1dcd49c465a3310ad434b179917c4c[m[33m ([m[1;31morigin/show_bien_societe[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Wed Jul 17 15:11:52 2024 +0100
+
+    show user et societe
+
+[33mcommit 8d7262e6cb2793b7ac840d0d04f01ec63c97398c[m
+Merge: aca2969 651359c
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Jul 11 17:08:26 2024 +0100
+
+    Merge pull request #195 from ERPImmobilier/supprimer_api_getdataByProjet
+    
+    Supprimer api getdata by projet
+
+[33mcommit 651359cbfed756cd8784c592db96860a8ea3e887[m[33m ([m[1;31morigin/supprimer_api_getdataByProjet[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Thu Jul 11 13:14:28 2024 +0100
+
+    reformuler api getindexByProjet
+
+[33mcommit 1cf28f0c22aaa0fbf2ca2730b731238f91a9b0a7[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Mon Jul 8 14:04:04 2024 +0100
+
+    fix prb UserProjet
+
+[33mcommit 5b318555b196f37369aa5288511b4c73defc2ec0[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Fri Jul 5 17:17:39 2024 +0100
+
+    enlever les nomination get_typeBiens........
+
+[33mcommit 1545b653d12d638eda43a750b777f750d7f4b7f6[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Fri Jul 5 16:26:06 2024 +0100
+
+    dans indexByProjet fetch si page et size exist ou non si oui paginer les données sinon retenir tous les données sans pagination
+
+[33mcommit 0c7031ab1fb6d17d3a14aa89e3102277566983ef[m[33m ([m[1;31morigin/supprimer_api_gitdataByProjet[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Fri Jul 5 13:52:58 2024 +0100
+
+    dans indexByProjet fetch si page et size exist ou non si oui paginer les données sinon retenir tous les données sans pagination
+
+[33mcommit aca2969b14c0b2b5579b60aeca80223e07d2e54f[m
+Merge: 3192ea6 cb0155e
+Author: MOUKHAFI Anass <96239764+AdeniuObesu@users.noreply.github.com>
+Date:   Fri Jul 5 12:01:51 2024 +0100
+
+    Merge pull request #192 from ERPImmobilier/api_indexByProjet
+    
+    Changement des fonctions index par indexByProjet
+
+[33mcommit cb0155efa695a6346ec5ed5cb44c1807b67e0154[m[33m ([m[1;31morigin/api_indexByProjet[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Fri Jul 5 11:20:09 2024 +0100
+
+    changement dex fonction index par indexByProjet
+
+[33mcommit 3192ea67c0409c7f508b7f86439a75d06cae224e[m
+Merge: 84db29a 7ba037d
+Author: MOUKHAFI Anass <96239764+AdeniuObesu@users.noreply.github.com>
+Date:   Fri Jul 5 10:24:27 2024 +0100
+
+    Merge pull request #191 from ERPImmobilier/ma/3-tiers
+
+[33mcommit 7ba037d32928f5c14b07cc8fc4a10d7c11a6156c[m
+Merge: e1b2f0c 84db29a
+Author: MOUKHAFI Anass <96239764+AdeniuObesu@users.noreply.github.com>
+Date:   Fri Jul 5 10:19:02 2024 +0100
+
+    Merge branch 'master' into ma/3-tiers
+
+[33mcommit e1b2f0cb9ee05a447ab786f8993a317c0a3c502c[m
+Author: MOUKHAFI Anass <moukhafi.anass@gmail.com>
+Date:   Tue Jul 2 14:23:37 2024 +0100
+
+    Bind implementations to their abstractions, Remove unnecessary imports
+
+[33mcommit 398d3f76f44c2d496dd895f8f543487d30152670[m
+Author: MOUKHAFI Anass <moukhafi.anass@gmail.com>
+Date:   Tue Jul 2 14:20:06 2024 +0100
+
+    refactor : SocieteController[store, show & index]
+
+[33mcommit 2bf0009d8efbef145beb1e3a0841385eb0750d1a[m
+Author: MOUKHAFI Anass <moukhafi.anass@gmail.com>
+Date:   Tue Jul 2 14:10:24 2024 +0100
+
+    Add centered utility pagination feature
+
+[33mcommit 3af016327724acf9ccfd204dcfe72936ecf93db7[m
+Author: MOUKHAFI Anass <moukhafi.anass@gmail.com>
+Date:   Tue Jul 2 14:09:24 2024 +0100
+
+    Add service contracts and implementations
+
+[33mcommit d764569f876553fc02ad6dab5ce69c65ace7b5bf[m
+Author: MOUKHAFI Anass <moukhafi.anass@gmail.com>
+Date:   Tue Jul 2 14:08:42 2024 +0100
+
+    Add repository contracts and implementations
+
+[33mcommit 644c1516e4e80f5c0ae4dea053e027211b1ff3f2[m
+Author: MOUKHAFI Anass <moukhafi.anass@gmail.com>
+Date:   Tue Jul 2 14:07:46 2024 +0100
+
+    Add utility features
+
+[33mcommit 84db29a0591b1cc318e8f5175c49d2dceee52a6c[m
+Merge: 5c8961c a393186
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Mon Jul 1 13:33:40 2024 +0100
+
+    Merge pull request #190 from ERPImmobilier/optimisation_composition_bien
+    
+    Optimisation composition bien
+
+[33mcommit 5c8961c969bc9eb502d06fe0d0006a6fa5c50f3b[m
+Merge: 5589d6e 1146b7b
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Mon Jul 1 13:33:29 2024 +0100
+
+    Merge pull request #189 from ERPImmobilier/optimiser_forms_bien
+    
+    bien et compositionBien
+
+[33mcommit a393186317651dfb6ffec21697eeca9c77e2943f[m[33m ([m[1;31morigin/optimisation_composition_bien[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Mon Jul 1 11:57:55 2024 +0100
+
+    optimiser composition de bien
+
+[33mcommit 1146b7bb5ef269321e784f755ebf6f265801ac8f[m[33m ([m[1;31morigin/optimiser_forms_bien[m[33m)[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Thu Jun 27 23:20:02 2024 +0100
+
+    bien et compositionBien
+
+[33mcommit 5589d6e49dcaa0b21d2fceaf9cac431119ad614c[m
+Merge: 71023fe 2b71841
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Thu Jun 13 14:53:20 2024 +0100
+
+    Merge pull request #188 from ERPImmobilier/optimiser_model_stock
+    
+    Optimiser model stock
+
+[33mcommit 2b71841e6c0a851a7630a739902b5460c4d4fa50[m[33m ([m[1;31morigin/optimiser_model_stock[m[33m)[m
+Merge: b98b287 71023fe
+Author: nabilaIssioui <85562865+nabilaIssioui@users.noreply.github.com>
+Date:   Wed Jun 12 13:04:38 2024 +0100
+
+    Merge branch 'master' into optimiser_model_stock
+
+[33mcommit b98b2879e0166bcf536607c12bd9245e12dd9128[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Wed Jun 12 11:35:47 2024 +0100
+
+    fix prb tranche index
+
+[33mcommit 71023fef8a4e8956de831204b89421ecfb1f36c4[m
+Merge: 9f5fb07 8b105da
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Tue Jun 11 14:05:19 2024 +0100
+
+    Merge pull request #187 from ERPImmobilier/actualite_jour
+    
+    Actualite jour
+
+[33mcommit 4f3d9077b6b5605a0da9966f602ad098328b155f[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Jun 11 11:55:51 2024 +0100
+
+    optimiser bien et ajouter des api pour le filter
+
+[33mcommit 8b105da2ffc5883f1972d983ad73a858c8606fc4[m[33m ([m[1;31morigin/actualite_jour[m[33m)[m
+Merge: 9eef62d 9f5fb07
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Mon Jun 10 18:02:31 2024 +0100
+
+    Merge branch 'master' into actualite_jour
+
+[33mcommit 9eef62de472da2f85408e56612a3b61dbd65f958[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Mon Jun 10 18:01:22 2024 +0100
+
+    suite actualite jour et menu remboursement dossier transfere
+
+[33mcommit 97212465b177da32ee5e3ea221fa4776f4c82146[m
+Author: MOUKHAFI Anass <moukhafi.anass@gmail.com>
+Date:   Fri Jun 7 17:04:39 2024 +0100
+
+    SAVE & GET societes refactored
+
+[33mcommit e6bdcfef15f15b67b98357af07b4b2da7ae53ea9[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Fri Jun 7 14:47:26 2024 +0100
+
+    actualite_jour
+
+[33mcommit 2a584a89017ce34dd515522de46d031a2f5d5a9a[m
+Author: MOUKHAFI Anass <moukhafi.anass@gmail.com>
+Date:   Fri Jun 7 11:42:28 2024 +0100
+
+    Fix Societe Seeder
+
+[33mcommit daee3a641c3d63efd57745d1d5015a3041abb264[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Thu Jun 6 16:29:58 2024 +0100
+
+    optimiser immeuble
+
+[33mcommit 07c9e3913aafbdb29f55392bb63cf9e1abf0f95c[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Tue Jun 4 13:40:37 2024 +0100
+
+    optimiser bloc
+
+[33mcommit 29386e0cdc0de6c08013d4adbec6cef3b1bc63d7[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Mon Jun 3 17:04:30 2024 +0100
+
+    optimiser tranche
+
+[33mcommit 9f5fb0769a8804b59016822674dbb56821d82234[m
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Mon Jun 3 12:28:41 2024 +0100
+
+    Update .env
+
+[33mcommit 83d9e0d4dc2bc0d5f828b0df5416ed7b1908837a[m
+Merge: 63c8cb8 5de5d21
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri May 31 14:04:54 2024 +0100
+
+    Merge pull request #185 from ERPImmobilier/test_visite
+    
+    test_visite
+
+[33mcommit 5de5d21dfc47e442b3f2de1c0648647b1cfe8858[m[33m ([m[1;31morigin/test_visite[m[33m)[m
+Merge: 74a428f 63c8cb8
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri May 31 11:32:24 2024 +0100
+
+    Merge branch 'master' into test_visite
+
+[33mcommit 63c8cb894d741237d291dbc0ca53e71f0a28bea4[m
+Merge: 9a1589b 174e78d
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Fri May 31 11:30:30 2024 +0100
+
+    Merge pull request #186 from ERPImmobilier/optimser_projet
+    
+    optimiser model projet
+
+[33mcommit 174e78dbad96ed8ce9f095374698800f141249d4[m[33m ([m[1;31morigin/optimser_projet[m[33m)[m
+Merge: 00541ae 9a1589b
+Author: nabilaIssioui <85562865+nabilaIssioui@users.noreply.github.com>
+Date:   Thu May 30 23:49:40 2024 +0100
+
+    Merge branch 'master' into optimser_projet
+
+[33mcommit 00541aefd3cde8cf611948b141e6fc3461b7d281[m
+Author: unknown <aissiouinabila@gmail.com>
+Date:   Thu May 30 23:46:06 2024 +0100
+
+    optimiser model projet
+
+[33mcommit 74a428fd93001f9a87ccb2632ef5ba504a76b64e[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Thu May 30 17:34:16 2024 +0100
+
+    test_visite
+
+[33mcommit 9a1589bc91cfaa45337a9925c4bf0c331c7fe341[m
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Thu May 30 12:23:35 2024 +0100
+
+    Update VisiteController.php
+
+[33mcommit 82f718e2ae6ed91a5f58476c8f891f2d8381b5c7[m
+Merge: fda90a5 27fe419
+Author: airout <64493512+airout@users.noreply.github.com>
+Date:   Wed May 29 18:07:27 2024 +0100
+
+    Merge pull request #184 from ERPImmobilier/notifications_menu_crm_vente_pusher
+    
+    notifications_menu_crm_vente_puher
+
+[33mcommit 27fe4199a76b1a9645b3b4799a470a52636786f9[m[33m ([m[1;31morigin/notifications_menu_crm_vente_pusher[m[33m)[m
+Merge: 556bf90 fda90a5
+Author: FADWA-GHRISSI <47297132+FADWA-GHRISSI@users.noreply.github.com>
+Date:   Wed May 29 17:58:39 2024 +0100
+
+    Merge branch 'master' into notifications_menu_crm_vente_pusher
+
+[33mcommit 556bf90ebc75568a7a830932dd72bdb94998c303[m
+Author: FADWA-GHRISSI <fadwa.ghrissi02@gmail.com>
+Date:   Wed May 29 17:55:48 2024 +0100
+
+    notifications_menu_crm_vente_puher
+
+[33mcommit fda90a5a9a9432489f2b4f1f43f52065c74ad55a[m
+Author: Mohamed CHAABA <88441166+flavio-back-end@users.noreply.github.com>
+Date:   Tue May 28 13:12:24 2024 +0100
+
+    Update 2024_04_19_145322_create_statut_avances_penalites_table.php
+
+[33mcommit 53b8b2c8ebb20daa6e51960c51104cff6d97d440[m
+Author: Mohamed CHAABA <88441166+flavio-back-end@users.noreply.github.com>
+Date:   Tue May 28 11:44:11 2024 +0100
+
+    Update 2024_02_26_142149_create_desistements_table.php

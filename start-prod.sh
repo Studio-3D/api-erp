@@ -12,7 +12,7 @@ if ! [ -x "$(command -v docker)" ]; then
 fi
 
 # Check if Docker Compose is installed
-if ! [ -x "$(command -v docker-compose)" ]; then
+if ! [ -x "$(command -v docker compose)" ]; then
   echo 'Error: Docker Compose is not installed.' >&2
   exit 1
 fi
@@ -35,8 +35,8 @@ chmod +x prod.sh
 
 # Start the services
 echo "Starting Docker services for production..."
-docker-compose -f docker-compose.prod.yml down
-docker-compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml up -d
 
 echo "Services started successfully!"
 echo ""
