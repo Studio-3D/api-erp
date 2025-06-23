@@ -13,6 +13,8 @@ class Prospect extends Model
     /**
      * table associer a le model
      */
+    protected $fillable = ['client_id'];
+
     protected $table='prospects';
     protected $dates=['deleted_at'];
     protected $with=['source','partenaire'];

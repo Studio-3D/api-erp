@@ -21,7 +21,7 @@ class StoreClientRequest extends FormRequest
     public function rules(): array
     {
         return [
-            "type_client"          => "required|string",
+            "type_client"          => "required",
             "prenom"               => "required|string",
             "telephone_num1"       => "required|min:10|max:14",
             "telephone_num2"       => "nullable|min:10|max:14",
