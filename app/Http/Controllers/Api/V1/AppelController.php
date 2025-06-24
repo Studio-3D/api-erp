@@ -305,6 +305,15 @@ class AppelController extends Controller
                     $validatedData['projet_id']=$request->projet_id;
                     $prospectController = new ProspectController();
                     $prospect = $prospectController->store(new StoreProspectRequest($validatedData));
+                    if ($request->client_id && $prospect) {
+                    $client = Client::on('temp')->find($request->client_id);
+                    if ($client) {
+                        $client->prospect_id = $prospect->id;
+                        $client->save();
+                    }
+                    $prospect->client_id = $request->client_id;
+                    $prospect->save();
+                }
                 }
                 else{
 

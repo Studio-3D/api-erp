@@ -23,6 +23,11 @@ class Client extends Model
        return $this->hasMany(Reservation::class);
     }
 
+    public function reservations()
+    {
+        return $this->belongsToMany(Reservation::class, 'aquereurs', 'client_id', 'reservation_id');
+    }
+
     public function aquereur()
     {
        return $this->hasMany(Aquereur::class);
