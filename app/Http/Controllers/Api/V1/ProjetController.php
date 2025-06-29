@@ -141,7 +141,6 @@ class ProjetController extends Controller
                 $query->whereRaw('1                                                                                                                                                                                                                                                                                                         = 0');
             }
         }
-
         // sinon : Admin sans user_id -> voit tout (pas de restriction)
 
         // Pagination
