@@ -42,7 +42,7 @@ class UpdateTypeBienRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'type.unique' => 'Ce type de bien est deja exist dans ce projet',
+            'type.unique' => 'Ce type de bien existe déjà dans ce projet',
         ];
     }
 }
