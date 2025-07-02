@@ -24,13 +24,35 @@ class UpdateTypeProjetRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
     public function rules(): array
-    {   $societe_id = Auth::guard('api')->user()->societe_id;
-        $societe=Societe::findOrfail( $societe_id);
-        $DatabaseName='Erp_'.$societe->raison_sociale_concatene.'_'.$societe_id;
-        DatabaseHelper::Config();
-        return [
-            'type' => ['required', Rule::unique('temp.'.$DatabaseName.'.type_projets','type')->whereNull('deleted_at')->ignore($this->type_projet)],
+{
+    $societe_id = Auth::guard('api')->user()->societe_id;
+    $societe = Societe::findOrFail($societe_id);
+    $DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
 
+    DatabaseHelper::Config();
+
+    $typeProjetIdToIgnore = $this->route('typeProjet');  // C’est l’ID, pas un objet
+
+    return [
+        'type' => [
+            'required',
+            Rule::unique('temp.' . $DatabaseName . '.type_projets', 'type')
+                ->whereNull('deleted_at')
+                ->ignore($typeProjetIdToIgnore),
+        ],
+    ];
+}
+
+    /**
+     * Get the validation error messages.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'type.required' => 'Le champ type est obligatoire.',
+            'type.unique' => 'Ce type de projet existe déjà.',
         ];
     }
 }

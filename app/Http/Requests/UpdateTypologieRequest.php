@@ -24,21 +24,30 @@ class UpdateTypologieRequest extends FormRequest
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
      */
     public function rules(): array
-    {
-        $societe_id = Auth::guard('api')->user()->societe_id;
-        $societe = Societe::findOrfail($societe_id);
-        $DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
-        DatabaseHelper::Config();
-        return [
-            'typologie' => ['required', Rule::unique('temp.' . $DatabaseName . '.typologies', 'typologie')->whereNull('deleted_at')
-                    ->where(function ($query) {
-                        $query->where('typologie', $this->typologie)
-                            ->where('projet_id', $this->projet_id);}),
-            ],
-            'projet_id' => 'integer',
+{
+    $societe_id = Auth::guard('api')->user()->societe_id;
+    $societe = Societe::findOrFail($societe_id);
+    $DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
+    DatabaseHelper::Config();
 
-        ];
-    }
+    // Récupérer l'ID directement (pas d'objet)
+    $id = $this->route('typologie');
+
+    return [
+        'typologie' => [
+            'required',
+            Rule::unique('temp.' . $DatabaseName . '.typologies', 'typologie')
+                ->whereNull('deleted_at')
+                ->where('projet_id', $this->projet_id)
+                ->ignore($id),  // Ici on passe directement l'ID
+        ],
+        'projet_id' => 'integer',
+    ];
+}
+
+
+
+
     public function messages(): array
     {
         return [
