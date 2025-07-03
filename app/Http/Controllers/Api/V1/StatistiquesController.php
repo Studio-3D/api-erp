@@ -55,6 +55,8 @@ class StatistiquesController extends Controller
                 // Add whereBetween only if dates are valid
                 if ($dt !== null && $a_dt !== null) {
                     $query->whereBetween('created_at', [$dt, $a_dt]);
+                }else{
+                     $query->whereYear('created_at', Carbon::now()->year)->whereMonth('created_at', Carbon::now()->month);
                 }
                 $nb_visites = $query->count();
 
@@ -62,6 +64,8 @@ class StatistiquesController extends Controller
                 $query = Client::on('temp');
                 if ($dt !== null && $a_dt !== null) {
                     $query->whereBetween('created_at', [$dt, $a_dt]);
+                }else{
+                     $query->whereYear('created_at', Carbon::now()->year)->whereMonth('created_at', Carbon::now()->month);
                 }
                 $nb_clients = $query->count();
                 // Prospects (même approche)
@@ -79,6 +83,8 @@ class StatistiquesController extends Controller
                     ->where('biens.projet_id', $request->projet_id);
                 if ($dt !== null && $a_dt !== null) {
                     $query->whereBetween('reservations.date_reservation', [$dt, $a_dt]);
+                }else{
+                     $query->whereYear('reservations.date_reservation', Carbon::now()->year)->whereMonth('reservations.date_reservation', Carbon::now()->month);
                 }
                 $nb_biens_vendu = $query->count();
                  // Penalites (même approche)
@@ -87,6 +93,8 @@ class StatistiquesController extends Controller
                     ->where('desistements.projet_id', $request->projet_id);
                 if ($dt !== null && $a_dt !== null) {
                     $query->whereBetween('penalites_desistements.created_at', [$dt, $a_dt]);
+                }else{
+                     $query->whereYear('penalites_desistements.created_at', Carbon::now()->year)->whereMonth('penalites_desistements.created_at', Carbon::now()->month);
                 }
                 $sum_penalites = $query->sum('penalites_desistements.montant');
 
@@ -100,6 +108,9 @@ class StatistiquesController extends Controller
                 if ($dt !== null && $a_dt !== null) {
                     $query->whereBetween('encaissements.created_at', [$dt, $a_dt]);
                 }
+                else{
+                     $query->whereYear('encaissements.created_at', Carbon::now()->year)->whereMonth('encaissements.created_at', Carbon::now()->month);
+                }
                 $sum_encaissements = $query->sum('encaissements.montant');
 
                  // Biens vendus par type et date
@@ -112,6 +123,8 @@ class StatistiquesController extends Controller
                     ->where('biens.projet_id', $request->projet_id);
                 if ($dt !== null && $a_dt !== null) {
                     $query->whereBetween('reservations.date_reservation', [$dt, $a_dt]);
+                }else{
+                     $query->whereYear('reservations.date_reservation', Carbon::now()->year)->whereMonth('reservations.date_reservation', Carbon::now()->month);
                 }
                 $nb_biens_vendu_by_type_date = $query->groupBy(DB::raw("reservations.date_reservation, biens.type_id"))->get();
                  $array_biens_type_et_date_reservation=[];
@@ -131,6 +144,8 @@ class StatistiquesController extends Controller
                     ->where('projet_id', $request->projet_id);
                 if ($dt !== null && $a_dt !== null) {
                     $query->whereBetween('created_at', [$dt, $a_dt]);
+                }else{
+                     $query->whereYear('created_at', Carbon::now()->year)->whereMonth('created_at', Carbon::now()->month);
                 }
                 $nb_desistement_par_type = $query->groupBy(DB::raw("day, type"))->get();
 
@@ -143,12 +158,14 @@ class StatistiquesController extends Controller
                 }
                     // Remboursements
                 $query = Remboursement::on('temp')
-                    ->select(DB::raw("DATE(remboursements.created_at) as day, count(remboursements.id) as count"))
+                    ->select(DB::raw("DATE(remboursements.created_at) as day, sum(remboursements.montant_a_rembourser) as montant_a_rembourser"))
                     ->join('desistements', 'desistements.id', 'remboursements.desistement_id')
                     ->where('remboursements.deleted_at', null)
                     ->where('desistements.projet_id', $request->projet_id);
                 if ($dt !== null && $a_dt !== null) {
                     $query->whereBetween('remboursements.created_at', [$dt, $a_dt]);
+                }else{
+                     $query->whereYear('remboursements.created_at', Carbon::now()->year)->whereMonth('remboursements.created_at', Carbon::now()->month);
                 }
                 $remboursements = $query->groupBy(DB::raw("day"))->get();
 
@@ -156,7 +173,7 @@ class StatistiquesController extends Controller
                 foreach ($remboursements as $data) {
                     $array_remboursements[] = [
                         date($data['day']),
-                        (int) $data['count']
+                        (int) $data['montant_a_rembourser']
                     ];
                 }
                 // Somme des remboursements
@@ -166,6 +183,9 @@ class StatistiquesController extends Controller
                     ->where('desistements.projet_id', $request->projet_id);
                 if ($dt !== null && $a_dt !== null) {
                     $query->whereBetween('remboursements.created_at', [$dt, $a_dt]);
+                }
+                else{
+                     $query->whereYear('remboursements.created_at', Carbon::now()->year)->whereMonth('remboursements.created_at', Carbon::now()->month);
                 }
                 $sum_remb = $query->sum('remboursements.montant_a_rembourser');
 
@@ -178,6 +198,8 @@ class StatistiquesController extends Controller
                     ->where('reservations.projet_id', $request->projet_id);
                 if ($dt !== null && $a_dt !== null) {
                     $query->whereBetween('encaissements.date_reglement', [$dt, $a_dt]);
+                }else{
+                     $query->whereYear('encaissements.date_reglement', Carbon::now()->year)->whereMonth('encaissements.date_reglement', Carbon::now()->month);
                 }
                 $encaissements = $query->groupBy(DB::raw("day"))->get();
 
@@ -275,20 +297,30 @@ class StatistiquesController extends Controller
             if ($dt !== null && $a_dt !== null) {
                 $query->whereBetween('traitements_appels.created_at', [$dt, $a_dt]);
             }
+            else{
+                     $query->whereYear('traitements_appels.created_at', Carbon::now()->year)->whereMonth('traitements_appels.created_at', Carbon::now()->month);
+                }
+
             $nb_appels = $query->count();
-           $prospectsBySource = Source::on('temp')
-            ->leftJoin('prospects', 'sources.id', '=', 'prospects.source')
-            ->select('sources.source as source_name', DB::raw('COUNT(prospects.id) as prospects_count'))
-            ->groupBy('sources.id', 'sources.source')
-            ->get()
-            ->map(function ($source) {
+
+            $query = Source::on('temp')
+                ->leftJoin('prospects', 'sources.id', '=', 'prospects.source')
+                ->select('sources.source as source_name', DB::raw('COUNT(prospects.id) as prospects_count'))
+                ->where('prospects.projet_id', $request->projet_id)
+                 ->groupBy('sources.id', 'sources.source') ;
+            if ($dt !== null && $a_dt !== null) {
+                $query->whereBetween('prospects.created_at', [$dt, $a_dt]);
+            }
+            else{
+                     $query->whereYear('prospects.created_at', Carbon::now()->year)->whereMonth('prospects.created_at', Carbon::now()->month);
+                }
+            $prospectsBySource = $query->get()->map(function ($source) {
                 return [
                     $source->source_name,
                     (int) $source->prospects_count
                 ];
             })
-            ->toArray();
-
+            ->toArray();;
         // For your chart data
         $chartData_sources = $prospectsBySource;
 

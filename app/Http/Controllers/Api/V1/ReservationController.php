@@ -579,7 +579,7 @@ class ReservationController extends Controller
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $reservation = Reservation::on('temp')->with('desistements_ancien','rdv','avances','last_statut','contrat_vente')->findOrFail($id);
+            $reservation = Reservation::on('temp')->with('desistements_ancien','rdv','avances','last_statut','contrat_vente','piece_jointe_desiste','piece_jointe')->findOrFail($id);
 
             //get nom propriete _dite_bien concat
             $propriete = null;

@@ -38,7 +38,7 @@ class AquereurController extends Controller
         return response()->json(['error' => 'Unauthorized'],401);
     }
 
-    public function getAquereurByReservation(Request $request, $reservation_id)
+   /* public function getAquereurByReservation(Request $request, $reservation_id)
 {
     if (RoleHelper::ACSup()) {
         DatabaseHelper::Config();
@@ -63,26 +63,26 @@ class AquereurController extends Controller
                 $q->where('nom', 'like', '%' . $request->input('nom') . '%');
             });
         }
-        
+
         if ($request->filled('cin')) {
             $query->whereHas('client', function ($q) use ($request) {
                 $q->where('cin', 'like', '%' . $request->input('cin') . '%');
             });
         }
-        
+
         if ($request->filled('prenom')) {
             $query->whereHas('client', function ($q) use ($request) {
                 $q->where('prenom', 'like', '%' . $request->input('prenom') . '%');
             });
         }
-        
+
         if ($request->filled('telephone')) {
             $query->whereHas('client', function ($q) use ($request) {
                 $q->where('telephone_num1', 'like', '%' . $request->input('telephone') . '%')
                   ->orWhere('telephone_num2', 'like', '%' . $request->input('telephone') . '%');
             });
         }
-        
+
         if ($request->filled('pourcentage')) {
             $query->where('pourcentage', 'like', '%' . $request->input('pourcentage') . '%');
         }
@@ -106,7 +106,7 @@ class AquereurController extends Controller
     } else {
         return response()->json(['error' => 'Unauthorized'], 401);
     }
-}
+}*/
 
 
 
