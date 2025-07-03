@@ -214,7 +214,7 @@ Route::middleware('auth:api')->group(function () {
 
         //l'API Aquerreur
         Route::resource('aquereurs', V1AquereurController::class);
-        Route::get('getAquereurByReservation/{reservation_id}', [V1AquereurController::class, 'getAquereurByReservation'])->name('getAquereurByReservation');
+      //  Route::get('getAquereurByReservation/{reservation_id}', [V1AquereurController::class, 'getAquereurByReservation'])->name('getAquereurByReservation');
 
         //l'API Avance
         Route::resource('avances', V1AvanceController::class);

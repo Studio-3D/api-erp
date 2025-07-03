@@ -223,13 +223,13 @@ class ProjetController extends Controller
                 if (is_array($dataArray_users)) {
                     foreach ($dataArray_users as $valeur) {
                         $userId = is_array($valeur) ? ($valeur['id'] ?? null) : $valeur;
-                        
+
                         if ($userId == 'tous') {
                             $all = 1;
                             break;
                         }
                     }
-                    
+
                     if ($all == 1) {
                         DatabaseHelper::Config();
                         $users = User::on('temp')->get(['id']);
@@ -240,7 +240,7 @@ class ProjetController extends Controller
                     } else {
                         foreach ($dataArray_users as $valeur) {
                             $userId = is_array($valeur) ? ($valeur['id'] ?? null) : $valeur;
-                            
+
                             if ($userId) {
                                 UserProjetHelper::createUserProjet($projet->id, $userId);
                             }
@@ -326,7 +326,7 @@ class ProjetController extends Controller
                             UserProjetHelper::createUserProjet($projet->id, $userId);
                         }
                     }}}
-    
+
 
 
 

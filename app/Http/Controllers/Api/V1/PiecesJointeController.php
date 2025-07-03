@@ -155,6 +155,18 @@ class PiecesJointeController extends Controller
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
+    public function soft_destroy_pj_by_penalite_id($penalite_id)
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $pj = PiecesJointe::on('temp')->where('penalite_id', $penalite_id)->get();
+            foreach ($pj as $p) {
+                $p->delete();
+            }
+            return response()->json(['message' => 'Piéce Jointe supprimés avec succès'], 200);
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
     public function getFileUsingReservationId($reservation_id)
     {
         if (RoleHelper::ACSup()) {
