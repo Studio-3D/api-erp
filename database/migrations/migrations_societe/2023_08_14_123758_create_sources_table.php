@@ -61,7 +61,7 @@ return new class extends Migration
         ');
 
         Artisan::call('db:seed', [
-            '--class' => SourceSeeder::class
+            '--class' => SourceSeeder::class,
         ]);
     }
 
