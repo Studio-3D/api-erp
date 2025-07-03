@@ -1,9 +1,8 @@
 <?php
-
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Controllers\Controller;
 use App\Enum\TypeClient;
+use App\Http\Controllers\Controller;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\PaginationHelper;
 use App\Http\Helpers\RoleHelper;
@@ -39,7 +38,7 @@ class ClientController extends Controller
                 if ($request->filled('telephone')) {
                     $q->where(function ($subQuery) use ($request) {
                         $subQuery->where('telephone_num1', 'like', '%' . $request->input('telephone') . '%')
-                                 ->orWhere('telephone_num2', 'like', '%' . $request->input('telephone') . '%');
+                            ->orWhere('telephone_num2', 'like', '%' . $request->input('telephone') . '%');
                     });
                 }
             });
@@ -56,7 +55,6 @@ class ClientController extends Controller
                 $query->where('type_client', $request->input('type_client'));
             } */
 
-
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
 
                 $clients = $query->orderBy('created_at', 'desc')
@@ -65,8 +63,8 @@ class ClientController extends Controller
                 // Extraire les propriétés du paginateur
                 $pagination = [
                     'currentPage' => $clients->currentPage(),
-                    'totalItems' => $clients->total(),
-                    'totalPages' => $clients->lastPage(),
+                    'totalItems'  => $clients->total(),
+                    'totalPages'  => $clients->lastPage(),
                 ];
 
                 // Extraire les éléments d'utilisateur du paginateur
@@ -74,16 +72,15 @@ class ClientController extends Controller
 
                 // Retourner la réponse simplifiée
                 return response()->json([
-                    'clients' => $clients,
+                    'clients'    => $clients,
                     'pagination' => $pagination,
                 ], 200);
             } else {
                 if (RoleHelper::Superadmin() && Auth::guard('api')->user()->societe_id == 1) {
                     $clients = Client::all();
-                }
-                else if (RoleHelper::AC()) {
+                } else if (RoleHelper::AC()) {
                     $clients = $query->orderBy('nom', 'asc')
-                    ->get();
+                        ->get();
                 }
 
                 return response()->json(['clients' => $clients], 200);
@@ -103,12 +100,12 @@ class ClientController extends Controller
             DatabaseHelper::Config();
 
             // Démarrer la requête directement sur le modèle
-            $query = client::on('temp')->with('aquereur','prospect','aquereur_desistement','reclamation')->where('projet_id', $projet_id);
+            $query = client::on('temp')->with('aquereur', 'prospect', 'aquereur_desistement', 'reclamation')->where('projet_id', $projet_id);
             $query->where(function ($q) use ($request) {
                 if ($request->filled('telephone')) {
                     $q->where(function ($subQuery) use ($request) {
                         $subQuery->where('telephone_num1', 'like', '%' . $request->input('telephone') . '%')
-                                 ->orWhere('telephone_num2', 'like', '%' . $request->input('telephone') . '%');
+                            ->orWhere('telephone_num2', 'like', '%' . $request->input('telephone') . '%');
                     });
                 }
             });
@@ -125,7 +122,6 @@ class ClientController extends Controller
                 $query->where('type_client', $request->input('type_client'));
             } */
 
-
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
 
                 $clients = $query->orderBy('created_at', 'desc')
@@ -134,8 +130,8 @@ class ClientController extends Controller
                 // Extraire les propriétés du paginateur
                 $pagination = [
                     'currentPage' => $clients->currentPage(),
-                    'totalItems' => $clients->total(),
-                    'totalPages' => $clients->lastPage(),
+                    'totalItems'  => $clients->total(),
+                    'totalPages'  => $clients->lastPage(),
                 ];
 
                 // Extraire les éléments d'utilisateur du paginateur
@@ -143,16 +139,15 @@ class ClientController extends Controller
 
                 // Retourner la réponse simplifiée
                 return response()->json([
-                    'data' => $clients,
+                    'data'       => $clients,
                     'pagination' => $pagination,
                 ], 200);
             } else {
                 if (RoleHelper::Superadmin() && Auth::guard('api')->user()->societe_id == 1) {
                     $clients = Client::all();
-                }
-                else if (RoleHelper::AC()) {
+                } else if (RoleHelper::AC()) {
                     $clients = $query->orderBy('nom', 'asc')
-                    ->get();
+                        ->get();
                 }
 
                 return response()->json(['clients' => $clients], 200);
@@ -162,8 +157,6 @@ class ClientController extends Controller
 
         return response()->json(['error' => 'Unauthorized'], 401);
     }
-
-
 
     /**
      * Show the form for creating a new resource.
@@ -186,42 +179,42 @@ class ClientController extends Controller
             if ($request->type_client == TypeClient::Société->value) {
                 $client->partenaire_id = $request->partenaire_id;
             }
-            $client->nom = $request->nom;
-            $client->projet_id = $request->projet_id;
-            $client->prenom = $request->prenom;
-            $client->telephone_num1 = $request->telephone_num1;
-            $client->telephone_num2 = $request->telephone_num2;
-            $client->notifie = $request->notifie;
-            $client->email = $request->email;
-            $client->civilite = $request->civilite;
-            $client->adresse = $request->adresse;
-            $client->ville = $request->ville;
-            $client->pays = $request->pays;
-            $client->profession = $request->profession;
-            $client->cin = $request->cin;
-            $client->age = $request->age;
-            $client->lieu_naissance = $request->lieu_naissance;
-            $client->nationalite = $request->nationalite;
-            $client->date_naissance = $request->date_naissance;
-            $client->nom_responsable = $request->nom_responsable;
-            $client->relation_familliale = $request->relation_familliale;
+            $client->nom                  = $request->nom;
+            $client->projet_id            = $request->projet_id;
+            $client->prenom               = $request->prenom;
+            $client->telephone_num1       = $request->telephone_num1;
+            $client->telephone_num2       = $request->telephone_num2;
+            $client->notifie              = $request->notifie;
+            $client->email                = $request->email;
+            $client->civilite             = $request->civilite;
+            $client->adresse              = $request->adresse;
+            $client->ville                = $request->ville;
+            $client->pays                 = $request->pays;
+            $client->profession           = $request->profession;
+            $client->cin                  = $request->cin;
+            $client->age                  = $request->age;
+            $client->lieu_naissance       = $request->lieu_naissance;
+            $client->nationalite          = $request->nationalite;
+            $client->date_naissance       = $request->date_naissance;
+            $client->nom_responsable      = $request->nom_responsable;
+            $client->relation_familliale  = $request->relation_familliale;
             $client->situation_familliale = $request->situation_familliale;
-            $client->date_mariage = $request->date_mariage;
-            $client->nom_mari = $request->nom_mari;
-            $client->lieu_mariage = $request->lieu_mariage;
-            $client->nom_pere = $request->nom_pere;
-            $client->nom_mere = $request->nom_mere;
-            $client->prospect_id = $request->prospect_id;
-            $client->code_client = $request->cin.'_'.$request->nom.'_'.$request->prenom;
-            $client->password = '01020304';
+            $client->date_mariage         = $request->date_mariage;
+            $client->nom_mari             = $request->nom_mari;
+            $client->lieu_mariage         = $request->lieu_mariage;
+            $client->nom_pere             = $request->nom_pere;
+            $client->nom_mere             = $request->nom_mere;
+            $client->prospect_id          = $request->prospect_id;
+            $client->code_client          = $request->cin . '_' . $request->nom . '_' . $request->prenom;
+            $client->password             = '01020304';
             if ($client->save()) {
-                if($client->prospect_id!=null){
-                  $prospect = Prospect::on('temp')->findorfail($client->prospect_id);
-                  $prospect->client_id=$client->id;
-                  $prospect->save();
+                if ($client->prospect_id != null) {
+                    $prospect            = Prospect::on('temp')->findorfail($client->prospect_id);
+                    $prospect->client_id = $client->id;
+                    $prospect->save();
                 }
                 //store info to database client
-                $db_client = DB::connection('mysql_client')->table('users')->insert(['code_client' => $request->cin.'_'.$request->nom, 'name'=>$request->nom,'prenom'=>$request->prenom,'email'=>$request->email,'password'=>Hash::make($client->password),'gender'=>$request->civilite,'client_id'=>$client->id]);
+                $db_client = DB::connection('mysql_client')->table('users')->insert(['code_client' => $request->cin . '_' . $request->nom, 'name' => $request->nom, 'prenom' => $request->prenom, 'email' => $request->email, 'password' => Hash::make($client->password), 'gender' => $request->civilite, 'client_id' => $client->id]);
                 return $client;
             }
         }
@@ -235,12 +228,52 @@ class ClientController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $client = Client::on('temp')->findOrFail($id);
-            return response()->json(['client' => $client], 200);
 
+            $client = Client::on('temp')->findOrFail($id);
+            $reservations = $client->reservations()->with([
+                'bien', 'user', 'projet', 'aquereurs.client'
+            ])->get();
+
+            $visites = Visite::on('temp')
+                ->where('etat', 1)
+                ->where('prospect_id', $client->prospect_id)
+                ->latest('created_at')
+                ->get();
+
+            $groupedVisites = $visites->groupBy('origin_id')->map(function ($visite) {
+                $firstVisite = $visite->first();
+                return [
+                    'id'                  => $firstVisite->id,
+                    'origin_id'           => $firstVisite->origin_id,
+                    'nom_cc'              => $firstVisite->user ? $firstVisite->user->name : null,
+                    'prenom_cc'           => $firstVisite->user ? $firstVisite->user->prenom : null,
+                    'date'                => $firstVisite->created_at,
+                    'cin'                 => $firstVisite->prospect ? $firstVisite->prospect->cin : null,
+                    'nom'                 => $firstVisite->prospect ? $firstVisite->prospect->nom : null,
+                    'prenom'              => $firstVisite->prospect ? $firstVisite->prospect->prenom : null,
+                    'telephone'           => $firstVisite->prospect ? $firstVisite->prospect->telephone : null,
+                    'telephone2'          => $firstVisite->prospect ? $firstVisite->prospect->telephone_num2 : null,
+                    'prospect_id'         => $firstVisite->prospect ? $firstVisite->prospect->id : null,
+                    'interet'             => $firstVisite->interet,
+                    'statut'              => $firstVisite->statut,
+                    'propriete_dite_bien' => $firstVisite->bien ? $firstVisite->bien->propriete_dite_bien : '',
+                    'etat_bien'           => $firstVisite->bien ? $firstVisite->bien->etat : '',
+                    'bien_id'             => $firstVisite->bien_id ?? '',
+                    'visit_count'         => $visite->count(),
+                    'reservation'         => $firstVisite->reservation ?? null,
+                ];
+            });
+
+            return response()->json([
+                'client'       => $client,
+                'reservations' => $reservations,
+                'visites'      => $groupedVisites->values(),
+            ], 200);
         }
+
         return response()->json(['error' => 'Unauthorized'], 401);
     }
+
 
     /**
      * Show the form for editing the specified resource.
@@ -275,9 +308,9 @@ class ClientController extends Controller
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $client = Client::on('temp')->with('prospect','aquereur_desistement','reclamation','aquereur')->findOrFail($id);
+            $client = Client::on('temp')->with('prospect', 'aquereur_desistement', 'reclamation', 'aquereur')->findOrFail($id);
 
-           /*
+            /*
             if($client->prospect!=null){
                 $client->prospect->delete();
             }
@@ -297,10 +330,10 @@ class ClientController extends Controller
                 }
             }*/
 
-            if (count($client->aquereur) > 0||count($client->reclamation) > 0||count($client->aquereur_desistement) > 0) {
+            if (count($client->aquereur) > 0 || count($client->reclamation) > 0 || count($client->aquereur_desistement) > 0) {
                 return response()->json(['error' => 'Il est impossible de supprimer ce client car il possède plusieurs dossiers liés à des réservations, des désistements et des réclamations.'], 422);
             } else {
-                if($client->prospect!=null){
+                if ($client->prospect != null) {
                     $client->prospect->delete();
                 }
                 if ($client->delete()) {
@@ -318,7 +351,7 @@ class ClientController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
-            $page = $request->input('page', 1);
+            $page    = $request->input('page', 1);
             $clients = Client::on('temp')->join('aquereurs', 'aquereurs.client_id', '=', 'clients.id')
                 ->join('reservations', 'reservations.id', '=', 'aquereurs.reservation_id')
                 ->whereNull('reservations.deleted_at')
@@ -367,7 +400,8 @@ class ClientController extends Controller
                 ->where(function ($query) use ($phone) {
                     $query->where('telephone_num1', $phone)
                         ->orwhere('telephone_num2', $phone)
-                    ;})
+                    ;
+                })
                 ->get()->first();
 
             if ($client != null) {
@@ -377,7 +411,8 @@ class ClientController extends Controller
                         ->where(function ($query) use ($phone) {
                             $query->where('telephone', $phone)
                                 ->orwhere('telephone_num2', $phone)
-                            ;})
+                            ;
+                        })
                         ->get()->first();
                 } else {
                     //client est un prospect
@@ -388,7 +423,8 @@ class ClientController extends Controller
                     ->where(function ($query) use ($phone) {
                         $query->where('telephone', $phone)
                             ->orwhere('telephone_num2', $phone)
-                        ;})
+                        ;
+                    })
                     ->get()->first();
             }
         }
@@ -428,7 +464,7 @@ class ClientController extends Controller
             DatabaseHelper::Config();
 
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
+            $page    = $request->input('page', 1);
             $avances = Avance::on('temp')->select('reservation_id', DB::raw('SUM(avances.montant) as sum_avances'))
                 ->groupby('reservation_id');
             $reservations = Reservation::on('temp')->join('aquereurs', 'aquereurs.reservation_id', '=', 'reservations.id')
@@ -449,9 +485,9 @@ class ClientController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $client = Client::on('temp')->findOrFail($client_id);
+            $client  = Client::on('temp')->findOrFail($client_id);
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage'));
-            $page = $request->input('page', 1);
+            $page    = $request->input('page', 1);
             $visites = Visite::on('temp')->latest('created_at')->where('etat', 1)
                 ->select('visites.*')
                 ->where('prospect_id', $client->prospect_id)
@@ -459,25 +495,26 @@ class ClientController extends Controller
 
             $visites = $visites->map(function ($visite) {
                 return [
-                    'id' => $visite->first()->id,
-                    'origin_id' => $visite->first()->origin_id,
-                    'nom_cc' => $visite->first()->user->name,
-                    'prenom_cc' => $visite->first()->user->prenom,
-                    'date' => $visite->first()->created_at,
-                    'prospect_id' => $visite->first()->prospect->id,
-                    'cin' => $visite->first()->prospect->cin,
-                    'nom' => $visite->first()->prospect->nom,
-                    'prenom' => $visite->first()->prospect->prenom,
-                    'telephone' => $visite->first()->prospect->telephone,
-                    'telephone2' => $visite->first()->prospect->telephone_num2,
-                    'interet' => $visite->first()->interet,
-                    'statut' => $visite->first()->statut,
+                    'id'                  => $visite->first()->id,
+                    'origin_id'           => $visite->first()->origin_id,
+                    'nom_cc'              => $visite->first()->user->name,
+                    'prenom_cc'           => $visite->first()->user->prenom,
+                    'date'                => $visite->first()->created_at,
+                    'prospect_id'         => $visite->first()->prospect->id,
+                    'cin'                 => $visite->first()->prospect->cin,
+                    'nom'                 => $visite->first()->prospect->nom,
+                    'prenom'              => $visite->first()->prospect->prenom,
+                    'telephone'           => $visite->first()->prospect->telephone,
+                    'telephone2'          => $visite->first()->prospect->telephone_num2,
+                    'interet'             => $visite->first()->interet,
+                    'statut'              => $visite->first()->statut,
                     'propriete_dite_bien' => $visite->first()->bien_id ? $visite->first()->bien->propriete_dite_bien : '',
-                    'etat_bien' => $visite->first()->bien_id ? $visite->first()->bien->etat : '',
-                    'bien_id' => $visite->first()->bien_id ? $visite->first()->bien_id : '',
-                    'visit_count' => count($visite),
+                    'etat_bien'           => $visite->first()->bien_id ? $visite->first()->bien->etat : '',
+                    'bien_id'             => $visite->first()->bien_id ? $visite->first()->bien_id : '',
+                    'visit_count'         => count($visite),
 
-                ];});
+                ];
+            });
 
             $data = PaginationHelper::paginate_array($visites->toArray(), $perPage, $page, $request->url());
             return response()->json(['visites' => $data], 200);

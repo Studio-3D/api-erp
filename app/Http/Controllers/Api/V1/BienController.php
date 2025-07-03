@@ -262,7 +262,7 @@ class BienController extends Controller
             if ($request->filled('etat')) {
                 $query->where('etat', 'like', '%' . $request->input('etat') . '%');
             }
-            
+
             if ($request->filled('etat_bien') && $request->input('etat_bien') != "null") {
                 $query->where('etat', $request->input('etat_bien'));
             }
@@ -894,7 +894,7 @@ class BienController extends Controller
                         //to admin et commerciaux
                         Config::set('broadcasting.default', 'pusher_3');
                         $data_notif = [
-                            'lien'           => '/remboursements/AttAccuseCheque',
+                            'lien'           => '/ventes/remboursements/apres_ventes',
                             'date'           => Carbon::now(),
                             'type'           => 19,
                             'description'    => 'bien desisté est vendu',
@@ -911,7 +911,7 @@ class BienController extends Controller
                         if ($bien->desistement->user->role == 3) {
 
                             $data_notif = [
-                                'lien'           => '/remboursements/AttAccuseCheque',
+                                'lien'           => '/ventes/remboursements/apres_ventes',
                                 'date'           => Carbon::now(),
                                 'type'           => 19,
                                 'description'    => 'bien desisté est vendu',
@@ -1568,7 +1568,7 @@ class BienController extends Controller
 
             // Generate HTTPS URL for the media
             $mediaUrl = route('media.show', ['path' => $filePath]);
-            
+
             // Force HTTPS if APP_URL_HOST is set with HTTPS
             $appUrlHost = env('APP_URL_HOST');
             if ($appUrlHost && str_contains($appUrlHost, 'https://')) {
@@ -1600,13 +1600,13 @@ class BienController extends Controller
         return response()->json([
             'media' => $media->map(function($item) {
                 $mediaUrl = route('media.show', ['path' => $item->file_path]);
-                
+
                 // Force HTTPS if APP_URL_HOST is set with HTTPS
                 $appUrlHost = env('APP_URL_HOST');
                 if ($appUrlHost && str_contains($appUrlHost, 'https://')) {
                     $mediaUrl = str_replace('http://', 'https://', $mediaUrl);
                 }
-                
+
                 return [
                     'id' => $item->id,
                     'file_type' => $item->file_type,
@@ -1631,14 +1631,14 @@ class BienController extends Controller
 
         DatabaseHelper::Config();
         $media = BienMedia::on('temp')->where('bien_id', $id)->findOrFail($mediaId);
-        
+
         // Delete the file from storage
         if (Storage::disk('public')->exists($media->file_path)) {
             Storage::disk('public')->delete($media->file_path);
         }
-        
+
         $media->delete();
-        
+
         return response()->json(['message' => 'Media deleted successfully'], 200);
     }
 
@@ -1653,14 +1653,14 @@ class BienController extends Controller
 
         DatabaseHelper::Config();
         $bien = Bien::on('temp')->findOrFail($id);
-        
+
         $request->validate([
             'description' => 'required|string',
         ]);
-        
+
         $bien->description = $request->description;
         $bien->save();
-        
+
         return response()->json([
             'message' => 'Description updated successfully',
             'bien' => $bien

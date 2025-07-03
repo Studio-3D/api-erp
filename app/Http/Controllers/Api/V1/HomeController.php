@@ -375,6 +375,49 @@ class HomeController extends Controller
                     });
                 }
                 $sum_encaissements=$query_en->sum('montant');
+                //array encaissement nb by date
+
+                $query=Encaissement::on('temp')->with('reservations','avance','remboursement')
+                ->select(DB::raw("DATE(encaissements.date_reglement) as day, sum(encaissements.montant) as montant"))
+                ->where('encaissements.deleted_at', null)
+                ->whereHas('reservations', function ($q)  {
+                    $q->where('etat', 1);
+                })
+                ->where(function($query) {
+                    $query->where('type_encaissement',1)
+                    ->orwhere('type_encaissement',6);
+                });
+                if($dt==null && $a_dt==null){
+                    $query ->whereYear('date_reglement', Carbon::now()->year)->whereMonth('date_reglement', Carbon::now()->month);
+                }else{
+                    $query->whereBetween('date_reglement',[$dt,$a_dt]);
+                }
+
+                if($projet_id!=null){
+                    $query->whereHas('reservations', function ($q) use ($projet_id) {
+                        $q->where('projet_id', $projet_id);
+                    });
+                }
+                //comercial
+                if($us_role==3){
+                    $query->where(function($query_n) use($us_id) {
+                        $query_n->whereHas('avance', function ($q_com) use ($us_id) {
+                            $q_com->where('user_id', $us_id);
+                        });
+                        $query_n->orwhereHas('remboursement.desistement', function ($q_remb) use ($us_id) {
+                            $q_remb->where('user_id', $us_id);
+                        });
+                    });
+                }
+                $encaissements = $query->groupBy(DB::raw("day"))->get();
+
+                $array_encaissements=[];
+                foreach ($encaissements as $data) {
+                    $array_encaissements[] = [
+                        date($data['day']),
+                        (int) $data['montant']
+                    ];
+                }
 
             /*****************************penalites*************************/
 
@@ -439,23 +482,43 @@ class HomeController extends Controller
             }
             $nb_visites = $query_nb_visites->count();
             /*************************Appels********************* */
-            $query_nb_appel=TraitementAppel::on('temp')->with('appel');
+                /****nb_appels sortant */
+                    //type_appel 1 entrant 2 sortant
+                $query_nb_appel_s=TraitementAppel::on('temp')->with('appel')->where('type_appel',2);
                 if($dt==null && $a_dt==null){
-                    $query_nb_appel ->whereYear('created_at', Carbon::now()->year)->whereMonth('created_at', Carbon::now()->month);
+                    $query_nb_appel_s ->whereYear('created_at', Carbon::now()->year)->whereMonth('created_at', Carbon::now()->month);
                 }else{
-                    $query_nb_appel->whereBetween('created_at',[$dt,$a_dt]);
+                    $query_nb_appel_s->whereBetween('created_at',[$dt,$a_dt]);
                 }
                 if ($projet_id!=0) {
-                    $query_nb_appel->whereHas('appel', function ($q) use ($projet_id) {
+                    $query_nb_appel_s->whereHas('appel', function ($q) use ($projet_id) {
                         $q->where('projet_id',$projet_id)
                             ;
                 });
                 }
                   //comercial
                   if($us_role==3){
-                    $query_nb_appel->where('user_id', $us_id);
+                    $query_nb_appel_s->where('user_id', $us_id);
                 }
-            $nb_appels = $query_nb_appel->count();
+               $nb_appels_s = $query_nb_appel_s->count();
+                /****nb_appel_entrant** */
+                 $query_nb_appel_e=TraitementAppel::on('temp')->with('appel')->where('type_appel',1);
+                if($dt==null && $a_dt==null){
+                    $query_nb_appel_e ->whereYear('created_at', Carbon::now()->year)->whereMonth('created_at', Carbon::now()->month);
+                }else{
+                    $query_nb_appel_e->whereBetween('created_at',[$dt,$a_dt]);
+                }
+                if ($projet_id!=0) {
+                    $query_nb_appel_e->whereHas('appel', function ($q) use ($projet_id) {
+                        $q->where('projet_id',$projet_id)
+                            ;
+                });
+                }
+                  //comercial
+                  if($us_role==3){
+                    $query_nb_appel_e->where('user_id', $us_id);
+                }
+               $nb_appels_e = $query_nb_appel_e->count();
             /***************************Prospects **********************/
             $query_prospect=Prospect::on('temp');
             if($dt==null && $a_dt==null){
@@ -540,11 +603,11 @@ class HomeController extends Controller
 
             /****************************Desistement by Statut************************* */
             $Array_dst=[];
-            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  1,'type_dp' =>null,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
-            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>1,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
-            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>2,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
-            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>3,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
-            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>3,'type_dp' =>null,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
+            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  1,'type_dp' =>null,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$a_dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
+            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>1,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$a_dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
+            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>2,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$a_dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
+            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>3,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$a_dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
+            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>3,'type_dp' =>null,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$a_dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
             /***********************Reservation**** nb  */
             $query_rsv=Reservation::on('temp')->where('etat',1)
             ->where('statut',StatutReservationEnum::Validé->value);
@@ -626,6 +689,78 @@ class HomeController extends Controller
                       }
                 }
 
+            // Biens vendus par type et date
+               $query = Bien::on('temp')
+            ->select(DB::raw("reservations.date_reservation, count(reservations.id) as count, biens.type_id, type_biens.type as type_name"))
+            ->join('reservations', 'biens.id', 'reservations.bien_id')
+            ->join('type_biens', 'biens.type_id', 'type_biens.id') // Join with types table to get names
+            ->where('biens.etat', 'RESERVATION')
+            ->where('reservations.etat', 1)
+            ->where('reservations.deleted_at', null)
+            ->where('biens.projet_id', $request->projet_id);
+
+            if ($dt !== null && $a_dt !== null) {
+                $query->whereBetween('reservations.date_reservation', [$dt, $a_dt]);
+            } else {
+                $query->whereYear('reservations.date_reservation', Carbon::now()->year)
+                    ->whereMonth('reservations.date_reservation', Carbon::now()->month);
+            }
+
+            $nb_biens_vendu_by_type_date = $query->groupBy(DB::raw("reservations.date_reservation, biens.type_id, type_biens.type"))->get();
+
+            // First get all unique type names
+            $typeNames = $nb_biens_vendu_by_type_date->pluck('type_name')->unique()->toArray();
+
+            // Initialize the result array
+            $array_ventes = [];
+
+            // Group by date
+            foreach ($nb_biens_vendu_by_type_date->groupBy('date_reservation') as $date => $items) {
+                $dateEntry = ['date' => $date];
+
+                // Initialize all type counts to 0
+                foreach ($typeNames as $typeName) {
+                    $dateEntry[$typeName] = 0;
+                }
+
+                // Set actual counts
+                foreach ($items as $item) {
+                    $dateEntry[$item->type_name] = (int)$item->count;
+                }
+
+                $array_ventes[] = $dateEntry;
+            }
+                    /*************array visite by type et date */
+
+                        $query = Visite::on('temp')
+                                ->select(
+                                    DB::raw("DATE(created_at) as created_date"),
+                                    DB::raw("count(id) as count"),
+                                    "interet"
+                                )
+                                ->where('etat', 1);
+
+                        if($dt==null && $a_dt==null){
+                            $query->whereYear('created_at', Carbon::now()->year)
+                                ->whereMonth('created_at', Carbon::now()->month);
+                        } else {
+                            $query->whereBetween('created_at', [$dt, $a_dt]);
+                        }
+
+                        if($projet_id!=null){
+                            $query->where('projet_id', $projet_id);
+                        }
+
+                        $nb_visite_by_inter_et_date = $query->groupBy(DB::raw("DATE(created_at), interet"))->get();
+
+                        $array_visite_interet_et_date = [];
+                        foreach ($nb_visite_by_inter_et_date as $data) {
+                            $array_visite_interet_et_date[] = [
+                                $data['created_date'], // This will be just the date part (YYYY-MM-DD)
+                                (int) $data['count'],
+                                $data['interet']
+                            ];
+                        }
 
 
            return response()->json([
@@ -634,7 +769,9 @@ class HomeController extends Controller
             'sum_penalites' => $sum_penalites,
             'sum_remboursements' => $sum_remboursements,
             'nb_visites'=>$nb_visites,
-            'nb_appels'=>$nb_appels,
+            'nb_appels'=>$nb_appels_s+$nb_appels_e,
+            'nb_appels_sortant'=>$nb_appels_s,
+            'nb_appels_entrant'=>$nb_appels_e,
             'nb_prospects'=>$nb_prospects,
             'nb_clients'=>$nb_clients,
             'reclamations_clients'=>$reclamations,
@@ -653,6 +790,10 @@ class HomeController extends Controller
             'obj_mois_appels'=>$obj_mois_appels
             ,'obj_mois_visites'=>$obj_mois_visites
             ,'obj_mois_reservations'=>$obj_mois_reservations,
+            'array_encaissement'=>$array_encaissements,
+            'array_ventes'=>$array_ventes,
+            'array_visite_interet_et_date'=>$array_visite_interet_et_date
+
 
 
          ]);

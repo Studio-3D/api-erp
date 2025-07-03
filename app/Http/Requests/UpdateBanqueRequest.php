@@ -34,4 +34,11 @@ class UpdateBanqueRequest extends FormRequest
 
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'nom.unique' => 'Cette banque est deja exist dans la societe',
+        ];
+    }
 }
