@@ -603,11 +603,11 @@ class HomeController extends Controller
 
             /****************************Desistement by Statut************************* */
             $Array_dst=[];
-            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  1,'type_dp' =>null,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
-            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>1,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
-            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>2,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
-            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>3,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
-            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>3,'type_dp' =>null,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
+            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  1,'type_dp' =>null,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$a_dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
+            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>1,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$a_dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
+            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>2,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$a_dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
+            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>3,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$a_dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
+            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>3,'type_dp' =>null,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$a_dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
             /***********************Reservation**** nb  */
             $query_rsv=Reservation::on('temp')->where('etat',1)
             ->where('statut',StatutReservationEnum::Validé->value);
