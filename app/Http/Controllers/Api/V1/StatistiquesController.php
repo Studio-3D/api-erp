@@ -111,28 +111,7 @@ class StatistiquesController extends Controller
                 }
                 $sum_encaissements = $query->sum('encaissements.montant');
 
-                 // Biens vendus par type et date
-                $query = Bien::on('temp')
-                    ->select(DB::raw("reservations.date_reservation, count(reservations.id) as count, biens.type_id"))
-                    ->join('reservations', 'biens.id', 'reservations.bien_id')
-                    ->where('biens.etat', 'RESERVATION')
-                    ->where('reservations.etat', 1)
-                    ->where('reservations.deleted_at', null)
-                    ->where('biens.projet_id', $request->projet_id);
-                if ($dt !== null && $a_dt !== null) {
-                    $query->whereBetween('reservations.date_reservation', [$dt, $a_dt]);
-                }else{
-                     $query->whereYear('reservations.date_reservation', Carbon::now()->year)->whereMonth('reservations.date_reservation', Carbon::now()->month);
-                }
-                $nb_biens_vendu_by_type_date = $query->groupBy(DB::raw("reservations.date_reservation, biens.type_id"))->get();
-                 $array_biens_type_et_date_reservation=[];
-                        foreach ($nb_biens_vendu_by_type_date as $data) {
-                                $array_biens_type_et_date_reservation[] = [
-                                    date($data['date_reservation']),
-                                    (int) $data['count'],
-                                    $data['type_id']
-                                ];
-                            }
+
                 $types_biens=TypeBien::on('temp')->where('projet_id',$request->projet_id)->get();
                 $array_type_date_desistement=[];
                // Désistements par type et date
@@ -322,6 +301,48 @@ class StatistiquesController extends Controller
         // For your chart data
         $chartData_sources = $prospectsBySource;
 
+         // Biens vendus par type et date
+               $query = Bien::on('temp')
+            ->select(DB::raw("reservations.date_reservation, count(reservations.id) as count, biens.type_id, type_biens.type as type_name"))
+            ->join('reservations', 'biens.id', 'reservations.bien_id')
+            ->join('type_biens', 'biens.type_id', 'type_biens.id') // Join with types table to get names
+            ->where('biens.etat', 'RESERVATION')
+            ->where('reservations.etat', 1)
+            ->where('reservations.deleted_at', null)
+            ->where('biens.projet_id', $request->projet_id);
+
+            if ($dt !== null && $a_dt !== null) {
+                $query->whereBetween('reservations.date_reservation', [$dt, $a_dt]);
+            } else {
+                $query->whereYear('reservations.date_reservation', Carbon::now()->year)
+                    ->whereMonth('reservations.date_reservation', Carbon::now()->month);
+            }
+
+            $nb_biens_vendu_by_type_date = $query->groupBy(DB::raw("reservations.date_reservation, biens.type_id, type_biens.type"))->get();
+
+            // First get all unique type names
+            $typeNames = $nb_biens_vendu_by_type_date->pluck('type_name')->unique()->toArray();
+
+            // Initialize the result array
+            $array_ventes = [];
+
+            // Group by date
+            foreach ($nb_biens_vendu_by_type_date->groupBy('date_reservation') as $date => $items) {
+                $dateEntry = ['date' => $date];
+
+                // Initialize all type counts to 0
+                foreach ($typeNames as $typeName) {
+                    $dateEntry[$typeName] = 0;
+                }
+
+                // Set actual counts
+                foreach ($items as $item) {
+                    $dateEntry[$item->type_name] = (int)$item->count;
+                }
+
+                $array_ventes[] = $dateEntry;
+            }
+
         return response()->json([
                 'nb_appels'=>$nb_appels,
                 'nb_visites'=>$nb_visites,
@@ -330,8 +351,7 @@ class StatistiquesController extends Controller
                 'sum_penalites'=>$sum_penalites,
                 'sum_encaissements'=>$sum_encaissements,
                 'nb_prospects'=>$nb_prospects,
-              //  'plages_dates'=>$array_plages_dates,
-                'array_biens_type_et_date_reservation'=>$array_biens_type_et_date_reservation,
+                'bien_vendu_par_type_et_date_reservation'=>$array_ventes,
                 'array_type_date_desistement'=>$array_type_date_desistement,
                 'types_biens'=>$types_biens,
                 'visites'=>$Array_visite,

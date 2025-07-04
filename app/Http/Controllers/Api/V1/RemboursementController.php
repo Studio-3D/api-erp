@@ -379,7 +379,6 @@ class RemboursementController extends Controller
             }
 
              if ($request->filled('montant')) {
-
                  $query->where('montant_transfert','like', '%' . $request->input('montant') . '%');
              }
 
