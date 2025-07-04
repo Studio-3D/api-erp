@@ -21,6 +21,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Enum\StatutVisiteEnum;
 use App\Enum\InteretEnum;
+use App\Models\Source;
+
 
 
 class StatistiquesController extends Controller
@@ -200,7 +202,7 @@ class StatistiquesController extends Controller
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
             ];
-            $data_v_pre_reserve_perdu = [
+           /* $data_v_pre_reserve_perdu = [
                 'de_date' => $dt,
                 'a_date' => $a_dt,
                 'statut' => StatutVisiteEnum::Pré_Réservation_Perdu->value,
@@ -221,7 +223,7 @@ class StatistiquesController extends Controller
                 'statut' => StatutVisiteEnum::Réservation_Perdu->value,
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
-            ];
+            ];*/
             $data_v_receptif = [
                 'de_date' => $dt,
                 'a_date' => $a_dt,
@@ -238,14 +240,14 @@ class StatistiquesController extends Controller
                 'interet' => InteretEnum::Perdu->value,
                 'projet_id' =>$projet_id,
             ];
-            $data_v_vente_direct = [
+           /* $data_v_vente_direct = [
                 'de_date' => $dt,
                 'a_date' => $a_dt,
                 'order' => 1,
                 'statut' => StatutVisiteEnum::Vendu->value,
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
-            ];
+            ];*/
             $data_v_vente = [
                 'de_date' => $dt,
                 'a_date' => $a_dt,
@@ -258,11 +260,11 @@ class StatistiquesController extends Controller
             $Array_visite = [];
             array_push($Array_visite,$this->get_visites($request->merge($data_v_receptif))->original['nb_v']);
             array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve))->original['nb_v']);
-            array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve_perdu))->original['nb_v']);
-            array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve_vendu))->original['nb_v']);
-            array_push($Array_visite,$this->get_visites($request->merge($data_v_vente_direct))->original['nb_v']);
+          //  array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve_perdu))->original['nb_v']);
+          //  array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve_vendu))->original['nb_v']);
+           // array_push($Array_visite,$this->get_visites($request->merge($data_v_vente_direct))->original['nb_v']);
             array_push($Array_visite,$this->get_visites($request->merge($data_v_vente))->original['nb_v']);
-            array_push($Array_visite,$this->get_visites($request->merge($data_v_reserve_perdu))->original['nb_v']);
+          //  array_push($Array_visite,$this->get_visites($request->merge($data_v_reserve_perdu))->original['nb_v']);
             array_push($Array_visite,$this->get_visites($request->merge($data_v_perdu))->original['nb_v']);
 
           // Appels
@@ -357,7 +359,8 @@ class StatistiquesController extends Controller
                 'visites'=>$Array_visite,
                 'remboursements'=>$array_remboursements,
                 'sum_remb'=>$sum_remb,
-                'encaissements'=>$array_encaissements
+                'encaissements'=>$array_encaissements,
+                'chartData_sources'=>$prospectsBySource
 
             ], 200);
     }
