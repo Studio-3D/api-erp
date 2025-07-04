@@ -603,11 +603,11 @@ class HomeController extends Controller
 
             /****************************Desistement by Statut************************* */
             $Array_dst=[];
-            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  1,'type_dp' =>null,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
-            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>1,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
-            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>2,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
-            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>3,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
-            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>3,'type_dp' =>null,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
+            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  1,'type_dp' =>null,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$a_dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
+            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>1,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$a_dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
+            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>2,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$a_dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
+            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>  2,'type_dp' =>3,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$a_dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
+            array_push($Array_dst,$this->get_nb_dst($request->merge(['type' =>3,'type_dp' =>null,'projet_id'=>$projet_id,'dt'=>$dt,'a_dt'=>$a_dt,'us_role'=>$us_role,'us_id'=>$us_id]))->original['nb_dst']);
             /***********************Reservation**** nb  */
             $query_rsv=Reservation::on('temp')->where('etat',1)
             ->where('statut',StatutReservationEnum::Validé->value);
@@ -689,47 +689,38 @@ class HomeController extends Controller
                       }
                 }
 
-            // Biens vendus par type et date
-               $query = Bien::on('temp')
-            ->select(DB::raw("reservations.date_reservation, count(reservations.id) as count, biens.type_id, type_biens.type as type_name"))
-            ->join('reservations', 'biens.id', 'reservations.bien_id')
-            ->join('type_biens', 'biens.type_id', 'type_biens.id') // Join with types table to get names
-            ->where('biens.etat', 'RESERVATION')
-            ->where('reservations.etat', 1)
-            ->where('reservations.deleted_at', null)
-            ->where('biens.projet_id', $request->projet_id);
+                 //array nb de vente by date
 
-            if ($dt !== null && $a_dt !== null) {
-                $query->whereBetween('reservations.date_reservation', [$dt, $a_dt]);
-            } else {
-                $query->whereYear('reservations.date_reservation', Carbon::now()->year)
-                    ->whereMonth('reservations.date_reservation', Carbon::now()->month);
-            }
-
-            $nb_biens_vendu_by_type_date = $query->groupBy(DB::raw("reservations.date_reservation, biens.type_id, type_biens.type"))->get();
-
-            // First get all unique type names
-            $typeNames = $nb_biens_vendu_by_type_date->pluck('type_name')->unique()->toArray();
-
-            // Initialize the result array
-            $array_ventes = [];
-
-            // Group by date
-            foreach ($nb_biens_vendu_by_type_date->groupBy('date_reservation') as $date => $items) {
-                $dateEntry = ['date' => $date];
-
-                // Initialize all type counts to 0
-                foreach ($typeNames as $typeName) {
-                    $dateEntry[$typeName] = 0;
-                }
-
-                // Set actual counts
-                foreach ($items as $item) {
-                    $dateEntry[$item->type_name] = (int)$item->count;
-                }
-
-                $array_ventes[] = $dateEntry;
-            }
+                $query=Bien::on('temp')
+                    ->select(DB::raw("DATE(reservations.date_reservation) as day, count(reservations.id) as count"))
+                    ->join('reservations','biens.id','reservations.bien_id')
+                    ->where('biens.etat','RESERVATION')
+                    ->where('reservations.deleted_at',null)
+                    ->where('reservations.etat',1);
+                    if($dt==null && $a_dt==null){
+                        $query ->whereYear('reservations.date_reservation', Carbon::now()->year)->whereMonth('reservations.date_reservation', Carbon::now()->month);
+                    }else{
+                        $query->whereBetween('reservations.date_reservation',[$dt,$a_dt]);
+                    }
+                    if($projet_id!=null){
+                            $query->where('biens.projet_id', $projet_id);
+                    }
+                    //comercial
+                    if($us_role==3){
+                        $query->where(function($query_n) use($us_id) {
+                            $query_n->whereHas('reservations', function ($q_com) use ($us_id) {
+                                $q_com->where('user_id', $us_id);
+                            });
+                        });
+                    }
+                    $ventes = $query->groupBy(DB::raw("day"))->get();
+                    $array_ventes=[];
+                    foreach ($ventes as $data) {
+                        $array_ventes[] = [
+                            date($data['day']),
+                            (int) $data['count']
+                        ];
+                    }
                     /*************array visite by type et date */
 
                         $query = Visite::on('temp')

@@ -107,7 +107,7 @@ class ReservationController extends Controller
                 if ($realUserId) {
                     $query->where('user_id', $realUserId)
                         ->where('etat', 1); // ou 'statut' selon le champ de ta base
-                } 
+                }
             }
 
 
@@ -527,7 +527,7 @@ class ReservationController extends Controller
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-    }*/
+    }
     public function info_reservation($id)
     {
         if (RoleHelper::ACSup()) {
@@ -573,13 +573,13 @@ class ReservationController extends Controller
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-    }
+    }*/
 
     public function show($id)
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $reservation = Reservation::on('temp')->with('desistements_ancien','rdv','avances','last_statut','contrat_vente','piece_jointe_desiste','piece_jointe')->findOrFail($id);
+            $reservation = Reservation::on('temp')->with('desistements_ancien','rdv','avances','last_statut','contrat_vente','piece_jointe_desiste','piece_jointe','remboursement_dd_with_transfert')->findOrFail($id);
 
             //get nom propriete _dite_bien concat
             $propriete = null;
