@@ -481,44 +481,86 @@ class HomeController extends Controller
                 $query_nb_visites->where('user_id', $us_id);
             }
             $nb_visites = $query_nb_visites->count();
-            /*************************Appels********************* */
-                /****nb_appels sortant */
-                    //type_appel 1 entrant 2 sortant
-                $query_nb_appel_s=TraitementAppel::on('temp')->with('appel')->where('type_appel',2);
+            /*************************Appels entrant sortant par date********************* */
+                $query_appels_date_type= TraitementAppel::on('temp')->with('appel');
+
+                if($dt == null && $a_dt == null) {
+                    $query_appels_date_type->whereYear('created_at', Carbon::now()->year)
+                                ->whereMonth('created_at', Carbon::now()->month);
+                } else {
+                    $query_appels_date_type->whereBetween('created_at', [$dt, $a_dt]);
+                }
+
+                if ($projet_id != 0) {
+                    $query_appels_date_type->whereHas('appel', function ($q) use ($projet_id) {
+                        $q->where('projet_id', $projet_id);
+                    });
+                }
+
+                // comercial filter
+                if($us_role == 3) {
+                    $query_appels_date_type->where('user_id', $us_id);
+                }
+
+                // Get all calls grouped by date and type
+                $appels = $query_appels_date_type
+                    ->select(
+                        DB::raw("DATE(created_at) as date"),
+                        'type_appel',
+                        DB::raw("COUNT(*) as count")
+                    )
+                    ->groupBy(DB::raw("DATE(created_at)"), 'type_appel')
+                    ->get();
+
+                // Group data by date
+                $groupedByDate = [];
+                foreach ($appels as $appel) {
+                    $date = $appel->date;
+                    if (!isset($groupedByDate[$date])) {
+                        $groupedByDate[$date] = [
+                            'appel entrant' => 0,
+                            'appel sortant' => 0
+                        ];
+                    }
+
+                    if ($appel->type_appel == 1) {
+                        $groupedByDate[$date]['appel entrant'] = (int)$appel->count;
+                    } elseif ($appel->type_appel == 2) {
+                        $groupedByDate[$date]['appel sortant'] = (int)$appel->count;
+                    }
+                }
+
+                // Format the final array of objects
+                $array_appels_par_date = [];
+                foreach ($groupedByDate as $date => $counts) {
+                    // Format date as DD-MM-YYYY (assuming date is YYYY-MM-DD)
+                    $formattedDate = \Carbon\Carbon::createFromFormat('Y-m-d', $date)->format('d-m-Y');
+
+                    $array_appels_par_date[] = (object)[
+                        'date' => $formattedDate,
+                        'appel entrant' => $counts['appel entrant'],
+                        'appel sortant' => $counts['appel sortant']
+                    ];
+                }
+
+                /****nb_appel_ total** */
+                 $query_nb_appel=TraitementAppel::on('temp')->with('appel')->where('type_appel',1);
                 if($dt==null && $a_dt==null){
-                    $query_nb_appel_s ->whereYear('created_at', Carbon::now()->year)->whereMonth('created_at', Carbon::now()->month);
+                    $query_nb_appel ->whereYear('created_at', Carbon::now()->year)->whereMonth('created_at', Carbon::now()->month);
                 }else{
-                    $query_nb_appel_s->whereBetween('created_at',[$dt,$a_dt]);
+                    $query_nb_appel->whereBetween('created_at',[$dt,$a_dt]);
                 }
                 if ($projet_id!=0) {
-                    $query_nb_appel_s->whereHas('appel', function ($q) use ($projet_id) {
+                    $query_nb_appel->whereHas('appel', function ($q) use ($projet_id) {
                         $q->where('projet_id',$projet_id)
                             ;
                 });
                 }
                   //comercial
                   if($us_role==3){
-                    $query_nb_appel_s->where('user_id', $us_id);
+                    $query_nb_appel->where('user_id', $us_id);
                 }
-               $nb_appels_s = $query_nb_appel_s->count();
-                /****nb_appel_entrant** */
-                 $query_nb_appel_e=TraitementAppel::on('temp')->with('appel')->where('type_appel',1);
-                if($dt==null && $a_dt==null){
-                    $query_nb_appel_e ->whereYear('created_at', Carbon::now()->year)->whereMonth('created_at', Carbon::now()->month);
-                }else{
-                    $query_nb_appel_e->whereBetween('created_at',[$dt,$a_dt]);
-                }
-                if ($projet_id!=0) {
-                    $query_nb_appel_e->whereHas('appel', function ($q) use ($projet_id) {
-                        $q->where('projet_id',$projet_id)
-                            ;
-                });
-                }
-                  //comercial
-                  if($us_role==3){
-                    $query_nb_appel_e->where('user_id', $us_id);
-                }
-               $nb_appels_e = $query_nb_appel_e->count();
+               $nb_appels = $query_nb_appel->count();
             /***************************Prospects **********************/
             $query_prospect=Prospect::on('temp');
             if($dt==null && $a_dt==null){
@@ -691,7 +733,7 @@ class HomeController extends Controller
 
                  //array nb de vente by date
 
-                $query=Bien::on('temp')
+                $query=Bien::on('temp')->with('all_reservations_active')
                     ->select(DB::raw("DATE(reservations.date_reservation) as day, count(reservations.id) as count"))
                     ->join('reservations','biens.id','reservations.bien_id')
                     ->where('biens.etat','RESERVATION')
@@ -708,7 +750,7 @@ class HomeController extends Controller
                     //comercial
                     if($us_role==3){
                         $query->where(function($query_n) use($us_id) {
-                            $query_n->whereHas('reservations', function ($q_com) use ($us_id) {
+                            $query_n->whereHas('all_reservations_active', function ($q_com) use ($us_id) {
                                 $q_com->where('user_id', $us_id);
                             });
                         });
@@ -721,37 +763,66 @@ class HomeController extends Controller
                             (int) $data['count']
                         ];
                     }
-                    /*************array visite by type et date */
+                    /*************array visite by interet et date */
 
-                        $query = Visite::on('temp')
-                                ->select(
-                                    DB::raw("DATE(created_at) as created_date"),
-                                    DB::raw("count(id) as count"),
-                                    "interet"
-                                )
-                                ->where('etat', 1);
+                      $query = Visite::on('temp')
+                        ->select(
+                            DB::raw("DATE(created_at) as created_date"),
+                            DB::raw("count(id) as count"),
+                            "interet"
+                        )
+                        ->where('etat', 1);
 
-                        if($dt==null && $a_dt==null){
-                            $query->whereYear('created_at', Carbon::now()->year)
-                                ->whereMonth('created_at', Carbon::now()->month);
-                        } else {
-                            $query->whereBetween('created_at', [$dt, $a_dt]);
-                        }
+                    if($dt==null && $a_dt==null){
+                        $query->whereYear('created_at', Carbon::now()->year)
+                            ->whereMonth('created_at', Carbon::now()->month);
+                    } else {
+                        $query->whereBetween('created_at', [$dt, $a_dt]);
+                    }
 
-                        if($projet_id!=null){
-                            $query->where('projet_id', $projet_id);
-                        }
+                    if($projet_id!=null){
+                        $query->where('projet_id', $projet_id);
+                    }
 
-                        $nb_visite_by_inter_et_date = $query->groupBy(DB::raw("DATE(created_at), interet"))->get();
+                    $nb_visite_by_inter_et_date = $query->groupBy(DB::raw("DATE(created_at), interet"))->get();
 
-                        $array_visite_interet_et_date = [];
-                        foreach ($nb_visite_by_inter_et_date as $data) {
-                            $array_visite_interet_et_date[] = [
-                                $data['created_date'], // This will be just the date part (YYYY-MM-DD)
-                                (int) $data['count'],
-                                $data['interet']
+                    // First, group the data by date
+                    $groupedByDate = [];
+                    foreach ($nb_visite_by_inter_et_date as $data) {
+                        $date = $data['created_date'];
+                        if (!isset($groupedByDate[$date])) {
+                            $groupedByDate[$date] = [
+                                'intéressé' => 0,
+                                'réceptif' => 0,
+                                'perdu' => 0
                             ];
                         }
+
+                        // Map interet values to French labels
+                        switch ($data['interet']) {
+                            case 1:
+                                $groupedByDate[$date]['intéressé'] = (int)$data['count'];
+                                break;
+                            case 2:
+                                $groupedByDate[$date]['réceptif'] = (int)$data['count'];
+                                break;
+                            case 3:
+                                $groupedByDate[$date]['perdu'] = (int)$data['count'];
+                                break;
+                        }
+                    }
+
+                    // Now format into the final array of objects
+                    $array_visite_interet_et_date = [];
+                    foreach ($groupedByDate as $date => $counts) {
+                        // Format date as DD/MM/YYYY (assuming created_date is YYYY-MM-DD)
+                        $array_visite_interet_et_date[] = (object)[
+                            'date' => $date,
+                            'intéressé' => $counts['intéressé'],
+                            'perdu' => $counts['perdu'],
+                            'réceptif' => $counts['réceptif']
+                        ];
+                    }
 
 
            return response()->json([
@@ -760,9 +831,8 @@ class HomeController extends Controller
             'sum_penalites' => $sum_penalites,
             'sum_remboursements' => $sum_remboursements,
             'nb_visites'=>$nb_visites,
-            'nb_appels'=>$nb_appels_s+$nb_appels_e,
-            'nb_appels_sortant'=>$nb_appels_s,
-            'nb_appels_entrant'=>$nb_appels_e,
+            'nb_appels'=>$nb_appels,
+            'Appels'=>$array_appels_par_date,
             'nb_prospects'=>$nb_prospects,
             'nb_clients'=>$nb_clients,
             'reclamations_clients'=>[],

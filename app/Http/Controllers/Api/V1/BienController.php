@@ -861,7 +861,7 @@ class BienController extends Controller
 
     public function reserverBien($bien_id, $visite_id, $reservation_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::ACSup()) {
             $request = new \Illuminate\Http\Request();
             DatabaseHelper::Config();
             $bien       = Bien::on('temp')->findOrFail($bien_id);
