@@ -375,18 +375,20 @@ class ReservationController extends Controller
                     $aquereurRequest->merge($dataAquereur);
                     $aquereurController->store($aquereurRequest);
                 } else {
-                    // Parse the string back to an array
+                   // Parse the string back to an array
                     $dataArray_clients = json_decode($request->input('clients'), true);
                     $dataArrayString = $request->input('oldClients', '[]');
-
                     $dataArray_oldClients = json_decode($dataArrayString, true); // Ensure it's an array
 
                     // Check if it's an array and not null
-
                     if ($dataArray_clients) {
-                        foreach ($dataArray_clients as $clientInfo) {
+                        foreach ($dataArray_clients as &$clientInfo) {  // Note the & for reference to modify the array
+                            // Add projet_id to each client info
+                            $clientInfo['projet_id'] = $request->projet_id;
+
                             $clientRequest->merge($clientInfo);
                             $clientData = $clientController->store($clientRequest);
+
                             $dataAquereur = [
                                 'pourcentage' => $clientInfo['pourcentage'],
                                 'client_id' => $clientData->id,
@@ -395,6 +397,7 @@ class ReservationController extends Controller
                             $aquereurRequest->merge($dataAquereur);
                             $aquereurController->store($aquereurRequest);
                         }
+                        unset($clientInfo); // Break the reference
                     }
                     if ($dataArray_oldClients) {
                         foreach ($dataArray_oldClients as $clientInfo) {
@@ -792,7 +795,7 @@ class ReservationController extends Controller
                         foreach ($commerciaux as $comm) {
                             Config::set('broadcasting.default', 'pusher_3');
                             $data_notif = [
-                                'lien' => '/reservations/show/' . $id,
+                                'lien' => '/ventes/reservations/' . $id,
                                 'date' => Carbon::now(),
                                 'type' => 8,
                                 'user_id' => $comm->user_id_origin,
@@ -839,6 +842,7 @@ class ReservationController extends Controller
 
                 if ($dataArray_clients) {
                     foreach ($dataArray_clients as $clientInfo) {
+                        $clientInfo['projet_id'] = $reservation->projet_id;
                         $clientRequest->merge($clientInfo);
                         $clientData = $clientController->store($clientRequest);
                         $dataAquereur = [
@@ -1360,7 +1364,7 @@ class ReservationController extends Controller
                 //store new notification validé
                 Config::set('broadcasting.default', 'pusher_3');
                 $data_notif = [
-                    'lien' => '/reservations/show/' . $id,
+                    'lien' => '/ventes/reservations/' . $id,
                     'date' => Carbon::now(),
                     'type' => 15,
                     'user_id' => $reservation->user->user_id_origin,
@@ -1381,7 +1385,7 @@ class ReservationController extends Controller
                 //store new notification rejeté
                 Config::set('broadcasting.default', 'pusher_3');
                 $data_notif = [
-                    'lien' => '/reservations/show/' . $id,
+                    'lien' => '/ventes/reservations/' . $id,
                     'date' => Carbon::now(),
                     'type' => 16,
                     'user_id' => $reservation->user->user_id_origin,

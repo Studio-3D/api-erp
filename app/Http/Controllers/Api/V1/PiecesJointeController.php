@@ -227,6 +227,7 @@ class PiecesJointeController extends Controller
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
+            $avance=Avance::on('temp')->findOrfail($avance_id);
             $pj = PiecesJointe::on('temp')->where('avance_id', $avance_id)->get();
             foreach ($pj as $p) {
 
