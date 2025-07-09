@@ -115,7 +115,6 @@ class StatistiquesController extends Controller
 
 
                 $types_biens=TypeBien::on('temp')->where('projet_id',$request->projet_id)->get();
-                $array_type_date_desistement=[];
                // Désistements par type et date
                 $query = Desistement::on('temp')
                     ->select(DB::raw("DATE(created_at) as day, count(id) as count, type"))
@@ -128,13 +127,28 @@ class StatistiquesController extends Controller
                 }
                 $nb_desistement_par_type = $query->groupBy(DB::raw("day, type"))->get();
 
+                $array_type_date_desistement = [];
+
+                // Process the query results
                 foreach ($nb_desistement_par_type as $data) {
-                                $array_type_date_desistement[] = [
-                                    date($data['day']),
-                                    (int) $data['count'],
-                                    $data['type']
-                                ];
+                    // Determine the type name based on the type value
+                    $typeName = match((int)$data['type']) {
+                        1 => 'Désistement Définitif',
+                        2 => 'Désistement au Profit',
+                        3 => 'Changement de Bien',
+                        default => 'Inconnu'
+                    };
+
+                    // Format the date as DD-MM-YYYY
+                    $formattedDate = date('d-m-Y', strtotime($data['day']));
+
+                    $array_type_date_desistement[] = (object)[
+                        'date' => $formattedDate,
+                        'typeDesistement' => $typeName,
+                        'nombre' => (int)$data['count']
+                    ];
                 }
+
                     // Remboursements
                 $query = Remboursement::on('temp')
                     ->select(DB::raw("DATE(remboursements.created_at) as day, sum(remboursements.montant_a_rembourser) as montant_a_rembourser"))
