@@ -89,7 +89,9 @@ class AvanceController extends Controller
                 $sum_avances_valides = Avance::on('temp')
                     ->where('reservation_id', $reservation_id)
                     ->where('statut', StatutReservationEnum::Validé->value)
-                    ->sum('montant');            } else {
+                    ->sum('montant');
+
+                } else {
                 // Requête pour les avances supprimées (dossier désisté)
                 $query = Avance::on('temp')
                     ->with('last_statut')
@@ -110,7 +112,7 @@ class AvanceController extends Controller
                     ->where('reservation_id', $reservation_id)
                     ->where('statut', StatutReservationEnum::Validé->value)
                     ->sum('montant');
-            }
+                }
 
             // Application des filtres supplémentaires
             if ($request->filled('numero_paiement')) {
