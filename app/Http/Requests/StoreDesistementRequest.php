@@ -84,8 +84,8 @@ class StoreDesistementRequest extends FormRequest
         //changement bien
 
         //penalites
-        if($request->checked_penalite==true){
-            $rules['penalite_par']='required';
+if($request->has('checked_penalite') && $request->boolean('checked_penalite')){
+                $rules['penalite_par']='required';
             $rules['mode_penalite']='required';
             if($request->mode_penalite=='Montant'){
                 $rules['penalite_montant']='required';

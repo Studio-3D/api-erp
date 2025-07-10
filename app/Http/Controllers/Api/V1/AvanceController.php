@@ -85,7 +85,13 @@ class AvanceController extends Controller
                         $sum_avances += $av->montant;
                     }
                 }
-            } else {
+                /*avances valides*/
+                $sum_avances_valides = Avance::on('temp')
+                    ->where('reservation_id', $reservation_id)
+                    ->where('statut', StatutReservationEnum::Validé->value)
+                    ->sum('montant');
+
+                } else {
                 // Requête pour les avances supprimées (dossier désisté)
                 $query = Avance::on('temp')
                     ->with('last_statut')
@@ -101,7 +107,12 @@ class AvanceController extends Controller
                         $sum_avances += $av->montant;
                     }
                 }
-            }
+                $sum_avances_valides = Avance::on('temp')
+                    ->withTrashed()
+                    ->where('reservation_id', $reservation_id)
+                    ->where('statut', StatutReservationEnum::Validé->value)
+                    ->sum('montant');
+                }
 
             // Application des filtres supplémentaires
             if ($request->filled('numero_paiement')) {
@@ -145,6 +156,7 @@ class AvanceController extends Controller
                 'data' => $avances->items(),
                 'pagination' => $pagination,
                 'sum_avances' => $sum_avances,
+                'sum_avances_valides' => $sum_avances_valides,
                 'prix' => $reservation->prix,
                 'etat_res' => $reservation->etat,
             ], 200);

@@ -21,6 +21,8 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Enum\StatutVisiteEnum;
 use App\Enum\InteretEnum;
+use App\Models\Source;
+
 
 
 class StatistiquesController extends Controller
@@ -111,30 +113,8 @@ class StatistiquesController extends Controller
                 }
                 $sum_encaissements = $query->sum('encaissements.montant');
 
-                 // Biens vendus par type et date
-                $query = Bien::on('temp')
-                    ->select(DB::raw("reservations.date_reservation, count(reservations.id) as count, biens.type_id"))
-                    ->join('reservations', 'biens.id', 'reservations.bien_id')
-                    ->where('biens.etat', 'RESERVATION')
-                    ->where('reservations.etat', 1)
-                    ->where('reservations.deleted_at', null)
-                    ->where('biens.projet_id', $request->projet_id);
-                if ($dt !== null && $a_dt !== null) {
-                    $query->whereBetween('reservations.date_reservation', [$dt, $a_dt]);
-                }else{
-                     $query->whereYear('reservations.date_reservation', Carbon::now()->year)->whereMonth('reservations.date_reservation', Carbon::now()->month);
-                }
-                $nb_biens_vendu_by_type_date = $query->groupBy(DB::raw("reservations.date_reservation, biens.type_id"))->get();
-                 $array_biens_type_et_date_reservation=[];
-                        foreach ($nb_biens_vendu_by_type_date as $data) {
-                                $array_biens_type_et_date_reservation[] = [
-                                    date($data['date_reservation']),
-                                    (int) $data['count'],
-                                    $data['type_id']
-                                ];
-                            }
+
                 $types_biens=TypeBien::on('temp')->where('projet_id',$request->projet_id)->get();
-                $array_type_date_desistement=[];
                // Désistements par type et date
                 $query = Desistement::on('temp')
                     ->select(DB::raw("DATE(created_at) as day, count(id) as count, type"))
@@ -147,13 +127,28 @@ class StatistiquesController extends Controller
                 }
                 $nb_desistement_par_type = $query->groupBy(DB::raw("day, type"))->get();
 
+                $array_type_date_desistement = [];
+
+                // Process the query results
                 foreach ($nb_desistement_par_type as $data) {
-                                $array_type_date_desistement[] = [
-                                    date($data['day']),
-                                    (int) $data['count'],
-                                    $data['type']
-                                ];
+                    // Determine the type name based on the type value
+                    $typeName = match((int)$data['type']) {
+                        1 => 'Désistement Définitif',
+                        2 => 'Désistement au Profit',
+                        3 => 'Changement de Bien',
+                        default => 'Inconnu'
+                    };
+
+                    // Format the date as DD-MM-YYYY
+                    $formattedDate = date('d-m-Y', strtotime($data['day']));
+
+                    $array_type_date_desistement[] = (object)[
+                        'date' => $formattedDate,
+                        'typeDesistement' => $typeName,
+                        'nombre' => (int)$data['count']
+                    ];
                 }
+
                     // Remboursements
                 $query = Remboursement::on('temp')
                     ->select(DB::raw("DATE(remboursements.created_at) as day, sum(remboursements.montant_a_rembourser) as montant_a_rembourser"))
@@ -221,7 +216,7 @@ class StatistiquesController extends Controller
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
             ];
-            $data_v_pre_reserve_perdu = [
+           /* $data_v_pre_reserve_perdu = [
                 'de_date' => $dt,
                 'a_date' => $a_dt,
                 'statut' => StatutVisiteEnum::Pré_Réservation_Perdu->value,
@@ -242,7 +237,7 @@ class StatistiquesController extends Controller
                 'statut' => StatutVisiteEnum::Réservation_Perdu->value,
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
-            ];
+            ];*/
             $data_v_receptif = [
                 'de_date' => $dt,
                 'a_date' => $a_dt,
@@ -259,14 +254,14 @@ class StatistiquesController extends Controller
                 'interet' => InteretEnum::Perdu->value,
                 'projet_id' =>$projet_id,
             ];
-            $data_v_vente_direct = [
+           /* $data_v_vente_direct = [
                 'de_date' => $dt,
                 'a_date' => $a_dt,
                 'order' => 1,
                 'statut' => StatutVisiteEnum::Vendu->value,
                 'interet' => InteretEnum::Intéressé->value,
                 'projet_id' =>$projet_id,
-            ];
+            ];*/
             $data_v_vente = [
                 'de_date' => $dt,
                 'a_date' => $a_dt,
@@ -279,11 +274,11 @@ class StatistiquesController extends Controller
             $Array_visite = [];
             array_push($Array_visite,$this->get_visites($request->merge($data_v_receptif))->original['nb_v']);
             array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve))->original['nb_v']);
-            array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve_perdu))->original['nb_v']);
-            array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve_vendu))->original['nb_v']);
-            array_push($Array_visite,$this->get_visites($request->merge($data_v_vente_direct))->original['nb_v']);
+          //  array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve_perdu))->original['nb_v']);
+          //  array_push($Array_visite,$this->get_visites($request->merge($data_v_pre_reserve_vendu))->original['nb_v']);
+           // array_push($Array_visite,$this->get_visites($request->merge($data_v_vente_direct))->original['nb_v']);
             array_push($Array_visite,$this->get_visites($request->merge($data_v_vente))->original['nb_v']);
-            array_push($Array_visite,$this->get_visites($request->merge($data_v_reserve_perdu))->original['nb_v']);
+          //  array_push($Array_visite,$this->get_visites($request->merge($data_v_reserve_perdu))->original['nb_v']);
             array_push($Array_visite,$this->get_visites($request->merge($data_v_perdu))->original['nb_v']);
 
           // Appels
@@ -322,6 +317,48 @@ class StatistiquesController extends Controller
         // For your chart data
         $chartData_sources = $prospectsBySource;
 
+         // Biens vendus par type et date
+               $query = Bien::on('temp')
+            ->select(DB::raw("reservations.date_reservation, count(reservations.id) as count, biens.type_id, type_biens.type as type_name"))
+            ->join('reservations', 'biens.id', 'reservations.bien_id')
+            ->join('type_biens', 'biens.type_id', 'type_biens.id') // Join with types table to get names
+            ->where('biens.etat', 'RESERVATION')
+            ->where('reservations.etat', 1)
+            ->where('reservations.deleted_at', null)
+            ->where('biens.projet_id', $request->projet_id);
+
+            if ($dt !== null && $a_dt !== null) {
+                $query->whereBetween('reservations.date_reservation', [$dt, $a_dt]);
+            } else {
+                $query->whereYear('reservations.date_reservation', Carbon::now()->year)
+                    ->whereMonth('reservations.date_reservation', Carbon::now()->month);
+            }
+
+            $nb_biens_vendu_by_type_date = $query->groupBy(DB::raw("reservations.date_reservation, biens.type_id, type_biens.type"))->get();
+
+            // First get all unique type names
+            $typeNames = $nb_biens_vendu_by_type_date->pluck('type_name')->unique()->toArray();
+
+            // Initialize the result array
+            $array_ventes = [];
+
+            // Group by date
+            foreach ($nb_biens_vendu_by_type_date->groupBy('date_reservation') as $date => $items) {
+                $dateEntry = ['date' => $date];
+
+                // Initialize all type counts to 0
+                foreach ($typeNames as $typeName) {
+                    $dateEntry[$typeName] = 0;
+                }
+
+                // Set actual counts
+                foreach ($items as $item) {
+                    $dateEntry[$item->type_name] = (int)$item->count;
+                }
+
+                $array_ventes[] = $dateEntry;
+            }
+
         return response()->json([
                 'nb_appels'=>$nb_appels,
                 'nb_visites'=>$nb_visites,
@@ -330,14 +367,14 @@ class StatistiquesController extends Controller
                 'sum_penalites'=>$sum_penalites,
                 'sum_encaissements'=>$sum_encaissements,
                 'nb_prospects'=>$nb_prospects,
-              //  'plages_dates'=>$array_plages_dates,
-                'array_biens_type_et_date_reservation'=>$array_biens_type_et_date_reservation,
+                'bien_vendu_par_type_et_date_reservation'=>$array_ventes,
                 'array_type_date_desistement'=>$array_type_date_desistement,
                 'types_biens'=>$types_biens,
                 'visites'=>$Array_visite,
                 'remboursements'=>$array_remboursements,
                 'sum_remb'=>$sum_remb,
-                'encaissements'=>$array_encaissements
+                'encaissements'=>$array_encaissements,
+                'chartData_sources'=>$prospectsBySource
 
             ], 200);
     }

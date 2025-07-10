@@ -95,7 +95,7 @@ class RemboursementController extends Controller
             }
             if ($request->filled('bien')) {
                 $query->whereHas('desistement_not_trashed.bien_ancien', function ($q) use ($request) {
-                    $q->where('propriete_dite_bien', $request->input('bien'));
+                    $q->where('propriete_dite_bien','like',$request->input('bien'));
                 });
             }
 
@@ -379,7 +379,6 @@ class RemboursementController extends Controller
             }
 
              if ($request->filled('montant')) {
-
                  $query->where('montant_transfert','like', '%' . $request->input('montant') . '%');
              }
 
