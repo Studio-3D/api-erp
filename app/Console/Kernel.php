@@ -24,7 +24,12 @@ class Kernel extends ConsoleKernel
         $schedule->command(command: 'whatsapp:send-reminder')->dailyAt('00:00'); // Exécute tous les jours à minuit
         $schedule->command('GenererCreneauxRdv')->dailyAt('00:00'); // Exécute tous les jours à minuit
 
-       }
+        // Poll LinkedIn stats every 5 minutes
+        $schedule->command('linkedin:poll-stats')
+                 ->everyFiveMinutes()
+                 ->withoutOverlapping()
+                 ->runInBackground();
+    }
 
     /**
      * Register the commands for the application.
