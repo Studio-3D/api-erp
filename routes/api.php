@@ -56,6 +56,7 @@ use App\Http\Controllers\SocieteController;
 use App\Http\Controllers\TikTok\TikTokApiController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WhatsApp\WhatsAppController;
+use App\Http\Controllers\LinkedIn\LinkedInController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -89,6 +90,26 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/postTo_Social_Network', [Facebook_InstagramController::class, 'postTo_Social_Network']);
         Route::get('/configurations_social_network', [Facebook_InstagramController::class, 'configurations_social_network']);
         Route::post('store_configurations_social_network', [Facebook_InstagramController::class, 'store_configurations_social_network'])->name('');
+        
+        // Facebook configurations by project
+        Route::get('/facebook-configurations', [Facebook_InstagramController::class, 'facebook_configurations']);
+        Route::post('/facebook-configurations', [Facebook_InstagramController::class, 'store_facebook_configuration']);
+        Route::delete('/facebook-configurations/{id}', [Facebook_InstagramController::class, 'delete_facebook_configuration']);
+        
+        // Facebook webhook configurations
+        Route::get('/facebook-webhooks', [Facebook_InstagramController::class, 'facebook_webhook_configurations']);
+        Route::post('/facebook-configurations/{id}/webhook', [Facebook_InstagramController::class, 'store_facebook_webhook']);
+        Route::delete('/facebook-configurations/{id}/webhook', [Facebook_InstagramController::class, 'delete_facebook_webhook']);
+        
+        // Instagram configurations by project
+        Route::get('/instagram-configurations', [Facebook_InstagramController::class, 'instagram_configurations']);
+        Route::post('/instagram-configurations', [Facebook_InstagramController::class, 'store_instagram_configuration']);
+        Route::delete('/instagram-configurations/{id}', [Facebook_InstagramController::class, 'delete_instagram_configuration']);
+        
+        // Instagram webhook configurations
+        Route::get('/instagram-webhooks', [Facebook_InstagramController::class, 'instagram_webhook_configurations']);
+        Route::post('/instagram-configurations/{id}/webhook', [Facebook_InstagramController::class, 'store_instagram_webhook']);
+        Route::delete('/instagram-configurations/{id}/webhook', [Facebook_InstagramController::class, 'delete_instagram_webhook']);
         
         // Webhook configuration routes
         Route::get('/webhook_configuration', [Facebook_InstagramController::class, 'webhook_configuration']);
@@ -408,9 +429,22 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/tiktok/publish', [TikTokApiController::class, 'publishContent']);
         Route::get('/tiktok/status', [TikTokApiController::class, 'checkPublishStatus']);
 
-        // LinkedIn integration
-        Route::post('/linkedin/access-token', [App\Http\Controllers\LinkedIn\LinkedInController::class, 'getAccessToken']);
-        Route::post('/linkedin/share', [App\Http\Controllers\LinkedIn\LinkedInController::class, 'sharePost']);
+        // LinkedIn integration - updated without webhook endpoints
+        Route::post('/linkedin/access-token', [LinkedInController::class, 'getAccessToken']);
+        Route::post('/linkedin/share', [LinkedInController::class, 'sharePost']);
+        
+        // LinkedIn configurations by project
+        Route::get('/linkedin-configurations', [LinkedInController::class, 'linkedin_configurations']);
+        Route::post('/linkedin-configurations', [LinkedInController::class, 'store_linkedin_configuration']);
+        Route::delete('/linkedin-configurations/{id}', [LinkedInController::class, 'delete_linkedin_configuration']);
+        
+        // LinkedIn auth endpoints
+        Route::get('/linkedin-config/auth-url', [LinkedInController::class, 'getAuthUrl']);
+        Route::post('/linkedin-config/callback', [LinkedInController::class, 'handleCallback']);
+        
+        // LinkedIn analytics and polling endpoints
+        Route::post('/linkedin/poll-stats', [LinkedInController::class, 'pollLinkedInStats']);
+        Route::get('/linkedin/analytics/{projectId}', [LinkedInController::class, 'getLinkedInAnalytics']);
     });
     
     /*************************************Société***************************** */
@@ -501,4 +535,5 @@ Route::middleware('auth:api')->group(function () {
     Route::put('update_contrat/{cont_id}', [LivraisonController::class, 'update_contrat'])->name('');
     Route::post('scanner_contrat', [LivraisonController::class, 'scanner_contrat'])->name('');
 });
+
 Route::get('sendResetPasswordEmail', [UserController::class, 'sendResetPasswordEmail']);

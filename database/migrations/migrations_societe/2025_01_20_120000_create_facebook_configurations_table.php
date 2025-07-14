@@ -11,18 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('configuration_social_networks', function (Blueprint $table) {
+        Schema::create('facebook_configurations', function (Blueprint $table) {
             $table->id();
-            $table->string('page_fcb_id')->nullable(); // facebook, instagram, whatsapp
-            $table->longText('acces_token_page')->nullable(); // comment, reaction, message
-            $table->string('instagram_id')->nullable(); // facebook, instagram, whatsapp
-            $table->longText('acces_token_user')->nullable(); // comment, reaction, message
-            // Add webhook configuration fields
+            $table->string('page_fcb_id');
+            $table->longText('acces_token_page');
+            $table->unsignedBigInteger('projet_id');
             $table->string('webhook_verify_token')->nullable();
             $table->boolean('webhook_enabled')->default(false);
             $table->json('webhook_subscriptions')->nullable();
             $table->softDeletes();
             $table->timestamps();
+            
+            $table->foreign('projet_id')->references('id')->on('projets')->onDelete('cascade');
+            $table->index(['projet_id', 'deleted_at']);
         });
     }
 
@@ -31,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('configuration_social_networks');
+        Schema::dropIfExists('facebook_configurations');
     }
 };

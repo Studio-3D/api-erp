@@ -6,6 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
 //composer require guzzlehttp/guzzle===>required
 
 use GuzzleHttp\Client;
@@ -416,7 +419,7 @@ class Facebook_InstagramController extends Controller
                 'webhook_verify_token' => $config->webhook_verify_token ?? '',
                 'webhook_enabled' => $config->webhook_enabled ?? false,
                 'webhook_subscriptions' => $config->webhook_subscriptions ?? [],
-                'webhook_url' => env('WEBHOOK_BASE_URL', url('/api')) . '/webhookFcb_Insta',
+                'webhook_url' => 'https://e86332116ba7.ngrok-free.app/api/webhookFcb_Insta',
             ];
             
             return response()->json(['webhook_config' => $webhookConfig], 200);
@@ -439,14 +442,14 @@ class Facebook_InstagramController extends Controller
             }
             
             $request->validate([
-                'webhook_verify_token' => 'required|string',
-                'webhook_subscriptions' => 'array'
+                'webhook_verify_token' => 'required|string'
             ]);
 
             $config->setConnection('temp');
             $config->webhook_verify_token = $request->webhook_verify_token;
-            $config->webhook_enabled = $request->webhook_enabled ?? false;
-            $config->webhook_subscriptions = $request->webhook_subscriptions ?? [];
+            $config->webhook_enabled = true; // Always enable webhooks after registration
+            // Always include all 4 event subscriptions
+            $config->webhook_subscriptions = ['feed', 'comments', 'reactions', 'mentions'];
             $config->save();
 
             return response()->json(['message' => 'Configuration webhook enregistrée avec succès'], 200);
@@ -467,7 +470,7 @@ class Facebook_InstagramController extends Controller
 
             try {
                 // Test webhook verification with our known URL
-                $webhookUrl = env('WEBHOOK_BASE_URL', url('/api')) . '/webhookFcb_Insta';
+                $webhookUrl = 'https://e86332116ba7.ngrok-free.app/api/webhookFcb_Insta';
                 $testUrl = $webhookUrl . '?hub.mode=subscribe&hub.challenge=test_challenge&hub.verify_token=' . $config->webhook_verify_token;
                 
                 $response = Http::get($testUrl);
@@ -485,34 +488,176 @@ class Facebook_InstagramController extends Controller
         }
     }
 
-    // Modified verify method to use database configuration with fallback to env
+    // Modified verify method to properly connect to tenant databases
     public function verify(Request $request)
     {
-        DatabaseHelper::Config();
-        $config = ConfigurationSocialNetwork::on('temp')->first();
-        
-        // Use database config first, then env variable, then fallback
-        $facebook_verify_token = $config->webhook_verify_token ?? env('WEBHOOK_VERIFY_TOKEN', 'default_fallback_token');
-        $hub_mode = $request->hub_mode;
-        $hub_challenge = $request->hub_challenge;
-        $hub_verify_token = $request->hub_verify_token;
+        try {
+            $hub_mode = $request->hub_mode;
+            $hub_challenge = $request->hub_challenge;
+            $hub_verify_token = $request->hub_verify_token;
 
-        Log::info("Webhook verification attempt with token: " . $hub_verify_token);
-        if ($hub_verify_token === $facebook_verify_token) {
-            return response($hub_challenge, 200);
+            Log::info("Facebook Webhook verification attempt", [
+                'mode' => $hub_mode,
+                'verify_token' => $hub_verify_token,
+                'challenge' => $hub_challenge
+            ]);
+
+            // Check if it's a subscription verification
+            if ($hub_mode === 'subscribe') {
+                $found_matching_token = false;
+                
+                // First, try to get all societes from the main database
+                $societes = \App\Models\Societe::all();
+                
+                Log::info("Checking " . $societes->count() . " sociétés for webhook token: " . $hub_verify_token);
+                
+                foreach ($societes as $index => $societe) {
+                    try {
+                        Log::info("Processing société {$index}/{$societes->count()}: ID={$societe->id}");
+                        
+                        // Configure for this specific société
+                        DatabaseHelper::Config($societe->id);
+                        
+                        // Safe logging - handle cases where raison_sociale might not exist
+                        $societeInfo = "ID: {$societe->id}";
+                        if (isset($societe->raison_sociale) && $societe->raison_sociale) {
+                            $societeInfo .= " ({$societe->raison_sociale})";
+                        } else {
+                            $societeInfo .= " (no name)";
+                        }
+                        Log::info("Checking société {$societeInfo}");
+                        
+                        // Construct the expected database name manually
+                        $expectedDbName = "Erp_" . ($societe->raison_sociale_concatene ?: $societe->raison_sociale ?: 'Societe' . $societe->id) . "_" . $societe->id;
+                        Log::info("Expected database name: " . $expectedDbName);
+                        
+                        // Get the current database connection name being used
+                        $currentDbName = DB::connection('temp')->getDatabaseName();
+                        Log::info("Current temp connection database: " . $currentDbName);
+                        
+                        // Check if we're connected to the right database
+                        if ($currentDbName !== $expectedDbName) {
+                            Log::warning("Database mismatch! Expected: {$expectedDbName}, Current: {$currentDbName}");
+                            // Try to manually configure the connection
+                            try {
+                                config(['database.connections.temp.database' => $expectedDbName]);
+                                DB::purge('temp');
+                                DB::reconnect('temp');
+                                $newDbName = DB::connection('temp')->getDatabaseName();
+                                Log::info("Reconnected to database: " . $newDbName);
+                            } catch (\Exception $reconnectError) {
+                                Log::error("Failed to reconnect to correct database: " . $reconnectError->getMessage());
+                                continue;
+                            }
+                        }
+                        
+                        // Check project-specific Facebook configurations
+                        if (Schema::connection('temp')->hasTable('facebook_configurations')) {
+                            Log::info("Checking facebook_configurations table for société {$societe->id}");
+                            
+                            $facebookConfigs = DB::connection('temp')
+                                ->table('facebook_configurations')
+                                ->whereNotNull('webhook_verify_token')
+                                ->where('webhook_enabled', true)
+                                ->whereNull('deleted_at')
+                                ->get();
+                            
+                            Log::info("Found " . $facebookConfigs->count() . " Facebook configurations for société {$societe->id}");
+                            
+                            foreach ($facebookConfigs as $config) {
+                                Log::info("Comparing token: expected='{$config->webhook_verify_token}' vs received='{$hub_verify_token}'");
+                                
+                                if ($config->webhook_verify_token === $hub_verify_token) {
+                                    Log::info("MATCH FOUND! Token '{$hub_verify_token}' found in société {$societe->id} Facebook configuration ID {$config->id}");
+                                    $found_matching_token = true;
+                                    break 2; // Break out of both loops
+                                }
+                            }
+                        } else {
+                            Log::info("facebook_configurations table does not exist for société {$societe->id} in database {$currentDbName}");
+                        }
+                        
+                        // Also check global configuration table for this société
+                        if (Schema::connection('temp')->hasTable('configuration_social_networks')) {
+                            Log::info("Checking configuration_social_networks table for société {$societe->id}");
+                            
+                            $config = ConfigurationSocialNetwork::on('temp')->first();
+                            if ($config && $config->webhook_verify_token) {
+                                Log::info("Found global config with token: '{$config->webhook_verify_token}'");
+                                
+                                if ($config->webhook_verify_token === $hub_verify_token) {
+                                    Log::info("MATCH FOUND! Token '{$hub_verify_token}' found in société {$societe->id} global configuration");
+                                    $found_matching_token = true;
+                                    break; // Break out of the société loop
+                                }
+                            } else {
+                                Log::info("No global configuration found for société {$societe->id}");
+                            }
+                        } else {
+                            Log::info("configuration_social_networks table does not exist for société {$societe->id} in database {$currentDbName}");
+                        }
+                        
+                        Log::info("Finished checking société {$societe->id} - no match found, continuing to next...");
+                        
+                    } catch (\Exception $e) {
+                        Log::error("Error checking société {$societe->id} for webhook token: " . $e->getMessage());
+                        Log::error("Stack trace for société {$societe->id}: " . $e->getTraceAsString());
+                        continue; // Skip this société and continue with the next one
+                    }
+                }
+                
+                Log::info("Finished checking all " . $societes->count() . " sociétés. Found matching token: " . ($found_matching_token ? 'YES' : 'NO'));
+                
+                // Final fallback to environment variable if no token found in any database
+                if (!$found_matching_token) {
+                    $env_token = env('WEBHOOK_VERIFY_TOKEN', 'default_fallback_token');
+                    Log::info("Checking environment variable token: '{$env_token}'");
+                    
+                    if ($hub_verify_token === $env_token) {
+                        Log::info("MATCH FOUND! Token '{$hub_verify_token}' found in environment variable");
+                        $found_matching_token = true;
+                    } else {
+                        Log::info("No match found in environment variable either");
+                    }
+                }
+
+                // Now verify the result
+                if ($found_matching_token) {
+                    Log::info("Facebook webhook verification SUCCESSFUL - returning challenge: " . $hub_challenge);
+                    return response($hub_challenge, 200);
+                } else {
+                    Log::error("Facebook webhook verification FAILED - no matching token found anywhere", [
+                        'received_token' => $hub_verify_token,
+                        'searched_societes' => $societes->count(),
+                        'token_length' => strlen($hub_verify_token)
+                    ]);
+                    return response('Forbidden', 403);
+                }
+            }
+
+            Log::warning("Invalid hub_mode received: " . $hub_mode);
+            return response('Bad Request', 400);
+            
+        } catch (\Exception $e) {
+            Log::error("Facebook webhook verification error: " . $e->getMessage());
+            Log::error("Stack trace: " . $e->getTraceAsString());
+            return response('Internal Server Error', 500);
         }
-
-        return response('Unauthorized', 403);
     }
 
 
         public function handleWebhook(Request $request)
         {
 
-            // Handle Meta webhook verification
-            /*if ($request->has('hub_mode') && $request->has('hub_verify_token')) {
-                return $this->verifyWebhook($request);
-            }*/
+            // Check if webhooks are enabled before processing
+            DatabaseHelper::Config();
+            $config = ConfigurationSocialNetwork::on('temp')->first();
+            
+            if (!$config || !$config->webhook_enabled) {
+                Log::info('Webhook received but webhooks are disabled');
+                return response()->json(['message' => 'Webhooks disabled'], 200);
+            }
+
             // Log::info('Webhook Received:', $request->all());
 
             $entries = $request->input('entry', []);
@@ -526,7 +671,7 @@ class Facebook_InstagramController extends Controller
         }
 
         private function verifyWebhook(Request $request)
-        {//env('META_VERIFY_TOKEN') set fadwa in verify token webhook
+        {
             $verifyToken = 'fadwa';
             if ($request->input('hub_verify_token') === $verifyToken) {
                 return response($request->input('hub_challenge'));
@@ -750,6 +895,536 @@ class Facebook_InstagramController extends Controller
             }
 
             return response()->json(['configuration' => 'done'], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    /******************************Facebook Configuration by Project*************************/
+    
+    public function facebook_configurations(Request $request)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                // Check if table exists first
+                if (!Schema::connection('temp')->hasTable('facebook_configurations')) {
+                    return response()->json(['configurations' => []], 200);
+                }
+                
+                $configurations = DB::connection('temp')
+                    ->table('facebook_configurations as fc')
+                    ->leftJoin('projets as p', 'fc.projet_id', '=', 'p.id')
+                    ->select('fc.*', 'p.nom as projet_nom')
+                    ->whereNull('fc.deleted_at')
+                    ->orderBy('fc.created_at', 'desc')
+                    ->get()
+                    ->map(function ($config) {
+                        return [
+                            'id' => $config->id,
+                            'page_fcb_id' => $config->page_fcb_id,
+                            'projet_id' => $config->projet_id,
+                            'created_at' => $config->created_at,
+                            'projet' => $config->projet_nom ? ['nom' => $config->projet_nom] : null
+                        ];
+                    });
+                
+                return response()->json(['configurations' => $configurations], 200);
+            } catch (\Exception $e) {
+                // If table doesn't exist, return empty array
+                if (str_contains($e->getMessage(), "doesn't exist")) {
+                    return response()->json(['configurations' => []], 200);
+                }
+                throw $e;
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function store_facebook_configuration(Request $request)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                // Check if table exists, create if not
+                if (!Schema::connection('temp')->hasTable('facebook_configurations')) {
+                    Schema::connection('temp')->create('facebook_configurations', function (Blueprint $table) {
+                        $table->id();
+                        $table->string('page_fcb_id');
+                        $table->longText('acces_token_page');
+                        $table->unsignedBigInteger('projet_id');
+                        $table->string('webhook_verify_token')->nullable();
+                        $table->boolean('webhook_enabled')->default(false);
+                        $table->json('webhook_subscriptions')->nullable();
+                        $table->softDeletes();
+                        $table->timestamps();
+                        
+                        $table->foreign('projet_id')->references('id')->on('projets')->onDelete('cascade');
+                        $table->unique(['projet_id', 'deleted_at'], 'unique_project_facebook_config');
+                    });
+                } else {
+                    // Table exists, check if webhook columns exist
+                    $columns = Schema::connection('temp')->getColumnListing('facebook_configurations');
+                    if (!in_array('webhook_verify_token', $columns)) {
+                        Schema::connection('temp')->table('facebook_configurations', function (Blueprint $table) {
+                            $table->string('webhook_verify_token')->nullable();
+                            $table->boolean('webhook_enabled')->default(false);
+                            $table->json('webhook_subscriptions')->nullable();
+                        });
+                    }
+                }
+                
+                $request->validate([
+                    'page_fcb_id' => 'required|string',
+                    'acces_token_page' => 'required|string',
+                    'projet_id' => 'required|integer|exists:temp.projets,id'
+                ]);
+
+                // Check if configuration already exists for this project
+                $existingConfig = DB::connection('temp')
+                    ->table('facebook_configurations')
+                    ->where('projet_id', $request->projet_id)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if ($existingConfig) {
+                    return response()->json([
+                        'error' => 'Une configuration Facebook existe déjà pour ce projet'
+                    ], 400);
+                }
+
+                // Insert new configuration
+                $configId = DB::connection('temp')->table('facebook_configurations')->insertGetId([
+                    'page_fcb_id' => $request->page_fcb_id,
+                    'acces_token_page' => $request->acces_token_page,
+                    'projet_id' => $request->projet_id,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+                return response()->json([
+                    'message' => 'Configuration Facebook enregistrée avec succès',
+                    'configuration_id' => $configId
+                ], 200);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => 'Erreur lors de l\'enregistrement: ' . $e->getMessage()
+                ], 500);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function delete_facebook_configuration(Request $request, $id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                // Check if table exists
+                if (!Schema::connection('temp')->hasTable('facebook_configurations')) {
+                    return response()->json(['error' => 'Configuration non trouvée'], 404);
+                }
+                
+                $deleted = DB::connection('temp')
+                    ->table('facebook_configurations')
+                    ->where('id', $id)
+                    ->update(['deleted_at' => now()]);
+
+                if ($deleted) {
+                    return response()->json(['message' => 'Configuration supprimée avec succès'], 200);
+                } else {
+                    return response()->json(['error' => 'Configuration non trouvée'], 404);
+                }
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => 'Erreur lors de la suppression: ' . $e->getMessage()
+                ], 500);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    /******************************Instagram Configuration by Project*************************/
+    
+    public function instagram_configurations(Request $request)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                // Check if table exists first
+                if (!Schema::connection('temp')->hasTable('instagram_configurations')) {
+                    return response()->json(['configurations' => []], 200);
+                }
+                
+                $configurations = DB::connection('temp')
+                    ->table('instagram_configurations as ic')
+                    ->leftJoin('projets as p', 'ic.projet_id', '=', 'p.id')
+                    ->select('ic.*', 'p.nom as projet_nom')
+                    ->whereNull('ic.deleted_at')
+                    ->orderBy('ic.created_at', 'desc')
+                    ->get()
+                    ->map(function ($config) {
+                        return [
+                            'id' => $config->id,
+                            'instagram_id' => $config->instagram_id,
+                            'projet_id' => $config->projet_id,
+                            'created_at' => $config->created_at,
+                            'projet' => $config->projet_nom ? ['nom' => $config->projet_nom] : null
+                        ];
+                    });
+                
+                return response()->json(['configurations' => $configurations], 200);
+            } catch (\Exception $e) {
+                // If table doesn't exist, return empty array
+                if (str_contains($e->getMessage(), "doesn't exist")) {
+                    return response()->json(['configurations' => []], 200);
+                }
+                throw $e;
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function store_instagram_configuration(Request $request)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                // Check if table exists, create if not
+                if (!Schema::connection('temp')->hasTable('instagram_configurations')) {
+                    Schema::connection('temp')->create('instagram_configurations', function (Blueprint $table) {
+                        $table->id();
+                        $table->string('instagram_id');
+                        $table->longText('acces_token_user');
+                        $table->unsignedBigInteger('projet_id');
+                        $table->string('webhook_verify_token')->nullable();
+                        $table->boolean('webhook_enabled')->default(false);
+                        $table->json('webhook_subscriptions')->nullable();
+                        $table->softDeletes();
+                        $table->timestamps();
+                        
+                        $table->foreign('projet_id')->references('id')->on('projets')->onDelete('cascade');
+                        $table->unique(['projet_id', 'deleted_at'], 'unique_project_instagram_config');
+                    });
+                } else {
+                    // Table exists, check if webhook columns exist
+                    $columns = Schema::connection('temp')->getColumnListing('instagram_configurations');
+                    if (!in_array('webhook_verify_token', $columns)) {
+                        Schema::connection('temp')->table('instagram_configurations', function (Blueprint $table) {
+                            $table->string('webhook_verify_token')->nullable();
+                            $table->boolean('webhook_enabled')->default(false);
+                            $table->json('webhook_subscriptions')->nullable();
+                        });
+                    }
+                }
+                
+                $request->validate([
+                    'instagram_id' => 'required|string',
+                    'acces_token_user' => 'required|string',
+                    'projet_id' => 'required|integer|exists:temp.projets,id'
+                ]);
+
+                // Check if configuration already exists for this project
+                $existingConfig = DB::connection('temp')
+                    ->table('instagram_configurations')
+                    ->where('projet_id', $request->projet_id)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if ($existingConfig) {
+                    return response()->json([
+                        'error' => 'Une configuration Instagram existe déjà pour ce projet'
+                    ], 400);
+                }
+
+                // Insert new configuration
+                $configId = DB::connection('temp')->table('instagram_configurations')->insertGetId([
+                    'instagram_id' => $request->instagram_id,
+                    'acces_token_user' => $request->acces_token_user,
+                    'projet_id' => $request->projet_id,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+                return response()->json([
+                    'message' => 'Configuration Instagram enregistrée avec succès',
+                    'configuration_id' => $configId
+                ], 200);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => 'Erreur lors de l\'enregistrement: ' . $e->getMessage()
+                ], 500);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function delete_instagram_configuration(Request $request, $id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                // Check if table exists
+                if (!Schema::connection('temp')->hasTable('instagram_configurations')) {
+                    return response()->json(['error' => 'Configuration non trouvée'], 404);
+                }
+
+                $deleted = DB::connection('temp')
+                    ->table('instagram_configurations')
+                    ->where('id', $id)
+                    ->update(['deleted_at' => now()]);
+
+                if ($deleted) {
+                    return response()->json(['message' => 'Configuration supprimée avec succès'], 200);
+                } else {
+                    return response()->json(['error' => 'Configuration non trouvée'], 404);
+                }
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => 'Erreur lors de la suppression: ' . $e->getMessage()
+                ], 500);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    /******************************Facebook Webhook Configuration by Project*************************/
+    
+    public function facebook_webhook_configurations(Request $request)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                if (!Schema::connection('temp')->hasTable('facebook_configurations')) {
+                    return response()->json(['webhooks' => []], 200);
+                }
+                
+                $webhooks = DB::connection('temp')
+                    ->table('facebook_configurations as fc')
+                    ->leftJoin('projets as p', 'fc.projet_id', '=', 'p.id')
+                    ->select('fc.*', 'p.nom as projet_nom')
+                    ->whereNull('fc.deleted_at')
+                    ->whereNotNull('fc.webhook_verify_token')
+                    ->orderBy('fc.created_at', 'desc')
+                    ->get()
+                    ->map(function ($config) {
+                        return [
+                            'id' => $config->id,
+                            'page_fcb_id' => $config->page_fcb_id,
+                            'projet_id' => $config->projet_id,
+                            'webhook_verify_token' => $config->webhook_verify_token,
+                            'webhook_enabled' => $config->webhook_enabled ?? false,
+                            'webhook_subscriptions' => json_decode($config->webhook_subscriptions ?? '[]'),
+                            'webhook_url' => 'https://e86332116ba7.ngrok-free.app/api/webhookFcb_Insta',
+                            'created_at' => $config->created_at,
+                            'projet' => $config->projet_nom ? ['nom' => $config->projet_nom] : null
+                        ];
+                    });
+                
+                return response()->json(['webhooks' => $webhooks], 200);
+            } catch (\Exception $e) {
+                return response()->json(['webhooks' => []], 200);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function store_facebook_webhook(Request $request, $configId)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                $request->validate([
+                    'webhook_verify_token' => 'required|string'
+                ]);
+
+                if (!Schema::connection('temp')->hasTable('facebook_configurations')) {
+                    return response()->json(['error' => 'Configuration table not found'], 404);
+                }
+
+                $config = DB::connection('temp')
+                    ->table('facebook_configurations')
+                    ->where('id', $configId)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if (!$config) {
+                    return response()->json(['error' => 'Configuration not found'], 404);
+                }
+
+                DB::connection('temp')
+                    ->table('facebook_configurations')
+                    ->where('id', $configId)
+                    ->update([
+                        'webhook_verify_token' => $request->webhook_verify_token,
+                        'webhook_enabled' => true,
+                        'webhook_subscriptions' => json_encode(['feed', 'comments', 'reactions']),
+                        'updated_at' => now()
+                    ]);
+
+                return response()->json(['message' => 'Webhook Facebook configuré avec succès'], 200);
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Erreur lors de la configuration: ' . $e->getMessage()], 500);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function delete_facebook_webhook(Request $request, $configId)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                if (!Schema::connection('temp')->hasTable('facebook_configurations')) {
+                    return response()->json(['error' => 'Configuration not found'], 404);
+                }
+
+                DB::connection('temp')
+                    ->table('facebook_configurations')
+                    ->where('id', $configId)
+                    ->update([
+                        'webhook_verify_token' => null,
+                        'webhook_enabled' => false,
+                        'webhook_subscriptions' => null,
+                        'updated_at' => now()
+                    ]);
+
+                return response()->json(['message' => 'Webhook supprimé avec succès'], 200);
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Erreur lors de la suppression: ' . $e->getMessage()], 500);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    /******************************Instagram Webhook Configuration by Project*************************/
+    
+    public function instagram_webhook_configurations(Request $request)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                if (!Schema::connection('temp')->hasTable('instagram_configurations')) {
+                    return response()->json(['webhooks' => []], 200);
+                }
+                
+                $webhooks = DB::connection('temp')
+                    ->table('instagram_configurations as ic')
+                    ->leftJoin('projets as p', 'ic.projet_id', '=', 'p.id')
+                    ->select('ic.*', 'p.nom as projet_nom')
+                    ->whereNull('ic.deleted_at')
+                    ->whereNotNull('ic.webhook_verify_token')
+                    ->orderBy('ic.created_at', 'desc')
+                    ->get()
+                    ->map(function ($config) {
+                        return [
+                            'id' => $config->id,
+                            'instagram_id' => $config->instagram_id,
+                            'projet_id' => $config->projet_id,
+                            'webhook_verify_token' => $config->webhook_verify_token,
+                            'webhook_enabled' => $config->webhook_enabled ?? false,
+                            'webhook_subscriptions' => json_decode($config->webhook_subscriptions ?? '[]'),
+                            'webhook_url' => 'https://e86332116ba7.ngrok-free.app/api/webhookFcb_Insta',
+                            'created_at' => $config->created_at,
+                            'projet' => $config->projet_nom ? ['nom' => $config->projet_nom] : null
+                        ];
+                    });
+                
+                return response()->json(['webhooks' => $webhooks], 200);
+            } catch (\Exception $e) {
+                return response()->json(['webhooks' => []], 200);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function store_instagram_webhook(Request $request, $configId)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                $request->validate([
+                    'webhook_verify_token' => 'required|string'
+                ]);
+
+                if (!Schema::connection('temp')->hasTable('instagram_configurations')) {
+                    return response()->json(['error' => 'Configuration table not found'], 404);
+                }
+
+                $config = DB::connection('temp')
+                    ->table('instagram_configurations')
+                    ->where('id', $configId)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if (!$config) {
+                    return response()->json(['error' => 'Configuration not found'], 404);
+                }
+
+                DB::connection('temp')
+                    ->table('instagram_configurations')
+                    ->where('id', $configId)
+                    ->update([
+                        'webhook_verify_token' => $request->webhook_verify_token,
+                        'webhook_enabled' => true,
+                        'webhook_subscriptions' => json_encode(['comments', 'mentions']),
+                        'updated_at' => now()
+                    ]);
+
+                return response()->json(['message' => 'Webhook Instagram configuré avec succès'], 200);
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Erreur lors de la configuration: ' . $e->getMessage()], 500);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function delete_instagram_webhook(Request $request, $configId)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                if (!Schema::connection('temp')->hasTable('instagram_configurations')) {
+                    return response()->json(['error' => 'Configuration not found'], 404);
+                }
+
+                DB::connection('temp')
+                    ->table('instagram_configurations')
+                    ->where('id', $configId)
+                    ->update([
+                        'webhook_verify_token' => null,
+                        'webhook_enabled' => false,
+                        'webhook_subscriptions' => null,
+                        'updated_at' => now()
+                    ]);
+
+                return response()->json(['message' => 'Webhook supprimé avec succès'], 200);
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Erreur lors de la suppression: ' . $e->getMessage()], 500);
+            }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
