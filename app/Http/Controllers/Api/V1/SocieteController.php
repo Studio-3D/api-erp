@@ -124,10 +124,19 @@ class SocieteController extends Controller
         if (RoleHelper::Superadmin()) {
             $user    = Auth::guard('api')->user();
             $societe = Societe::findOrFail($id);
-            $users   = User::where('societe_id', $societe->id)->get();
+            $users   = User::where('societe_id', $societe->id)->whereNot('id', 1)->get();
+            //$users   = User::where('societe_id', $societe->id)->get();
+
             foreach ($users as $user) {
                 UserController::destroy($user->id);
             }
+             $superadmin = User::find(1);
+            if ($superadmin && $superadmin->societe_id == $societe->id) {
+                // Remplacer le societe_id du superadmin par 1
+                $superadmin->societe_id = 1;
+                $superadmin->save();
+            }
+
             if ($societe->delete()) {
 
                 $societes = Societe::all();
