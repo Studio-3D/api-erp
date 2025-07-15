@@ -130,10 +130,8 @@ class SocieteController extends Controller
             }
             if ($societe->delete()) {
 
-                Config::set('broadcasting.default', 'pusher_1');
                 $societes = Societe::all();
 
-                broadcast(new NewSocieteEvent($societe->id));
                 return response()->json(['message' => 'societe supprimé avec succes'], 200);
 
             } else {
