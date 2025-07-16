@@ -419,7 +419,7 @@ class Facebook_InstagramController extends Controller
                 'webhook_verify_token' => $config->webhook_verify_token ?? '',
                 'webhook_enabled' => $config->webhook_enabled ?? false,
                 'webhook_subscriptions' => $config->webhook_subscriptions ?? [],
-                'webhook_url' => 'https://e86332116ba7.ngrok-free.app/api/webhookFcb_Insta',
+                'webhook_url' => 'https://7cf05634abad.ngrok-free.app/api/webhookFcb_Insta',
             ];
             
             return response()->json(['webhook_config' => $webhookConfig], 200);
@@ -470,7 +470,7 @@ class Facebook_InstagramController extends Controller
 
             try {
                 // Test webhook verification with our known URL
-                $webhookUrl = 'https://e86332116ba7.ngrok-free.app/api/webhookFcb_Insta';
+                $webhookUrl = 'https://7cf05634abad.ngrok-free.app/api/webhookFcb_Insta';
                 $testUrl = $webhookUrl . '?hub.mode=subscribe&hub.challenge=test_challenge&hub.verify_token=' . $config->webhook_verify_token;
                 
                 $response = Http::get($testUrl);
@@ -650,150 +650,197 @@ class Facebook_InstagramController extends Controller
         {
 
             // Check if webhooks are enabled before processing
-            DatabaseHelper::Config();
-            $config = ConfigurationSocialNetwork::on('temp')->first();
-            
-            if (!$config || !$config->webhook_enabled) {
-                Log::info('Webhook received but webhooks are disabled');
-                return response()->json(['message' => 'Webhooks disabled'], 200);
-            }
-
-            // Log::info('Webhook Received:', $request->all());
-
-            $entries = $request->input('entry', []);
-            foreach ($entries as $entry) {
-                foreach ($entry['changes'] ?? [] as $change) {
-                    $this->processChange($change);
+            try {
+                Log::info('Facebook webhook received:', $request->all());
+                
+                $entries = $request->input('entry', []);
+                
+                foreach ($entries as $entry) {
+                    // Get the page/object ID from the entry
+                    $pageId = $entry['id'] ?? null;
+                    
+                    if (!$pageId) {
+                        Log::warning('No page ID found in webhook entry', ['entry' => $entry]);
+                        continue;
+                    }
+                    
+                    // Find which société has a configuration for this page ID
+                    $societeId = $this->findSocieteByPageId($pageId);
+                    
+                    if (!$societeId) {
+                        Log::warning("No société configuration found for page ID: {$pageId}");
+                        continue;
+                    }
+                    
+                    // Configure database for the found société
+                    DatabaseHelper::Config($societeId);
+                    
+                    // Check if webhooks are enabled for this société
+                    $config = ConfigurationSocialNetwork::on('temp')->first();
+                    
+                    if (!$config || !$config->webhook_enabled) {
+                        Log::info("Webhook received but webhooks are disabled for société {$societeId}");
+                        continue;
+                    }
+                    
+                    // Process the changes for this entry
+                    foreach ($entry['changes'] ?? [] as $change) {
+                        $this->processChange($change, $societeId);
+                    }
                 }
+                
+                return response()->json(['message' => 'Webhook processed successfully']);
+                
+            } catch (\Exception $e) {
+                Log::error('Error processing Facebook webhook: ' . $e->getMessage(), [
+                    'trace' => $e->getTraceAsString(),
+                    'request_data' => $request->all()
+                ]);
+                
+                // Return 200 to prevent Facebook from retrying
+                return response()->json(['message' => 'Webhook received'], 200);
             }
-
-            return response()->json(['message' => 'Webhook processed successfully']);
         }
 
-        private function verifyWebhook(Request $request)
+        /**
+         * Find which société has a configuration for the given page ID
+         */
+        private function findSocieteByPageId($pageId)
         {
-            $verifyToken = 'fadwa';
-            if ($request->input('hub_verify_token') === $verifyToken) {
-                return response($request->input('hub_challenge'));
-            }
-            return response('Invalid verification token', 403);
-        }
-
-        private function detectPlatform($entry) {
-           /* if (isset($entry['messaging'])) {
-                return 'whatsapp';
-            }*/
-            if (isset($entry['changes']) && strpos($entry['id'], 'instagram') !== false) {
-                return 'instagram';
-            }
-            return 'facebook';
-        }
-
-
-        private function getEventType($event) {
-            // Facebook Post event Comment (Post created/updated)
-            if (isset($event['value']['post'])) {
-                return 'facebook_comment';
-            }
-            if (!isset($event['value']['post']) && isset($event['value']['post_id']) && !isset($event['value']['reaction_type'])) {
-                return 'facebook_post';
-
-            }
-
-            // Facebook Reaction event (Like, Love, etc.)
-            if (isset($event['value']['reaction_type'])) {
-                return 'facebook_reaction';
-            }
-
-            /*// WhatsApp Message event
-            if (isset($event['message']) && isset($event['from'])) {
-                return 'whatsapp_message';
-            }*/
-
-
-            if (isset($event['field'])){
-                // Instagram Comment event (New comment on a post)
-                if($event['field'] === 'comments'){
-                    return 'instagram_comment';
-                }elseif($event['field'] === 'mentions'){
-                     // Instagram Mention event (Mention of your account in a post/comment)
-                    return 'instagram_mention';
-
+            try {
+                // Get all societes from the main database
+                $societes = \App\Models\Societe::all();
+                
+                foreach ($societes as $societe) {
+                    try {
+                        // Configure for this specific société
+                        DatabaseHelper::Config($societe->id);
+                        
+                        // Check if this société has a Facebook configuration with this page ID
+                        if (Schema::connection('temp')->hasTable('facebook_configurations')) {
+                            $facebookConfig = DB::connection('temp')
+                                ->table('facebook_configurations')
+                                ->where('page_fcb_id', $pageId)
+                                ->whereNull('deleted_at')
+                                ->first();
+                            
+                            if ($facebookConfig) {
+                                Log::info("Found matching Facebook configuration for page {$pageId} in société {$societe->id}");
+                                return $societe->id;
+                            }
+                        }
+                        
+                        // Also check global configuration table
+                        if (Schema::connection('temp')->hasTable('configuration_social_networks')) {
+                            $globalConfig = ConfigurationSocialNetwork::on('temp')
+                                ->where('page_fcb_id', $pageId)
+                                ->first();
+                            
+                            if ($globalConfig) {
+                                Log::info("Found matching global configuration for page {$pageId} in société {$societe->id}");
+                                return $societe->id;
+                            }
+                        }
+                        
+                        // Check Instagram configurations as well (in case it's an Instagram webhook)
+                        if (Schema::connection('temp')->hasTable('instagram_configurations')) {
+                            $instagramConfig = DB::connection('temp')
+                                ->table('instagram_configurations')
+                                ->where('instagram_id', $pageId)
+                                ->whereNull('deleted_at')
+                                ->first();
+                            
+                            if ($instagramConfig) {
+                                Log::info("Found matching Instagram configuration for page {$pageId} in société {$societe->id}");
+                                return $societe->id;
+                            }
+                        }
+                        
+                        // Also check global Instagram configuration
+                        if (Schema::connection('temp')->hasTable('configuration_social_networks')) {
+                            $globalInstagramConfig = ConfigurationSocialNetwork::on('temp')
+                                ->where('instagram_id', $pageId)
+                                ->first();
+                            
+                            if ($globalInstagramConfig) {
+                                Log::info("Found matching global Instagram configuration for page {$pageId} in société {$societe->id}");
+                                return $societe->id;
+                            }
+                        }
+                        
+                    } catch (\Exception $e) {
+                        Log::error("Error checking société {$societe->id} for page {$pageId}: " . $e->getMessage());
+                        continue;
+                    }
                 }
+                
+                Log::warning("No société found for page ID: {$pageId}");
+                return null;
+                
+            } catch (\Exception $e) {
+                Log::error("Error finding société for page ID {$pageId}: " . $e->getMessage());
+                return null;
             }
-
-
-            /*// Instagram Direct Message event (New DM on Instagram)
-            if (isset($event['message']) && isset($event['from']['id'])) {
-                return 'instagram_dm';
-            }
-            // WhatsApp Status Update (Account status change, like "Online", "Typing")
-            if (isset($event['status']) && isset($event['from'])) {
-                return 'whatsapp_status';
-            }*/
-
-            // Unrecognized event type - log for debugging
-            Log::warning("Unknown event structure detected: " . json_encode($event));
-
-            return 'unknown';
         }
 
-
-        private function processChange($change)
+        private function processChange($change, $societeId)
         {
             $platform = $this->detectPlatform($change);
             $eventType = $this->getEventType($change);
-            Log::info("Processing Event - Platform: $platform, Type: $eventType");
-             // Store event in database
-                //10 id du ste
-                DatabaseHelper::Config(10);
-                Config::set('broadcasting.default', 'pusher_3');
-                //if commente deja existe
-                //extract url du post in instagram and put it to data
-                if($eventType=='instagram_comment'){
-                    if (isset($change['value']['media']['id'])) {
-                        $mediaId = $change['value']['media']['id'];
-                        $accessToken = 'EAAI3GumKq0oBOwvTWZAa8BYDCxzjwAgmeSE0DBoxndSsrUrGhAedIZCmYwkLD2H8OJaeQ7Q4Tzghlbobax0Dp3Y6gkDlIwpxNeSU6ObWv63bXC99cdGZCpqksjHKmMOMKYGtkWwCGX1dzPuY7pCElz3RFxQcpZAanfz9nbZBCJMI8b7uq0ohCHCKO';
-                        Log::info("Media Id: $mediaId, Type: $eventType");
-                        // Fetch the permalink from Instagram Graph API
-                        $response = Http::get("https://graph.facebook.com/v22.0/{$mediaId}", [
-                            'fields' => 'permalink',
-                            'access_token' => $accessToken
-                        ]);
+            Log::info("Processing Event - Platform: $platform, Type: $eventType, Société: $societeId");
+            
+            // Store event in database for the specific société
+            DatabaseHelper::Config($societeId);
+            Config::set('broadcasting.default', 'pusher_3');
+            
+            // Extract URL for Instagram posts if needed
+            if($eventType == 'instagram_comment'){
+                if (isset($change['value']['media']['id'])) {
+                    $mediaId = $change['value']['media']['id'];
+                    $accessToken = 'EAAI3GumKq0oBOwvTWZAa8BYDCxzjwAgmeSE0DBoxndSsrUrGhAedIZCmYwkLD2H8OJaeQ7Q4Tzghlbobax0Dp3Y6gkDlIwpxNeSU6ObWv63bXC99cdGZCpqksjHKmMOMKYGtkWwCGX1dzPuY7pCElz3RFxQcpZAanfz9nbZBCJMI8b7uq0ohCHCKO';
+                    Log::info("Media Id: $mediaId, Type: $eventType");
+                    
+                    // Fetch the permalink from Instagram Graph API
+                    $response = Http::get("https://graph.facebook.com/v22.0/{$mediaId}", [
+                        'fields' => 'permalink',
+                        'access_token' => $accessToken
+                    ]);
 
-                        if ($response->successful()) {
-                            $permalink = $response->json()['permalink'] ?? null;
-
-                            // Add link_url to the data
-                            $change['permalink'] =str_replace('\/\/', '/', $permalink) ;
-                        }
+                    if ($response->successful()) {
+                        $permalink = $response->json()['permalink'] ?? null;
+                        $change['permalink'] = str_replace('\/\/', '/', $permalink);
                     }
-
                 }
-                $web=new WebhookEvent();
+            }
+            
+            try {
+                $web = new WebhookEvent();
                 $web->setConnection('temp');
-                $web->platform=$platform;
-                $web->type=$eventType;
-                $web->data=$change;
+                $web->platform = $platform;
+                $web->type = $eventType;
+                $web->data = $change;
                 $web->save();
+                
                 broadcast(new NotificationEvent(0));
-
+                
+                Log::info("Webhook event saved successfully for société {$societeId}");
+                
+            } catch (\Exception $e) {
+                Log::error("Error saving webhook event for société {$societeId}: " . $e->getMessage());
+            }
 
             $field = $change['field'] ?? null;
 
             switch ($field) {
-                case 'feed'://fcb
+                case 'feed': // Facebook
                     $this->handleFacebookPost($change['value']);
                     break;
-                case 'comments'://instagram
+                case 'comments': // Instagram
                     $this->handleFacebookComment($change['value']);
                     break;
                 case 'reactions':
                     $this->handleFacebookReaction($change['value']);
                     break;
-                /* 'statuses'://ne post
-                    $this->handleWhatsAppMessage($change['value']);
-                    break;*/
                 default:
                     Log::warning('Unhandled Webhook Event: ' . $field);
             }
@@ -1228,7 +1275,7 @@ class Facebook_InstagramController extends Controller
                             'webhook_verify_token' => $config->webhook_verify_token,
                             'webhook_enabled' => $config->webhook_enabled ?? false,
                             'webhook_subscriptions' => json_decode($config->webhook_subscriptions ?? '[]'),
-                            'webhook_url' => 'https://e86332116ba7.ngrok-free.app/api/webhookFcb_Insta',
+                            'webhook_url' => 'https://7cf05634abad.ngrok-free.app/api/webhookFcb_Insta',
                             'created_at' => $config->created_at,
                             'projet' => $config->projet_nom ? ['nom' => $config->projet_nom] : null
                         ];
@@ -1343,7 +1390,7 @@ class Facebook_InstagramController extends Controller
                             'webhook_verify_token' => $config->webhook_verify_token,
                             'webhook_enabled' => $config->webhook_enabled ?? false,
                             'webhook_subscriptions' => json_decode($config->webhook_subscriptions ?? '[]'),
-                            'webhook_url' => 'https://e86332116ba7.ngrok-free.app/api/webhookFcb_Insta',
+                            'webhook_url' => 'https://7cf05634abad.ngrok-free.app/api/webhookFcb_Insta',
                             'created_at' => $config->created_at,
                             'projet' => $config->projet_nom ? ['nom' => $config->projet_nom] : null
                         ];
