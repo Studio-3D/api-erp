@@ -124,21 +124,33 @@ class SocieteController extends Controller
         if (RoleHelper::Superadmin()) {
             $user    = Auth::guard('api')->user();
             $societe = Societe::findOrFail($id);
-            $users   = User::where('societe_id', $societe->id)->get();
+
+            $users = User::where('societe_id', $societe->id)
+                ->whereNot('role', 1) // On ne supprime pas ceux ayant role = 1
+                ->get();
+
             foreach ($users as $user) {
                 UserController::destroy($user->id);
             }
+
+            // Récupérer tous les superadmins (role = 1) de cette société
+            $superadmins = User::where('role', 1)
+                ->where('societe_id', $societe->id)
+                ->get();
+
+            foreach ($superadmins as $superadmin) {
+                $superadmin->societe_id = 1;
+                $superadmin->save();
+            }
+
             if ($societe->delete()) {
-
-                $societes = Societe::all();
-
-                return response()->json(['message' => 'societe supprimé avec succes'], 200);
-
+                return response()->json(['message' => 'Société supprimée avec succès'], 200);
             } else {
-                return response()->json(['message' => 'Societe non supprimée'], 404);
+                return response()->json(['message' => 'Société non supprimée'], 404);
             }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+
 }
