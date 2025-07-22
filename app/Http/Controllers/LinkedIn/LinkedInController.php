@@ -5,9 +5,13 @@ namespace App\Http\Controllers\LinkedIn;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
-use Illuminate\Support\Facades\Storage;
+use App\Http\Helpers\DatabaseHelper;
+use App\Http\Helpers\RoleHelper;
 
 class LinkedInController extends Controller
 {
@@ -21,7 +25,232 @@ class LinkedInController extends Controller
         $this->clientSecret = env('LINKEDIN_CLIENT_SECRET', '');
         $this->redirectUri = env('LINKEDIN_REDIRECT_URI', '');
     }
+
+    /******************************LinkedIn Configuration by Project*************************/
     
+    public function linkedin_configurations(Request $request)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                // Check if table exists first
+                if (!Schema::connection('temp')->hasTable('linkedin_configurations')) {
+                    return response()->json(['configurations' => []], 200);
+                }
+                
+                $configurations = DB::connection('temp')
+                    ->table('linkedin_configurations as lc')
+                    ->leftJoin('projets as p', 'lc.projet_id', '=', 'p.id')
+                    ->select('lc.*', 'p.nom as projet_nom')
+                    ->whereNull('lc.deleted_at')
+                    ->orderBy('lc.created_at', 'desc')
+                    ->get()
+                    ->map(function ($config) {
+                        return [
+                            'id' => $config->id,
+                            'linkedin_page_id' => $config->linkedin_page_id,
+                            'linkedin_page_name' => $config->linkedin_page_name,
+                            'projet_id' => $config->projet_id,
+                            'is_active' => $config->is_active ?? true,
+                            'created_at' => $config->created_at,
+                            'projet' => $config->projet_nom ? ['nom' => $config->projet_nom] : null
+                        ];
+                    });
+                
+                return response()->json(['configurations' => $configurations], 200);
+            } catch (\Exception $e) {
+                // If table doesn't exist, return empty array
+                if (str_contains($e->getMessage(), "doesn't exist")) {
+                    return response()->json(['configurations' => []], 200);
+                }
+                throw $e;
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function store_linkedin_configuration(Request $request)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                // Check if table exists, create if not
+                if (!Schema::connection('temp')->hasTable('linkedin_configurations')) {
+                    Schema::connection('temp')->create('linkedin_configurations', function (Blueprint $table) {
+                        $table->id();
+                        $table->string('linkedin_page_id');
+                        $table->string('linkedin_page_name');
+                        $table->longText('access_token');
+                        $table->unsignedBigInteger('projet_id');
+                        $table->boolean('is_active')->default(true);
+                        $table->timestamp('last_stats_sync')->nullable();
+                        $table->softDeletes();
+                        $table->timestamps();
+                        
+                        $table->foreign('projet_id')->references('id')->on('projets')->onDelete('cascade');
+                        $table->unique(['projet_id', 'deleted_at'], 'unique_project_linkedin_config');
+                    });
+                }
+                
+                $request->validate([
+                    'linkedin_page_id' => 'required|string',
+                    'linkedin_page_name' => 'required|string',
+                    'access_token' => 'required|string',
+                    'projet_id' => 'required|integer|exists:temp.projets,id'
+                ]);
+
+                // Check if configuration already exists for this project
+                $existingConfig = DB::connection('temp')
+                    ->table('linkedin_configurations')
+                    ->where('projet_id', $request->projet_id)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if ($existingConfig) {
+                    return response()->json([
+                        'error' => 'Une configuration LinkedIn existe déjà pour ce projet'
+                    ], 400);
+                }
+
+                // Insert new configuration
+                $configId = DB::connection('temp')->table('linkedin_configurations')->insertGetId([
+                    'linkedin_page_id' => $request->linkedin_page_id,
+                    'linkedin_page_name' => $request->linkedin_page_name,
+                    'access_token' => $request->access_token,
+                    'projet_id' => $request->projet_id,
+                    'is_active' => true,
+                    'last_stats_sync' => null,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+                return response()->json([
+                    'message' => 'Configuration LinkedIn enregistrée avec succès',
+                    'configuration_id' => $configId
+                ], 200);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => 'Erreur lors de l\'enregistrement: ' . $e->getMessage()
+                ], 500);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function delete_linkedin_configuration(Request $request, $id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                // Check if table exists
+                if (!Schema::connection('temp')->hasTable('linkedin_configurations')) {
+                    return response()->json(['error' => 'Configuration non trouvée'], 404);
+                }
+
+                $deleted = DB::connection('temp')
+                    ->table('linkedin_configurations')
+                    ->where('id', $id)
+                    ->update(['deleted_at' => now()]);
+
+                if ($deleted) {
+                    return response()->json(['message' => 'Configuration supprimée avec succès'], 200);
+                } else {
+                    return response()->json(['error' => 'Configuration non trouvée'], 404);
+                }
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => 'Erreur lors de la suppression: ' . $e->getMessage()
+                ], 500);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function getAuthUrl(Request $request)
+    {
+        if (RoleHelper::AdminSup()) {
+            $state = bin2hex(random_bytes(16));
+            
+            $authUrl = "https://www.linkedin.com/oauth/v2/authorization?" . http_build_query([
+                'response_type' => 'code',
+                'client_id' => $this->clientId,
+                'redirect_uri' => $this->redirectUri,
+                'state' => $state,
+                'scope' => 'openid profile email w_member_social'
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'auth_url' => $authUrl,
+                'state' => $state
+            ]);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function handleCallback(Request $request)
+    {
+        if (RoleHelper::AdminSup()) {
+            try {
+                $request->validate([
+                    'code' => 'required|string',
+                    'state' => 'required|string'
+                ]);
+                
+                $code = $request->input('code');
+                
+                $client = new Client();
+                
+                // Exchange code for access token
+                $tokenResponse = $client->post('https://www.linkedin.com/oauth/v2/accessToken', [
+                    'form_params' => [
+                        'grant_type' => 'authorization_code',
+                        'code' => $code,
+                        'redirect_uri' => $this->redirectUri,
+                        'client_id' => $this->clientId,
+                        'client_secret' => $this->clientSecret,
+                    ]
+                ]);
+                
+                $tokenData = json_decode($tokenResponse->getBody()->getContents(), true);
+                
+                // Get user profile
+                $profileResponse = $client->get('https://api.linkedin.com/v2/userinfo', [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $tokenData['access_token'],
+                    ]
+                ]);
+                
+                $profile = json_decode($profileResponse->getBody()->getContents(), true);
+                
+                return response()->json([
+                    'success' => true,
+                    'access_token' => $tokenData['access_token'],
+                    'expires_in' => $tokenData['expires_in'],
+                    'profile' => $profile,
+                    'pages' => [] // LinkedIn API doesn't provide organization pages in this flow
+                ]);
+                
+            } catch (RequestException $e) {
+                Log::error('LinkedIn OAuth error: ' . $e->getMessage());
+                
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to authenticate with LinkedIn: ' . $e->getMessage()
+                ], 500);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
     /**
      * Exchange authorization code for access token
      */
@@ -346,5 +575,224 @@ class LinkedInController extends Controller
         
         // Default to assuming it's an image if we can't determine
         return 'IMAGE';
+    }
+
+    /******************************LinkedIn Webhook Configuration by Project*************************/
+    
+    public function linkedin_webhook_configurations(Request $request)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                if (!Schema::connection('temp')->hasTable('linkedin_configurations')) {
+                    return response()->json(['webhooks' => []], 200);
+                }
+                
+                $webhooks = DB::connection('temp')
+                    ->table('linkedin_configurations as lc')
+                    ->leftJoin('projets as p', 'lc.projet_id', '=', 'p.id')
+                    ->select('lc.*', 'p.nom as projet_nom')
+                    ->whereNull('lc.deleted_at')
+                    ->whereNotNull('lc.webhook_verify_token')
+                    ->orderBy('lc.created_at', 'desc')
+                    ->get()
+                    ->map(function ($config) {
+                        return [
+                            'id' => $config->id,
+                            'linkedin_page_id' => $config->linkedin_page_id,
+                            'linkedin_page_name' => $config->linkedin_page_name,
+                            'projet_id' => $config->projet_id,
+                            'webhook_verify_token' => $config->webhook_verify_token,
+                            'webhook_enabled' => $config->webhook_enabled ?? false,
+                            'webhook_subscriptions' => json_decode($config->webhook_subscriptions ?? '[]'),
+                            'webhook_url' => env('APP_URL') . '/api/webhookLinkedIn',
+                            'created_at' => $config->created_at,
+                            'projet' => $config->projet_nom ? ['nom' => $config->projet_nom] : null
+                        ];
+                    });
+                
+                return response()->json(['webhooks' => $webhooks], 200);
+            } catch (\Exception $e) {
+                return response()->json(['webhooks' => []], 200);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function store_linkedin_webhook(Request $request, $configId)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                $request->validate([
+                    'webhook_verify_token' => 'required|string'
+                ]);
+
+                if (!Schema::connection('temp')->hasTable('linkedin_configurations')) {
+                    return response()->json(['error' => 'Configuration table not found'], 404);
+                }
+
+                $config = DB::connection('temp')
+                    ->table('linkedin_configurations')
+                    ->where('id', $configId)
+                    ->whereNull('deleted_at')
+                    ->first();
+
+                if (!$config) {
+                    return response()->json(['error' => 'Configuration not found'], 404);
+                }
+
+                DB::connection('temp')
+                    ->table('linkedin_configurations')
+                    ->where('id', $configId)
+                    ->update([
+                        'webhook_verify_token' => $request->webhook_verify_token,
+                        'webhook_enabled' => true,
+                        'webhook_subscriptions' => json_encode(['SHARE', 'ORGANIZATION_SOCIAL_ACTION']),
+                        'updated_at' => now()
+                    ]);
+
+                return response()->json(['message' => 'Webhook LinkedIn configuré avec succès'], 200);
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Erreur lors de la configuration: ' . $e->getMessage()], 500);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function delete_linkedin_webhook(Request $request, $configId)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+            
+            try {
+                if (!Schema::connection('temp')->hasTable('linkedin_configurations')) {
+                    return response()->json(['error' => 'Configuration not found'], 404);
+                }
+
+                DB::connection('temp')
+                    ->table('linkedin_configurations')
+                    ->where('id', $configId)
+                    ->update([
+                        'webhook_verify_token' => null,
+                        'webhook_enabled' => false,
+                        'webhook_subscriptions' => null,
+                        'updated_at' => now()
+                    ]);
+
+                return response()->json(['message' => 'Webhook supprimé avec succès'], 200);
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Erreur lors de la suppression: ' . $e->getMessage()], 500);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+    public function handleLinkedInWebhook(Request $request)
+    {
+        Log::info('LinkedIn Webhook received:', $request->all());
+
+        try {
+            DatabaseHelper::Config();
+            
+            // Verify webhook signature (LinkedIn uses different verification)
+            $signature = $request->header('X-LinkedIn-Signature');
+            $payload = $request->getContent();
+            
+            if (!$this->verifyLinkedInSignature($signature, $payload)) {
+                Log::error('LinkedIn webhook signature verification failed');
+                return response('Unauthorized', 403);
+            }
+
+            // Process LinkedIn webhook events
+            $events = $request->input('events', []);
+            
+            foreach ($events as $event) {
+                $this->processLinkedInEvent($event);
+            }
+
+            return response()->json(['message' => 'LinkedIn webhook processed successfully']);
+            
+        } catch (\Exception $e) {
+            Log::error('LinkedIn webhook error: ' . $e->getMessage());
+            return response()->json(['error' => 'Webhook processing failed'], 500);
+        }
+    }
+
+    public function verifyLinkedInWebhook(Request $request)
+    {
+        $challenge = $request->input('challenge');
+        
+        if ($challenge) {
+            Log::info('LinkedIn webhook verification challenge: ' . $challenge);
+            return response($challenge, 200);
+        }
+        
+        return response('No challenge provided', 400);
+    }
+
+    private function verifyLinkedInSignature($signature, $payload)
+    {
+        if (!$signature) {
+            return false;
+        }
+
+        DatabaseHelper::Config();
+        $config = DB::connection('temp')
+            ->table('linkedin_configurations')
+            ->whereNotNull('webhook_verify_token')
+            ->first();
+            
+        if (!$config) {
+            return false;
+        }
+
+        $expectedSignature = hash_hmac('sha256', $payload, $config->webhook_verify_token);
+        
+        return hash_equals('sha256=' . $expectedSignature, $signature);
+    }
+
+    private function processLinkedInEvent($event)
+    {
+        Log::info('Processing LinkedIn event:', $event);
+        
+        DatabaseHelper::Config();
+        
+        // Store event in webhook_events table
+        $webhookEvent = new \App\Models\WebhookEvent();
+        $webhookEvent->setConnection('temp');
+        $webhookEvent->platform = 'linkedin';
+        $webhookEvent->type = $event['eventType'] ?? 'unknown';
+        $webhookEvent->data = $event;
+        $webhookEvent->save();
+
+        // Process different LinkedIn event types
+        switch ($event['eventType'] ?? '') {
+            case 'SHARE':
+                $this->handleLinkedInShare($event);
+                break;
+            case 'ORGANIZATION_SOCIAL_ACTION':
+                $this->handleLinkedInSocialAction($event);
+                break;
+            default:
+                Log::info('Unhandled LinkedIn event type: ' . ($event['eventType'] ?? 'unknown'));
+        }
+    }
+
+    private function handleLinkedInShare($event)
+    {
+        Log::info('LinkedIn share event processed:', $event);
+        // Handle share-related events (likes, comments, shares)
+    }
+
+    private function handleLinkedInSocialAction($event)
+    {
+        Log::info('LinkedIn social action event processed:', $event);
+        // Handle organization social actions (follows, mentions, etc.)
     }
 }

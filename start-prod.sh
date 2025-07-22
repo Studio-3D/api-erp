@@ -28,7 +28,7 @@ docker compose -f docker-compose.prod.yml up -d
 echo "Services started successfully!"
 echo ""
 echo "Your Laravel API is now available at:"
-echo "  - https://immogestion.alemsafi.live (SSL handled by domain)"
+echo "  - https://immogestion.alemsafi.live"
 echo "  - Local access: http://localhost:80"
 echo ""
 echo "PHPMyAdmin is available at:"
