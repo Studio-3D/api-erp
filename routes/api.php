@@ -445,6 +445,10 @@ Route::middleware('auth:api')->group(function () {
         // LinkedIn analytics and polling endpoints
         Route::post('/linkedin/poll-stats', [LinkedInController::class, 'pollLinkedInStats']);
         Route::get('/linkedin/analytics/{projectId}', [LinkedInController::class, 'getLinkedInAnalytics']);
+        
+        // Add the missing webhook toggle routes inside the v1 prefix
+        Route::put('/facebook-configurations/{configId}/webhook/toggle', [Facebook_InstagramController::class, 'toggle_facebook_webhook']);
+        Route::put('/instagram-configurations/{configId}/webhook/toggle', [Facebook_InstagramController::class, 'toggle_instagram_webhook']);
     });
     
     /*************************************Société***************************** */
@@ -535,5 +539,4 @@ Route::middleware('auth:api')->group(function () {
     Route::put('update_contrat/{cont_id}', [LivraisonController::class, 'update_contrat'])->name('');
     Route::post('scanner_contrat', [LivraisonController::class, 'scanner_contrat'])->name('');
 });
-
 Route::get('sendResetPasswordEmail', [UserController::class, 'sendResetPasswordEmail']);
