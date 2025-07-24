@@ -25,8 +25,7 @@ use App\Models\Rendez_vous;
 use App\Enum\RoleEnum;
 use App\Models\Frein;
 use App\Models\WebhookEvent;
-
-use App\Http\Controllers\Api\V1\FreinController;
+use App\Events\NotificationEvent;
 
 class NotificationController extends Controller
 {
@@ -605,5 +604,4 @@ class NotificationController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
          }
     }
-
 }
