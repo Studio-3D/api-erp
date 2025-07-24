@@ -7,6 +7,7 @@ use App\Models\Relance_Rdv_Visite;
 use App\Models\Relance_Rdv_Appel;
 
 use App\Models\Notification;
+use App\Models\SeenNotification;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Helpers\RoleHelper;
 use App\Http\Helpers\DatabaseHelper;
@@ -386,21 +387,44 @@ class NotificationController extends Controller
             if(RoleHelper::AdminSup()){
                     // Notifications Webhook Facebook/Instagram/WhatsApp
                $notifs_webhook_fcb_insta_whstp=WebhookEvent::on('temp')->whereIn('platform', $platforms)->withTrashed()->whereDate('created_at', '<=', Carbon::now())->orderBy('id','desc')->get();
-                   // Toutes les notifications
+               
+               // Transform webhook events to include type differentiation
+               foreach($notifs_webhook_fcb_insta_whstp as $webhook) {
+                   if($webhook->platform === 'facebook') {
+                       // Check if it's a publication (post) or reaction
+                       $eventData = $webhook->data;
+                       if(isset($eventData['verb']) && $eventData['verb'] === 'add' && isset($eventData['item']) && $eventData['item'] === 'post') {
+                           $webhook->notification_type = 'publication';
+                           $webhook->type = 96; // New type for publications
+                       } else {
+                           $webhook->notification_type = 'reaction';
+                           $webhook->type = 98; // Existing type for reactions
+                       }
+                   } elseif($webhook->platform === 'instagram') {
+                       // Similar logic for Instagram
+                       $eventData = $webhook->data;
+                       if(isset($eventData['object']) && $eventData['object'] === 'instagram' && isset($eventData['entry'][0]['changes'][0]['field']) && $eventData['entry'][0]['changes'][0]['field'] === 'comments') {
+                           $webhook->notification_type = 'comment';
+                           $webhook->type = 97;
+                       }
+                   }
+               }
+                   
+                   // Toutes les notifications (filter out type 99)
                $all_notifications=Notification::on('temp')->with('prospect','user','reservation','avance','bien')
                ->where(function ($query) {
                 $query->where('role',RoleEnum::ADMIN->value)
                     ->orwhere('user_id',Auth::guard('api')->user()->id)
                 ;})
-               ->where('projet_id',$projet_id)->withTrashed()->whereDate('date', '<=', Carbon::now())->orderBy('id','desc')->get();
+               ->where('projet_id',$projet_id)->where('type', '!=', 99)->withTrashed()->whereDate('date', '<=', Carbon::now())->orderBy('id','desc')->get();
                   // Nombre de nouvelles notifications
-               $new_notifications_count=Notification::on('temp')->where('projet_id',$projet_id)->where('role',RoleEnum::ADMIN->value)->where('deleted_at',null)->count();
+               $new_notifications_count=Notification::on('temp')->where('projet_id',$projet_id)->where('role',RoleEnum::ADMIN->value)->where('type', '!=', 99)->where('deleted_at',null)->count();
                   // Nombre de nouvelles notifications Webhook
                $new_notif_webhook_fcb_inst_whtsp=WebhookEvent::on('temp') ->whereIn('platform', $platforms)->whereDate('created_at', '<=', Carbon::now())->where('deleted_at',null)->orderBy('id','desc')->count();
 
             }else{
-                $all_notifications=Notification::on('temp')->with('prospect','user','reservation','avance','bien')->where('projet_id',$projet_id)->where('user_id',Auth::guard('api')->user()->id)->withTrashed()->whereDate('date', '<=', Carbon::now())->orderBy('date','desc')->get();
-                $new_notifications_count=Notification::on('temp')->where('projet_id',$projet_id)->where('deleted_at',null)->where('user_id',Auth::guard('api')->user()->id)->count();
+                $all_notifications=Notification::on('temp')->with('prospect','user','reservation','avance','bien')->where('projet_id',$projet_id)->where('user_id',Auth::guard('api')->user()->id)->where('type', '!=', 99)->withTrashed()->whereDate('date', '<=', Carbon::now())->orderBy('date','desc')->get();
+                $new_notifications_count=Notification::on('temp')->where('projet_id',$projet_id)->where('deleted_at',null)->where('user_id',Auth::guard('api')->user()->id)->where('type', '!=', 99)->count();
                 $notifs_webhook_fcb_insta_whstp=[];
                 $new_notif_webhook_fcb_inst_whtsp=0;
             }
@@ -603,5 +627,65 @@ class NotificationController extends Controller
          else{
             return response()->json(['error' => 'Unauthorized'], 401);
          }
+    }
+
+    public function get_seen_notifications(Request $request, $projet_id) {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $user_id = Auth::guard('api')->user()->id;
+            
+            $seen_notifications = SeenNotification::on('temp')
+                ->where('user_id', $user_id)
+                ->where('projet_id', $projet_id)
+                ->pluck('notification_id')
+                ->toArray();
+                
+            return response()->json(['seen_notifications' => $seen_notifications]);
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    public function mark_notification_seen(Request $request) {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $user_id = Auth::guard('api')->user()->id;
+            
+            $validated = $request->validate([
+                'notification_id' => 'required|integer',
+                'projet_id' => 'required|integer'
+            ]);
+            
+            SeenNotification::on('temp')->updateOrCreate([
+                'user_id' => $user_id,
+                'notification_id' => $validated['notification_id'],
+                'projet_id' => $validated['projet_id']
+            ]);
+            
+            return response()->json(['success' => true]);
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    public function mark_all_notifications_seen(Request $request) {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+            $user_id = Auth::guard('api')->user()->id;
+            
+            $validated = $request->validate([
+                'notification_ids' => 'required|array',
+                'projet_id' => 'required|integer'
+            ]);
+            
+            foreach ($validated['notification_ids'] as $notification_id) {
+                SeenNotification::on('temp')->updateOrCreate([
+                    'user_id' => $user_id,
+                    'notification_id' => $notification_id,
+                    'projet_id' => $validated['projet_id']
+                ]);
+            }
+            
+            return response()->json(['success' => true]);
+        }
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
 }
