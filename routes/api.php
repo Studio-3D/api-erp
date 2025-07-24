@@ -86,10 +86,11 @@ Route::get('/webhookFcb_Insta', [Facebook_InstagramController::class, 'verify'])
 
 Route::middleware('auth:api')->group(function () {
     Route::prefix('v1')->group(function () {
-        /********************Social Network*********************/
+        /********************Social Netxork*********************/
         Route::post('/postTo_Social_Network', [Facebook_InstagramController::class, 'postTo_Social_Network']);
         Route::get('/configurations_social_network', [Facebook_InstagramController::class, 'configurations_social_network']);
         Route::post('store_configurations_social_network', [Facebook_InstagramController::class, 'store_configurations_social_network'])->name('');
+
         
         // Facebook configurations by project
         Route::get('/facebook-configurations', [Facebook_InstagramController::class, 'facebook_configurations']);
@@ -116,6 +117,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/store_webhook_configuration', [Facebook_InstagramController::class, 'store_webhook_configuration']);
         Route::post('/test_webhook_verification', [Facebook_InstagramController::class, 'test_webhook_verification']);
 
+
         // Routes de la version numero 1
         // l'API utilisateurs
         Route::resource('/utilisateurs', V1UserController::class);
@@ -123,7 +125,7 @@ Route::middleware('auth:api')->group(function () {
         Route::put('desactivateUser/{id}', [V1UserController::class, 'desactivateUser'])->name('desactivateUser');
         Route::get('commerciaux_objectif/{projet_id}', [V1UserController::class, 'list_commerciaux_objectif'])->name('');
         Route::get('commerciaux/{projet_id}', [V1UserController::class, 'list_commerciaux'])->name('');
-        Route::get('get_commerciaux/{projet_id}', [V1UserController::class, 'get_commerciaux'])->name('get_users');
+        Route::get('get_commerciaux/{projet_id}', [V1UserController::class, 'get_commerciaux'])->name('get_commerciaux');
         Route::post('/utilisateurs/{id}', [V1UserController::class, 'update']);
 
         // l'API societes
@@ -450,7 +452,7 @@ Route::middleware('auth:api')->group(function () {
         Route::put('/facebook-configurations/{configId}/webhook/toggle', [Facebook_InstagramController::class, 'toggle_facebook_webhook']);
         Route::put('/instagram-configurations/{configId}/webhook/toggle', [Facebook_InstagramController::class, 'toggle_instagram_webhook']);
     });
-    
+
     /*************************************Société***************************** */
     Route::resource('societe', SocieteController::class);
 
@@ -464,7 +466,7 @@ Route::middleware('auth:api')->group(function () {
     Route::resource('user', UserController::class);
 
     Route::get('getUsersBySocieteId/{id}', [UserController::class, 'getUsersBySocieteId'])->name('getUsersBySocieteId');
-    Route::put('activateUser/{id}', [UserController::class, 'activateUser'])->name('activateUser');
+    Route::put('activateUser/{id}', [UserController::class, 'activateUser'])->name('api.activateUser');
     Route::post('restoreUser/{id}', [UserController::class, 'restoreUser'])->name('restoreUser');
     Route::get('getTrashedUsers', [UserController::class, 'getTrashedUsers'])->name('getTrashedUsers');
     Route::get('dashboard', [UserController::class, 'dashboard'])->name('dashboard');
@@ -520,7 +522,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('get_rdv_notaire_menu/{projet_id}', [LivraisonController::class, 'get_rdv_notaire_menu'])->name('');
     //Rendez Vous
     Route::get('creneaux-occupes', [LivraisonController::class, 'getCreneauxOccupes']);
-
+    Route::post('/update-reservation-creneau/{reservation_id}', [LivraisonController::class, 'updateReservationCreneau']);
     /************compromis vente******/
 
     Route::post('store_compromis_vente/{rdv_id}', [LivraisonController::class, 'store_compromis_vente'])->name('');

@@ -22,3 +22,9 @@ yarn-error.log
 /.idea
 /.vscode
 **uploads
+
+nginx/ssl/
+
+*.swp
+*.swo
+

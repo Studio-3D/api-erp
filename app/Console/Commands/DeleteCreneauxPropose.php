@@ -6,6 +6,9 @@ use Illuminate\Console\Command;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\ChroneJobHelpers;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Proposition;
+use App\Models\User;
+use App\Models\Societe;
 use Illuminate\Support\Facades\DB;
 
 
@@ -14,21 +17,21 @@ use Illuminate\Support\Facades\DB;
 
 
 
-class ImportFichiers extends Command
+class DeleteCreneauxPropose extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'app:import_fichiers';
+    protected $signature = 'delete_creneau_propose';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Commande pour importer les Fichiers';
+    protected $description = 'delete row crenau propose after 2min of proposition';
 
     /**
      * Execute the console command.
@@ -36,12 +39,7 @@ class ImportFichiers extends Command
 
     public function handle()
     {
-        $databases = DB::table('societes')
-        ->whereNull('deleted_at')
-        ->whereNot('id', 1)   // Filtrer uniquement la société avec id = 292
-        ->get();
-
-        DatabaseHelper::import_fichiers($databases);
-
+        $databases = DB::table('societes')->whereNull('deleted_at')->get();
+        DatabaseHelper::deleteCreneauPropose($databases);
     }
 }

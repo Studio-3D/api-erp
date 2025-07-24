@@ -31,12 +31,12 @@ class ClearPropositionTable extends Command
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'Libérer le bien après 30 minutes s\'il est toujours en cours de proposition.';
 
     /**
      * Execute the console command.
      */
-   
+
     public function handle()
     {
         $databases = DB::table('societes')->whereNull('deleted_at')->get();
