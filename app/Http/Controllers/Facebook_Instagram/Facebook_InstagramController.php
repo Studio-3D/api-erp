@@ -761,12 +761,17 @@ private function isWebhookEnabledForPage($pageId)
 private function handleFeedEvent($data)
 {
     Log::info('Processing feed event:', $data);
-    
+
     // Check the 'item' field to determine the type of feed event
     $item = $data['item'] ?? null;
-    
+
     switch ($item) {
         case 'reaction':
+            // Only process 'add' verb, ignore 'remove'
+            if (isset($data['verb']) && $data['verb'] === 'remove') {
+                Log::info('Ignoring reaction removal event:', $data);
+                return;
+            }
             $this->handleFacebookReaction($data);
             break;
         case 'comment':
@@ -778,6 +783,10 @@ private function handleFeedEvent($data)
         default:
             // If no 'item' field, try to detect based on data structure
             if (isset($data['reaction_type']) && isset($data['verb'])) {
+                if ($data['verb'] === 'remove') {
+                    Log::info('Ignoring reaction removal event:', $data);
+                    return;
+                }
                 $this->handleFacebookReaction($data);
             } elseif (isset($data['message']) && isset($data['comment_id'])) {
                 $this->handleFacebookComment($data);
@@ -850,14 +859,14 @@ private function handleFacebookComment($data)
 private function handleFacebookReaction($data)
 {
     Log::info('New Reaction on Facebook Page:', $data);
-    
+
     try {
         // Extract reaction information
         $reactionType = $data['reaction_type'] ?? 'unknown';
         $userName = $data['from']['name'] ?? 'Utilisateur inconnu';
         $postId = $data['post_id'] ?? null;
         $verb = $data['verb'] ?? 'add'; // 'add' or 'remove'
-        
+
         // Only create notification for new reactions (not removals)
         if ($verb === 'add') {
             // Create notification description
@@ -871,15 +880,15 @@ private function handleFacebookReaction($data)
                 'care' => "{$userName} se soucie de votre publication Facebook",
                 default => "{$userName} a réagi à votre publication Facebook"
             };
-            
+
             // Get post link if available
             $postLink = $postId ? "https://www.facebook.com/{$postId}" : null;
-            
+
             $this->createFacebookNotification($description, $postLink);
         } else {
             Log::info("Reaction removed by {$userName}, not creating notification");
         }
-        
+
     } catch (\Exception $e) {
         Log::error('Error handling Facebook reaction: ' . $e->getMessage());
     }
