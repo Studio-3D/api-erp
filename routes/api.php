@@ -503,6 +503,9 @@ Route::middleware('auth:api')->group(function () {
 
     Route::get('notifications_menu_horizontal_crm/{projet_id}', [NotificationController::class, 'get_notifications_menu_horizontal_crm'])->name('');
     Route::get('get_notifications/{projet_id}', [NotificationController::class, 'get_notifications'])->name('');
+    Route::get('get_seen_notifications/{projet_id}', [NotificationController::class, 'get_seen_notifications'])->name('');
+    Route::post('mark_notification_seen', [NotificationController::class, 'mark_notification_seen'])->name('');
+    Route::post('mark_all_notifications_seen', [NotificationController::class, 'mark_all_notifications_seen'])->name('');
     Route::get('DestroyNotif/{id}', [NotificationController::class, 'DestroyNotif'])->name('');
     Route::get('notifications/{projet_id}', [NotificationController::class, 'index'])->name('');
     Route::get('get_notif_rejete_commercial/{projet_id}', [NotificationController::class, 'get_notif_rejete_commercial'])->name('');
