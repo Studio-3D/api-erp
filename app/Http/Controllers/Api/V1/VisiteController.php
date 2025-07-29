@@ -1505,6 +1505,7 @@ class VisiteController extends Controller
 
                             ];
 
+                            
                             $notif_helper = new NotificationHelper();
                             $notif_helper->storeNotification($request->merge($data_notif));
 
