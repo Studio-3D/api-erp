@@ -7,7 +7,7 @@ use App\Models\Relance_Rdv_Visite;
 use App\Models\Relance_Rdv_Appel;
 
 use App\Models\Notification;
-use App\Models\SeenNotification;
+
 use Illuminate\Support\Facades\Auth;
 use App\Http\Helpers\RoleHelper;
 use App\Http\Helpers\DatabaseHelper;
@@ -422,8 +422,8 @@ class NotificationController extends Controller
                     ->whereDate('date', '<=', Carbon::now())
                     ->orderBy('id','desc')
                     ->get();
-                  // Nombre de nouvelles notifications
-               $new_notifications_count=Notification::on('temp')->where('projet_id',$projet_id)->where('role',RoleEnum::ADMIN->value)->where('type', '!=', 99)->where('deleted_at',null)->count();
+                  // Nombre de nouvelles notifications (not seen)
+               $new_notifications_count=Notification::on('temp')->where('projet_id',$projet_id)->where('role',RoleEnum::ADMIN->value)->where('type', '!=', 99)->where('deleted_at',null)->where('seen', false)->count();
                   // Nombre de nouvelles notifications Webhook
                $new_notif_webhook_fcb_inst_whtsp=WebhookEvent::on('temp') ->whereIn('platform', $platforms)->whereDate('created_at', '<=', Carbon::now())->where('deleted_at',null)->orderBy('id','desc')->count();
 
@@ -436,7 +436,7 @@ class NotificationController extends Controller
                     ->whereDate('date', '<=', Carbon::now())
                     ->orderBy('date','desc')
                     ->get();
-                $new_notifications_count=Notification::on('temp')->where('projet_id',$projet_id)->where('deleted_at',null)->where('user_id',Auth::guard('api')->user()->id)->where('type', '!=', 99)->count();
+                $new_notifications_count=Notification::on('temp')->where('projet_id',$projet_id)->where('deleted_at',null)->where('user_id',Auth::guard('api')->user()->id)->where('type', '!=', 99)->where('seen', false)->count();
                 $notifs_webhook_fcb_insta_whstp=[];
                 $new_notif_webhook_fcb_inst_whtsp=0;
             }
@@ -645,21 +645,7 @@ class NotificationController extends Controller
          }
     }
 
-    public function get_seen_notifications(Request $request, $projet_id) {
-        if (Auth::guard('api')->check()) {
-            DatabaseHelper::Config();
-            $user_id = Auth::guard('api')->user()->id;
-            
-            $seen_notifications = SeenNotification::on('temp')
-                ->where('user_id', $user_id)
-                ->where('projet_id', $projet_id)
-                ->pluck('notification_id')
-                ->toArray();
-                
-            return response()->json(['seen_notifications' => $seen_notifications]);
-        }
-        return response()->json(['error' => 'Unauthorized'], 401);
-    }
+
 
     public function mark_notification_seen(Request $request) {
         if (Auth::guard('api')->check()) {
