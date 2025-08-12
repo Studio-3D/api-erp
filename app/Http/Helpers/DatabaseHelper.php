@@ -109,13 +109,13 @@ class DatabaseHelper
                 }
                 $societe_id = $user->societe_id;
             }
-            
+
             if (!$societe_id) {
                 throw new \Exception('Invalid societe_id provided to DatabaseHelper::Config');
             }
-            
+
             Log::info("DatabaseHelper::Config called with societe_id: {$societe_id}");
-            
+
             $societe = Societe::findOrfail($societe_id);
             $DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
             $connection = DatabaseHelper::Connection_database($DatabaseName);
@@ -637,7 +637,7 @@ class DatabaseHelper
                         \Log::info("sort projet_id '. $imp->projet_id.");
                         Config::set('broadcasting.default', 'pusher_3');
                         $data_notif = [
-                            'lien' => '/projets/show/' . $imp->projet_id,
+                            'lien' => '/Projets/' . $imp->projet_id,
                             'date' => Carbon::now(),
                             'type' => 29,
                             'description' => 'Fichier des Biens Importé ',
