@@ -535,7 +535,7 @@ class DatabaseHelper
                         // Récupérer les relances pour les users
                         $rappel_prospects_users = StatutProspect::on('temp')
                         ->with(['user','prospect'])
-                        ->whereDate('date_reppel', $today)
+                        ->whereDate('date_rappel', $today)
                         ->get();
                         log::info('count'.count($rappel_prospects_users));
                         if(count($rappel_prospects_users)>0){

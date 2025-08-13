@@ -232,6 +232,7 @@ Route::middleware('auth:api')->group(function () {
         Route::put('traiter_prospect/{id}', [V1ProspectController::class, 'traiter_prospect'])->name('');
         Route::get('historiques_prospects/{id}', [V1ProspectController::class, 'get_Historiques_by_prospect'])->name('');
         Route::get('projets/{idprojet}/prospects', [V1ProspectController::class, 'indexByProjet']);
+        Route::post('prospects/auto-assign', [V1ProspectController::class, 'autoAssignProspects'])->name('auto_assign_prospects');
 
         //l'API client
         Route::resource('clients', V1ClientController::class);
@@ -503,7 +504,7 @@ Route::middleware('auth:api')->group(function () {
 
     Route::get('notifications_menu_horizontal_crm/{projet_id}', [NotificationController::class, 'get_notifications_menu_horizontal_crm'])->name('');
     Route::get('get_notifications/{projet_id}', [NotificationController::class, 'get_notifications'])->name('');
-    Route::get('get_seen_notifications/{projet_id}', [NotificationController::class, 'get_seen_notifications'])->name('');
+
     Route::post('mark_notification_seen', [NotificationController::class, 'mark_notification_seen'])->name('');
     Route::post('mark_all_notifications_seen', [NotificationController::class, 'mark_all_notifications_seen'])->name('');
     Route::get('DestroyNotif/{id}', [NotificationController::class, 'DestroyNotif'])->name('');

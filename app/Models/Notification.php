@@ -14,6 +14,28 @@ class Notification extends Model
     protected $table='notifications';
     protected $dates=['deleted_at'];
 
+    protected $fillable = [
+        'lien',
+        'date',
+        'type',
+        'description_type',
+        'role',
+        'user_id',
+        'visite_id',
+        'projet_id',
+        'prospect_id',
+        'avance_id',
+        'reservation_id',
+        'bien_id',
+        'traite_appel_id',
+        'seen'
+    ];
+
+    protected $casts = [
+        'seen' => 'boolean',
+        'date' => 'datetime'
+    ];
+
     public function visite(){
         return $this->belongsTo(Visite::class,'visite_id');
     }
