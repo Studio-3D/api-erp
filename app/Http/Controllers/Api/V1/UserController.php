@@ -246,8 +246,8 @@ class UserController extends Controller
                 // Rollback transaction on error
                 DB::connection()->rollBack();
 
-                \Log::error("Visite creation failed: " . $e->getMessage());
-                return response()->json(['error' => 'Visite creation failed: ' . $e->getMessage()], 500);
+                \Log::error("User creation failed: " . $e->getMessage());
+                return response()->json(['error' => 'User creation failed: ' . $e->getMessage()], 500);
             }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
