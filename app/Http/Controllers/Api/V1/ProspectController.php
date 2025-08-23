@@ -24,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use App\Enum\StatutProspectEnum;
 
 class ProspectController extends Controller
@@ -376,7 +377,7 @@ class ProspectController extends Controller
         }
     }
 
-    public static function Store_WhatsApp($phone_number_id, $from, $msg_body, $name, $societe_id)
+    public static function Store_WhatsApp($phone_number_id, $from, $msg_body, $name, $societe_id, $projet_id = null)
     {
         DatabaseHelper::Config($societe_id);
         $prospect = new Prospect();
@@ -388,26 +389,63 @@ class ProspectController extends Controller
         $prospect->email     = null;
         $prospect->origin    = 'whatssap';
         $prospect->source    = 1;
+        $prospect->projet_id = $projet_id; // link prospect to project from WhatsApp config
         $prospect->save();
 
         // Create default "en_attente" status
         $statutProspect = new StatutProspect();
         $statutProspect->setConnection('temp');
         $statutProspect->prospect_id = $prospect->id;
-        $statutProspect->statut = StatutProspectEnum::En_attente->value;
-        $statutProspect->date_traitement = Carbon::now();
+        // Determine the correct statut literal based on tenant schema
+        $enumLiteral = 'En_attente';
+        try {
+            $columns = DB::connection('temp')->select("SHOW COLUMNS FROM statut_prospects LIKE 'statut'");
+            if (!empty($columns)) {
+                $type = $columns[0]->Type ?? '';
+                // If enum contains quotes around textual labels, use 'En_attente'; otherwise fallback to '0'
+                if (stripos($type, "enum('En_attente'") !== false) {
+                    $enumLiteral = 'En_attente';
+                } elseif (stripos($type, "enum('0'") !== false) {
+                    $enumLiteral = '0';
+                }
+            }
+        } catch (\Throwable $e) {
+            // default to textual literal
+        }
+
+        $statutProspect->statut = $enumLiteral;
+        $statutProspect->date_traitement = Carbon::now()->toDateString();
         $statutProspect->user_id_traite = null; // No specific user for WhatsApp
         $statutProspect->commentaire = 'Prospect créé via WhatsApp';
         $statutProspect->save();
+
+        // Create a notification for the new WhatsApp prospect
+        try {
+            $notif_helper = new NotificationHelper();
+            $req = new \Illuminate\Http\Request();
+            $notif_helper->storeNotification($req->merge([
+                'lien'        => '/crm/prospects/' . $prospect->id,
+                'date'        => Carbon::now(),
+                'type'        => 51, // custom type for WhatsApp prospect
+                'description' => 'Nouveau prospect via WhatsApp',
+                'user_id'     => null,
+                'role'        => null,
+                'visite_id'   => null,
+                'prospect_id' => $prospect->id,
+                'projet_id'   => $projet_id,
+            ]));
+        } catch (\Exception $e) {
+            Log::warning('Failed to create WhatsApp notification: ' . $e->getMessage());
+        }
     }
 
-    public static function Store_LandingPage($name, $prenom, $phone, $email, $societe_id)
+    public static function Store_LandingPage($name, $prenom, $phone, $email, $societe_id, $comment = null)
     {
         DatabaseHelper::Config($societe_id);
         $prospect = new Prospect();
         $prospect->setConnection("temp");
         $prospect->cin       = null;
-        $prospect->message   = null;
+        $prospect->message   = $comment; // store optional comment
         $prospect->nom       = $name;
         $prospect->prenom    = $prenom;
         $prospect->telephone = $phone;
@@ -425,6 +463,26 @@ class ProspectController extends Controller
         $statutProspect->user_id_traite = null; // No specific user for landing page
         $statutProspect->commentaire = 'Prospect créé via Landing Page';
         $statutProspect->save();
+
+        // Create a notification for the new landing page prospect
+        try {
+            $data_notif = [
+                'lien'        => '/crm/prospects/' . $prospect->id,
+                'date'        => Carbon::now(),
+                'type'        => 50, // custom type for Landing Page prospect
+                'description' => 'Nouveau prospect via Landing Page',
+                'user_id'     => null,
+                'role'        => null,
+                'visite_id'   => null,
+                'prospect_id' => $prospect->id,
+                'projet_id'   => null,
+            ];
+            $notif_helper = new NotificationHelper();
+            $req = new \Illuminate\Http\Request();
+            $notif_helper->storeNotification($req->merge($data_notif));
+        } catch (\Exception $e) {
+            Log::warning('Failed to create landing page notification: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -727,8 +785,23 @@ class ProspectController extends Controller
                         $statutProspect = new StatutProspect();
                         $statutProspect->setConnection('temp');
                         $statutProspect->prospect_id = $prospect->id;
-                        $statutProspect->statut = StatutProspectEnum::En_attente->value;
-                        $statutProspect->date_traitement = Carbon::now();
+                        // Detect enum literal for statut (textual vs numeric) in tenant schema
+                        $enumLiteral = 'En_attente';
+                        try {
+                            $columns = DB::connection('temp')->select("SHOW COLUMNS FROM statut_prospects LIKE 'statut'");
+                            if (!empty($columns)) {
+                                $type = $columns[0]->Type ?? '';
+                                if (stripos($type, "enum('En_attente'") !== false) {
+                                    $enumLiteral = 'En_attente';
+                                } elseif (stripos($type, "enum('0'") !== false) {
+                                    $enumLiteral = '0';
+                                }
+                            }
+                        } catch (\Throwable $e) {
+                            // default stays 'En_attente'
+                        }
+                        $statutProspect->statut = $enumLiteral;
+                        $statutProspect->date_traitement = Carbon::now()->toDateString();
                         $statutProspect->user_id_traite = null;
                         $statutProspect->commentaire = 'Prospect créé par importation';
                         $statutProspect->save();
