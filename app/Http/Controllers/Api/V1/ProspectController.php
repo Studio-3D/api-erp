@@ -357,18 +357,37 @@ class ProspectController extends Controller
             $prospect->projet_id      = $request->projet_id;
             $prospect->save();
 
-            // Create default "en_attente" status
-            $user = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+            // Create default "en_attente" status unless created from a visite
+            if (($prospect->origin ?? ($request->origin ?? null)) !== 'visite') {
+                $user = Auth::user();
+                $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
 
-            $statutProspect = new StatutProspect();
-            $statutProspect->setConnection('temp');
-            $statutProspect->prospect_id = $prospect->id;
-            $statutProspect->statut = StatutProspectEnum::En_attente->value;
-            $statutProspect->date_traitement = Carbon::now();
-            $statutProspect->user_id_traite = $userAuth ? $userAuth->id : null;
-            $statutProspect->commentaire = 'Prospect créé manuellement';
-            $statutProspect->save();
+                $statutProspect = new StatutProspect();
+                $statutProspect->setConnection('temp');
+                $statutProspect->prospect_id = $prospect->id;
+
+                // Detect enum literal for statut (textual vs numeric) in tenant schema
+                $enumLiteral = 'En_attente';
+                try {
+                    $columns = DB::connection('temp')->select("SHOW COLUMNS FROM statut_prospects LIKE 'statut'");
+                    if (!empty($columns)) {
+                        $type = $columns[0]->Type ?? '';
+                        if (stripos($type, "enum('En_attente'") !== false) {
+                            $enumLiteral = 'En_attente';
+                        } elseif (stripos($type, "enum('0'") !== false) {
+                            $enumLiteral = '0';
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // default stays 'En_attente'
+                }
+
+                $statutProspect->statut = $enumLiteral;
+                $statutProspect->date_traitement = Carbon::now();
+                $statutProspect->user_id_traite = $userAuth ? $userAuth->id : null;
+                $statutProspect->commentaire = 'Prospect créé manuellement';
+                $statutProspect->save();
+            }
 
             return $prospect;
 

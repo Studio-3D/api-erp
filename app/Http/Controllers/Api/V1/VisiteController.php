@@ -355,8 +355,8 @@ class VisiteController extends Controller
                 $validatedData['ville']          = $request->input('ville');
                 $validatedData['origin']         = 'visite';
                 $validatedData['notifie']        = $request->notifie;
-                $prospectController              = new ProspectController();
-                $prospect                        = $prospectController->store(new StoreProspectRequest($validatedData));
+                $prospectController = new ProspectController();
+                $prospect = $prospectController->store(new StoreProspectRequest($validatedData));
                 // Si un client_id est fourni, on lie ce prospect au client
                 if ($request->client_id && $prospect) {
                     $client = Client::on('temp')->find($request->client_id);
@@ -1019,7 +1019,22 @@ class VisiteController extends Controller
             $statut_pro = new StatutProspect();
             $statut_pro->setConnection('temp');
             $statut_pro->prospect_id     = $prospect->id;
-            $statut_pro->statut          = '4';
+            // Determine correct DB literal for 'Converti_en_visite' (status 4)
+            $enumLiteral = 'Converti_en_visite';
+            try {
+                $columns = DB::connection('temp')->select("SHOW COLUMNS FROM statut_prospects LIKE 'statut'");
+                if (!empty($columns)) {
+                    $type = $columns[0]->Type ?? '';
+                    if (stripos($type, "enum('Converti_en_visite'") !== false) {
+                        $enumLiteral = 'Converti_en_visite';
+                    } elseif (stripos($type, "enum('4'") !== false) {
+                        $enumLiteral = '4';
+                    }
+                }
+            } catch (\Throwable $e) {
+                // default stays textual literal
+            }
+            $statut_pro->statut          = $enumLiteral;
             $statut_pro->date_traitement = Carbon::now();
             $statut_pro->user_id_traite  = $userAuth->value('id');
             $statut_pro->visite_id       = $origin_id;
