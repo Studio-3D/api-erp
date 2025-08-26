@@ -181,7 +181,7 @@ class ProspectController extends Controller
             $user      = Auth::user();
             $userAuth  = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $prospect  = Prospect::on('temp')->findOrFail($id);
-            
+
             // Update prospect with traitement tracking
             $prospect->traite_par_user_id = $userAuth->value('id');
             $prospect->date_traitement = Carbon::now();
@@ -191,7 +191,6 @@ class ProspectController extends Controller
                 StatutProspectEnum::Perdu->value,              // Lost prospects should be unassigned
                 StatutProspectEnum::Converti_en_visite->value, // Converted prospects move to next stage
             ];
-
             if (in_array($request->statut, $finalStatuses)) {
                 $oldCommercialId = $prospect->commercial_affecte;
                 $prospect->commercial_affecte = null;
@@ -207,7 +206,7 @@ class ProspectController extends Controller
             }
 
             $prospect->save();
-            
+
             $ps_statut = new statutProspect();
             $ps_statut->setConnection('temp');
             $ps_statut->prospect_id     = $id;
@@ -528,7 +527,7 @@ class ProspectController extends Controller
             }
             $prospect = Prospect::on('temp')->findOrFail($id);
             $update   = $request->all();
-            
+
             // Handle commercial_affecte update
             if ($request->has('commercial_affecte')) {
                 // Allow reassignment regardless of final status
@@ -536,7 +535,7 @@ class ProspectController extends Controller
 
                 $oldCommercialId = $prospect->commercial_affecte;
                 $newCommercialId = $request->commercial_affecte;
-                
+
                 // If commercial is changing, update counters and track affectation
                 if ($oldCommercialId != $newCommercialId) {
                     // Decrement old commercial's counter
@@ -545,21 +544,21 @@ class ProspectController extends Controller
                             ->where('id', $oldCommercialId)
                             ->decrement('nb_prospects');
                     }
-                    
+
                     // Increment new commercial's counter
                     if ($newCommercialId) {
                         \App\Models\User::on('temp')
                             ->where('id', $newCommercialId)
                             ->increment('nb_prospects');
                     }
-                    
+
                     // Track who made the affectation
                     $user = Auth::user();
                     $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
                     if ($userAuth) {
                         $prospect->affecte_par_admin_id = $userAuth->id;
                         $prospect->date_affectation = Carbon::now();
-                        
+
                         // Create "Affecte" status when assigning to a commercial
                         if ($newCommercialId) {
                             $statutProspect = new StatutProspect();
@@ -573,10 +572,10 @@ class ProspectController extends Controller
                         }
                     }
                 }
-                
+
                 $prospect->commercial_affecte = $newCommercialId;
             }
-            
+
             foreach ($update as $key => $value) {
                 if (!in_array($key, ['commercial_affecte', 'affecte_par_admin_id', 'date_affectation'])) {
                     $prospect->$key = $value;
@@ -802,16 +801,16 @@ class ProspectController extends Controller
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            
+
             // Custom validation since we're using temp connection
             if (!$request->has('prospect_ids') || !is_array($request->prospect_ids)) {
                 return response()->json(['error' => 'prospect_ids is required and must be an array'], 422);
             }
-            
+
             if (!$request->has('projet_id')) {
                 return response()->json(['error' => 'projet_id is required'], 422);
             }
-            
+
             // Validate that prospects exist and can be assigned
             $prospects = Prospect::on('temp')
                 ->with('last_statut')
@@ -826,11 +825,11 @@ class ProspectController extends Controller
             // Allow auto assignment regardless of final status
             try {
                 \DB::connection('temp')->beginTransaction();
-                
+
                 // Use only assignable prospect IDs
                 $prospectIds = $prospects->pluck('id')->toArray();
                 $projetId = $request->projet_id;
-                
+
                 // Get all commercials for this project with their current prospect counts
                 $commercials = \App\Models\User::on('temp')
                     ->whereHas('projets', function($query) use ($projetId) {
@@ -838,11 +837,11 @@ class ProspectController extends Controller
                     })
                     ->where('role', 3) // Assuming 3 is commercial role
                     ->get();
-                
+
                 if ($commercials->isEmpty()) {
                     return response()->json(['error' => 'No commercials found for this project'], 400);
                 }
-                
+
                 // Calculate actual current prospect counts for each commercial
                 $commercialCounts = $commercials->map(function($commercial) use ($projetId) {
                     // Get actual count from database, not from nb_prospects field
@@ -875,7 +874,7 @@ class ProspectController extends Controller
                         'count' => $commercial['count'] - count($prospectsToRemove)
                     ];
                 })->toArray();
-                
+
                 // Distribute prospects efficiently using adjusted counts
                 $assignments = [];
                 $counts = $adjustedCounts;
@@ -895,23 +894,23 @@ class ProspectController extends Controller
                     // Update count for next iteration
                     $counts[0]['count']++;
                 }
-                
+
                 // Get current user for tracking
                 $user = Auth::user();
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
-                
+
                 // Apply assignments
                 foreach ($assignments as $assignment) {
                     $prospect = Prospect::on('temp')->find($assignment['prospect_id']);
                     $oldCommercialId = $prospect->commercial_affecte;
                     $newCommercialId = $assignment['commercial_id'];
-                    
+
                     // Update prospect assignment and track affectation
                     $prospect->commercial_affecte = $newCommercialId;
                     if ($userAuth) {
                         $prospect->affecte_par_admin_id = $userAuth->id;
                         $prospect->date_affectation = Carbon::now();
-                        
+
                         // Create "Affecte" status for each assigned prospect
                         $statutProspect = new StatutProspect();
                         $statutProspect->setConnection('temp');
@@ -923,7 +922,7 @@ class ProspectController extends Controller
                         $statutProspect->save();
                     }
                     $prospect->save();
-                    
+
                     // Update counters only if commercial actually changed
                     if ($oldCommercialId != $newCommercialId) {
                         if ($oldCommercialId) {
@@ -958,7 +957,7 @@ class ProspectController extends Controller
                     'message' => 'Prospects assigned automatically',
                     'assignments' => $assignments
                 ], 200);
-                
+
             } catch (\Exception $e) {
                 \DB::connection('temp')->rollback();
                 return response()->json(['error' => 'Assignment failed: ' . $e->getMessage()], 500);
