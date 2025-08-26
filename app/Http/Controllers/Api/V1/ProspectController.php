@@ -366,23 +366,8 @@ class ProspectController extends Controller
                 $statutProspect->setConnection('temp');
                 $statutProspect->prospect_id = $prospect->id;
 
-                // Detect enum literal for statut (textual vs numeric) in tenant schema
-                $enumLiteral = 'En_attente';
-                try {
-                    $columns = DB::connection('temp')->select("SHOW COLUMNS FROM statut_prospects LIKE 'statut'");
-                    if (!empty($columns)) {
-                        $type = $columns[0]->Type ?? '';
-                        if (stripos($type, "enum('En_attente'") !== false) {
-                            $enumLiteral = 'En_attente';
-                        } elseif (stripos($type, "enum('0'") !== false) {
-                            $enumLiteral = '0';
-                        }
-                    }
-                } catch (\Throwable $e) {
-                    // default stays 'En_attente'
-                }
-
-                $statutProspect->statut = $enumLiteral;
+                // Enforce numeric-only status storage (ENUM('0'..'9'))
+                $statutProspect->statut = '0';
                 $statutProspect->date_traitement = Carbon::now();
                 $statutProspect->user_id_traite = $userAuth ? $userAuth->id : null;
                 $statutProspect->commentaire = 'Prospect créé manuellement';
@@ -415,24 +400,8 @@ class ProspectController extends Controller
         $statutProspect = new StatutProspect();
         $statutProspect->setConnection('temp');
         $statutProspect->prospect_id = $prospect->id;
-        // Determine the correct statut literal based on tenant schema
-        $enumLiteral = 'En_attente';
-        try {
-            $columns = DB::connection('temp')->select("SHOW COLUMNS FROM statut_prospects LIKE 'statut'");
-            if (!empty($columns)) {
-                $type = $columns[0]->Type ?? '';
-                // If enum contains quotes around textual labels, use 'En_attente'; otherwise fallback to '0'
-                if (stripos($type, "enum('En_attente'") !== false) {
-                    $enumLiteral = 'En_attente';
-                } elseif (stripos($type, "enum('0'") !== false) {
-                    $enumLiteral = '0';
-                }
-            }
-        } catch (\Throwable $e) {
-            // default to textual literal
-        }
-
-        $statutProspect->statut = $enumLiteral;
+        // Enforce numeric-only status storage for WhatsApp
+        $statutProspect->statut = '0';
         $statutProspect->date_traitement = Carbon::now()->toDateString();
         $statutProspect->user_id_traite = null; // No specific user for WhatsApp
         $statutProspect->commentaire = 'Prospect créé via WhatsApp';
@@ -442,6 +411,24 @@ class ProspectController extends Controller
         try {
             $notif_helper = new NotificationHelper();
             $req = new \Illuminate\Http\Request();
+
+            // Ensure notification has a projet_id even if prospect was left null (ambiguous auto-link)
+            $notifProjetId = $projet_id;
+            if (!$notifProjetId && $phone_number_id) {
+                try {
+                    $cfg = DB::connection('temp')
+                        ->table('whatsapp_configurations')
+                        ->where('phone_number_id', $phone_number_id)
+                        ->whereNull('deleted_at')
+                        ->first();
+                    if ($cfg && isset($cfg->projet_id)) {
+                        $notifProjetId = $cfg->projet_id;
+                    }
+                } catch (\Throwable $e) {
+                    // leave as null if lookup fails
+                }
+            }
+
             $notif_helper->storeNotification($req->merge([
                 'lien'        => '/crm/prospects/' . $prospect->id,
                 'date'        => Carbon::now(),
@@ -451,7 +438,7 @@ class ProspectController extends Controller
                 'role'        => null,
                 'visite_id'   => null,
                 'prospect_id' => $prospect->id,
-                'projet_id'   => $projet_id,
+                'projet_id'   => $notifProjetId,
             ]));
         } catch (\Exception $e) {
             Log::warning('Failed to create WhatsApp notification: ' . $e->getMessage());
@@ -473,11 +460,11 @@ class ProspectController extends Controller
         $prospect->source    = 3;
         $prospect->save();
 
-        // Create default "en_attente" status
+        // Create default "en_attente" status (numeric)
         $statutProspect = new StatutProspect();
         $statutProspect->setConnection('temp');
         $statutProspect->prospect_id = $prospect->id;
-        $statutProspect->statut = StatutProspectEnum::En_attente->value;
+        $statutProspect->statut = '0';
         $statutProspect->date_traitement = Carbon::now();
         $statutProspect->user_id_traite = null; // No specific user for landing page
         $statutProspect->commentaire = 'Prospect créé via Landing Page';
@@ -544,19 +531,8 @@ class ProspectController extends Controller
             
             // Handle commercial_affecte update
             if ($request->has('commercial_affecte')) {
-                // Check if prospect has a final status that prevents assignment
+                // Allow reassignment regardless of final status
                 $lastStatus = $prospect->last_statut;
-                $finalStatuses = [
-                    StatutProspectEnum::Perdu->value,
-                    StatutProspectEnum::Converti_en_visite->value,
-                ];
-
-                if ($lastStatus && in_array($lastStatus->statut, $finalStatuses)) {
-                    return response()->json([
-                        'error' => 'Ce prospect ne peut pas être assigné car il a un statut final: ' .
-                                  $lastStatus->statut
-                    ], 422);
-                }
 
                 $oldCommercialId = $prospect->commercial_affecte;
                 $newCommercialId = $request->commercial_affecte;
@@ -804,22 +780,8 @@ class ProspectController extends Controller
                         $statutProspect = new StatutProspect();
                         $statutProspect->setConnection('temp');
                         $statutProspect->prospect_id = $prospect->id;
-                        // Detect enum literal for statut (textual vs numeric) in tenant schema
-                        $enumLiteral = 'En_attente';
-                        try {
-                            $columns = DB::connection('temp')->select("SHOW COLUMNS FROM statut_prospects LIKE 'statut'");
-                            if (!empty($columns)) {
-                                $type = $columns[0]->Type ?? '';
-                                if (stripos($type, "enum('En_attente'") !== false) {
-                                    $enumLiteral = 'En_attente';
-                                } elseif (stripos($type, "enum('0'") !== false) {
-                                    $enumLiteral = '0';
-                                }
-                            }
-                        } catch (\Throwable $e) {
-                            // default stays 'En_attente'
-                        }
-                        $statutProspect->statut = $enumLiteral;
+                        // Enforce numeric-only status
+                        $statutProspect->statut = '0';
                         $statutProspect->date_traitement = Carbon::now()->toDateString();
                         $statutProspect->user_id_traite = null;
                         $statutProspect->commentaire = 'Prospect créé par importation';
@@ -861,24 +823,7 @@ class ProspectController extends Controller
                 return response()->json(['error' => 'Some prospect IDs are invalid'], 422);
             }
 
-            // Check for prospects with final statuses that prevent assignment
-            $finalStatuses = [
-                StatutProspectEnum::Perdu->value,
-                StatutProspectEnum::Converti_en_visite->value,
-            ];
-
-            $unassignableProspects = $prospects->filter(function($prospect) use ($finalStatuses) {
-                return $prospect->last_statut && in_array($prospect->last_statut->statut, $finalStatuses);
-            });
-
-            if ($unassignableProspects->isNotEmpty()) {
-                $unassignableIds = $unassignableProspects->pluck('id')->toArray();
-                return response()->json([
-                    'error' => 'Certains prospects ne peuvent pas être assignés car ils ont un statut final',
-                    'unassignable_prospect_ids' => $unassignableIds
-                ], 422);
-            }
-            
+            // Allow auto assignment regardless of final status
             try {
                 \DB::connection('temp')->beginTransaction();
                 

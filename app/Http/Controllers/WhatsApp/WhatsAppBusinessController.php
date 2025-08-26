@@ -278,7 +278,7 @@ class WhatsAppBusinessController extends Controller
 
             if (!$existingProspect) {
                 \App\Http\Controllers\Api\V1\ProspectController::Store_WhatsApp(
-                    null,
+                    $phoneNumberId,
                     $phone,
                     $message,
                     $name,
