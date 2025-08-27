@@ -366,12 +366,16 @@ class ProspectController extends Controller
                 $statutProspect->setConnection('temp');
                 $statutProspect->prospect_id = $prospect->id;
 
-                // Enforce numeric-only status storage (ENUM('0'..'9'))
-                $statutProspect->statut = '0';
-                $statutProspect->date_traitement = Carbon::now();
-                $statutProspect->user_id_traite = $userAuth ? $userAuth->id : null;
-                $statutProspect->commentaire = 'Prospect créé manuellement';
-                $statutProspect->save();
+            $statutProspect = new StatutProspect();
+            $statutProspect->setConnection('temp');
+            $statutProspect->prospect_id = $prospect->id;
+            $statutProspect->statut = '0';
+            $statutProspect->date_traitement = Carbon::now();
+            $statutProspect->user_id_traite = $userAuth ? $userAuth->id : null;
+            $statutProspect->commentaire = 'Prospect créé manuellement';
+            $statutProspect->save();
+
+               
             }
 
             return $prospect;
