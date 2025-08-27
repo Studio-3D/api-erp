@@ -91,7 +91,7 @@ class AvanceController extends Controller
                     ->where('statut', StatutReservationEnum::Validé->value)
                     ->sum('montant');
 
-                } else {
+            } else {
                 // Requête pour les avances supprimées (dossier désisté)
                 $query = Avance::on('temp')
                     ->with('last_statut')

@@ -264,7 +264,7 @@ class ReservationController extends Controller
 
 
             public function store(StoreReservationRequest $request)
-                {
+            {
                     $user = Auth::user();
                     if (!RoleHelper::ACSup()) {
                         return response()->json(['error' => 'Unauthorized'], 401);
@@ -272,7 +272,9 @@ class ReservationController extends Controller
 
                     DatabaseHelper::Config();
                     $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
-
+                    $societe_id = Auth::guard('api')->user()->societe_id;
+                    $societe=Societe::findOrfail( $societe_id);
+                    $DatabaseName='Erp_'.$societe->raison_sociale_concatene.'_'.$societe_id;
                     // Declare $reservation before try block
                     $reservation = null;
 
@@ -298,7 +300,8 @@ class ReservationController extends Controller
                         if ($request->has('code_reservation')) {
                             $request->validate([
                                 'code_reservation' => [
-                                    Rule::unique('reservations')->where('etat', 1)->whereNull('deleted_at'),
+                                    Rule::unique('temp.'.$DatabaseName.'.reservations') 
+                                                                ->where('etat', 1)->whereNull('deleted_at'),
                                 ],
                             ]);
                         }
@@ -329,7 +332,9 @@ class ReservationController extends Controller
                         \Log::error("Reservation creation failed: " . $e->getMessage());
                         return response()->json(['error' => 'Reservation creation failed: ' . $e->getMessage()], 500);
                     }
-                }
+            }
+            
+            
             private function rollbackReservationCreation($reservation)
             {
                 try {
