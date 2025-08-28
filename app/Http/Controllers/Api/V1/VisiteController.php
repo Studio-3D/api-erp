@@ -334,6 +334,32 @@ class VisiteController extends Controller
             $list_bien_interesse       = json_decode($request->input('list_bien_interesse', '[]'), true);
             $list_bien_transfere_vendu = json_decode($request->input('list_bien_transfere_vendu', '[]'), true);
 
+            // Precompute whether this request includes a RDV or a Relance to avoid race conditions
+            $hasRdvRequested = false;
+            $hasRelanceRequested = false;
+
+            // Direct fields
+            if (!empty($request->rdv)) {
+                $hasRdvRequested = true;
+            }
+            if (!empty($request->date_relance)) {
+                $hasRelanceRequested = true;
+            }
+
+            // In list_bien_interesse
+            if (is_array($list_bien_interesse)) {
+                foreach ($list_bien_interesse as $it) {
+                    if (!empty($it['rdv'])) { $hasRdvRequested = true; }
+                    if (!empty($it['date_relance'])) { $hasRelanceRequested = true; }
+                }
+            }
+            // In list_bien_transfere_vendu
+            if (is_array($list_bien_transfere_vendu)) {
+                foreach ($list_bien_transfere_vendu as $it) {
+                    if (!empty($it['rdv'])) { $hasRdvRequested = true; }
+                    if (!empty($it['date_relance'])) { $hasRelanceRequested = true; }
+                }
+            }
             //store prospect si client n'existe pas
 
             if ($request->prospect_id == null) {
@@ -355,8 +381,8 @@ class VisiteController extends Controller
                 $validatedData['ville']          = $request->input('ville');
                 $validatedData['origin']         = 'visite';
                 $validatedData['notifie']        = $request->notifie;
-                $prospectController              = new ProspectController();
-                $prospect                        = $prospectController->store(new StoreProspectRequest($validatedData));
+                $prospectController = new ProspectController();
+                $prospect = $prospectController->store(new StoreProspectRequest($validatedData));
                 // Si un client_id est fourni, on lie ce prospect au client
                 if ($request->client_id && $prospect) {
                     $client = Client::on('temp')->find($request->client_id);
@@ -1015,14 +1041,41 @@ class VisiteController extends Controller
                 }
 
             }
-            // store statut du  prospect
+            // store initial statut du prospect based on programmed actions
+            // If created from a visite, do NOT mark as Converti_en_visite by default.
+            // Use RDV programmé (1) if any RDV exists, else Relance programmée (3) if any relance exists,
+            // otherwise En attente (0).
+            $visitIds = \App\Models\Visite::on('temp')
+                ->where('origin_id', $origin_id)
+                ->pluck('id');
+            // Prefer request-level intent flags to avoid race condition; fallback to DB check
+            $hasRdv = $hasRdvRequested || \App\Models\Relance_Rdv_Visite::on('temp')
+                ->whereIn('visite_id', $visitIds)
+                ->where('type', 2) // 2 => RDV
+                ->exists();
+            $hasRelance = $hasRelanceRequested || \App\Models\Relance_Rdv_Visite::on('temp')
+                ->whereIn('visite_id', $visitIds)
+                ->where('type', 1) // 1 => Relance
+                ->exists();
+
+            $initialStatut = '0';
+            $comment = 'Prospect créé via visite';
+            if ($hasRdv) {
+                $initialStatut = '1'; // Planification_RDV => Rendez-vous programmé
+                $comment = 'Rendez-vous programmé via création de visite';
+            } elseif ($hasRelance) {
+                $initialStatut = '3'; // Rappel => Relance programmée
+                $comment = 'Relance programmée via création de visite';
+            }
+
             $statut_pro = new StatutProspect();
             $statut_pro->setConnection('temp');
             $statut_pro->prospect_id     = $prospect->id;
-            $statut_pro->statut          = '4';
+            $statut_pro->statut          = $initialStatut;
             $statut_pro->date_traitement = Carbon::now();
             $statut_pro->user_id_traite  = $userAuth->value('id');
             $statut_pro->visite_id       = $origin_id;
+            $statut_pro->commentaire     = $comment;
             $statut_pro->save();
             //send message WhatsApp de bienvenue en cas de n'existe pas de relance ou rendez-vous ou frein
 
@@ -1505,7 +1558,7 @@ class VisiteController extends Controller
 
                             ];
 
-                            
+
                             $notif_helper = new NotificationHelper();
                             $notif_helper->storeNotification($request->merge($data_notif));
 
