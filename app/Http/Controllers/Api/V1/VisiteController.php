@@ -334,6 +334,32 @@ class VisiteController extends Controller
             $list_bien_interesse       = json_decode($request->input('list_bien_interesse', '[]'), true);
             $list_bien_transfere_vendu = json_decode($request->input('list_bien_transfere_vendu', '[]'), true);
 
+            // Precompute whether this request includes a RDV or a Relance to avoid race conditions
+            $hasRdvRequested = false;
+            $hasRelanceRequested = false;
+
+            // Direct fields
+            if (!empty($request->rdv)) {
+                $hasRdvRequested = true;
+            }
+            if (!empty($request->date_relance)) {
+                $hasRelanceRequested = true;
+            }
+
+            // In list_bien_interesse
+            if (is_array($list_bien_interesse)) {
+                foreach ($list_bien_interesse as $it) {
+                    if (!empty($it['rdv'])) { $hasRdvRequested = true; }
+                    if (!empty($it['date_relance'])) { $hasRelanceRequested = true; }
+                }
+            }
+            // In list_bien_transfere_vendu
+            if (is_array($list_bien_transfere_vendu)) {
+                foreach ($list_bien_transfere_vendu as $it) {
+                    if (!empty($it['rdv'])) { $hasRdvRequested = true; }
+                    if (!empty($it['date_relance'])) { $hasRelanceRequested = true; }
+                }
+            }
             //store prospect si client n'existe pas
 
             if ($request->prospect_id == null) {
@@ -1022,11 +1048,12 @@ class VisiteController extends Controller
             $visitIds = \App\Models\Visite::on('temp')
                 ->where('origin_id', $origin_id)
                 ->pluck('id');
-            $hasRdv = \App\Models\Relance_Rdv_Visite::on('temp')
+            // Prefer request-level intent flags to avoid race condition; fallback to DB check
+            $hasRdv = $hasRdvRequested || \App\Models\Relance_Rdv_Visite::on('temp')
                 ->whereIn('visite_id', $visitIds)
                 ->where('type', 2) // 2 => RDV
                 ->exists();
-            $hasRelance = \App\Models\Relance_Rdv_Visite::on('temp')
+            $hasRelance = $hasRelanceRequested || \App\Models\Relance_Rdv_Visite::on('temp')
                 ->whereIn('visite_id', $visitIds)
                 ->where('type', 1) // 1 => Relance
                 ->exists();
@@ -1531,7 +1558,7 @@ class VisiteController extends Controller
 
                             ];
 
-                            
+
                             $notif_helper = new NotificationHelper();
                             $notif_helper->storeNotification($request->merge($data_notif));
 
