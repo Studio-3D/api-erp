@@ -60,7 +60,7 @@ class StoreBlocRequest extends FormRequest
         else {
             return [
 
-                'nom.unique' =>  'ce nom de bloc existe déjà dans ce tranche',
+                'nom.unique' =>  'ce nom de bloc existe déjà dans cette tranche',
             ];
         }
     }
