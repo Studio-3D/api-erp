@@ -189,25 +189,7 @@ class TrancheController extends Controller
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
             $tranche = Tranche::on('temp')->findOrfail($id);
-            if ($request->has('nom')) {
 
-
-                                $societe_id = Auth::guard('api')->user()->societe_id;
-                                $societe=Societe::findOrfail( $societe_id);
-                                $DatabaseName='Erp_'.$societe->raison_sociale_concatene.'_'.$societe_id;
-                                $request->validate([
-                                            'nom' => [
-                                                Rule::unique('temp.'.$DatabaseName.'.tranches')
-                                                                            ->ignore($tranche->id)->whereNull('deleted_at'),
-                                            ],
-                                        ]);
-
-                $request->validate([
-                    'nom' => [
-                        Rule::unique('tranches')->ignore($tranche->id)->whereNull('deleted_at'),
-                    ],
-                ]);
-            }
             $update = $request->all();
             foreach ($update as $key => $value) {
                 $tranche->$key = $value;
