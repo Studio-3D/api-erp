@@ -204,6 +204,7 @@ class TrancheController extends Controller
 
 
             }
+
             $update = $request->all();
             foreach ($update as $key => $value) {
                 $tranche->$key = $value;
