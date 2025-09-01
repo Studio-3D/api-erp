@@ -41,9 +41,15 @@ class UpdateTrancheRequest extends FormRequest
             'niveau_etages' => 'integer|nullable',
             'nbre_blocs' => 'integer ',
             'nbre_immeubles' => 'integer',
-            'nbre_biens' => 'integer',
-            ];
+            'nbre_biens' => 'integer'
+           /* ,'nom' => [ Rule::unique('temp.'.$DatabaseName.'.tranches','nom')->whereNull('deleted_at')->where(function ($query) {
+                    $query->where('projet_id', $this->projet_id);
+            })->ignore($this->tranche)],*/
+
+        ];
     }
+
+
 
     public function messages(): array
     {
