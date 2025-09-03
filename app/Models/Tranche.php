@@ -55,9 +55,9 @@ class Tranche extends Model
     public function  all_coefficients(){
         return $this->hasMany(Coefficient_tranche::class);
     }
-    public function bien_tva()
+    public function Bien_Tva()
     {
-        return $this->hasMany(bien_tva::class);
+        return $this->hasMany(Bien_Tva::class);
     }
 }
 

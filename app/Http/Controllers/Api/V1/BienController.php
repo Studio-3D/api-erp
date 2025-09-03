@@ -779,8 +779,8 @@ class BienController extends Controller
             }
 
             //biens_tva
-            if ($bien->bien_tva != null) {
-                $bien->bien_tva->delete();
+            if ($bien->Bien_Tva != null) {
+                $bien->Bien_Tva->delete();
             }
             //tva_collecte
             if (count($bien->tva_collectes) > 0) {

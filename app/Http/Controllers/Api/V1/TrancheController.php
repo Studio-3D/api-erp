@@ -267,8 +267,8 @@ if ($request->has('nom')) {
                     $c->delete();
                 }
              }
-             if(count($tranche->bien_tva)>0){
-                foreach($tranche->bien_tva as $b){
+             if(count($tranche->Bien_Tva)>0){
+                foreach($tranche->Bien_Tva as $b){
                     $b->delete();
                 }
              }
