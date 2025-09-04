@@ -197,8 +197,10 @@ class TrancheController extends Controller
                                 $DatabaseName='Erp_'.$societe->raison_sociale_concatene.'_'.$societe_id;
                                 $request->validate([
                                             'nom' => [
-                                                Rule::unique('temp.'.$DatabaseName.'.tranches')->where('projet_id',$tranche->projet_id)
-                                                                            ->ignore($tranche->id)->whereNull('deleted_at'),
+                                                Rule::unique('temp.'.$DatabaseName.'.tranches')
+                                                ->where('projet_id',$tranche->projet_id)      
+                                                ->ignore($tranche->id)
+                                                ->whereNull('deleted_at'),
                                             ],
                                         ]);
 
@@ -267,8 +269,8 @@ class TrancheController extends Controller
                     $c->delete();
                 }
              }
-             if(count($tranche->bien_tva)>0){
-                foreach($tranche->bien_tva as $b){
+             if(count($tranche->Bien_Tva)>0){
+                foreach($tranche->Bien_Tva as $b){
                     $b->delete();
                 }
              }

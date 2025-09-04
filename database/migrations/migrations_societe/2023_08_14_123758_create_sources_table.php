@@ -14,6 +14,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+	if (Schema::hasTable('sources')) {
+            return; // Exit if the table already exists
+        }
         Schema::create('sources', function (Blueprint $table) {
             $table->id();
             $table->string('source');
