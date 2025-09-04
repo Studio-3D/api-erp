@@ -12,6 +12,9 @@ return new class extends Migration
      */
     public function up(): void
     {
+	if (Schema::hasTable('type_freins')) {
+            return; // Exit if the table already exists
+        }
         Schema::create('type_freins', function (Blueprint $table) {
             $table->id();
             $table->string('description');

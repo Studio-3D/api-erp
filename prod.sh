@@ -10,7 +10,7 @@ sed -i 's/DB_HOST=.*/DB_HOST=erp-studio3d.cng8secmmw73.eu-north-1.rds.amazonaws.
 sed -i 's/DB_USERNAME=.*/DB_USERNAME=admin/g' .env
 sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=Kilo15.35/g' .env
 sed -i 's/APP_ENV=.*/APP_ENV=production/g' .env
-sed -i 's/APP_DEBUG=.*/APP_DEBUG=false/g' .env
+sed -i 's/APP_DEBUG=.*/APP_DEBUG=true/g' .env
 
 echo "Modified database configuration to use AWS RDS database"
 
