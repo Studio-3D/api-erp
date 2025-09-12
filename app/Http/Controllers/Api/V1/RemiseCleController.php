@@ -27,19 +27,26 @@ class RemiseCleController extends Controller
 
             DatabaseHelper::Config();
 
-            $query = RemiseCle::on('temp')->where('remise_cles.projet_id', $projet_id);
+            $query = RemiseCle::on('temp')->with('bien','userRemis')->where('remise_cles.projet_id', $projet_id);
             if (RoleHelper::Com()) {
                 $user     = Auth::user();
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
                 $query->where('user_id_remis', $userAuth->value('id'));
             }
-            if ($request->filled('bien')) {
-                $query->where('remise_cles.bien_id', $request->input('bien'));
 
-            }
-            if ($request->filled('cc')) {
-                $query->where('user_id_remis', $request->input('cc'));
+             if ($request->filled('bien')) {
+            $query->whereHas('bien', function ($q) use ($request) {
+                $q->where('propriete_dite_bien', 'like', '%' . $request->input('bien') . '%');
+            });
+        }
 
+             if ($request->filled('cc')) {
+                $query->whereHas('userRemis', function ($q) use ($request) {
+                    $q->where(function ($q) use ($request) {
+                        $q->where('name', 'like', '%' . $request->input('cc') . '%')
+                            ->orWhere('prenom', 'like', '%' . $request->input('cc') . '%');
+                    });
+                });
             }
             /*if ($request->filled('client')) {
                 $query->whereHas('bien.reservation.aquereurs.client', function ($q) use ($request) {
@@ -103,33 +110,37 @@ class RemiseCleController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {
-        if (RoleHelper::ACSup()) {
-            DatabaseHelper::Config();
-            $user          = Auth::user();
-            $userAuth      = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
-            $societe       = Societe::findOrfail($user_societes->societe_id);
-            $rec           = new RemiseCle();
-            $rec->setConnection('temp');
-            $rec->bien_id       = $request->bien_id;
-            $rec->projet_id     = $request->projet_id;
-            $rec->date_remise   = $request->date_remise;
-            $rec->user_id       = $userAuth->value('id');
-            $rec->user_id_remis = $request->user_id_remise;
-            if ($request->hasFile('fichier')) {
-                $rec->fichier = $request->file('fichier')->getClientOriginalName();
-                $directory    = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remise_cles');
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('fichier')->move($directory, $request->file('fichier')->getClientOriginalName());
-            }
-            $rec->save();
-            return response()->json(['remise' => $rec], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+{
+    if (RoleHelper::ACSup()) {
+        DatabaseHelper::Config();
+        $user          = Auth::user();
+        $userAuth      = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+        $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+        $societe       = Societe::findOrfail($user_societes->societe_id);
+        $rec           = new RemiseCle();
+        $rec->setConnection('temp');
+        $rec->bien_id       = $request->bien_id;
+        $rec->projet_id     = $request->projet_id;
+        $rec->date_remise   = $request->date_remise;
+        $rec->user_id       = $userAuth->value('id');
 
+        // Corrected logic for user_id_remis
+        $rec->user_id_remis = $request->has('user_id_remise') && !empty($request->user_id_remise)
+            ? $request->user_id_remise
+            : $userAuth->value('id');;
+
+        if ($request->hasFile('fichier')) {
+            $rec->fichier = $request->file('fichier')->getClientOriginalName();
+            $directory    = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remise_cles');
+            File::makeDirectory($directory, 0755, true, true);
+            $request->file('fichier')->move($directory, $request->file('fichier')->getClientOriginalName());
+        }
+        $rec->save();
+        return response()->json(['remise' => $rec], 200);
+    } else {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+}
 
     /**
      * Display the specified resource.

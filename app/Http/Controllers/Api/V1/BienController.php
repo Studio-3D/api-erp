@@ -1220,24 +1220,9 @@ class BienController extends Controller
         }
     }
 
-    //pour test
+
+
     public function getBiens_Vendu_ByProjet_Concat($projet_id, $text)
-    {
-
-        if (RoleHelper::AdminSup()) {
-            DatabaseHelper::Config();
-
-            $biens = Bien::on('temp')->where('projet_id', $projet_id)->where('etat', EtatBien::DISPONIBLE->name)->get();
-
-            return response()->json(['biens' => $biens], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-
-        }
-    }
-
-    /* public function getBiens_Vendu_ByProjet_Concat($projet_id, $text)
     {
 
         if (RoleHelper::ACSup()) {
@@ -1254,7 +1239,6 @@ class BienController extends Controller
                     ->where('etat', 'RESERVATION')
                     ->where('projet_id', $projet_id)->get();
             }
-
             $biens = array();
             foreach ($biens_pr as $b_pr) {
                 if ($b_pr->prix <= $b_pr->encaissements_sum_montant) {
@@ -1297,7 +1281,7 @@ class BienController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
 
         }
-    } */
+    }
 
     public function getTotalsStatistique(Request $request)
     {
