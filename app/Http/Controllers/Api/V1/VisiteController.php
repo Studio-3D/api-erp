@@ -1803,6 +1803,7 @@ class VisiteController extends Controller
                         }
                         // store new statut Propect
                           $initialStatut = '0';
+                           $comment = 'Prospect Modifié via visite';
                         if ($hasRdv) {
                             $initialStatut = '1'; // Planification_RDV => Rendez-vous programmé
                             $comment = 'Rendez-vous programmé via création de visite';
@@ -1810,7 +1811,7 @@ class VisiteController extends Controller
                             $initialStatut = '3'; // Rappel => Relance programmée
                             $comment = 'Relance programmée via création de visite';
                         }
-
+                        if($hasRdv||$hasRelance){
                         $statut_pro = new StatutProspect();
                         $statut_pro->setConnection('temp');
                         $statut_pro->prospect_id     = $visite->prospect_id;
@@ -1820,6 +1821,9 @@ class VisiteController extends Controller
                         $statut_pro->visite_id       = $visite->origin_id;
                         $statut_pro->commentaire     = $comment;
                         $statut_pro->save();
+                        }
+
+
                 // Commit transaction if everything is successful
                     DB::connection('temp')->commit();
 
@@ -2450,7 +2454,7 @@ class VisiteController extends Controller
                 $initialStatut = '3'; // Rappel => Relance programmée
                 $comment = 'Relance programmée via création de visite';
             }
-
+            if($initialStatut!='0'){
             $statut_pro = new StatutProspect();
             $statut_pro->setConnection('temp');
             $statut_pro->prospect_id     = $request->prospect_id;
@@ -2460,6 +2464,8 @@ class VisiteController extends Controller
             $statut_pro->visite_id       = $origin;
             $statut_pro->commentaire     = $comment;
             $statut_pro->save();
+            }
+
 
             //Si un CIN existe déjà pour un autre prospect, on associe toutes les visites du nouveau prospect à l'ancien et on supprime le nouveau prospect
             if ($origin != $id) {
