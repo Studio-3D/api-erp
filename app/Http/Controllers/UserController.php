@@ -59,17 +59,36 @@ class UserController extends Controller
     }
     public function logout(Request $request)
     {
-        $user = Auth::guard('api')->user();
-        $request->user()->tokens()->delete(); // Revoke all access tokens for the user
-        if (RoleHelper::SuperAdmin()) {
-            $user->societe_id = 1;
+        try {
+            $user = Auth::guard('api')->user();
+
+            if (!$user) {
+                return response()->json([
+                    'message' => 'User not authenticated',
+                ], 401);
+            }
+
+            // Revoke all access tokens for the user
+            $user->tokens()->delete();
+
+            // Reset societe_id for SuperAdmin
+            if (RoleHelper::SuperAdmin()) {
+                $user->societe_id = 1;
+            }
+
+            // Set user as disconnected
+            $user->is_connected = 0;
             $user->save();
+
+            return response()->json([
+                'message' => 'Logout successful',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Logout error: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Logout completed with warnings',
+            ], 200); // Still return success to allow client-side cleanup
         }
-        $user->is_connected = 0;
-        $user->save();
-        return response()->json([
-            'message' => 'Logout successful',
-        ]);
     }
 
     public function Dashboard()

@@ -97,6 +97,7 @@ Route::middleware('auth:api')->group(function () {
         // Facebook configurations by project
         Route::get('/facebook-configurations', [Facebook_InstagramController::class, 'facebook_configurations']);
         Route::post('/facebook-configurations', [Facebook_InstagramController::class, 'store_facebook_configuration']);
+        Route::put('/facebook-configurations/{id}', [Facebook_InstagramController::class, 'update_facebook_configuration']);
         Route::delete('/facebook-configurations/{id}', [Facebook_InstagramController::class, 'delete_facebook_configuration']);
         
         // Facebook webhook configurations
@@ -107,6 +108,7 @@ Route::middleware('auth:api')->group(function () {
         // Instagram configurations by project
         Route::get('/instagram-configurations', [Facebook_InstagramController::class, 'instagram_configurations']);
         Route::post('/instagram-configurations', [Facebook_InstagramController::class, 'store_instagram_configuration']);
+        Route::put('/instagram-configurations/{id}', [Facebook_InstagramController::class, 'update_instagram_configuration']);
         Route::delete('/instagram-configurations/{id}', [Facebook_InstagramController::class, 'delete_instagram_configuration']);
         
         // Instagram webhook configurations
@@ -117,6 +119,7 @@ Route::middleware('auth:api')->group(function () {
         // WhatsApp Business configurations by project
         Route::get('/whatsapp-configurations', [\App\Http\Controllers\WhatsApp\WhatsAppBusinessController::class, 'get_whatsapp_configurations']);
         Route::post('/whatsapp-configurations', [\App\Http\Controllers\WhatsApp\WhatsAppBusinessController::class, 'store_whatsapp_configuration']);
+        Route::put('/whatsapp-configurations/{id}', [\App\Http\Controllers\WhatsApp\WhatsAppBusinessController::class, 'update_whatsapp_configuration']);
         Route::delete('/whatsapp-configurations/{id}', [\App\Http\Controllers\WhatsApp\WhatsAppBusinessController::class, 'delete_whatsapp_configuration']);
 
         // WhatsApp Business webhook configurations
