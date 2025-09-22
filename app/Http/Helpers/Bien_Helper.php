@@ -455,104 +455,114 @@ class Bien_Helper
         }
     }
 
-    public static function libererBien($id, $text, $dst_id)
+
+    public static function libererBien($id, $text, $dst_id,$mode_proposition)
     {
+        //bu default $mode_proposition =false
         if ($text != 'console') {
             $user     = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
         }
         $bien       = Bien::on('temp')->findOrfail($id);
-        $bien->etat = EtatBien::DISPONIBLE->value;
-        //  $bien->desistement_id=$dst_id;
-        if ($bien->save()) {
-            Bien_Helper::store_bien_frein($bien->id, $text);
-            //UPDATE DERNIER VISITE pre reserve=>pre reserve_perdu // vendu==>reservation_perdu
-            $visite = Visite::on('temp')->where('bien_id', $id)->where('interet', InteretEnum::Intéressé->value)->orderBy('created_at', 'DESC')->first();
-            if ($visite != null) {
-                if ($text == 'console') {
-                    //pre reserve
-                    if ($visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
-                        $visite->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
-                    } elseif ($visite->statut == StatutVisiteEnum::Vendu->value) {
-                        $visite->statut = StatutVisiteEnum::Réservation_Perdu->value;
-                    }
-                    $visite->save();
-                }
+        $reservedStates = ['RESERVATION', 'PRE_RESERVATION'];
+        //on cas de proposition  si bien n'est pas reserve et pre rserve ou le mode false !$mode_proposition (le cas normal sans proposition )
+        $shouldLiberate = !$mode_proposition ||
+                     ($mode_proposition && !in_array($bien->etat, $reservedStates));
 
-                //SUPPRIMER LES OLDS NOTIF
-                $notif_old_relance = Notification::on('temp')->where(function ($query) {
-                    $query->where('type', 1)
-                        ->orwhere('type', 2);
-                })
-                    ->where(function ($query_2) use ($visite) {
-                        $query_2->where('visite_id', $visite->id);
-                    })
-                    ->get();
-                if (($notif_old_relance->count()) > 0) {
-                    foreach ($notif_old_relance as $nt_r) {
-                        $nt_r->delete();
-                    }
-                }
-                /***RENDRE LES OLD RELANCES ET OLD RDV EN TRAITE AUTOMATIQUE****/
-                $old_relances_rdv = Relance_Rdv_Visite::on('temp')->where('visite_id', $visite->id)->where('type_traitement', 0)->get();
-                if (count($old_relances_rdv) > 0) {
-                    foreach ($old_relances_rdv as $old) {
-                        $old->type_traitement = 2; //auto
-                        $old->date_traitement = Carbon::now();
-                        //si old visite pre reserve en suite n visite vendu ==>user_id_traite(l'ancien user)
-                        if ($old->visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
-                            if ($visite->statut == StatutVisiteEnum::Vendu->value) {
-                                $old->user_id_traite = $visite->user_id;
-                            } else {
-                                $old->user_id_traite = $text != 'console' ? $userAuth->value('id') : null;
+        if ($shouldLiberate) {
+                $bien->etat = EtatBien::DISPONIBLE->value;
+                //  $bien->desistement_id=$dst_id;
+                if ($bien->save()) {
+                    Bien_Helper::store_bien_frein($bien->id, $text);
+                    //UPDATE DERNIER VISITE pre reserve=>pre reserve_perdu // vendu==>reservation_perdu
+                    $visite = Visite::on('temp')->where('bien_id', $id)->where('interet', InteretEnum::Intéressé->value)->orderBy('created_at', 'DESC')->first();
+                    if ($visite != null) {
+                        if ($text == 'console') {
+                            //pre reserve
+                            if ($visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
+                                $visite->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
+                            } elseif ($visite->statut == StatutVisiteEnum::Vendu->value) {
+                                $visite->statut = StatutVisiteEnum::Réservation_Perdu->value;
                             }
-                        } else {
-                            $old->user_id_traite = $text != 'console' ? $userAuth->value('id') : null;
+                            $visite->save();
                         }
-                        $old->save();
+
+                        //SUPPRIMER LES OLDS NOTIF
+                        $notif_old_relance = Notification::on('temp')->where(function ($query) {
+                            $query->where('type', 1)
+                                ->orwhere('type', 2);
+                        })
+                            ->where(function ($query_2) use ($visite) {
+                                $query_2->where('visite_id', $visite->id);
+                            })
+                            ->get();
+                        if (($notif_old_relance->count()) > 0) {
+                            foreach ($notif_old_relance as $nt_r) {
+                                $nt_r->delete();
+                            }
+                        }
+                        /***RENDRE LES OLD RELANCES ET OLD RDV EN TRAITE AUTOMATIQUE****/
+                        $old_relances_rdv = Relance_Rdv_Visite::on('temp')->where('visite_id', $visite->id)->where('type_traitement', 0)->get();
+                        if (count($old_relances_rdv) > 0) {
+                            foreach ($old_relances_rdv as $old) {
+                                $old->type_traitement = 2; //auto
+                                $old->date_traitement = Carbon::now();
+                                //si old visite pre reserve en suite n visite vendu ==>user_id_traite(l'ancien user)
+                                if ($old->visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
+                                    if ($visite->statut == StatutVisiteEnum::Vendu->value) {
+                                        $old->user_id_traite = $visite->user_id;
+                                    } else {
+                                        $old->user_id_traite = $text != 'console' ? $userAuth->value('id') : null;
+                                    }
+                                } else {
+                                    $old->user_id_traite = $text != 'console' ? $userAuth->value('id') : null;
+                                }
+                                $old->save();
+                            }
+
+                        }
                     }
+                    //traitement Frein
+                    $traitement_frein = TraitementFrein::on('temp')->where('bien_id', $id)->where('interet', InteretEnum::Intéressé->value)->where('statut', 1)->orderBy('created_at', 'DESC')->first();
+                    if ($traitement_frein != null) {
+                        $traitement_frein->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
+                        $traitement_frein->save();
+                        //SUPPRIMER LES OLDS NOTIF
+                        $notif_old_relance = Notification::on('temp')->where(function ($query) {
+                            $query->where('type', 1)
+                                ->orwhere('type', 2);
+                        })
+                            ->where(function ($query_2) use ($traitement_frein) {
+                                $query_2->where('visite_id', $traitement_frein->visite_id);
+                            })
+                            ->get();
+                        if (($notif_old_relance->count()) > 0) {
+                            foreach ($notif_old_relance as $nt_r) {
+                                $nt_r->delete();
+                            }
+                        }
+                        /***RENDRE LES OLD RELANCES ET OLD RDV EN TRAITE AUTOMATIQUE****/
+                        $old_relances_rdv = Relance_Rdv_Visite::on('temp')->where('visite_id', $traitement_frein->visite_id)->where('type_traitement', 0)->get();
+                        if (count($old_relances_rdv) > 0) {
+                            foreach ($old_relances_rdv as $old) {
+                                $old->type_traitement = 2; //auto
+                                $old->date_traitement = Carbon::now();
+                                $old->user_id_traite  = null;
+                                $old->save();
+                            }
+
+                        }
+                    }
+                }
+                if ($text == 'console') {
+                    HistoriqueBienHelper::createHistoriqueBien(1, "liberation automatique", $id, null, null, null, null, null);
+                } else {
+                    HistoriqueBienHelper::createHistoriqueBien(4, "liberer", $id, Auth::guard('api')->user()->id, null, null, null, null);
 
                 }
             }
-            //traitement Frein
-            $traitement_frein = TraitementFrein::on('temp')->where('bien_id', $id)->where('interet', InteretEnum::Intéressé->value)->where('statut', 1)->orderBy('created_at', 'DESC')->first();
-            if ($traitement_frein != null) {
-                $traitement_frein->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
-                $traitement_frein->save();
-                //SUPPRIMER LES OLDS NOTIF
-                $notif_old_relance = Notification::on('temp')->where(function ($query) {
-                    $query->where('type', 1)
-                        ->orwhere('type', 2);
-                })
-                    ->where(function ($query_2) use ($traitement_frein) {
-                        $query_2->where('visite_id', $traitement_frein->visite_id);
-                    })
-                    ->get();
-                if (($notif_old_relance->count()) > 0) {
-                    foreach ($notif_old_relance as $nt_r) {
-                        $nt_r->delete();
-                    }
-                }
-                /***RENDRE LES OLD RELANCES ET OLD RDV EN TRAITE AUTOMATIQUE****/
-                $old_relances_rdv = Relance_Rdv_Visite::on('temp')->where('visite_id', $traitement_frein->visite_id)->where('type_traitement', 0)->get();
-                if (count($old_relances_rdv) > 0) {
-                    foreach ($old_relances_rdv as $old) {
-                        $old->type_traitement = 2; //auto
-                        $old->date_traitement = Carbon::now();
-                        $old->user_id_traite  = null;
-                        $old->save();
-                    }
-
-                }
-            }
-        }
-        if ($text == 'console') {
-            HistoriqueBienHelper::createHistoriqueBien(1, "liberation automatique", $id, null, null, null, null, null);
-        } else {
-            HistoriqueBienHelper::createHistoriqueBien(4, "liberer", $id, Auth::guard('api')->user()->id, null, null, null, null);
 
         }
-    }
     public static function store_bien_frein($id, $text)
     {
         if ($text != 'console' && $text != 'import') {

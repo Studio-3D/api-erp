@@ -632,7 +632,7 @@ class FreinController extends Controller
                         if ($request->list_biens_clickable) {
                             foreach ($request->list_biens_clickable as $key => $bien_id) {
                                 if ($bien_id) {
-                                    Bien_Helper::libererBien($bien_id, null, null);
+                                    Bien_Helper::libererBien($bien_id, null, null,false);
                                 }
                             }
                         }

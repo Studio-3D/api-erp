@@ -683,7 +683,7 @@ class DesistementController extends Controller
                             $pjController->soft_destroy_pj_by_reservationId($request->reservation_id);
                             //set bien disponible et desistement_id
 
-                            Bien_Helper::libererBien($request->bien_id_ancien, null, $desistement->id);
+                            Bien_Helper::libererBien($request->bien_id_ancien, null, $desistement->id,false);
 
                             //set tva collecte to 4 to ancien
                             if(count($desistement->Bien_ancien->tva_collectes)>0){
@@ -1295,7 +1295,7 @@ class DesistementController extends Controller
                         }
 
                         //libration de l'ancien bien
-                        Bien_Helper::libererBien($request->bien_id_ancien, null, $desistement->id);
+                        Bien_Helper::libererBien($request->bien_id_ancien, null, $desistement->id,false);
                         //reserver le new bien
                         $bien_c=new BienController();
                         $bien_c->reserverBien($request->bien_id_new,null,null);
@@ -1728,7 +1728,7 @@ class DesistementController extends Controller
                         $pjController = new PiecesJointeController();
                         $pjController->soft_destroy_pj_by_reservationId($desistement->reservation_id);
                         //set bien disponible et desistement_id
-                        Bien_Helper::libererBien($desistement->bien_id_ancien,null,$desistement->id);
+                        Bien_Helper::libererBien($desistement->bien_id_ancien,null,$desistement->id,false);
                         //si sum_avances >0
 
                         if(count($remboursements)>0){
@@ -2349,7 +2349,7 @@ class DesistementController extends Controller
                             }
 
                             //libration de l'ancien bien
-                            Bien_Helper::libererBien($desistement->bien_id_ancien,null,$desistement->id);
+                            Bien_Helper::libererBien($desistement->bien_id_ancien,null,$desistement->id,false);
                             //reserver le new bien
                             $bien_c=new BienController();
                             $bien_c->reserverBien($desistement->bien_id_new,null,null);

@@ -202,6 +202,7 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('biens', V1BienController::class);
         Route::get('projets/{idprojet}/biens', [V1BienController::class, 'indexByProjet']);
         Route::get('getBiensByProjet_Concat/{id}', [V1BienController::class, 'getBiensByProjet_Concat'])->name('getBiensByProjet_Concat');
+        Route::get('getBiensByProjet_Concat_for_reservation_visite/{bien_id}/{projet_id}', [V1BienController::class, 'getBiensByProjet_Concat_for_reservation_visite'])->name('');
         Route::delete('libererBien/{id}', [V1BienController::class, 'libererBien_function'])->name('libererBien');
         Route::put('setPropostionBien/{id}/{old_id}', [V1BienController::class, 'setPropostionBien'])->name('');
         Route::get('projets/{idprojet}/getBiensByTranche_tva', [V1BienController::class, 'getBiensByTranche_tva'])->name('');
