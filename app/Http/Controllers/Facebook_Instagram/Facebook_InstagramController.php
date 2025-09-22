@@ -94,9 +94,9 @@ class Facebook_InstagramController extends Controller
     // $accessToken='EAAI3GumKq0oBOxTQJRiQ6hZBWbUxGySoXuMOhAyjlL0YZBSp1JQZB3Y7rcoJedNGZCWkXowBvXty2lJT6FDZCOuZAFZAdsVl3D662YH15Aw6FdVYoj0iycMXQzvAvaRvJ1oTTuyfE5mII8sV4pvEZCQZBhqhE7Yd2gZClZBdpCrVzQsKmAWBqZAj9mEM0E0YgnKcqsJWUdUeOmAkCBSuSwEZCOngbEga3LuC8';
 
     // REPLACE with:
-    $config = $this->getFacebookConfigForCurrentUser();
+    $config = $this->getFacebookConfigForCurrentUser($request->projet_id);
     if (!$config) {
-        throw new \Exception('Facebook configuration not found for current user');
+        throw new \Exception('Facebook configuration not found for project ID: ' . $request->projet_id);
     }
     $pageId = $config->page_fcb_id;
     $accessToken = $config->acces_token_page;
@@ -124,9 +124,9 @@ if (in_array(2, $selectedNetworks)) {
     // $accessToken='EAAI3GumKq0oBOwvTWZAa8BYDCxzjwAgmeSE0DBoxndSsrUrGhAedIZCmYwkLD2H8OJaeQ7Q4Tzghlbobax0Dp3Y6gkDlIwpxNeSU6ObWv63bXC99cdGZCpqksjHKmMOMKYGtkWwCGX1dzPuY7pCElz3RFxQcpZAanfz9nbZBCJMI8b7uq0ohCHCKO';
 
     // REPLACE with:
-    $config = $this->getInstagramConfigForCurrentUser();
+    $config = $this->getInstagramConfigForCurrentUser($request->projet_id);
     if (!$config) {
-        throw new \Exception('Instagram configuration not found for current user');
+        throw new \Exception('Instagram configuration not found for project ID: ' . $request->projet_id);
     }
     $pageId = $config->instagram_id;
     $accessToken = $config->acces_token_user;
@@ -189,41 +189,104 @@ if (in_array(2, $selectedNetworks)) {
                 }
         }
 
-        private function getFacebookConfigForCurrentUser()
+        private function getFacebookConfigForCurrentUser($projetId = null)
 {
     try {
-        // You'll need to determine the logic for selecting the right config
-        // This could be based on user's current project, société, or other criteria
+        $user = Auth::user();
 
-        return DB::connection('temp')
+        if (!$projetId) {
+            Log::warning("No project ID provided for Facebook configuration retrieval");
+            return null;
+        }
+
+        // Get user's accessible projects to ensure they have permission
+        $userProjects = $this->getUserAccessibleProjects($user);
+        $projectIds = $userProjects->pluck('id')->toArray();
+
+        if (!in_array($projetId, $projectIds)) {
+            Log::warning("User {$user->id} does not have access to project {$projetId}");
+            return null;
+        }
+
+        // Get Facebook configuration for the specific project
+        $config = DB::connection('temp')
             ->table('facebook_configurations')
+            ->where('projet_id', $projetId)
             ->whereNull('deleted_at')
             ->orderBy('created_at', 'desc')
-            ->first(); // Get the most recent configuration
+            ->first();
+
+        if (!$config) {
+            Log::info("No Facebook configuration found for project {$projetId}");
+        }
+
+        return $config;
 
     } catch (\Exception $e) {
-        Log::error("Error getting Facebook config for current user: " . $e->getMessage());
+        Log::error("Error getting Facebook config for project {$projetId}: " . $e->getMessage());
         return null;
     }
 }
 
-/**
- * Get Instagram configuration for current authenticated user
- */
-private function getInstagramConfigForCurrentUser()
+        private function getInstagramConfigForCurrentUser($projetId = null)
 {
     try {
-        return DB::connection('temp')
+        $user = Auth::user();
+
+        if (!$projetId) {
+            Log::warning("No project ID provided for Instagram configuration retrieval");
+            return null;
+        }
+
+        // Get user's accessible projects to ensure they have permission
+        $userProjects = $this->getUserAccessibleProjects($user);
+        $projectIds = $userProjects->pluck('id')->toArray();
+
+        if (!in_array($projetId, $projectIds)) {
+            Log::warning("User {$user->id} does not have access to project {$projetId}");
+            return null;
+        }
+
+        // Get Instagram configuration for the specific project
+        $config = DB::connection('temp')
             ->table('instagram_configurations')
+            ->where('projet_id', $projetId)
             ->whereNull('deleted_at')
             ->orderBy('created_at', 'desc')
-            ->first(); // Get the most recent configuration
+            ->first();
+
+        if (!$config) {
+            Log::info("No Instagram configuration found for project {$projetId}");
+        }
+
+        return $config;
 
     } catch (\Exception $e) {
-        Log::error("Error getting Instagram config for current user: " . $e->getMessage());
+        Log::error("Error getting Instagram config for project {$projetId}: " . $e->getMessage());
         return null;
     }
 }
+
+        private function getUserAccessibleProjects($user)
+{
+    try {
+        // Get user's accessible projects based on their role and société
+        $query = DB::connection('temp')->table('projets')
+            ->whereNull('deleted_at');
+
+        // If user is not super admin, filter by their société
+        if ($user->role != 1) { // Not super admin
+            $query->where('societe_id', $user->societe_id);
+        }
+
+        return $query->get();
+    } catch (\Exception $e) {
+        Log::error("Error getting user accessible projects: " . $e->getMessage());
+        return collect(); // Return empty collection on error
+    }
+}
+
+
 
         public function store(Request $request)
         {
@@ -766,6 +829,9 @@ private function isWebhookEnabledForPage($pageId)
         case 'mention': // Facebook mentions
             $this->handleFacebookMention($change['value']);
             break;
+        case 'messages': // Facebook messages
+            $this->handleFacebookMessages($change['value']);
+            break;
         default:
             Log::warning('Unhandled Webhook Event: ' . $field);
     }
@@ -1109,6 +1175,36 @@ private function handleFacebookMention($data)
     }
 }
 
+// Handle Facebook messages
+private function handleFacebookMessages($data)
+{
+    Log::info('Processing Facebook messages:', $data);
+
+    try {
+        $senderName = $data['sender']['name'] ?? 'Utilisateur inconnu';
+        $senderId = $data['sender']['id'] ?? null;
+        $message = $data['message']['text'] ?? '';
+        $timestamp = $data['timestamp'] ?? null;
+        $messageId = $data['mid'] ?? null;
+
+        $description = "Nouveau message Facebook de {$senderName}";
+        if (!empty($message)) {
+            $description .= ": " . (strlen($message) > 50 ? substr($message, 0, 50) . '...' : $message);
+        }
+
+        // Create Facebook message link if possible
+        $link = null;
+        if ($senderId) {
+            $link = "https://www.facebook.com/messages/t/{$senderId}";
+        }
+
+        $this->createFacebookNotification($description, $link, \App\Enum\TypeNotificationEnum::FacebookMessage->value);
+
+    } catch (\Exception $e) {
+        Log::error('Error handling Facebook messages: ' . $e->getMessage());
+    }
+}
+
 // Handle Instagram messaging events (reactions)
 private function handleInstagramMessaging($messaging, $societeId)
 {
@@ -1300,6 +1396,59 @@ private function handleInstagramMessaging($messaging, $societeId)
         }
     }
 
+    public function update_facebook_configuration(Request $request, $id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+
+            try {
+                // Check if table exists
+                if (!Schema::connection('temp')->hasTable('facebook_configurations')) {
+                    return response()->json(['error' => 'Configuration non trouvée'], 404);
+                }
+
+                // Validate required fields
+                if (!$request->page_fcb_id || !$request->acces_token_page || !$request->projet_id) {
+                    return response()->json(['error' => 'Tous les champs sont obligatoires'], 400);
+                }
+
+                // Check if configuration exists
+                $exists = DB::connection('temp')
+                    ->table('facebook_configurations')
+                    ->where('id', $id)
+                    ->whereNull('deleted_at')
+                    ->exists();
+
+                if (!$exists) {
+                    return response()->json(['error' => 'Configuration non trouvée'], 404);
+                }
+
+                // Update configuration
+                $updated = DB::connection('temp')
+                    ->table('facebook_configurations')
+                    ->where('id', $id)
+                    ->update([
+                        'page_fcb_id' => $request->page_fcb_id,
+                        'acces_token_page' => $request->acces_token_page,
+                        'projet_id' => $request->projet_id,
+                        'updated_at' => now()
+                    ]);
+
+                if ($updated) {
+                    return response()->json(['message' => 'Configuration mise à jour avec succès'], 200);
+                } else {
+                    return response()->json(['error' => 'Aucune modification effectuée'], 400);
+                }
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => 'Erreur lors de la mise à jour: ' . $e->getMessage()
+                ], 500);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
     public function delete_facebook_configuration(Request $request, $id)
     {
         if (RoleHelper::AdminSup()) {
@@ -1453,6 +1602,59 @@ private function handleInstagramMessaging($messaging, $societeId)
         }
     }
 
+    public function update_instagram_configuration(Request $request, $id)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+
+            try {
+                // Check if table exists
+                if (!Schema::connection('temp')->hasTable('instagram_configurations')) {
+                    return response()->json(['error' => 'Configuration non trouvée'], 404);
+                }
+
+                // Validate required fields
+                if (!$request->instagram_id || !$request->acces_token_user || !$request->projet_id) {
+                    return response()->json(['error' => 'Tous les champs sont obligatoires'], 400);
+                }
+
+                // Check if configuration exists
+                $exists = DB::connection('temp')
+                    ->table('instagram_configurations')
+                    ->where('id', $id)
+                    ->whereNull('deleted_at')
+                    ->exists();
+
+                if (!$exists) {
+                    return response()->json(['error' => 'Configuration non trouvée'], 404);
+                }
+
+                // Update configuration
+                $updated = DB::connection('temp')
+                    ->table('instagram_configurations')
+                    ->where('id', $id)
+                    ->update([
+                        'instagram_id' => $request->instagram_id,
+                        'acces_token_user' => $request->acces_token_user,
+                        'projet_id' => $request->projet_id,
+                        'updated_at' => now()
+                    ]);
+
+                if ($updated) {
+                    return response()->json(['message' => 'Configuration mise à jour avec succès'], 200);
+                } else {
+                    return response()->json(['error' => 'Aucune modification effectuée'], 400);
+                }
+            } catch (\Exception $e) {
+                return response()->json([
+                    'error' => 'Erreur lors de la mise à jour: ' . $e->getMessage()
+                ], 500);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
     public function delete_instagram_configuration(Request $request, $id)
     {
         if (RoleHelper::AdminSup()) {
@@ -1565,7 +1767,7 @@ private function handleInstagramMessaging($messaging, $societeId)
                     ->update([
                         'webhook_verify_token' => $request->webhook_verify_token,
                         'webhook_enabled' => false, // Explicitly set to false
-                        'webhook_subscriptions' => json_encode(['feed', 'mention']), // Only valid fields
+                        'webhook_subscriptions' => json_encode(['feed', 'mention', 'messages']), // Valid Facebook webhook fields
                         'updated_at' => now()
                     ]);
 
@@ -1747,11 +1949,11 @@ private function handleInstagramMessaging($messaging, $societeId)
             Log::info("Attempting to subscribe Facebook page {$pageId} to webhook");
 
             $response = $client->post(
-                "https://graph.facebook.com/v19.0/{$pageId}/subscribed_apps",
+                "https://graph.facebook.com/v23.0/{$pageId}/subscribed_apps",
                 [
                     'form_params' => [
                         // Use only VALID Facebook page webhook fields
-                        'subscribed_fields' => 'feed,mention',
+                        'subscribed_fields' => 'feed,mention,messages',
                         'access_token' => $pageAccessToken
                     ]
                 ]
@@ -1814,7 +2016,7 @@ private function handleInstagramMessaging($messaging, $societeId)
             Log::info("Attempting to subscribe Instagram account {$instagramId} to webhook");
 
             $response = $client->post(
-                "https://graph.facebook.com/v19.0/{$instagramId}/subscribed_apps",
+                "https://graph.facebook.com/v23.0/{$instagramId}/subscribed_apps",
                 [
                     'form_params' => [
                         // Use only VALID Instagram webhook fields

@@ -66,12 +66,12 @@ class Bien_Helper
             'Superficie habitable',
             'superficie_parking',
             'superficie_box',
-            'superficie_terrasse',
-            'superficie_terrasse_calculer',
-            'superficie_balcon',
-            'superficie_balcon_calculer',
-            'superficie_jardin',
-            'superficie_jardin_calculer',
+            'Superficie terrasse',
+            'Superficie terrasse calculée',
+            'Superficie balcon',
+            'Superficie balcon calculée',
+            'Superficie jardin',
+            'Superficie jardin calculée',
             'superficie_total',
             'superficie_vendable',
             'nbre_facades',
@@ -186,21 +186,109 @@ class Bien_Helper
             } else {
                 $bien->prix_box = 0;
             }
-            if (array_key_exists("Balcon", $row)) {
-                $balcon = $row['Balcon'];
+            // Handle Superficie balcon
+            if (array_key_exists("Superficie balcon", $row)) {
+                $superficie_balcon = $row['Superficie balcon'];
 
-                if ($balcon === null || $balcon === 'SYNDIC PROPOSE' || $balcon === 'SYNDIC PLAN') {
-                    $bien->superficie_balcon          = 0;
+                if ($superficie_balcon === null || $superficie_balcon === 'SYNDIC PROPOSE' || $superficie_balcon === 'SYNDIC PLAN') {
+                    $bien->superficie_balcon = 0;
+                } else {
+                    // Vérifier si c'est un nombre
+                    if (is_numeric($superficie_balcon)) {
+                        $bien->superficie_balcon = (float) $superficie_balcon;
+                    } else {
+                        throw new \Exception("La valeur de 'Superficie balcon' doit être un nombre. Valeur trouvée : " . $superficie_balcon);
+                    }
+                }
+            }
+
+            // Handle Superficie balcon calculée
+            if (array_key_exists("Superficie balcon calculée", $row)) {
+                $superficie_balcon_calculee = $row['Superficie balcon calculée'];
+
+                if ($superficie_balcon_calculee === null || $superficie_balcon_calculee === 'SYNDIC PROPOSE' || $superficie_balcon_calculee === 'SYNDIC PLAN') {
                     $bien->superficie_balcon_calculer = 0;
                 } else {
                     // Vérifier si c'est un nombre
-                    if (is_numeric($balcon)) {
-                        $bien->superficie_balcon          = (float) $balcon;
-                        $bien->superficie_balcon_calculer = (float) $balcon;
+                    if (is_numeric($superficie_balcon_calculee)) {
+                        $bien->superficie_balcon_calculer = (float) $superficie_balcon_calculee;
                     } else {
-                        throw new \Exception("La valeur de 'Balcon' doit être un nombre. Valeur trouvée : " . $balcon);
+                        throw new \Exception("La valeur de 'Superficie balcon calculée' doit être un nombre. Valeur trouvée : " . $superficie_balcon_calculee);
                     }
                 }
+            } else {
+                // If not provided, use half the value of superficie_balcon
+                $bien->superficie_balcon_calculer = ($bien->superficie_balcon ?? 0) / 2;
+            }
+
+            // Handle Superficie jardin
+            if (array_key_exists("Superficie jardin", $row)) {
+                $superficie_jardin = $row['Superficie jardin'];
+
+                if ($superficie_jardin === null || $superficie_jardin === 'SYNDIC PROPOSE' || $superficie_jardin === 'SYNDIC PLAN') {
+                    $bien->superficie_jardin = 0;
+                } else {
+                    // Vérifier si c'est un nombre
+                    if (is_numeric($superficie_jardin)) {
+                        $bien->superficie_jardin = (float) $superficie_jardin;
+                    } else {
+                        throw new \Exception("La valeur de 'Superficie jardin' doit être un nombre. Valeur trouvée : " . $superficie_jardin);
+                    }
+                }
+            }
+
+            // Handle Superficie jardin calculée
+            if (array_key_exists("Superficie jardin calculée", $row)) {
+                $superficie_jardin_calculee = $row['Superficie jardin calculée'];
+
+                if ($superficie_jardin_calculee === null || $superficie_jardin_calculee === 'SYNDIC PROPOSE' || $superficie_jardin_calculee === 'SYNDIC PLAN') {
+                    $bien->superficie_jardin_calculer = 0;
+                } else {
+                    // Vérifier si c'est un nombre
+                    if (is_numeric($superficie_jardin_calculee)) {
+                        $bien->superficie_jardin_calculer = (float) $superficie_jardin_calculee;
+                    } else {
+                        throw new \Exception("La valeur de 'Superficie jardin calculée' doit être un nombre. Valeur trouvée : " . $superficie_jardin_calculee);
+                    }
+                }
+            } else {
+                // If not provided, use half the value of superficie_jardin
+                $bien->superficie_jardin_calculer = ($bien->superficie_jardin ?? 0) / 2;
+            }
+
+            // Handle Superficie terrasse
+            if (array_key_exists("Superficie terrasse", $row)) {
+                $superficie_terrasse = $row['Superficie terrasse'];
+
+                if ($superficie_terrasse === null || $superficie_terrasse === 'SYNDIC PROPOSE' || $superficie_terrasse === 'SYNDIC PLAN') {
+                    $bien->superficie_terrasse = 0;
+                } else {
+                    // Vérifier si c'est un nombre
+                    if (is_numeric($superficie_terrasse)) {
+                        $bien->superficie_terrasse = (float) $superficie_terrasse;
+                    } else {
+                        throw new \Exception("La valeur de 'Superficie terrasse' doit être un nombre. Valeur trouvée : " . $superficie_terrasse);
+                    }
+                }
+            }
+
+            // Handle Superficie terrasse calculée
+            if (array_key_exists("Superficie terrasse calculée", $row)) {
+                $superficie_terrasse_calculee = $row['Superficie terrasse calculée'];
+
+                if ($superficie_terrasse_calculee === null || $superficie_terrasse_calculee === 'SYNDIC PROPOSE' || $superficie_terrasse_calculee === 'SYNDIC PLAN') {
+                    $bien->superficie_terrasse_calculer = 0;
+                } else {
+                    // Vérifier si c'est un nombre
+                    if (is_numeric($superficie_terrasse_calculee)) {
+                        $bien->superficie_terrasse_calculer = (float) $superficie_terrasse_calculee;
+                    } else {
+                        throw new \Exception("La valeur de 'Superficie terrasse calculée' doit être un nombre. Valeur trouvée : " . $superficie_terrasse_calculee);
+                    }
+                }
+            } else {
+                // If not provided, use half the value of superficie_terrasse
+                $bien->superficie_terrasse_calculer = ($bien->superficie_terrasse ?? 0) / 2;
             }
 
 
@@ -244,10 +332,10 @@ class Bien_Helper
             if (array_key_exists("Superficie totale", $row) && $row['Superficie totale'] != null) {
                 $bien->superficie_total = $row['Superficie totale'];
             } else {
-                $bien->superficie_total = $bien->superficie_habitable + $bien->superficie_balcon + $bien->superficie_terrasse;
+                $bien->superficie_total = $bien->superficie_habitable + $bien->superficie_balcon + $bien->superficie_terrasse + $bien->superficie_jardin;
             }
 
-            $bien->superficie_vendable = $bien->superficie_habitable + $bien->superficie_balcon_calculer + $bien->superficie_terrasse_calculer;
+            $bien->superficie_vendable = $bien->superficie_habitable + $bien->superficie_balcon_calculer + $bien->superficie_terrasse_calculer + $bien->superficie_jardin_calculer;
             $bien->prix                = $bien->prix_unitaire * $bien->superficie_total + $bien->prix_parking + $bien->prix_box;
             $bien->etat                = 'disponible';
             if ($bien->save()) {
