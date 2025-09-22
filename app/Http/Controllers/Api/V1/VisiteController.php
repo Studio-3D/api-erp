@@ -435,7 +435,7 @@ class VisiteController extends Controller
                 if ($list_bien_interesse) {
                     foreach ($list_bien_interesse as $key => $list_biens) {
                         if ($list_biens['bien_id']) {
-                            Bien_Helper::libererBien($list_biens['bien_id'], null, null);
+                            Bien_Helper::libererBien($list_biens['bien_id'], null, null,false);
                         }
                     }
                 }
@@ -522,7 +522,7 @@ class VisiteController extends Controller
                                     if ($old_visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
                                         $oldBien = Bien::on('temp')->find($old_visite->bien_id);
                                         if ($oldBien->etat == 'Pré_Réservation' && $oldBien->historique_bien_pre_reserve->visite_id == $old_visite->id) {
-                                            Bien_Helper::libererBien($old_visite->bien_id, null, null);
+                                            Bien_Helper::libererBien($old_visite->bien_id, null, null,false);
                                             if ($old_visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
                                                 $old_visite->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
                                             } elseif ($old_visite->statut == StatutVisiteEnum::Vendu->value) {
@@ -1465,7 +1465,7 @@ class VisiteController extends Controller
                             if ($visite->bien_id != $request->bien_id) {
                                 $oldBien = Bien::on('temp')->find($visite->bien_id);
                                 if ($oldBien->etat == 'PRE_RESERVATION' || $oldBien->etat == 'VENDU') {
-                                    Bien_Helper::libererBien($visite->bien_id, null, null);
+                                    Bien_Helper::libererBien($visite->bien_id, null, null,false);
                                     $newBien = Bien::on('temp')->find($request->bien_id);
                                 $changes['bien'] = [
                                         'old' => $oldBien ? $oldBien : $visite->bien_id,
@@ -1479,7 +1479,7 @@ class VisiteController extends Controller
 
                     //changement d'interet (Réceptif ou Perdu)
                     if ($visite->bien_id != null && $request->interet != InteretEnum::Intéressé->value) {
-                        Bien_Helper::libererBien($visite->bien_id, null, null);
+                        Bien_Helper::libererBien($visite->bien_id, null, null,false);
 
                     }
 
@@ -1874,7 +1874,7 @@ class VisiteController extends Controller
 
             if ($visite->interet == InteretEnum::Intéressé->value) {
                 if ($visite->bien_id) {
-                    Bien_Helper::libererBien($visite->bien_id, null, null);
+                    Bien_Helper::libererBien($visite->bien_id, null, null,false);
                 }
             }
             if ($visite->interet == InteretEnum::Perdu->name) {
@@ -1986,14 +1986,14 @@ class VisiteController extends Controller
                 if ($list_bien_interesse) {
                     foreach ($list_bien_interesse as $key => $list_biens) {
                         if ($list_biens['bien_id']) {
-                            Bien_Helper::libererBien($list_biens['bien_id'], null, null);
+                            Bien_Helper::libererBien($list_biens['bien_id'], null, null,false);
                         }
                     }
                 }
                 if ($list_bien_transfere_vendu) {
                     foreach ($list_bien_transfere_vendu as $key => $list_biens_ve) {
                         if ($list_biens_ve['bien_id']) {
-                            Bien_Helper::libererBien($list_biens_ve['bien_id'], null, null);
+                            Bien_Helper::libererBien($list_biens_ve['bien_id'], null, null,false);
                         }
                     }
                 }
@@ -2053,7 +2053,7 @@ class VisiteController extends Controller
                                     if ($old_visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
                                         $oldBien = Bien::on('temp')->find($old_visite->bien_id);
                                         if ($oldBien->etat == 'Pré_Réservation' && $oldBien->historique_bien_pre_reserve->visite_id == $old_visite->id) {
-                                            Bien_Helper::libererBien($old_visite->bien_id, null, null);
+                                            Bien_Helper::libererBien($old_visite->bien_id, null, null,false);
                                             if ($old_visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
                                                 $old_visite->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
                                             } elseif ($old_visite->statut == StatutVisiteEnum::Vendu->value) {

@@ -885,7 +885,7 @@ class ReservationController extends Controller
                         $bienController = new BienController();
                         $bienController->reserverBien($request->input('bien_id'), null, $reservation->id);
                         //liberer l'ancien bien
-                        Bien_Helper::libererBien($old_bien_id, null, null);
+                        Bien_Helper::libererBien($old_bien_id, null, null,false);
                         //store to historique reservation
                         $histo = new HistoReservation();
                         $histo->setConnection('temp');
@@ -1110,7 +1110,7 @@ class ReservationController extends Controller
             $societe = Societe::findOrfail($user_societes->societe_id);
 
             //bien disponible
-            Bien_Helper::libererBien($reservation->bien_id, null, null);
+            Bien_Helper::libererBien($reservation->bien_id, null, null,false);
             //avance et encaissements
             $avanceController = new AvanceController();
             $avanceController->destoryUsingReservationId($id);

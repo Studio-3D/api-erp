@@ -570,7 +570,7 @@ class BienController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             Config::set('broadcasting.default', 'pusher_4');
-            Bien_Helper::libererBien($id, null, null);
+            Bien_Helper::libererBien($id, null, null,false);
             event(new PropositionUpdated($id, null));
             return response()->json('le bien est liberé');
         } else {
@@ -607,7 +607,7 @@ class BienController extends Controller
             }
             if ($bien->save()) {
                 if ($bien->etat == 'DISPONIBLE') {
-                    Bien_Helper::libererBien($bien->id, null, null);
+                    Bien_Helper::libererBien($bien->id, null, null,false);
                 }
             }
 
@@ -1110,21 +1110,25 @@ class BienController extends Controller
         if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             Config::set('broadcasting.default', 'pusher_4');
-            if ($old_id != 0) {
-                Bien_Helper::libererBien($old_id, null, null);
+
+           if ($old_id != 0) {
+                Bien_Helper::libererBien($old_id, null, null,true);
             }
             $bien       = Bien::on('temp')->findOrFail($bien_id);
-            $bien->etat = EtatBien::ENCOURS_DE_PROPOSITION->value;
-            if ($bien->save()) {
-                $bien_propose = new Proposition();
-                $bien_propose->setConnection('temp');
-                $bien_propose->bien_id = $bien_id;
-                $bien_propose->user_id = Auth::guard('api')->user()->id;
-                $bien_propose->save();
-                event(new PropositionUpdated($bien_id, $bien_propose->user_id));
+            if($bien->etat!='RESERVATION' && $bien->etat!='PRE_RESERVATION'){
+                    $bien->etat = EtatBien::ENCOURS_DE_PROPOSITION->value;
+                        if ($bien->save()) {
+                            $bien_propose = new Proposition();
+                            $bien_propose->setConnection('temp');
+                            $bien_propose->bien_id = $bien_id;
+                            $bien_propose->user_id = Auth::guard('api')->user()->id;
+                            $bien_propose->save();
+                            event(new PropositionUpdated($bien_id, $bien_propose->user_id));
+                        }
+
+                    return response()->json(['message' => $bien], 200);
             }
 
-            return response()->json(['message' => $bien], 200);
 
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -1219,6 +1223,82 @@ class BienController extends Controller
 
         }
     }
+
+    public function getBiensByProjet_Concat_for_reservation_visite($bien_id,$projet_id)
+        {
+            if (RoleHelper::ACSup()) {
+                DatabaseHelper::Config();
+
+                $biens_pr = Bien::on('temp')->with(['tranche', 'bloc', 'immeuble', 'is_proposed'])
+                    ->where(function ($query) {
+                        $query->where('etat', 'DISPONIBLE')->orwhere('etat', 'ENCOURS_DE_PROPOSITION');
+                    })
+                    ->where('projet_id', $projet_id)->get();
+
+                $biens = [];
+
+                // Fonction pour générer le nom
+                $generateNom = function($bien) {
+                    $nom = '';
+                    if ($bien->tranche && $bien->bloc && $bien->immeuble) {
+                        $nom = $bien->tranche->nom . '-' . $bien->bloc->nom . '-' . $bien->immeuble->nom;
+                    }
+                    elseif ($bien->tranche && $bien->bloc && ! $bien->immeuble) {
+                        $nom = $bien->tranche->nom . '-' . $bien->bloc->nom;
+                    }
+                    elseif ($bien->tranche && ! $bien->bloc && $bien->immeuble) {
+                        $nom = $bien->tranche->nom . '-' . $bien->immeuble->nom;
+                    }
+                    elseif (! $bien->tranche && $bien->bloc && $bien->immeuble) {
+                        $nom = $bien->bloc->nom . '-' . $bien->immeuble->nom;
+                    }
+                    elseif (! $bien->tranche && $bien->bloc && ! $bien->immeuble) {
+                        $nom = $bien->bloc->nom;
+                    }
+                    elseif (! $bien->tranche && ! $bien->bloc && $bien->immeuble) {
+                        $nom = $bien->immeuble->nom;
+                    }
+                    elseif ($bien->tranche && ! $bien->bloc && ! $bien->immeuble) {
+                        $nom = $bien->tranche->nom;
+                    }
+                    return $nom;
+                };
+
+                // Fonction pour formater un bien
+                $formatBien = function($bien, $generateNomFunc) {
+                    $nom = $generateNomFunc($bien);
+                    return [
+                        'id'                           => $bien->id,
+                        'propriete_dite_bien'          => $nom . '-' . $bien->propriete_dite_bien,
+                        'etat'                         => $bien->etat,
+                        'prix'                         => $bien->prix,
+                        'avance_minimale'              => $bien->avance_minimale,
+                        'prix_unitaire'                => $bien->prix_unitaire,
+                        'superficie_terrasse_calculer' => $bien->superficie_terrasse_calculer,
+                        'superficie_jardin_calculer'   => $bien->superficie_jardin_calculer,
+                        'superficie_balcon_calculer'   => $bien->superficie_balcon_calculer,
+                        'superficie_habitable'         => $bien->superficie_habitable,
+                        'prix_box'                     => $bien->prix_box,
+                        'prix_parking'                 => $bien->prix_parking,
+                        'is_proposed'                  => $bien->is_proposed,
+                    ];
+                };
+
+                // Ajouter les biens principaux
+                foreach ($biens_pr as $b_pr) {
+                    $biens[] = $formatBien($b_pr, $generateNom);
+                }
+
+                // Ajouter le bien réservé
+                $bien_reserve = Bien::on('temp')->findOrFail($bien_id);
+                $biens[] = $formatBien($bien_reserve, $generateNom);
+
+                return response()->json(['biens' => $biens], 200);
+
+            } else {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+        }
 
 
 
