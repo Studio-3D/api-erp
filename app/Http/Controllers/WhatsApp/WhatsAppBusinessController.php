@@ -197,7 +197,7 @@ class WhatsAppBusinessController extends Controller
             $web = new WebhookEvent();
             $web->setConnection('temp');
             $web->platform = 'whatsapp';
-            $web->event_type = 'whatsapp_message';
+            $web->type = 'whatsapp_message';
             $web->data = $change;
             $web->save();
 
