@@ -270,13 +270,28 @@ if (in_array(2, $selectedNetworks)) {
         private function getUserAccessibleProjects($user)
 {
     try {
-        // Get user's accessible projects based on their role and société
+        $tempUser = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+
+        // Determine société id to use for filtering. Prefer temp user mapping if available.
+        $societeId = null;
+        if ($tempUser && isset($tempUser->societe_id)) {
+            $societeId = $tempUser->societe_id;
+        } elseif (isset($user->societe_id)) {
+            $societeId = $user->societe_id;
+        }
+
+        // Build query against tenant projets table
         $query = DB::connection('temp')->table('projets')
             ->whereNull('deleted_at');
 
-        // If user is not super admin, filter by their société
-        if ($user->role != 1) { // Not super admin
-            $query->where('societe_id', $user->societe_id);
+        // If user is not super admin, filter by their société (use resolved societeId)
+        if (isset($user->role) && $user->role != 1) { // Not super admin
+            if ($societeId) {
+                $query->where('societe_id', $societeId);
+            } else {
+                // If we can't resolve a société, return empty collection to avoid leaking data
+                return collect();
+            }
         }
 
         return $query->get();
@@ -697,18 +712,21 @@ private function findSocieteByPageId($pageId)
                 continue;
             }
 
-            
-            // Handle Instagram messaging events (reactions)
+
+
+
+             // Handle Instagram messaging events (reactions)
             if (isset($entry['messaging'])) {
                 foreach ($entry['messaging'] as $messaging) {
-                    $this->handleInstagramMessaging($messaging, $societeId);
+                    // Pass all required parameters
+                    $this->handleInstagramMessaging($messaging, $societeId, $pageId);
                 }
             }
 
             // Handle changes events (comments, mentions, posts)
 
             foreach ($entry['changes'] ?? [] as $change) {
-                $this->processChange($change, $societeId);
+                $this->processChange($change, $societeId,$pageId);
             }
         }
 
@@ -766,77 +784,57 @@ private function isWebhookEnabledForPage($pageId)
     }
 }
 
-    private function processChange($change, $societeId)
+ private function processChange($change, $societeId,$pageId)
 {
     $platform = $this->detectPlatform($change);
-    $event_type = $this->getEventType($change);
-    Log::info("Processing Event - Platform: $platform, Type: $event_type, Société: $societeId");
+    $type = $this->getEventType($change);
+    $field = $change['field'] ?? null;
+
+    Log::info("Processing Event - Platform: $platform, Type: $type, Field: $field, Société: $societeId");
 
     // Store event in database for the specific société
     Config::set('broadcasting.default', 'pusher_3');
-
-    // Extract URL for Instagram posts if needed
-    if($event_type == 'instagram_comment'){
-        if (isset($change['value']['media']['id'])) {
-            $mediaId = $change['value']['media']['id'];
-            $accessToken = $this->getAccessTokenForPage($pageId);
-            if (!$accessToken) {
-                Log::error("No access token found for page ID: {$pageId}");
-                return;
-            }
-            Log::info("Media Id: $mediaId, Type: $event_type");
-
-            // Fetch the permalink from Instagram Graph API
-            $response = Http::get("https://graph.facebook.com/v22.0/{$mediaId}", [
-                'fields' => 'permalink',
-                'access_token' => $accessToken
-            ]);
-
-            if ($response->successful()) {
-                $permalink = $response->json()['permalink'] ?? null;
-                if ($permalink) {
-                    $change['permalink'] = str_replace('\/\/', '/', $permalink);
-                }
-            }
-        }
-    }
 
     try {
         $web = new WebhookEvent();
         $web->setConnection('temp');
         $web->platform = $platform;
-        $web->event_type = $event_type;
+        $web->type = $type;
         $web->data = $change;
         $web->save();
 
         broadcast(new NotificationEvent(0));
-
         Log::info("Webhook event saved successfully for société {$societeId}");
 
     } catch (\Exception $e) {
         Log::error("Error saving webhook event for société {$societeId}: " . $e->getMessage());
     }
 
-    $field = $change['field'] ?? null;
+    // Direct routing for Instagram comments
+    if ($field == 'comments' && $platform === 'instagram') {
+        Log::info('Direct routing Instagram comment');
+        $this->handleInstagramComment($change,$pageId);
+        return;
+    }
 
     switch ($field) {
-        case 'feed': // Facebook/Instagram posts, comments, and reactions - ALL in feed
-            $this->handleFeedEvent($change['value']);
+
+        case 'feed':
+            $this->handleFeedEvent($change['value'] ?? $change);
             break;
-        case 'mentions': // Instagram mentions
+        case 'mentions':
             $this->handleInstagramMention($change['value']);
             break;
-        case 'mention': // Facebook mentions
+        case 'mention':
             $this->handleFacebookMention($change['value']);
             break;
-        case 'messages': // Facebook messages
+        case 'messages':
             $this->handleFacebookMessages($change['value']);
             break;
         default:
             Log::warning('Unhandled Webhook Event: ' . $field);
     }
 }
-
 private function handleFeedEvent($data)
 {
     Log::info('Processing feed event:', $data);
@@ -844,9 +842,10 @@ private function handleFeedEvent($data)
     // Check the 'item' field to determine the type of feed event
     $item = $data['item'] ?? null;
 
+
+
     switch ($item) {
         case 'reaction':
-            // Only process 'add' verb, ignore 'remove'
             if (isset($data['verb']) && $data['verb'] === 'remove') {
                 Log::info('Ignoring reaction removal event:', $data);
                 return;
@@ -854,15 +853,12 @@ private function handleFeedEvent($data)
             $this->handleFacebookReaction($data);
             break;
         case 'comment':
-            // Check if it's Facebook or Instagram comment
             if (isset($data['post_id'])) {
                 $this->handleFacebookComment($data);
-            } else {
-                $this->handleInstagramComment($data);
             }
             break;
+
         case 'post':
-            // Check if it's Facebook or Instagram post
             if (isset($data['post_id'])) {
                 $this->handleFacebookPost($data);
             } else {
@@ -870,8 +866,10 @@ private function handleFeedEvent($data)
             }
             break;
         default:
-            // If no 'item' field, try to detect based on data structure
-            if (isset($data['reaction_type']) && isset($data['verb'])) {
+            // Handle Instagram comments from webhook structure
+            if (isset($data['text']) && isset($data['media']['id'])) {
+                $this->handleInstagramComment(['value' => $data]);
+            } elseif (isset($data['reaction_type']) && isset($data['verb'])) {
                 if ($data['verb'] === 'remove') {
                     Log::info('Ignoring reaction removal event:', $data);
                     return;
@@ -904,7 +902,7 @@ private function handleFeedEvent($data)
 
             // Get post link if available
             $postLink = isset($data['post_id']) ? "https://www.facebook.com/{$data['post_id']}" : null;
-  
+
             $this->createFacebookNotification($description, $postLink, \App\Enum\TypeNotificationEnum::FacebookPublication->value);
 
         }
@@ -939,7 +937,7 @@ private function handleFacebookComment($data)
             $link = "https://www.facebook.com/{$postId}";
         }
 
-        
+
         $this->createFacebookNotification($description, $link, \App\Enum\TypeNotificationEnum::FacebookComment->value);
 
     } catch (\Exception $e) {
@@ -989,6 +987,11 @@ private function handleFacebookReaction($data)
 private function createFacebookNotification($description, $link = null, $type = null)
 {
     try {
+        Log::info('Creating Facebook notification:', [
+            'description' => $description,
+            'link' => $link,
+            'type' => $type
+        ]);
         // Create notification using the notification model
         $notification = new \App\Models\Notification();
         $notification->setConnection('temp');
@@ -1032,33 +1035,55 @@ private function createFacebookNotification($description, $link = null, $type = 
 }
 
 // Handle Instagram comments
-private function handleInstagramComment($data)
+private function handleInstagramComment($data,$pageId)
 {
     Log::info('Processing Instagram comment:', $data);
 
     try {
-        // Extract comment information
-        $userName = $data['from']['name'] ?? 'Utilisateur inconnu';
-        $message = $data['message'] ?? '';
-        $mediaId = $data['media']['id'] ?? null;
-        $commentId = $data['comment_id'] ?? null;
+        // Extract comment information - handle different data structures
+
+            $commentData = $data['value']??$data;
+
+
+        $userName = $commentData['from']['username'] ?? $commentData['from']['name'] ?? 'Utilisateur inconnu';
+        $message = $commentData['text'] ?? $commentData['message'] ?? '';
+        $mediaId = $commentData['media']['id'] ?? null;
+        $commentId = $commentData['id'] ?? null;
+
+        Log::info("Instagram comment extracted data:", [
+            'userName' => $userName,
+            'message' => $message,
+            'mediaId' => $mediaId,
+            'commentId' => $commentId
+        ]);
 
         // Create notification description
         $description = "{$userName} a commenté votre publication Instagram";
         if (!empty($message)) {
             $description .= ": " . (strlen($message) > 50 ? substr($message, 0, 50) . '...' : $message);
         }
+        //get accesToken of instagram
+        $instagram = DB::connection('temp')
+                ->table('instagram_configurations')
+                ->where('instagram_id', $pageId)
+                ->whereNull('deleted_at')
+                ->first();
 
-        // Get Instagram post link if available
-        $link = null;
-        if ($mediaId) {
-            $link = "https://www.instagram.com/p/{$mediaId}";
-        }
+                     // Fetch the permalink from Instagram Graph API
+                        $response = Http::get("https://graph.facebook.com/v22.0/{$mediaId}", [
+                            'fields' => 'permalink',
+                            'access_token' =>$instagram->acces_token_user
+                        ]);
 
-        $this->createFacebookNotification($description, $link, \App\Enum\TypeNotificationEnum::InstagramComment->value);
+                        if ($response->successful()) {
+                            $permalink = $response->json()['permalink'] ?? null;
+                             $this->createFacebookNotification($description, $permalink, \App\Enum\TypeNotificationEnum::InstagramComment->value);
+                        }
+        Log::info('Instagram comment notification created successfully');
 
     } catch (\Exception $e) {
         Log::error('Error handling Instagram comment: ' . $e->getMessage());
+        Log::error('Stack trace: ' . $e->getTraceAsString());
     }
 }
 
@@ -1206,7 +1231,7 @@ private function handleFacebookMessages($data)
 }
 
 // Handle Instagram messaging events (reactions)
-private function handleInstagramMessaging($messaging, $societeId)
+/*private function handleInstagramMessaging($messaging, $societeId,$pageId)
 {
     Log::info('Processing Instagram messaging event:', $messaging);
 
@@ -1215,11 +1240,14 @@ private function handleInstagramMessaging($messaging, $societeId)
         $web = new WebhookEvent();
         $web->setConnection('temp');
         $web->platform = 'instagram';
-        $web->event_type = 'instagram_messaging';
+        $web->type = 'instagram_messaging';
         $web->data = $messaging;
+        $web->page_id=$pageId;
         $web->save();
 
         broadcast(new NotificationEvent(0));
+
+         $this->createFacebookNotification('Vous avez un nouveau message', $permalink, \App\Enum\TypeNotificationEnum::InstagramMessage->value);
 
         // Check if this is a reaction event
         if (isset($messaging['reaction'])) {
@@ -1229,6 +1257,95 @@ private function handleInstagramMessaging($messaging, $societeId)
 
     } catch (\Exception $e) {
         Log::error('Error handling Instagram messaging: ' . $e->getMessage());
+    }
+}
+*/
+// Add this method to handle Instagram messaging
+// Fix the parameter name and variable usage
+private function handleInstagramMessaging($messaging, $societeId = null, $pageId = null)
+{
+    Log::info('Processing Instagram direct message:', ['messaging' => $messaging]);
+
+    try {
+        // Extract message information from the messaging structure
+        if (!$messaging) {
+            Log::error('Invalid Instagram messaging structure');
+            return;
+        }
+
+        // Store webhook event
+        $web = new WebhookEvent();
+        $web->setConnection('temp');
+        $web->platform = 'instagram';
+        $web->type = 'instagram_messaging';
+        $web->data = $messaging;
+        if ($pageId) {
+            $web->page_id = $pageId;
+        }
+        $web->save();
+
+        broadcast(new NotificationEvent(0));
+
+        $senderId = $messaging['sender']['id'] ?? null;
+        $recipientId = $messaging['recipient']['id'] ?? null;
+        $messageText = $messaging['message']['text'] ?? '';
+        $messageId = $messaging['message']['mid'] ?? null;
+        $timestamp = $messaging['timestamp'] ?? null;
+
+        Log::info('Extracted Instagram message details:', [
+            'senderId' => $senderId,
+            'recipientId' => $recipientId,
+            'messageText' => $messageText,
+            'messageId' => $messageId,
+            'timestamp' => $timestamp
+        ]);
+
+        // Create notification description
+        $description = "Nouveau message Instagram ,Message:";
+        if (!empty($messageText)) {
+            $description .= ": " . (strlen($messageText) > 50 ? substr($messageText, 0, 50) . '...' : $messageText);
+        }
+
+        /*// Generate Instagram DM link
+        $link = $this->getInstagramDMLink($senderId, $recipientId);
+
+        Log::info('Creating Instagram message notification:', [
+            'description' => $description,
+            'link' => $link
+        ]);*/
+
+        $this->createFacebookNotification($description, 'https://www.instagram.com/direct/inbox/', \App\Enum\TypeNotificationEnum::InstagramMessage->value);
+
+        Log::info('Instagram message notification created successfully');
+
+    } catch (\Exception $e) {
+        Log::error('Error handling Instagram message: ' . $e->getMessage());
+        Log::error('Stack trace: ' . $e->getTraceAsString());
+    }
+}
+
+/**
+ * Get Instagram username from user ID using Graph API
+ */
+/**
+ * Generate Instagram direct message link
+ */
+private function getInstagramDMLink($senderId, $recipientId = null)
+{
+    try {
+        // Instagram DM links typically use the thread ID format
+        // Since we have the sender ID, we can create a direct link to the conversation
+        // Format: https://www.instagram.com/direct/t/{thread_id}/
+
+        // For now, use the sender ID as the thread identifier
+        // You might need to map this to an actual thread ID using the Instagram API
+        $threadId = $senderId;
+
+        return "https://www.instagram.com/direct/t/{$threadId}/";
+
+    } catch (\Exception $e) {
+        Log::error('Error generating Instagram DM link: ' . $e->getMessage());
+        return "https://www.instagram.com/direct/inbox/";
     }
 }
 
@@ -1507,6 +1624,7 @@ private function handleInstagramMessaging($messaging, $societeId)
                             'projet_id' => $config->projet_id,
                             'created_at' => $config->created_at,
                             'projet' => $config->projet_nom ? ['nom' => $config->projet_nom] : null
+
                         ];
                     });
 
@@ -1892,8 +2010,8 @@ private function handleInstagramMessaging($messaging, $societeId)
                     ->where('id', $configId)
                     ->update([
                         'webhook_verify_token' => $request->webhook_verify_token,
-                        'webhook_enabled' => false, // Explicitly set to false
-                        'webhook_subscriptions' => json_encode(['mention']), // Only valid Instagram field
+                        'webhook_enabled' => true, // Explicitly set to false
+                        'webhook_subscriptions' => json_encode(['mentions']), // Only valid Instagram field
                         'updated_at' => now()
                     ]);
 
@@ -2256,6 +2374,8 @@ private function handleInstagramMessaging($messaging, $societeId)
             }
         }
         return 'unknown';
+
+
     }
 
     private function getEventType($change)
@@ -2265,7 +2385,6 @@ private function handleInstagramMessaging($messaging, $societeId)
 
     switch ($field) {
         case 'feed':
-            // Check the 'item' field within the feed event
             $item = $change['value']['item'] ?? null;
 
             switch ($item) {
@@ -2287,6 +2406,8 @@ private function handleInstagramMessaging($messaging, $societeId)
             }
         case 'mention':
             return $platform === 'facebook' ? 'facebook_mention' : 'instagram_mention';
+        case 'comments':
+            return  $platform === 'instagram' ? 'instagram_comment' : 'fcb';
         default:
             return 'unknown_event';
     }

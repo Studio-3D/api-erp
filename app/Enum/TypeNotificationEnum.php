@@ -16,4 +16,6 @@ enum TypeNotificationEnum:int
    case InstagramPublication=92;
    case FacebookMention=91;
    case FacebookMessage=90;
+   case InstagramMessage=99;
+
 }
