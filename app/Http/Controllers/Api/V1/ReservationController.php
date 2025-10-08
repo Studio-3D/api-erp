@@ -265,6 +265,7 @@ class ReservationController extends Controller
 
             public function store(StoreReservationRequest $request)
             {
+
                     $user = Auth::user();
                     if (!RoleHelper::ACSup()) {
                         return response()->json(['error' => 'Unauthorized'], 401);

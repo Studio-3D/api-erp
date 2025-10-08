@@ -359,7 +359,7 @@ class FreinController extends Controller
         }
     }
 
-    public function searchFreinByVisiteId($id, $text)
+/*public function searchFreinByVisiteId($id, $text)
     {
         if ($text == 'without_row_deleted') {
             $frein = Frein::on('temp')->where('visite_id', $id)->first();
@@ -431,7 +431,7 @@ class FreinController extends Controller
             }
 
         }
-    }
+    }*/
 
 
 
