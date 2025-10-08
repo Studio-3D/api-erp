@@ -225,14 +225,14 @@ class VisiteController extends Controller
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
             $frein_h     = new FreinController();
-            $historiques = Visite::on('temp')->with('relance_relation', 'rdv_relation')
+            $historiques = Visite::on('temp')->with('relance_relation', 'rdv_relation','freins')
                 ->where('origin_id', $origin_id)->withTrashed()->orderby('created_at', 'desc')->get();
-            foreach ($historiques as $histo) {
+          /*  foreach ($historiques as $histo) {
                 if ($histo->interet == InteretEnum::Perdu->value) {
                     $frein_h_       = $frein_h->searchFreinByVisiteId($histo->id, 'with_row_deleted_at');
                     $histo['frein'] = $frein_h_;
                 }
-            }
+            }*/
             return response()->json(['historiques' => $historiques], 200);
         }
     }
