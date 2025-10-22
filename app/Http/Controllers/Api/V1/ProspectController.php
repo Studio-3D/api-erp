@@ -589,7 +589,7 @@ class ProspectController extends Controller
             // Handle commercial_affecte update
             if ($request->has('commercial_affecte')) {
                 // Allow reassignment regardless of final status
-                $lastStatus = $prospect->last_statut;
+               // $lastStatus = $prospect->last_statut;
 
                 $oldCommercialId = $prospect->commercial_affecte;
                 $newCommercialId = $request->commercial_affecte;
@@ -627,6 +627,8 @@ class ProspectController extends Controller
                             $statutProspect->user_id_traite = $userAuth->id;
                             $statutProspect->commentaire = 'Prospect affecté au commercial';
                             $statutProspect->save();
+                                  // Send notification to the commercial
+                        $this->sendAffectationNotification($newCommercialId, $id, $prospect->projet_id);
                         }
                     }
                 }
@@ -643,6 +645,34 @@ class ProspectController extends Controller
             return response()->json(['prospect' => $prospect], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+    /**
+ * Send notification to commercial when prospect is assigned to them
+ */
+    private function sendAffectationNotification($commercialId, $prospectId, $projetId)
+    {
+        DatabaseHelper::Config();
+        $user_id_origin  = User::on('temp')->find($commercialId);
+        try {
+            Config::set('broadcasting.default', 'pusher_3');
+
+            $data_notif = [
+                'lien'        => '/crm/prospects/' . $prospectId,
+                'date'        => Carbon::now(),
+                'type'        => 53, // Type pour affectation de prospect
+                'user_id'     => $user_id_origin->user_id_origin,
+                'description' => 'Un prospect vous a été affecté',
+                'projet_id'   => $projetId,
+                'prospect_id' => $prospectId,
+            ];
+
+            $notif_helper = new NotificationHelper();
+            $notif_helper->storeNotification(new Request($data_notif));
+            broadcast(new NotificationEvent($commercialId));
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur envoi notification affectation: ' . $e->getMessage());
         }
     }
 
@@ -978,6 +1008,8 @@ class ProspectController extends Controller
                         $statutProspect->user_id_traite = $userAuth->id;
                         $statutProspect->commentaire = 'Prospect affecté automatiquement au commercial';
                         $statutProspect->save();
+                        $this->sendAffectationNotification($newCommercialId,$assignment['prospect_id'], $request->projet_id);
+
                     }
                     $prospect->save();
 
