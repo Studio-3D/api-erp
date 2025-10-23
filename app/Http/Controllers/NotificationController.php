@@ -160,7 +160,7 @@ class NotificationController extends Controller
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            if(RoleHelper::AdminSup()){
+           // if(RoleHelper::AdminSup()){
                 $freins= Frein::on('temp')
                 ->where('freins.visite_id','!=',null)
                 ->join('visites', 'visites.id', '=', 'freins.visite_id')
@@ -170,7 +170,7 @@ class NotificationController extends Controller
                 ->where('freins.etat', 2)
                 ->where('visites.etat', 1)
                 ->get();
-                }
+                /*}
                 else{
                     $freins= Frein::on('temp')
                     ->where('freins.visite_id','!=',null)
@@ -182,7 +182,7 @@ class NotificationController extends Controller
                     ->where('freins.etat', 2)
                     ->where('visites.etat', 1)
                     ->get();
-                }
+                }*/
 
 
             $clients=array();

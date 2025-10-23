@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Helpers;
+use App\Enum\RoleEnum;
 
 use App\Models\Frein_Bien;
 use App\Models\Frein;
@@ -31,8 +32,8 @@ class FreinBienHelper
                     'date' => Carbon::now(),
                     'type' => 3,
                     'description' => 'Bien Disponible Frein',
-                    'role'=>$frein->visite->user->role,
-                    'user_id'=>$frein->visite->user->user_id_origin,
+                    'role'=>RoleEnum::ADMIN_COMMERCIAL->value,
+                   // 'user_id'=>$frein->visite->user->user_id_origin,
                     'visite_id'=>$frein->visite_id,
                     'prospect_id'=>$frein->visite->prospect_id,
                     'projet_id'=>$frein->visite->projet_id

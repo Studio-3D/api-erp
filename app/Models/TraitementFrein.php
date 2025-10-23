@@ -27,7 +27,7 @@ class TraitementFrein extends Model
     {
         return $this->belongsTo(Visite::class,'visite_id');
     }
-    public function freins()
+    public function frein()
     {
         return $this->belongsTo(Frein::class,'frein_id')->withTrashed();
     }
