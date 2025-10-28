@@ -894,7 +894,7 @@ class BienController extends Controller
                         //to admin et commerciaux
                         Config::set('broadcasting.default', 'pusher_3');
                         $data_notif = [
-                            'lien'           => '/ventes/remboursements/apres_ventes',
+                            'lien'           => '/ventes?tab=remboursements&subtab=apres-ventes',
                             'date'           => Carbon::now(),
                             'type'           => 19,
                             'description'    => 'bien desisté est vendu',
@@ -911,7 +911,7 @@ class BienController extends Controller
                         if ($bien->desistement->user->role == 3) {
 
                             $data_notif = [
-                                'lien'           => '/ventes/remboursements/apres_ventes',
+                                'lien'           => '/ventes?tab=remboursements&subtab=apres-ventes',
                                 'date'           => Carbon::now(),
                                 'type'           => 19,
                                 'description'    => 'bien desisté est vendu',

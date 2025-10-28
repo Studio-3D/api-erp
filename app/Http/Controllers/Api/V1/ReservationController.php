@@ -600,7 +600,7 @@ class ReservationController extends Controller
         Config::set('broadcasting.default', 'pusher_3');
 
         $data_notif = [
-            'lien' => '/ventes/validations/reservations',
+            'lien' => '/ventes/reservations/'.$id,
             'date' => Carbon::now(),
             'type' => 6,
             'role' => RoleEnum::ADMIN->value,
@@ -682,7 +682,7 @@ class ReservationController extends Controller
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $reservation = Reservation::on('temp')->with('desistements_ancien','rdv','avances','last_statut','contrat_vente','piece_jointe_desiste','piece_jointe','remboursement_dd_with_transfert')->findOrFail($id);
+            $reservation = Reservation::on('temp')->withSum('avances','montant')->with('desistements_ancien','rdv','avances','last_statut','contrat_vente','piece_jointe_desiste','piece_jointe','remboursement_dd_with_transfert','first_avance','desistement_att_validation_rejete')->findOrFail($id);
 
             //get nom propriete _dite_bien concat
             $propriete = null;
@@ -1078,7 +1078,7 @@ class ReservationController extends Controller
             Config::set('broadcasting.default', 'pusher_3');
             //notifiction to admin de valider dossier d reservation user_id=>null
             $data_notif = [
-                'lien' => '/ventes/validations/reservations',
+                'lien' => '/ventes/reservations/'.$id,
                 'date' => Carbon::now(),
                 'type' => 6,
                 'role' => RoleEnum::ADMIN->value,

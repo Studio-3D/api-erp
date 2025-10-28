@@ -648,7 +648,7 @@ class AvanceController extends Controller
                         Config::set('broadcasting.default', 'pusher_3');
                         $data_notif = [
                            // 'lien' => '/reservations/show/'.$avance->reservation_id,
-                            'lien'=>'/ventes/validations/avances',
+                            'lien'=>'/ventes/reservations/'.$request->reservation_id,
                             'date' => Carbon::now(),
                             'type' => 7,
                             'user_id'=>null,
@@ -1148,7 +1148,7 @@ class AvanceController extends Controller
                             Config::set('broadcasting.default', 'pusher_3');
                             $data_notif = [
                                // 'lien' => '/reservations/show/'.$avance->reservation_id,
-                                'lien'=>'/ventes/validations/avances',
+                                'lien'=>'/ventes/reservations/'.$id,
                                 'date' => Carbon::now(),
                                 'type' => 7,
                                 'user_id'=>null,
