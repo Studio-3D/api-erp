@@ -605,35 +605,53 @@ class AvanceController extends Controller
 
                 ////storer les pieces jointe de paiement
 
-                {if ($request->files_avance) {
+                 if ($request->has('processed_files') && !empty($request->processed_files)) {
+                                $piecesJointeController = new PiecesJointeController();
 
-                    foreach ($request->files_avance as $file) {
+                                foreach ($request->processed_files as $fileInfo) {
+                                    $pieceJointeRequest = new StorePiecesJointeRequest();
+
+                                    $datapieceJointe = [
+                                        'fichier' => $fileInfo['file_name'],
+                                        'type' => $fileInfo['file_type'],
+                                        'avance_id' => $avance->id,
+                                        'active' => 1,
+                                    ];
+
+                                    $pieceJointeRequest->merge($datapieceJointe);
+                                    $piecesJointeController->store($pieceJointeRequest);
+                                }
+                            }
+
+                            else if ($request->files_avance) {
+
+                                foreach ($request->files_avance as $file) {
 
 
-                        $piecesJointeController = new PiecesJointeController();
-                        $pieceJointeRequest = new StorePiecesJointeRequest();
-                        $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-                        $user_connecter = $userAuth->value('user_id_origin');
-                        $user_societes = User::where('id', $user_connecter)->first();
-                        $societe = Societe::findOrfail($user_societes->societe_id);
+                                    $piecesJointeController = new PiecesJointeController();
+                                    $pieceJointeRequest = new StorePiecesJointeRequest();
+                                    $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+                                    $user_connecter = $userAuth->value('user_id_origin');
+                                    $user_societes = User::where('id', $user_connecter)->first();
+                                    $societe = Societe::findOrfail($user_societes->societe_id);
 
-                        // Récupérer le nom du fichier
-                        $fileName = $file->getClientOriginalName();
-                        $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements' . '/' . $reservation->code_reservation);
-                        File::makeDirectory($directory, 0755, true, true);
-                        $file->move($directory, $fileName);
-                        $fileType = $file->getClientOriginalExtension();
-                        $datapieceJointe = [
-                            'fichier' => $fileName,
-                            'type' => $fileType,
-                            'avance_id' => $avance->id,
-                            'active' => 1,
-                        ];
+                                    // Récupérer le nom du fichier
+                                    $fileName = $file->getClientOriginalName();
+                                    $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements' . '/' . $reservation->code_reservation);
+                                    File::makeDirectory($directory, 0755, true, true);
+                                    $file->move($directory, $fileName);
+                                    $fileType = $file->getClientOriginalExtension();
+                                    $datapieceJointe = [
+                                        'fichier' => $fileName,
+                                        'type' => $fileType,
+                                        'avance_id' => $avance->id,
+                                        'active' => 1,
+                                    ];
 
-                        $pieceJointeRequest->merge($datapieceJointe);
-                        $piecesJointeController->store($pieceJointeRequest);
-                    }
-                }
+                                    $pieceJointeRequest->merge($datapieceJointe);
+                                    $piecesJointeController->store($pieceJointeRequest);
+                                }
+                            }
                 //send notification d'echeance
                 if ($avance->echeance != null) {
                     Config::set('broadcasting.default', 'pusher_3');
@@ -780,7 +798,7 @@ class AvanceController extends Controller
               }
             return response()->json(['avance' => $avance], 200);
 
-        }
+
         return response()->json(['error' => 'Unauthorized'], 201);
     }
 
@@ -927,38 +945,38 @@ class AvanceController extends Controller
                    $pjController->destoryFileUsingAvanceId($id,$societe);
 
                }
-               if ($request->file('files_avance')) {
+                           if ($request->file('files_avance')) {
 
-                   //****delete old piece jointe***
+                                //****delete old piece jointe***
 
-                   $pjController = new PiecesJointeController();
-                   $pjController->destoryFileUsingAvanceId($id,$societe);
+                                $pjController = new PiecesJointeController();
+                                $pjController->destoryFileUsingAvanceId($id,$societe);
 
-                   foreach ($request->file('files_avance') as $file) {
+                                foreach ($request->file('files_avance') as $file) {
 
-                       $piecesJointeController = new PiecesJointeController();
-                       $pieceJointeRequest = new StorePiecesJointeRequest();
+                                    $piecesJointeController = new PiecesJointeController();
+                                    $pieceJointeRequest = new StorePiecesJointeRequest();
 
-                       // Récupérer le nom du fichier
-                       $Myfile = $file->getClientOriginalName();
+                                    // Récupérer le nom du fichier
+                                    $Myfile = $file->getClientOriginalName();
 
-                       $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id  . '/paiements' . '/' . $reservation->code_reservation);
-                       File::makeDirectory($directory, 0755, true, true);
-                       $file->move($directory, $Myfile);
-                       $fileType = $file->getClientOriginalExtension();
-                       $datapieceJointe = [
-                           'fichier' => $Myfile,
-                           'type' => $fileType,
-                           'avance_id' => $avance->id,
-                           'active' => 1,
+                                    $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id  . '/paiements' . '/' . $reservation->code_reservation);
+                                    File::makeDirectory($directory, 0755, true, true);
+                                    $file->move($directory, $Myfile);
+                                    $fileType = $file->getClientOriginalExtension();
+                                    $datapieceJointe = [
+                                        'fichier' => $Myfile,
+                                        'type' => $fileType,
+                                        'avance_id' => $avance->id,
+                                        'active' => 1,
 
-                       ];
+                                    ];
 
-                       $pieceJointeRequest->merge($datapieceJointe);
-                       $piecesJointeController->store($pieceJointeRequest);
+                                    $pieceJointeRequest->merge($datapieceJointe);
+                                    $piecesJointeController->store($pieceJointeRequest);
 
-                   }
-               }
+                                }
+                            }
                 if($request->sr=='0'){
                     $avance->sr=0;
                 }
