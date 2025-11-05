@@ -759,52 +759,124 @@ private function finalizeReservation($reservation, $userAuth)
         }
     }
 
-    public function show($id)
-    {
-        if (RoleHelper::ACSup()) {
-            DatabaseHelper::Config();
-            $reservation = Reservation::on('temp')->withSum('avances','montant')->with('desistements_ancien','rdv','avances','last_statut','compromis_vente','contrat_vente','piece_jointe_desiste','piece_jointe','remboursement_dd_with_transfert','first_avance','desistement_att_validation_rejete')->findOrFail($id);
+public function show($id)
+{
+    if (RoleHelper::ACSup()) {
+        DatabaseHelper::Config();
 
-            //get nom propriete _dite_bien concat
-            $propriete = null;
-            if ($reservation->bien_id != null) {
-                $bien = new VisiteController();
-                $propriete = $bien->get_propriete_bien_concat($reservation->bien_id);
-            }
-            $sum_avances_valides = 0;
-           // $sum_avances = 0;
-            //si dossier desiste
-            if ($reservation->etat > 1) {
-                foreach ($reservation->avances_desist as $av) {
-                    //avance validé
-                    if ($av->statut == StatutReservationEnum::Validé->value) {
-                        $sum_avances_valides += $av->montant;
-                    }
-                    /*//tous les avances !=refuse
-                if($av->statut!=StatutReservationEnum::REFUSER->value){
-                $sum_avances+=$av->montant;
-                }*/
+        $reservation = Reservation::on('temp')
+            ->withSum('avances','montant')
+            ->without('avances_valides')
+            ->with([
+                'historiques' => function($query) {
+                    $query->select('id', 'reservation_id', 'bien_id', 'user_id', 'action', 'description', 'created_at')
+                          ->with([
+                              'user' => function($q) {
+                                  $q->select('id', 'name', 'prenom')->without('societe');
+                              },
+                              'bien' => function($q) {
+                                  $q->select('id', 'propriete_dite_bien', 'tranche_id', 'bloc_id', 'immeuble_id')
+                                 ->without('projet','typologie','vue','compositionBien','typeBien')
+                                    ->with([
+                                        'immeuble' => function($t) {
+                                            $t->select('id', 'nom') ->without(['projet', 'tranche','bloc']);
+                                        },
+                                        'bloc' => function($b) {
+                                            $b->select('id', 'nom')
+                                        ->without(['projet', 'tranche']);
+                                        },
+                                        'tranche' => function($i) {
+                                            $i->select('id', 'nom')
+                                         ->without(['projet']);
+                                        }
+                                    ]);
+                              }
+                          ])
+                          ->orderBy('created_at', 'desc');
+                },
+                'bien' => function($query) {
+                    $query->with([
+                        'immeuble' => function($q) {
+                            $q->select('id', 'nom')
+                              ->without(['projet', 'tranche','bloc']);
+                        },
+                        'bloc' => function($q) {
+                            $q->select('id', 'nom')
+                              ->without(['projet', 'tranche']);
+                        },
+                        'tranche' => function($q) {
+                            $q->select('id', 'nom')
+                              ->without(['projet']);
+                        }
+                    ]);
+                   // $query->without('projet','typologie','vue','compositionBien','typeBien');
+                },
+                'last_statut' => function($query) {
+                    $query->without('reservation','user');
+                },
+                'compromis_vente' => function($query) {
+                    $query-> select('*')->without('reservation','user');
+                },
+                'contrat_vente' => function($query) {
+                    $query->without('reservation','user');
+                },
+                'first_avance' => function($query) {
+                    $query->without('reservation','user');
+                },
+                'projet' => function($query) {
+                    $query->select('id', 'nom', 'adresse')
+                          ->without('user_projet', 'type_projet');
+                },
+
+            ])
+            ->findOrFail($id);
+
+
+        // Hide avances_valides from response
+        $reservation->makeHidden('avances_valides');
+
+        $sum_avances_valides = 0;
+
+        // Conditionally replace aquereurs with aquereurs_ancien if etat > 1
+        if ($reservation->etat > 1) {
+             $reservation->load('remboursement_dd_with_transfert');
+            // Load aquereurs_ancien relationship
+            $reservation->load('aquereurs_ancien');
+            // Replace aquereurs with aquereurs_ancien for the response
+            $reservation->aquereurs = $reservation->aquereurs_ancien;
+            // Hide the original aquereurs_ancien from response if needed
+            $reservation->makeHidden('aquereurs_ancien');
+
+            $reservation->load('desistements_ancien');
+
+            // Load piece_jointe_desiste when etat > 1
+            $reservation->load('piece_jointe_desiste');
+            // Hide piece_jointe from response
+            $reservation->makeHidden('piece_jointe');
+            foreach ($reservation->avances_desist as $av) {
+                if ($av->statut == StatutReservationEnum::Validé->value) {
+                    $sum_avances_valides += $av->montant;
                 }
-               // $count_avances = Avance::on('temp')->where('reservation_id', $id)->onlyTrashed()->count('id');
-
-            } else {
-                foreach ($reservation->avances_valides as $av) {
-                        $sum_avances_valides += $av->montant;
-
-                    /*//tous les avances !=refuse
-                if($av->statut!=StatutReservationEnum::REFUSER->value){
-                $sum_avances+=$av->montant;
-                }*/
-                }
-               // $count_avances = Avance::on('temp')->where('reservation_id', $id)->count('id');
-
             }
-
-            return response()->json(['reservation' => $reservation, 'propriete_dite_bien' => $propriete, 'sum_avances_valides' => $sum_avances_valides], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        } else if($reservation->etat == 1) {
+             // Load piece_jointe when etat == 1
+            $reservation->load('piece_jointe');
+            // Hide piece_jointe_desiste from response
+            $reservation->makeHidden('piece_jointe_desiste');
+            // Load desistement_att_validation_rejete only when etat == 1
+            $reservation->load('desistement_att_validation_rejete');
+             foreach ($reservation->avances_valides as $av) {
+                $sum_avances_valides += $av->montant;
+            }
         }
+        return response()->json([
+            'reservation' => $reservation,
+            'sum_avances_valides' => $sum_avances_valides
+        ], 200);
+    } else {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+}
 
 
     public function get_pj_res($id, Request $request)
