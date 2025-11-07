@@ -573,6 +573,8 @@ class NotificationController extends Controller
                 ->where('desistements.user_id', $userAuth->value('id'))
                 ->where('desistements.deleted_at',NULL)
                 ->count();
+
+                
                 $nb_av_en_cours = Avance::on('temp')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
                 ->whereNull('reservations.deleted_at')
                 ->where('reservations.etat', 1)
