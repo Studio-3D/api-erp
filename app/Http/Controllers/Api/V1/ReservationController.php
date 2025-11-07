@@ -579,6 +579,9 @@ private function finalizeReservation($reservation, $userAuth)
 
                     if ($dataArray_clients) {
                         foreach ($dataArray_clients as &$clientInfo) {
+                              if (empty($clientInfo['pourcentage']) || !is_numeric($clientInfo['pourcentage']) || $clientInfo['pourcentage'] <= 0) {
+                                    continue; // Skip this client
+                                }
                             $clientInfo['projet_id'] = $request->projet_id;
                             $clientRequest->merge($clientInfo);
                             $clientData = $clientController->store($clientRequest);
@@ -596,18 +599,25 @@ private function finalizeReservation($reservation, $userAuth)
 
                     if ($dataArray_oldClients) {
                         foreach ($dataArray_oldClients as $clientInfo) {
-                            $dataAquereur = [
-                                'pourcentage' => $clientInfo['pourcentage1'] ?? $clientInfo['pourcentage'] ?? 0,
-                                'client_id' => $clientInfo['id'],
-                                'reservation_id' => $reservation->id,
-                            ];
-                            $aquereurRequest->merge($dataAquereur);
-                            $aquereurController->store($aquereurRequest);
-                        }
-                    }
-                }
-            }
 
+                                // Skip if percentage is empty or invalid
+                                    $pourcentage = $clientInfo['pourcentage1'] ?? $clientInfo['pourcentage'] ?? 0;
+                                    if (empty($pourcentage) || !is_numeric($pourcentage) || $pourcentage <= 0) {
+                                        continue; // Skip this client
+                                    }
+
+                                    $dataAquereur = [
+                                        'pourcentage' => $pourcentage,
+                                        'client_id' => $clientInfo['id'],
+                                        'reservation_id' => $reservation->id,
+                                    ];
+                                    $aquereurRequest->merge($dataAquereur);
+                                    $aquereurController->store($aquereurRequest);
+                            }
+
+                     }
+                    }
+            }
             /**
              * Process payment data
              */
@@ -826,7 +836,7 @@ public function show($id)
                 'projet' => function($query) {
                     $query->select('id', 'nom', 'adresse')
                           ->without('user_projet', 'type_projet');
-                },
+                },//'aquereurs','aquereurs_ancien'
 
             ])
             ->findOrFail($id);
@@ -840,13 +850,11 @@ public function show($id)
         // Conditionally replace aquereurs with aquereurs_ancien if etat > 1
         if ($reservation->etat > 1) {
              $reservation->load('remboursement_dd_with_transfert');
-            // Load aquereurs_ancien relationship
+           // Load aquereurs_ancien relationship
             $reservation->load('aquereurs_ancien');
             // Replace aquereurs with aquereurs_ancien for the response
             $reservation->aquereurs = $reservation->aquereurs_ancien;
             // Hide the original aquereurs_ancien from response if needed
-            $reservation->makeHidden('aquereurs_ancien');
-
             $reservation->load('desistements_ancien');
 
             // Load piece_jointe_desiste when etat > 1

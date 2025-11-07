@@ -66,6 +66,10 @@ class Desistement extends Model
     {
         return $this->hasMany(Remboursement::class,'desistement_id')->where('archive',0);
     }
+    public function all_remboursements()
+    {
+        return $this->hasMany(Remboursement::class,'desistement_id');
+    }
     public function nouvel_aquereurs_desistements()
     {
         return $this->hasMany(NouvelAquereurDesistement::class)->whereNotNull('desistement_id');
