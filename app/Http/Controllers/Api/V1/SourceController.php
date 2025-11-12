@@ -25,14 +25,14 @@ class SourceController extends Controller
             DatabaseHelper::Config();
 
             // Démarrer la requête directement sur le modèle
-            $query = Source::on('temp')->with('prospect');
+            $query = Source::on('temp');
 
             if ($request->filled('source')) {
                 $query->where('source', 'like', '%' . $request->input('source') . '%');
             }
             if (is_numeric($size) && is_numeric($page) && $size >= 0 && $page >= 0) {
 
-                $sources = $query->orderBy('created_at', 'desc')
+                $sources = $query->with('prospect')->orderBy('created_at', 'desc')
                     ->paginate($size, ['*'], 'page', $page);
 
                 // Extraire les propriétés du paginateur

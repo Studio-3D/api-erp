@@ -436,11 +436,19 @@ class AppelController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $tr_appel = TraitementAppel::on('temp')->with('frein','relance','rdv','tranche','bloc','immeuble','type_biens')->findOrfail($id);
-           /* $frein=new FreinController();
-            if($tr_appel->interet==InteretEnumAppel::Perdu->value) {
-                $tr_appel['frein']=$frein->searchFreinByAppelId($id,'without_row_deleted');
-            }*/
+            $tr_appel = TraitementAppel::on('temp')->without('user')
+            ->with([
+                'appel' => function($query) {
+                    $query->select('*')
+                        ->with([
+                            'prospect' => function($q) {
+                                $q->select('*')
+                                  ->without('affecte_par_admin','commercial_affecte');
+                            }
+                        ])->without('projet');
+                },'frein','relance','rdv','tranche','bloc','immeuble','type_biens'
+            ])
+            ->findOrfail($id);
             return response()->json(['tr_appel' => $tr_appel,'frein'=>$tr_appel['frein']], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -692,7 +700,12 @@ class AppelController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $appel =Appel::on('temp')->with('prospect')->findOrfail($id);
+            $appel =Appel::on('temp') ->with([
+                            'prospect' => function($q) {
+                                $q->select('*')
+                                  ->without('affecte_par_admin','commercial_affecte');
+                            }
+                        ])->without('projet')->findOrfail($id);
             return response()->json(['appel' => $appel], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -853,7 +866,18 @@ class AppelController extends Controller
 
             DatabaseHelper::Config();
 
-            $query = TraitementAppel::on('temp')->with('tranche','bloc','immeuble','type_biens','rdv','relance','frein')->where('appel_id', $id);
+            $query = TraitementAppel::on('temp')
+            ->with([
+                'appel' => function($query) {
+                    $query->select('*')
+                        ->with([
+                            'prospect' => function($q) {
+                                $q->select('*')
+                                  ->without('affecte_par_admin','commercial_affecte');
+                            }
+                        ])->without('projet');
+                },'frein','relance','rdv','tranche','bloc','immeuble','type_biens'
+            ])->where('appel_id', $id);
 
             if ($request->filled('date')) {
                 $start = Carbon::parse($request->input('date'));

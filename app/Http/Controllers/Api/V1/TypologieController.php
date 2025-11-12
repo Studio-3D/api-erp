@@ -63,7 +63,7 @@ class TypologieController extends Controller
 
             DatabaseHelper::Config();
 
-            $query = Typologie::on('temp')->with('frein_typologies','bien')->where('projet_id', $projet_id);
+            $query = Typologie::on('temp')->where('projet_id', $projet_id);
 
 
 
@@ -73,7 +73,7 @@ class TypologieController extends Controller
 
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
 
-                $typologies = $query->orderBy('created_at', 'desc')
+                $typologies = $query->with('frein_typologies','bien')->orderBy('created_at', 'desc')
                     ->paginate($size, ['*'], 'page', $page);
 
                 $pagination = [

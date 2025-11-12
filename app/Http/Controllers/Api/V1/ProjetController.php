@@ -88,7 +88,7 @@ class ProjetController extends Controller
         }
     }
 
-  
+
    public function index(Request $request)
     {
             if (! RoleHelper::AdminSup() && ! RoleHelper::Com()) {
@@ -271,7 +271,7 @@ class ProjetController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $projet = Projet::on('temp')->with('tranche', 'bloc', 'immeuble', 'typesBien', 'bien')->withCount(['bloc', 'tranche', 'immeuble', 'bien'])->findOrfail($id);
+            $projet = Projet::on('temp')->with('tranche', 'bloc', 'immeuble', 'typesBien', 'bien','typologies','vues')->withCount(['bloc', 'tranche', 'immeuble', 'bien'])->findOrfail($id);
             return response()->json(['projet' => $projet], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
