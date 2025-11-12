@@ -83,7 +83,7 @@ class PartenaireController extends Controller
 
             DatabaseHelper::Config();
 
-            $query = Partenaire::on('temp')->with('client','prospect')->where('projet_id', $projet_id);
+            $query = Partenaire::on('temp')->where('projet_id', $projet_id);
 
             if ($request->filled('description')) {
                 $query->where('description', 'like', '%' . $request->input('description') . '%');
@@ -94,7 +94,7 @@ class PartenaireController extends Controller
 
             // Check if pagination parameters are provided and valid
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
-                $partenaires = $query->orderBy('created_at', 'desc')
+                $partenaires = $query->with('client','prospect')->orderBy('created_at', 'desc')
                 ->paginate($size, ['*'], 'page', $page);
 
                 $pagination = [

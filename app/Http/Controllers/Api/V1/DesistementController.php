@@ -3149,7 +3149,7 @@ class DesistementController extends Controller
 
                 // Construire la requête avec les relations nécessaires
 
-                $query = PenaliteDesistement::on('temp')->with('banque', 'last_statut', 'responsable_validation','desistement')
+                $query = PenaliteDesistement::on('temp')->with( 'last_statut', 'responsable_validation','desistement')
                 ->where('statut', $statut)
                 ->where('archive', 0);
                 $query->whereHas('desistement', function ($q) use ($projet_id) {

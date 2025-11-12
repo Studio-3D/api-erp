@@ -224,15 +224,16 @@ class VisiteController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $frein_h     = new FreinController();
+          //  $frein_h     = new FreinController();
             $historiques = Visite::on('temp')->with('relance_relation', 'rdv_relation','freins')
+             ->without([
+                            'prospect',
+                            'source',
+                            'historique_bien_visite',
+                            'partenaire'
+                        ])
                 ->where('origin_id', $origin_id)->withTrashed()->orderby('created_at', 'desc')->get();
-          /*  foreach ($historiques as $histo) {
-                if ($histo->interet == InteretEnum::Perdu->value) {
-                    $frein_h_       = $frein_h->searchFreinByVisiteId($histo->id, 'with_row_deleted_at');
-                    $histo['frein'] = $frein_h_;
-                }
-            }*/
+
             return response()->json(['historiques' => $historiques], 200);
         }
     }
@@ -1152,16 +1153,48 @@ class VisiteController extends Controller
 
     }
 
-    public function relance_rdv_by_visite($id)
-    {
-        if (Auth::guard('api')->check()) {
-            DatabaseHelper::Config();
-            $histo = Visite::on('temp')->with('historique_relances_rdvs')->where('origin_id', $id)->where('etat', 1)->orderby('created_at', 'DESC')->get();
-            return response()->json(['histo' => $histo], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+   public function relance_rdv_by_visite($id)
+{
+    if (!Auth::guard('api')->check()) {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+    try {
+        DatabaseHelper::Config();
+
+        $histo = Visite::on('temp')
+            ->select('id', 'description')
+            ->with([
+                'historique_relances_rdvs' => function($query) {
+                    $query->select('*')
+                        ->with([
+                            'user' => function($q) {
+                                $q->select('id', 'name', 'prenom')
+                                  ->without('societe');
+                            }
+                        ]);
+                }
+            ])
+             ->without([    'visite',
+                            'prospect',
+                            'bien',
+                            'source',
+                            'user',
+                            'historique_bien_visite',
+                            'partenaire'
+                        ])
+            ->where('origin_id', $id)
+            ->where('etat', 1)
+            ->orderBy('created_at', 'DESC')
+            ->get();
+
+        return response()->json(['histo' => $histo], 200);
+
+    } catch (\Exception $e) {
+        \Log::error('Error fetching relance RDV by visite: ' . $e->getMessage());
+        return response()->json(['error' => 'Internal server error'], 500);
+    }
+}
     public function show($id)
     {
 

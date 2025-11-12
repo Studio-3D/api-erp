@@ -64,7 +64,7 @@ class VueController extends Controller
 
             DatabaseHelper::Config();
 
-            $query = Vue::on('temp')->with('bien','frein_vue')->where('projet_id', $projet_id);
+            $query = Vue::on('temp')->where('projet_id', $projet_id);
 
             if ($request->filled('vue')) {
                 $query->where('vue', 'like', '%' . $request->input('vue') . '%');
@@ -73,7 +73,7 @@ class VueController extends Controller
             // Check if pagination parameters are provided and valid
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
                 // Paginate the query results
-                $vues = $query->orderBy('created_at', 'desc')
+                $vues = $query->with('bien','frein_vue')->orderBy('created_at', 'desc')
                     ->paginate($size, ['*'], 'page', $page);
 
                 $pagination = [

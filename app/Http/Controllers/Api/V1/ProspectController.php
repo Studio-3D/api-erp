@@ -34,17 +34,40 @@ class ProspectController extends Controller
      */
 
     public function indexByProjet(Request $request, $projet_id)
-    {
-        if (Auth::guard('api')->check()) {
-            $size = $request->input('size', null);
-            $page = $request->input('page', null);
+{
+    if (Auth::guard('api')->check()) {
+        $size = $request->input('size', null);
+        $page = $request->input('page', null);
 
-            DatabaseHelper::Config();
+        DatabaseHelper::Config();
 
-            // Démarrer la requête directement sur le modèle
+        // Démarrer la requête directement sur le modèle
+        $query = prospect::on('temp')->with([
 
-            $query = prospect::on('temp')->with('client','visites','appels','last_statut')->where('projet_id', $projet_id);
-             if ($request->filled('telephone')) {
+            'traite_par_user' => function($query) {
+                $query->select('id','name','prenom')->without('societe'); // Fixed syntax
+            },
+            'partenaire' => function($query) {
+                $query->select('id','description'); // Fixed syntax
+            },
+            'last_statut' => function($query) {
+                $query->select('*')->without('prospect','user'); // Fixed syntax
+            },
+             'commercial_affecte' => function($query) {
+                $query->select('id','user_id_origin', 'name', 'prenom')->without('societe'); // Fixed syntax
+            },
+            'client' => function($query) {
+                $query->select('id', 'nom', 'prenom')->without('partenaire'); // Fixed syntax
+            },
+            'affecte_par_admin' => function($query) {
+                $query->select('id', 'name', 'prenom')->without('societe'); // Fixed syntax
+            }
+        ])->withCount([
+            'visites',
+            'appels'
+        ])->where('projet_id', $projet_id);
+
+        if ($request->filled('telephone')) {
             $query->where(function ($q) use ($request) {
                 if ($request->filled('telephone')) {
                     $q->where(function ($subQuery) use ($request) {
@@ -52,61 +75,59 @@ class ProspectController extends Controller
                             ->orWhere('telephone_num2', 'like', '%' . $request->input('telephone') . '%');
                     });
                 }
-
-            });}
-            if ($request->filled('cin')) {
-                $query->where('cin', 'like', '%' . $request->input('cin') . '%');
-            }
-            if ($request->filled('nom')) {
-                $query->where('nom', 'like', '%' . $request->input('nom') . '%');
-            }
-            if ($request->filled('email')) {
-                $query->where('email', 'like', '%' . $request->input('email') . '%');
-            }
-            if ($request->filled('prenom')) {
-                $query->where('prenom', 'like', '%' . $request->input('prenom') . '%');
-            }
-            if ($request->filled('statut')) {
-                $query->where('prenom', 'like', '%' . $request->input('prenom') . '%');
-            }
-            if ($request->filled('statut')) {
-                $query->whereHas('last_statut', function ($q) use ($request) {
-                    $q->where('statut', $request->input('statut'));
-                });
-            }
-
-            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
-
-                $prospects = $query->orderBy('created_at', 'desc')
-                    ->paginate($size, ['*'], 'page', $page);
-
-                // Extraire les propriétés du paginateur
-                $pagination = [
-                    'currentPage' => $prospects->currentPage(),
-                    'totalItems'  => $prospects->total(),
-                    'totalPages'  => $prospects->lastPage(),
-                ];
-
-                // Extraire les éléments d'utilisateur du paginateur
-                $prospects = $prospects->items();
-
-                // Retourner la réponse simplifiée
-                return response()->json([
-                    'prospects'  => $prospects,
-                    'pagination' => $pagination,
-                ], 200);
-            } else {
-                // Return all results if pagination parameters are not provided or invalid
-                $prospects = $query->orderBy('created_at', 'desc')
-                    ->get();
-
-                return response()->json(['prospects' => $prospects], 200);
-            }
-
+            });
         }
 
-        return response()->json(['error' => 'Unauthorized'], 401);
+        if ($request->filled('cin')) {
+            $query->where('cin', 'like', '%' . $request->input('cin') . '%');
+        }
+        if ($request->filled('nom')) {
+            $query->where('nom', 'like', '%' . $request->input('nom') . '%');
+        }
+        if ($request->filled('email')) {
+            $query->where('email', 'like', '%' . $request->input('email') . '%');
+        }
+        if ($request->filled('prenom')) {
+            $query->where('prenom', 'like', '%' . $request->input('prenom') . '%');
+        }
+
+        // Remove this duplicate condition - it's checking 'prenom' again instead of 'statut'
+        // if ($request->filled('statut')) {
+        //     $query->where('prenom', 'like', '%' . $request->input('prenom') . '%');
+        // }
+
+        if ($request->filled('statut')) {
+            $query->whereHas('last_statut', function ($q) use ($request) {
+                $q->where('statut', $request->input('statut'));
+            });
+        }
+
+        if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+            $prospects = $query->orderBy('created_at', 'desc')
+                ->paginate($size, ['*'], 'page', $page);
+
+            $pagination = [
+                'currentPage' => $prospects->currentPage(),
+                'totalItems'  => $prospects->total(),
+                'totalPages'  => $prospects->lastPage(),
+            ];
+
+            $prospects = $prospects->items();
+
+            return response()->json([
+                'prospects'  => $prospects,
+                'pagination' => $pagination,
+            ], 200);
+        } else {
+            $prospects = $query->orderBy('created_at', 'desc')
+                ->get();
+
+            return response()->json(['prospects' => $prospects], 200);
+        }
     }
+
+    return response()->json(['error' => 'Unauthorized'], 401);
+}
 
     public function index(Request $request)
     {
@@ -284,7 +305,11 @@ class ProspectController extends Controller
 
             DatabaseHelper::Config();
 
-            $query = StatutProspect::on('temp')->with('user')->where('prospect_id', $id)->orderBy('date_traitement', 'desc');
+            $query = StatutProspect::on('temp')->with([
+                 'user' => function($query) {
+                $query->select('id','name','prenom')->without('societe'); // Fixed syntax
+            },
+            ])->where('prospect_id', $id)->without('prospect')->orderBy('date_traitement', 'desc');
             // Optional filters (Add more if needed)
 
             if ($request->filled('date_traitement')) {
@@ -555,7 +580,23 @@ class ProspectController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $prospect = Prospect::on('temp')->with('visites_perdu','appels')->findOrfail($id);
+            //visites_perdu
+            $prospect = Prospect::on('temp')->with([
+                 'traite_par_user' => function($query) {
+                $query->select('id','name','prenom')->without('societe'); // Fixed syntax
+            },
+            'partenaire' => function($query) {
+                $query->select('id','description'); // Fixed syntax
+            },
+                'commercial_affecte' => function($query) {
+                $query->select('id','user_id_origin')->without('societe'); // Fixed syntax
+            },
+                 'appels' => function($query) {
+                $query->select('id',)->without('prospect','projet'); // Fixed syntax
+            },
+                'affecte_par_admin' => function($query) {
+                $query->select('id','name','prenom')->without('societe'); // Fixed syntax
+            }])->findOrfail($id);
             return response()->json(['prospect' => $prospect], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -1003,7 +1044,7 @@ class ProspectController extends Controller
                         $statutProspect = new StatutProspect();
                         $statutProspect->setConnection('temp');
                         $statutProspect->prospect_id = $assignment['prospect_id'];
-                        $statutProspect->statut = (string) StatutProspectEnum::Affecte->value;
+                        $statutProspect->statut = strval(StatutProspectEnum::Affecte->value);
                         $statutProspect->date_traitement = Carbon::now();
                         $statutProspect->user_id_traite = $userAuth->id;
                         $statutProspect->commentaire = 'Prospect affecté automatiquement au commercial';

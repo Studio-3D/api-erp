@@ -254,6 +254,7 @@ Route::middleware('auth:api')->group(function () {
 
         //l'API client
         Route::resource('clients', V1ClientController::class);
+        Route::get('show_client/{id}', [V1ClientController::class, 'show_client']);
         Route::get('search_client_by_cin/{cin}', [V1ClientController::class, 'search_client_by_cin']);
         Route::get('search_client_by_phone/{phone}', [V1ClientController::class, 'search_client_by_phone']);
         Route::get('search_client_by_email/{email}', [V1ClientController::class, 'search_client_by_email']);
@@ -277,6 +278,7 @@ Route::middleware('auth:api')->group(function () {
 
         //lapi reservaton
         Route::resource('reservations', V1ReservationController::class);
+        Route::get('show_dossier_in_dd/{id}', [V1ReservationController::class, 'show_dossier_in_dd']);
         Route::get('projets/{idprojet}/reservations', [V1ReservationController::class, 'indexByProjet']);
         Route::get('search_reservation_by_code/{code_res}', [V1ReservationController::class, 'search_reservation_by_code']);
         Route::get('reservations_by_etat/{projet_id}/{etat}', [V1ReservationController::class, 'get_reservations_by_etat'])->name('');
