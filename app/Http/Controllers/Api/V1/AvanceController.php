@@ -226,7 +226,32 @@ class AvanceController extends Controller
             $aa=0;
             if (RoleHelper::AdminSup()) {
                 if($statut==3){
-                    $query = Avance::on('temp')->with('last_statut','reservation')
+                    $query = Avance::on('temp')->
+                    with([
+                        'last_statut' => function($query) {
+                            $query->without('avance', 'penalite');
+                        },
+                        'reservation' => function($query) {
+                            $query->with([
+                                'bien' => function($query) {
+                                    $query->with([
+                                        'immeuble' => function($q) {
+                                            $q->select('id', 'nom')
+                                            ->without(['projet', 'tranche', 'bloc']);
+                                        },
+                                        'bloc' => function($q) {
+                                            $q->select('id', 'nom')
+                                            ->without(['projet', 'tranche']);
+                                        },
+                                        'tranche' => function($q) {
+                                            $q->select('id', 'nom')
+                                            ->without(['projet']);
+                                        }
+                                    ])->without('projet', 'typologie', 'vue', 'compositionBien', 'typeBien');
+                                }
+                            ])->without('user', 'projet', 'historiques', 'piece_jointe', 'aquereurs_ancien');
+                        },
+                    ])
                     ->where('mode_paiement','!=',7)->where('montant','>',0) ->orderBy('created_at', 'desc')
                     ->where(function($qq) use ($statut){
                         $qq->where('statut',1)
@@ -284,7 +309,31 @@ class AvanceController extends Controller
 
                 }else{
                     $aa=1;
-                    $query =Avance::on('temp')->with('last_statut','reservation')
+                    $query =Avance::on('temp')->with([
+                        'last_statut' => function($query) {
+                            $query->without('avance', 'penalite');
+                        },
+                        'reservation' => function($query) {
+                            $query->with([
+                                'bien' => function($query) {
+                                    $query->with([
+                                        'immeuble' => function($q) {
+                                            $q->select('id', 'nom')
+                                            ->without(['projet', 'tranche', 'bloc']);
+                                        },
+                                        'bloc' => function($q) {
+                                            $q->select('id', 'nom')
+                                            ->without(['projet', 'tranche']);
+                                        },
+                                        'tranche' => function($q) {
+                                            $q->select('id', 'nom')
+                                            ->without(['projet']);
+                                        }
+                                    ])->without('projet', 'typologie', 'vue', 'compositionBien', 'typeBien');
+                                }
+                            ])->without('user', 'projet', 'historiques', 'piece_jointe', 'aquereurs_ancien');
+                        },
+                    ])
                     ->where('mode_paiement','!=',7)->where('montant','>',0) ->orderBy('created_at', 'desc')
                     ->where('statut', $statut);
                     $query->whereHas('reservation', function ($q) use ($projet_id) {
@@ -302,7 +351,32 @@ class AvanceController extends Controller
             $aa=1;
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-                $query =Avance::on('temp')->with('last_statut','reservation')
+                $query =Avance::on('temp')
+                -> with([
+                        'last_statut' => function($query) {
+                            $query->without('avance', 'penalite');
+                        },
+                        'reservation' => function($query) {
+                            $query->with([
+                                'bien' => function($query) {
+                                    $query->with([
+                                        'immeuble' => function($q) {
+                                            $q->select('id', 'nom')
+                                            ->without(['projet', 'tranche', 'bloc']);
+                                        },
+                                        'bloc' => function($q) {
+                                            $q->select('id', 'nom')
+                                            ->without(['projet', 'tranche']);
+                                        },
+                                        'tranche' => function($q) {
+                                            $q->select('id', 'nom')
+                                            ->without(['projet']);
+                                        }
+                                    ])->without('projet', 'typologie', 'vue', 'compositionBien', 'typeBien');
+                                }
+                            ])->without('user', 'projet', 'historiques', 'piece_jointe', 'aquereurs_ancien');
+                        },
+                    ])
                     ->where('mode_paiement','!=',7)->where('montant','>',0)
                     ->where('statut', $statut)
                     ->where('avances.user_id', $userAuth->value('id'));

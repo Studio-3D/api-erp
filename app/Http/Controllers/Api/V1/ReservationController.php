@@ -193,12 +193,14 @@ class ReservationController extends Controller
                 ->joinSub($avances, 'avances_req', function ($join) {
                     $join->on('avances_req.reservation_id', '=', 'reservations.id');
                 })
-                ->select('reservations.*', 'avances_req.sum_avances')
+               // ->select('reservations.*', 'avances_req.sum_avances')
+                ->select('reservations.id', 'reservations.code_reservation','avances_req.sum_avances','reservations.etat','reservations.prix')
                 ->whereColumn('sum_avances', '<', 'reservations.prix')
                 ->where('reservations.id', '!=', $dos_id)
                 ->orderBy('reservations.created_at', 'desc')
                 ->where('reservations.etat', 1)
                 ->where('reservations.projet_id', $projet_id)
+                ->without( 'user', 'projet','historiques','piece_jointe','bien','aquereurs','aquereurs_ancien')
                 ->get();
 
             return response()->json(['reservations' => $reservations], 200);
@@ -769,7 +771,7 @@ private function finalizeReservation($reservation, $userAuth)
         }
     }
 
-public function show($id)
+    public function show($id)
 {
     if (RoleHelper::ACSup()) {
         DatabaseHelper::Config();
@@ -885,6 +887,54 @@ public function show($id)
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 }
+        public function show_dossier_in_dd($id)
+        {
+            if (RoleHelper::ACSup()) {
+                DatabaseHelper::Config();
+
+                $reservation = Reservation::on('temp')
+                    ->withSum('avances','montant')
+                    ->without('avances_valides','historiques','aquereurs_ancien','piece_jointe','user','projet')
+                    ->with([
+                        'aquereurs',
+                        'bien' => function($query) {
+                            $query->with([
+                                'immeuble' => function($q) {
+                                    $q->select('id', 'nom')
+                                    ->without(['projet', 'tranche','bloc']);
+                                },
+                                'bloc' => function($q) {
+                                    $q->select('id', 'nom')
+                                    ->without(['projet', 'tranche']);
+                                },
+                                'tranche' => function($q) {
+                                    $q->select('id', 'nom')
+                                    ->without(['projet']);
+                                }
+                                ,'typeBien',
+                            ])->without('projet','typologie','vue');
+                        },
+
+                    ])
+                    ->findOrFail($id);
+
+
+                // Hide avances_valides from response
+                $reservation->makeHidden('avances_valides');
+
+                $sum_avances_valides = 0;
+                    foreach ($reservation->avances_valides as $av) {
+                        $sum_avances_valides += $av->montant;
+                    }
+
+                return response()->json([
+                    'reservation' => $reservation,
+                    'sum_avances_valides' => $sum_avances_valides
+                ], 200);
+            } else {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+        }
 
 
     public function get_pj_res($id, Request $request)
