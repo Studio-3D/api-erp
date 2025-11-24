@@ -66,12 +66,12 @@ class Bien_Helper
             'Superficie habitable',
             'superficie_parking',
             'superficie_box',
-            'superficie_terrasse',
-            'superficie_terrasse_calculer',
-            'superficie_balcon',
-            'superficie_balcon_calculer',
-            'superficie_jardin',
-            'superficie_jardin_calculer',
+            'Superficie terrasse',
+            'Superficie terrasse calculée',
+            'Superficie balcon',
+            'Superficie balcon calculée',
+            'Superficie jardin',
+            'Superficie jardin calculée',
             'superficie_total',
             'superficie_vendable',
             'nbre_facades',
@@ -186,21 +186,109 @@ class Bien_Helper
             } else {
                 $bien->prix_box = 0;
             }
-            if (array_key_exists("Balcon", $row)) {
-                $balcon = $row['Balcon'];
+            // Handle Superficie balcon
+            if (array_key_exists("Superficie balcon", $row)) {
+                $superficie_balcon = $row['Superficie balcon'];
 
-                if ($balcon === null || $balcon === 'SYNDIC PROPOSE' || $balcon === 'SYNDIC PLAN') {
-                    $bien->superficie_balcon          = 0;
+                if ($superficie_balcon === null || $superficie_balcon === 'SYNDIC PROPOSE' || $superficie_balcon === 'SYNDIC PLAN') {
+                    $bien->superficie_balcon = 0;
+                } else {
+                    // Vérifier si c'est un nombre
+                    if (is_numeric($superficie_balcon)) {
+                        $bien->superficie_balcon = (float) $superficie_balcon;
+                    } else {
+                        throw new \Exception("La valeur de 'Superficie balcon' doit être un nombre. Valeur trouvée : " . $superficie_balcon);
+                    }
+                }
+            }
+
+            // Handle Superficie balcon calculée
+            if (array_key_exists("Superficie balcon calculée", $row)) {
+                $superficie_balcon_calculee = $row['Superficie balcon calculée'];
+
+                if ($superficie_balcon_calculee === null || $superficie_balcon_calculee === 'SYNDIC PROPOSE' || $superficie_balcon_calculee === 'SYNDIC PLAN') {
                     $bien->superficie_balcon_calculer = 0;
                 } else {
                     // Vérifier si c'est un nombre
-                    if (is_numeric($balcon)) {
-                        $bien->superficie_balcon          = (float) $balcon;
-                        $bien->superficie_balcon_calculer = (float) $balcon;
+                    if (is_numeric($superficie_balcon_calculee)) {
+                        $bien->superficie_balcon_calculer = (float) $superficie_balcon_calculee;
                     } else {
-                        throw new \Exception("La valeur de 'Balcon' doit être un nombre. Valeur trouvée : " . $balcon);
+                        throw new \Exception("La valeur de 'Superficie balcon calculée' doit être un nombre. Valeur trouvée : " . $superficie_balcon_calculee);
                     }
                 }
+            } else {
+                // If not provided, use half the value of superficie_balcon
+                $bien->superficie_balcon_calculer = ($bien->superficie_balcon ?? 0) / 2;
+            }
+
+            // Handle Superficie jardin
+            if (array_key_exists("Superficie jardin", $row)) {
+                $superficie_jardin = $row['Superficie jardin'];
+
+                if ($superficie_jardin === null || $superficie_jardin === 'SYNDIC PROPOSE' || $superficie_jardin === 'SYNDIC PLAN') {
+                    $bien->superficie_jardin = 0;
+                } else {
+                    // Vérifier si c'est un nombre
+                    if (is_numeric($superficie_jardin)) {
+                        $bien->superficie_jardin = (float) $superficie_jardin;
+                    } else {
+                        throw new \Exception("La valeur de 'Superficie jardin' doit être un nombre. Valeur trouvée : " . $superficie_jardin);
+                    }
+                }
+            }
+
+            // Handle Superficie jardin calculée
+            if (array_key_exists("Superficie jardin calculée", $row)) {
+                $superficie_jardin_calculee = $row['Superficie jardin calculée'];
+
+                if ($superficie_jardin_calculee === null || $superficie_jardin_calculee === 'SYNDIC PROPOSE' || $superficie_jardin_calculee === 'SYNDIC PLAN') {
+                    $bien->superficie_jardin_calculer = 0;
+                } else {
+                    // Vérifier si c'est un nombre
+                    if (is_numeric($superficie_jardin_calculee)) {
+                        $bien->superficie_jardin_calculer = (float) $superficie_jardin_calculee;
+                    } else {
+                        throw new \Exception("La valeur de 'Superficie jardin calculée' doit être un nombre. Valeur trouvée : " . $superficie_jardin_calculee);
+                    }
+                }
+            } else {
+                // If not provided, use half the value of superficie_jardin
+                $bien->superficie_jardin_calculer = ($bien->superficie_jardin ?? 0) / 2;
+            }
+
+            // Handle Superficie terrasse
+            if (array_key_exists("Superficie terrasse", $row)) {
+                $superficie_terrasse = $row['Superficie terrasse'];
+
+                if ($superficie_terrasse === null || $superficie_terrasse === 'SYNDIC PROPOSE' || $superficie_terrasse === 'SYNDIC PLAN') {
+                    $bien->superficie_terrasse = 0;
+                } else {
+                    // Vérifier si c'est un nombre
+                    if (is_numeric($superficie_terrasse)) {
+                        $bien->superficie_terrasse = (float) $superficie_terrasse;
+                    } else {
+                        throw new \Exception("La valeur de 'Superficie terrasse' doit être un nombre. Valeur trouvée : " . $superficie_terrasse);
+                    }
+                }
+            }
+
+            // Handle Superficie terrasse calculée
+            if (array_key_exists("Superficie terrasse calculée", $row)) {
+                $superficie_terrasse_calculee = $row['Superficie terrasse calculée'];
+
+                if ($superficie_terrasse_calculee === null || $superficie_terrasse_calculee === 'SYNDIC PROPOSE' || $superficie_terrasse_calculee === 'SYNDIC PLAN') {
+                    $bien->superficie_terrasse_calculer = 0;
+                } else {
+                    // Vérifier si c'est un nombre
+                    if (is_numeric($superficie_terrasse_calculee)) {
+                        $bien->superficie_terrasse_calculer = (float) $superficie_terrasse_calculee;
+                    } else {
+                        throw new \Exception("La valeur de 'Superficie terrasse calculée' doit être un nombre. Valeur trouvée : " . $superficie_terrasse_calculee);
+                    }
+                }
+            } else {
+                // If not provided, use half the value of superficie_terrasse
+                $bien->superficie_terrasse_calculer = ($bien->superficie_terrasse ?? 0) / 2;
             }
 
 
@@ -244,10 +332,10 @@ class Bien_Helper
             if (array_key_exists("Superficie totale", $row) && $row['Superficie totale'] != null) {
                 $bien->superficie_total = $row['Superficie totale'];
             } else {
-                $bien->superficie_total = $bien->superficie_habitable + $bien->superficie_balcon + $bien->superficie_terrasse;
+                $bien->superficie_total = $bien->superficie_habitable + $bien->superficie_balcon + $bien->superficie_terrasse + $bien->superficie_jardin;
             }
 
-            $bien->superficie_vendable = $bien->superficie_habitable + $bien->superficie_balcon_calculer + $bien->superficie_terrasse_calculer;
+            $bien->superficie_vendable = $bien->superficie_habitable + $bien->superficie_balcon_calculer + $bien->superficie_terrasse_calculer + $bien->superficie_jardin_calculer;
             $bien->prix                = $bien->prix_unitaire * $bien->superficie_total + $bien->prix_parking + $bien->prix_box;
             $bien->etat                = 'disponible';
             if ($bien->save()) {
@@ -367,104 +455,114 @@ class Bien_Helper
         }
     }
 
-    public static function libererBien($id, $text, $dst_id)
+
+    public static function libererBien($id, $text, $dst_id,$mode_proposition)
     {
+        //bu default $mode_proposition =false
         if ($text != 'console') {
             $user     = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
         }
         $bien       = Bien::on('temp')->findOrfail($id);
-        $bien->etat = EtatBien::DISPONIBLE->value;
-        //  $bien->desistement_id=$dst_id;
-        if ($bien->save()) {
-            Bien_Helper::store_bien_frein($bien->id, $text);
-            //UPDATE DERNIER VISITE pre reserve=>pre reserve_perdu // vendu==>reservation_perdu
-            $visite = Visite::on('temp')->where('bien_id', $id)->where('interet', InteretEnum::Intéressé->value)->orderBy('created_at', 'DESC')->first();
-            if ($visite != null) {
-                if ($text == 'console') {
-                    //pre reserve
-                    if ($visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
-                        $visite->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
-                    } elseif ($visite->statut == StatutVisiteEnum::Vendu->value) {
-                        $visite->statut = StatutVisiteEnum::Réservation_Perdu->value;
-                    }
-                    $visite->save();
-                }
+        $reservedStates = ['RESERVATION', 'PRE_RESERVATION'];
+        //on cas de proposition  si bien n'est pas reserve et pre rserve ou le mode false !$mode_proposition (le cas normal sans proposition )
+        $shouldLiberate = !$mode_proposition ||
+                     ($mode_proposition && !in_array($bien->etat, $reservedStates));
 
-                //SUPPRIMER LES OLDS NOTIF
-                $notif_old_relance = Notification::on('temp')->where(function ($query) {
-                    $query->where('type', 1)
-                        ->orwhere('type', 2);
-                })
-                    ->where(function ($query_2) use ($visite) {
-                        $query_2->where('visite_id', $visite->id);
-                    })
-                    ->get();
-                if (($notif_old_relance->count()) > 0) {
-                    foreach ($notif_old_relance as $nt_r) {
-                        $nt_r->delete();
-                    }
-                }
-                /***RENDRE LES OLD RELANCES ET OLD RDV EN TRAITE AUTOMATIQUE****/
-                $old_relances_rdv = Relance_Rdv_Visite::on('temp')->where('visite_id', $visite->id)->where('type_traitement', 0)->get();
-                if (count($old_relances_rdv) > 0) {
-                    foreach ($old_relances_rdv as $old) {
-                        $old->type_traitement = 2; //auto
-                        $old->date_traitement = Carbon::now();
-                        //si old visite pre reserve en suite n visite vendu ==>user_id_traite(l'ancien user)
-                        if ($old->visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
-                            if ($visite->statut == StatutVisiteEnum::Vendu->value) {
-                                $old->user_id_traite = $visite->user_id;
-                            } else {
-                                $old->user_id_traite = $text != 'console' ? $userAuth->value('id') : null;
+        if ($shouldLiberate) {
+                $bien->etat = EtatBien::DISPONIBLE->value;
+                //  $bien->desistement_id=$dst_id;
+                if ($bien->save()) {
+                    Bien_Helper::store_bien_frein($bien->id, $text);
+                    //UPDATE DERNIER VISITE pre reserve=>pre reserve_perdu // vendu==>reservation_perdu
+                    $visite = Visite::on('temp')->where('bien_id', $id)->where('interet', InteretEnum::Intéressé->value)->orderBy('created_at', 'DESC')->first();
+                    if ($visite != null) {
+                        if ($text == 'console') {
+                            //pre reserve
+                            if ($visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
+                                $visite->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
+                            } elseif ($visite->statut == StatutVisiteEnum::Vendu->value) {
+                                $visite->statut = StatutVisiteEnum::Réservation_Perdu->value;
                             }
-                        } else {
-                            $old->user_id_traite = $text != 'console' ? $userAuth->value('id') : null;
+                            $visite->save();
                         }
-                        $old->save();
+
+                        //SUPPRIMER LES OLDS NOTIF
+                        $notif_old_relance = Notification::on('temp')->where(function ($query) {
+                            $query->where('type', 1)
+                                ->orwhere('type', 2);
+                        })
+                            ->where(function ($query_2) use ($visite) {
+                                $query_2->where('visite_id', $visite->id);
+                            })
+                            ->get();
+                        if (($notif_old_relance->count()) > 0) {
+                            foreach ($notif_old_relance as $nt_r) {
+                                $nt_r->delete();
+                            }
+                        }
+                        /***RENDRE LES OLD RELANCES ET OLD RDV EN TRAITE AUTOMATIQUE****/
+                        $old_relances_rdv = Relance_Rdv_Visite::on('temp')->where('visite_id', $visite->id)->where('type_traitement', 0)->get();
+                        if (count($old_relances_rdv) > 0) {
+                            foreach ($old_relances_rdv as $old) {
+                                $old->type_traitement = 2; //auto
+                                $old->date_traitement = Carbon::now();
+                                //si old visite pre reserve en suite n visite vendu ==>user_id_traite(l'ancien user)
+                                if ($old->visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
+                                    if ($visite->statut == StatutVisiteEnum::Vendu->value) {
+                                        $old->user_id_traite = $visite->user_id;
+                                    } else {
+                                        $old->user_id_traite = $text != 'console' ? $userAuth->value('id') : null;
+                                    }
+                                } else {
+                                    $old->user_id_traite = $text != 'console' ? $userAuth->value('id') : null;
+                                }
+                                $old->save();
+                            }
+
+                        }
                     }
+                    //traitement Frein
+                    $traitement_frein = TraitementFrein::on('temp')->where('bien_id', $id)->where('interet', InteretEnum::Intéressé->value)->where('statut', 1)->orderBy('created_at', 'DESC')->first();
+                    if ($traitement_frein != null) {
+                        $traitement_frein->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
+                        $traitement_frein->save();
+                        //SUPPRIMER LES OLDS NOTIF
+                        $notif_old_relance = Notification::on('temp')->where(function ($query) {
+                            $query->where('type', 1)
+                                ->orwhere('type', 2);
+                        })
+                            ->where(function ($query_2) use ($traitement_frein) {
+                                $query_2->where('visite_id', $traitement_frein->visite_id);
+                            })
+                            ->get();
+                        if (($notif_old_relance->count()) > 0) {
+                            foreach ($notif_old_relance as $nt_r) {
+                                $nt_r->delete();
+                            }
+                        }
+                        /***RENDRE LES OLD RELANCES ET OLD RDV EN TRAITE AUTOMATIQUE****/
+                        $old_relances_rdv = Relance_Rdv_Visite::on('temp')->where('visite_id', $traitement_frein->visite_id)->where('type_traitement', 0)->get();
+                        if (count($old_relances_rdv) > 0) {
+                            foreach ($old_relances_rdv as $old) {
+                                $old->type_traitement = 2; //auto
+                                $old->date_traitement = Carbon::now();
+                                $old->user_id_traite  = null;
+                                $old->save();
+                            }
+
+                        }
+                    }
+                }
+                if ($text == 'console') {
+                    HistoriqueBienHelper::createHistoriqueBien(1, "liberation automatique", $id, null, null, null, null, null);
+                } else {
+                    HistoriqueBienHelper::createHistoriqueBien(4, "liberer", $id, Auth::guard('api')->user()->id, null, null, null, null);
 
                 }
             }
-            //traitement Frein
-            $traitement_frein = TraitementFrein::on('temp')->where('bien_id', $id)->where('interet', InteretEnum::Intéressé->value)->where('statut', 1)->orderBy('created_at', 'DESC')->first();
-            if ($traitement_frein != null) {
-                $traitement_frein->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
-                $traitement_frein->save();
-                //SUPPRIMER LES OLDS NOTIF
-                $notif_old_relance = Notification::on('temp')->where(function ($query) {
-                    $query->where('type', 1)
-                        ->orwhere('type', 2);
-                })
-                    ->where(function ($query_2) use ($traitement_frein) {
-                        $query_2->where('visite_id', $traitement_frein->visite_id);
-                    })
-                    ->get();
-                if (($notif_old_relance->count()) > 0) {
-                    foreach ($notif_old_relance as $nt_r) {
-                        $nt_r->delete();
-                    }
-                }
-                /***RENDRE LES OLD RELANCES ET OLD RDV EN TRAITE AUTOMATIQUE****/
-                $old_relances_rdv = Relance_Rdv_Visite::on('temp')->where('visite_id', $traitement_frein->visite_id)->where('type_traitement', 0)->get();
-                if (count($old_relances_rdv) > 0) {
-                    foreach ($old_relances_rdv as $old) {
-                        $old->type_traitement = 2; //auto
-                        $old->date_traitement = Carbon::now();
-                        $old->user_id_traite  = null;
-                        $old->save();
-                    }
-
-                }
-            }
-        }
-        if ($text == 'console') {
-            HistoriqueBienHelper::createHistoriqueBien(1, "liberation automatique", $id, null, null, null, null, null);
-        } else {
-            HistoriqueBienHelper::createHistoriqueBien(4, "liberer", $id, Auth::guard('api')->user()->id, null, null, null, null);
 
         }
-    }
     public static function store_bien_frein($id, $text)
     {
         if ($text != 'console' && $text != 'import') {

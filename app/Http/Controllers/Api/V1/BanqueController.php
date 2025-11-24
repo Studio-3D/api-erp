@@ -29,7 +29,7 @@ class BanqueController extends Controller
 
         return response()->json(['error' => 'Unauthorized'], 401);
     }
-    
+
     public function index(Request $request)
     {
         if (Auth::guard('api')->check()) {
@@ -38,14 +38,14 @@ class BanqueController extends Controller
             DatabaseHelper::Config();
 
             // Démarrer la requête directement sur le modèle
-            $query = Banque::on('temp')->with('avance','HistoriqueAvance','desistements','penalite_desistements','remboursements','factures','credits');
+            $query = Banque::on('temp');
 
             if ($request->filled('nom')) {
                 $query->where('nom', 'like', '%' . $request->input('nom') . '%');
             }
 
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
-                $banques = $query->orderBy('created_at', 'desc')
+                $banques = $query->with('avance','HistoriqueAvance','desistements','penalite_desistements','remboursements','factures','credits')->orderBy('created_at', 'desc')
                     ->paginate($size, ['*'], 'page', $page);
 
                 // Extraire les propriétés du paginateur

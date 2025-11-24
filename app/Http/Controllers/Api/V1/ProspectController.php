@@ -34,17 +34,40 @@ class ProspectController extends Controller
      */
 
     public function indexByProjet(Request $request, $projet_id)
-    {
-        if (Auth::guard('api')->check()) {
-            $size = $request->input('size', null);
-            $page = $request->input('page', null);
+{
+    if (Auth::guard('api')->check()) {
+        $size = $request->input('size', null);
+        $page = $request->input('page', null);
 
-            DatabaseHelper::Config();
+        DatabaseHelper::Config();
 
-            // Démarrer la requête directement sur le modèle
+        // Démarrer la requête directement sur le modèle
+        $query = prospect::on('temp')->with([
 
-            $query = prospect::on('temp')->with('client','visites','appels','last_statut')->where('projet_id', $projet_id);
-             if ($request->filled('telephone')) {
+            'traite_par_user' => function($query) {
+                $query->select('id','name','prenom')->without('societe'); // Fixed syntax
+            },
+            'partenaire' => function($query) {
+                $query->select('id','description'); // Fixed syntax
+            },
+            'last_statut' => function($query) {
+                $query->select('*')->without('prospect','user'); // Fixed syntax
+            },
+             'commercial_affecte' => function($query) {
+                $query->select('id','user_id_origin', 'name', 'prenom')->without('societe'); // Fixed syntax
+            },
+            'client' => function($query) {
+                $query->select('id', 'nom', 'prenom')->without('partenaire'); // Fixed syntax
+            },
+            'affecte_par_admin' => function($query) {
+                $query->select('id', 'name', 'prenom')->without('societe'); // Fixed syntax
+            }
+        ])->withCount([
+            'visites',
+            'appels'
+        ])->where('projet_id', $projet_id);
+
+        if ($request->filled('telephone')) {
             $query->where(function ($q) use ($request) {
                 if ($request->filled('telephone')) {
                     $q->where(function ($subQuery) use ($request) {
@@ -52,61 +75,59 @@ class ProspectController extends Controller
                             ->orWhere('telephone_num2', 'like', '%' . $request->input('telephone') . '%');
                     });
                 }
-
-            });}
-            if ($request->filled('cin')) {
-                $query->where('cin', 'like', '%' . $request->input('cin') . '%');
-            }
-            if ($request->filled('nom')) {
-                $query->where('nom', 'like', '%' . $request->input('nom') . '%');
-            }
-            if ($request->filled('email')) {
-                $query->where('email', 'like', '%' . $request->input('email') . '%');
-            }
-            if ($request->filled('prenom')) {
-                $query->where('prenom', 'like', '%' . $request->input('prenom') . '%');
-            }
-            if ($request->filled('statut')) {
-                $query->where('prenom', 'like', '%' . $request->input('prenom') . '%');
-            }
-            if ($request->filled('statut')) {
-                $query->whereHas('last_statut', function ($q) use ($request) {
-                    $q->where('statut', $request->input('statut'));
-                });
-            }
-
-            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
-
-                $prospects = $query->orderBy('created_at', 'desc')
-                    ->paginate($size, ['*'], 'page', $page);
-
-                // Extraire les propriétés du paginateur
-                $pagination = [
-                    'currentPage' => $prospects->currentPage(),
-                    'totalItems'  => $prospects->total(),
-                    'totalPages'  => $prospects->lastPage(),
-                ];
-
-                // Extraire les éléments d'utilisateur du paginateur
-                $prospects = $prospects->items();
-
-                // Retourner la réponse simplifiée
-                return response()->json([
-                    'prospects'  => $prospects,
-                    'pagination' => $pagination,
-                ], 200);
-            } else {
-                // Return all results if pagination parameters are not provided or invalid
-                $prospects = $query->orderBy('created_at', 'desc')
-                    ->get();
-
-                return response()->json(['prospects' => $prospects], 200);
-            }
-
+            });
         }
 
-        return response()->json(['error' => 'Unauthorized'], 401);
+        if ($request->filled('cin')) {
+            $query->where('cin', 'like', '%' . $request->input('cin') . '%');
+        }
+        if ($request->filled('nom')) {
+            $query->where('nom', 'like', '%' . $request->input('nom') . '%');
+        }
+        if ($request->filled('email')) {
+            $query->where('email', 'like', '%' . $request->input('email') . '%');
+        }
+        if ($request->filled('prenom')) {
+            $query->where('prenom', 'like', '%' . $request->input('prenom') . '%');
+        }
+
+        // Remove this duplicate condition - it's checking 'prenom' again instead of 'statut'
+        // if ($request->filled('statut')) {
+        //     $query->where('prenom', 'like', '%' . $request->input('prenom') . '%');
+        // }
+
+        if ($request->filled('statut')) {
+            $query->whereHas('last_statut', function ($q) use ($request) {
+                $q->where('statut', $request->input('statut'));
+            });
+        }
+
+        if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+            $prospects = $query->orderBy('created_at', 'desc')
+                ->paginate($size, ['*'], 'page', $page);
+
+            $pagination = [
+                'currentPage' => $prospects->currentPage(),
+                'totalItems'  => $prospects->total(),
+                'totalPages'  => $prospects->lastPage(),
+            ];
+
+            $prospects = $prospects->items();
+
+            return response()->json([
+                'prospects'  => $prospects,
+                'pagination' => $pagination,
+            ], 200);
+        } else {
+            $prospects = $query->orderBy('created_at', 'desc')
+                ->get();
+
+            return response()->json(['prospects' => $prospects], 200);
+        }
     }
+
+    return response()->json(['error' => 'Unauthorized'], 401);
+}
 
     public function index(Request $request)
     {
@@ -181,7 +202,7 @@ class ProspectController extends Controller
             $user      = Auth::user();
             $userAuth  = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $prospect  = Prospect::on('temp')->findOrFail($id);
-            
+
             // Update prospect with traitement tracking
             $prospect->traite_par_user_id = $userAuth->value('id');
             $prospect->date_traitement = Carbon::now();
@@ -207,7 +228,7 @@ class ProspectController extends Controller
             }
 
             $prospect->save();
-            
+
             $ps_statut = new statutProspect();
             $ps_statut->setConnection('temp');
             $ps_statut->prospect_id     = $id;
@@ -284,7 +305,11 @@ class ProspectController extends Controller
 
             DatabaseHelper::Config();
 
-            $query = StatutProspect::on('temp')->with('user')->where('prospect_id', $id)->orderBy('date_traitement', 'desc');
+            $query = StatutProspect::on('temp')->with([
+                 'user' => function($query) {
+                $query->select('id','name','prenom')->without('societe'); // Fixed syntax
+            },
+            ])->where('prospect_id', $id)->without('prospect')->orderBy('date_traitement', 'desc');
             // Optional filters (Add more if needed)
 
             if ($request->filled('date_traitement')) {
@@ -378,7 +403,7 @@ class ProspectController extends Controller
             $statutProspect->commentaire = 'Prospect créé manuellement';
             $statutProspect->save();
 
-               
+
             }
 
             return $prospect;
@@ -452,6 +477,56 @@ class ProspectController extends Controller
         }
     }
 
+      public static function Store_fcb_instagram($msg_body, $name,$type, $societe_id, $projet_id = null, $phoneNumber = null, $facebookId = null)
+    {
+        DatabaseHelper::Config($societe_id);
+        $prospect = new Prospect();
+        $prospect->setConnection("temp");
+        $prospect->cin       = null;
+        $prospect->message   = $msg_body;
+        $prospect->nom       = $name;
+        $prospect->telephone = $phoneNumber;
+        $prospect->email     = null;
+          $prospect->facebook_id     = $facebookId;
+        $prospect->origin    = $type;
+        $prospect->source    = null;
+        $prospect->projet_id = $projet_id; // link prospect to project from WhatsApp config
+        $prospect->save();
+
+        // Create default "en_attente" status
+        $statutProspect = new StatutProspect();
+        $statutProspect->setConnection('temp');
+        $statutProspect->prospect_id = $prospect->id;
+        // Enforce numeric-only status storage for WhatsApp
+        $statutProspect->statut = '0';
+        $statutProspect->date_traitement = Carbon::now()->toDateString();
+        $statutProspect->user_id_traite = null; // No specific user for WhatsApp
+        $statutProspect->commentaire = 'Prospect créé via '.$type;
+        $statutProspect->save();
+
+        // Create a notification for the new WhatsApp prospect
+        try {
+            $notif_helper = new NotificationHelper();
+            $req = new \Illuminate\Http\Request();
+
+            // Ensure notification has a projet_id even if prospect was left null (ambiguous auto-link)
+
+            $notif_helper->storeNotification($req->merge([
+                'lien'        => '/crm/prospects/' . $prospect->id,
+                'date'        => Carbon::now(),
+                'type'        => 101,
+                'description' => 'Nouveau prospect via '.$type,
+                'user_id'     => null,
+                'role'        =>  \App\Enum\RoleEnum::ADMIN_COMMERCIAL->value,
+                'visite_id'   => null,
+                'prospect_id' => $prospect->id,
+                'projet_id'   => $projet_id,
+            ]));
+        } catch (\Exception $e) {
+            Log::warning('Failed to create '.$type.'notification: ' . $e->getMessage());
+        }
+    }
+
     public static function Store_LandingPage($name, $prenom, $phone, $email, $societe_id, $comment = null)
     {
         DatabaseHelper::Config($societe_id);
@@ -505,7 +580,23 @@ class ProspectController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $prospect = Prospect::on('temp')->with('visites_perdu','appels')->findOrfail($id);
+            //visites_perdu
+            $prospect = Prospect::on('temp')->with([
+                 'traite_par_user' => function($query) {
+                $query->select('id','name','prenom')->without('societe'); // Fixed syntax
+            },
+            'partenaire' => function($query) {
+                $query->select('id','description'); // Fixed syntax
+            },
+                'commercial_affecte' => function($query) {
+                $query->select('id','user_id_origin')->without('societe'); // Fixed syntax
+            },
+                 'appels' => function($query) {
+                $query->select('id',)->without('prospect','projet'); // Fixed syntax
+            },
+                'affecte_par_admin' => function($query) {
+                $query->select('id','name','prenom')->without('societe'); // Fixed syntax
+            }])->findOrfail($id);
             return response()->json(['prospect' => $prospect], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
@@ -535,15 +626,15 @@ class ProspectController extends Controller
             }
             $prospect = Prospect::on('temp')->findOrFail($id);
             $update   = $request->all();
-            
+
             // Handle commercial_affecte update
             if ($request->has('commercial_affecte')) {
                 // Allow reassignment regardless of final status
-                $lastStatus = $prospect->last_statut;
+               // $lastStatus = $prospect->last_statut;
 
                 $oldCommercialId = $prospect->commercial_affecte;
                 $newCommercialId = $request->commercial_affecte;
-                
+
                 // If commercial is changing, update counters and track affectation
                 if ($oldCommercialId != $newCommercialId) {
                     // Decrement old commercial's counter
@@ -552,21 +643,21 @@ class ProspectController extends Controller
                             ->where('id', $oldCommercialId)
                             ->decrement('nb_prospects');
                     }
-                    
+
                     // Increment new commercial's counter
                     if ($newCommercialId) {
                         \App\Models\User::on('temp')
                             ->where('id', $newCommercialId)
                             ->increment('nb_prospects');
                     }
-                    
+
                     // Track who made the affectation
                     $user = Auth::user();
                     $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
                     if ($userAuth) {
                         $prospect->affecte_par_admin_id = $userAuth->id;
                         $prospect->date_affectation = Carbon::now();
-                        
+
                         // Create "Affecte" status when assigning to a commercial
                         if ($newCommercialId) {
                             $statutProspect = new StatutProspect();
@@ -577,13 +668,15 @@ class ProspectController extends Controller
                             $statutProspect->user_id_traite = $userAuth->id;
                             $statutProspect->commentaire = 'Prospect affecté au commercial';
                             $statutProspect->save();
+                                  // Send notification to the commercial
+                        $this->sendAffectationNotification($newCommercialId, $id, $prospect->projet_id);
                         }
                     }
                 }
-                
+
                 $prospect->commercial_affecte = $newCommercialId;
             }
-            
+
             foreach ($update as $key => $value) {
                 if (!in_array($key, ['commercial_affecte', 'affecte_par_admin_id', 'date_affectation'])) {
                     $prospect->$key = $value;
@@ -593,6 +686,34 @@ class ProspectController extends Controller
             return response()->json(['prospect' => $prospect], 200);
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+    /**
+ * Send notification to commercial when prospect is assigned to them
+ */
+    private function sendAffectationNotification($commercialId, $prospectId, $projetId)
+    {
+        DatabaseHelper::Config();
+        $user_id_origin  = User::on('temp')->find($commercialId);
+        try {
+            Config::set('broadcasting.default', 'pusher_3');
+
+            $data_notif = [
+                'lien'        => '/crm/prospects/' . $prospectId,
+                'date'        => Carbon::now(),
+                'type'        => 53, // Type pour affectation de prospect
+                'user_id'     => $user_id_origin->user_id_origin,
+                'description' => 'Un prospect vous a été affecté',
+                'projet_id'   => $projetId,
+                'prospect_id' => $prospectId,
+            ];
+
+            $notif_helper = new NotificationHelper();
+            $notif_helper->storeNotification(new Request($data_notif));
+            broadcast(new NotificationEvent($commercialId));
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur envoi notification affectation: ' . $e->getMessage());
         }
     }
 
@@ -630,13 +751,13 @@ class ProspectController extends Controller
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             if ($param_1 == 'cin' || $param_1 == 'email') {
-                $prospect = Prospect::on('temp')->with('visite_pre_reserves', 'visites', 'visites.freins', 'visites.freins.freinTranche', 'visites.freins.FreinEtage', 'visites.freins.FreinOrientation', 'visites.freins.FreinTypologie', 'visites.freins.FreinVue', 'appels')->where($param_1, $value)
+                $prospect = Prospect::on('temp')->with('visite_pre_reserves','visite_first', 'visites_perdu', 'visites_perdu.freins', 'visites_perdu.freins.freinTranche', 'visites_perdu.freins.FreinEtage', 'visites_perdu.freins.FreinOrientation', 'visites_perdu.freins.FreinTypologie', 'visites_perdu.freins.FreinVue', 'appels')->where($param_1, $value)
                     ->get()->first();
                 $client = Client::on('temp')->with('prospect')->where($param_1, $value)->get()->first();
 
             } else {
                 //telephone
-                $prospect = Prospect::on('temp')->with('visite_pre_reserves', 'visites', 'visites.freins', 'visites.freins.freinTranche', 'visites.freins.FreinEtage', 'visites.freins.FreinOrientation', 'visites.freins.FreinTypologie', 'visites.freins.FreinVue', 'appels')
+                $prospect = Prospect::on('temp')->with('visite_pre_reserves','visite_first',  'visites_perdu','visites_perdu.freins', 'visites_perdu.freins.freinTranche', 'visites_perdu.freins.FreinEtage', 'visites_perdu.freins.FreinOrientation', 'visites_perdu.freins.FreinTypologie', 'visites_perdu.freins.FreinVue', 'appels')
                     ->where(function ($query) use ($value) {
                         $query->where('telephone', $value)
                             ->orwhere('telephone_num2', $value)
@@ -809,16 +930,16 @@ class ProspectController extends Controller
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            
+
             // Custom validation since we're using temp connection
             if (!$request->has('prospect_ids') || !is_array($request->prospect_ids)) {
                 return response()->json(['error' => 'prospect_ids is required and must be an array'], 422);
             }
-            
+
             if (!$request->has('projet_id')) {
                 return response()->json(['error' => 'projet_id is required'], 422);
             }
-            
+
             // Validate that prospects exist and can be assigned
             $prospects = Prospect::on('temp')
                 ->with('last_statut')
@@ -833,11 +954,11 @@ class ProspectController extends Controller
             // Allow auto assignment regardless of final status
             try {
                 \DB::connection('temp')->beginTransaction();
-                
+
                 // Use only assignable prospect IDs
                 $prospectIds = $prospects->pluck('id')->toArray();
                 $projetId = $request->projet_id;
-                
+
                 // Get all commercials for this project with their current prospect counts
                 $commercials = \App\Models\User::on('temp')
                     ->whereHas('projets', function($query) use ($projetId) {
@@ -845,11 +966,11 @@ class ProspectController extends Controller
                     })
                     ->where('role', 3) // Assuming 3 is commercial role
                     ->get();
-                
+
                 if ($commercials->isEmpty()) {
                     return response()->json(['error' => 'No commercials found for this project'], 400);
                 }
-                
+
                 // Calculate actual current prospect counts for each commercial
                 $commercialCounts = $commercials->map(function($commercial) use ($projetId) {
                     // Get actual count from database, not from nb_prospects field
@@ -882,7 +1003,7 @@ class ProspectController extends Controller
                         'count' => $commercial['count'] - count($prospectsToRemove)
                     ];
                 })->toArray();
-                
+
                 // Distribute prospects efficiently using adjusted counts
                 $assignments = [];
                 $counts = $adjustedCounts;
@@ -902,35 +1023,37 @@ class ProspectController extends Controller
                     // Update count for next iteration
                     $counts[0]['count']++;
                 }
-                
+
                 // Get current user for tracking
                 $user = Auth::user();
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
-                
+
                 // Apply assignments
                 foreach ($assignments as $assignment) {
                     $prospect = Prospect::on('temp')->find($assignment['prospect_id']);
                     $oldCommercialId = $prospect->commercial_affecte;
                     $newCommercialId = $assignment['commercial_id'];
-                    
+
                     // Update prospect assignment and track affectation
                     $prospect->commercial_affecte = $newCommercialId;
                     if ($userAuth) {
                         $prospect->affecte_par_admin_id = $userAuth->id;
                         $prospect->date_affectation = Carbon::now();
-                        
+
                         // Create "Affecte" status for each assigned prospect
                         $statutProspect = new StatutProspect();
                         $statutProspect->setConnection('temp');
                         $statutProspect->prospect_id = $assignment['prospect_id'];
-                        $statutProspect->statut = (string) StatutProspectEnum::Affecte->value;
+                        $statutProspect->statut = strval(StatutProspectEnum::Affecte->value);
                         $statutProspect->date_traitement = Carbon::now();
                         $statutProspect->user_id_traite = $userAuth->id;
                         $statutProspect->commentaire = 'Prospect affecté automatiquement au commercial';
                         $statutProspect->save();
+                        $this->sendAffectationNotification($newCommercialId,$assignment['prospect_id'], $request->projet_id);
+
                     }
                     $prospect->save();
-                    
+
                     // Update counters only if commercial actually changed
                     if ($oldCommercialId != $newCommercialId) {
                         if ($oldCommercialId) {
@@ -965,7 +1088,7 @@ class ProspectController extends Controller
                     'message' => 'Prospects assigned automatically',
                     'assignments' => $assignments
                 ], 200);
-                
+
             } catch (\Exception $e) {
                 \DB::connection('temp')->rollback();
                 return response()->json(['error' => 'Assignment failed: ' . $e->getMessage()], 500);

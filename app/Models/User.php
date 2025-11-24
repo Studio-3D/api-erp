@@ -68,15 +68,22 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Societe::class, 'societe_id');
     }
-
-    public function projet()
-    {
-        return $this->belongsToMany(Projet::class);
-    }
-
-    public function projets()
+     public function projets()
     {
         return $this->belongsToMany(Projet::class, 'user_projets', 'user_id', 'projet_id');
+    }
+    public function visite()
+        {
+            return $this->hasMany(Visite::class, 'user_id')->where('etat',1);
+        }
+         public function traitement_appels()
+    {
+        return $this->hasMany(TraitementAppel::class, 'user_id');
+    }
+
+  /*  public function projet()
+    {
+        return $this->belongsToMany(Projet::class);
     }
 
     public function reservations()
@@ -91,7 +98,7 @@ class User extends Authenticatable
 
     public function visites()
     {
-        return $this->hasMany(Visite::class, 'user_id');
+        return $this->hasMany(Visite::class, 'user_id')->where('etat',1);
     }
 
     public function avances()
@@ -109,7 +116,7 @@ class User extends Authenticatable
     public function traitement_appels()
     {
         return $this->hasMany(TraitementAppel::class, 'user_id');
-    }
-    
+    }*/
+
 
 }

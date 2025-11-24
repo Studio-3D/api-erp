@@ -29,9 +29,6 @@ class EtapeProjetController extends Controller
             // Démarrer la requête directement sur le modèle
             $query = EcheanceProjet::on('temp')->where('projet_id', $projet_id);
 
-            if ($request->filled('nature_travaux')) {
-                $query->where('nature_travaux', 'like', '%' . $request->input('nature_travaux') . '%');
-            }
 
             if ($request->filled('etat')) {
                 $query->where('etat',  $request->input('etat') );
@@ -45,7 +42,7 @@ class EtapeProjetController extends Controller
                 $query->whereDate('date_fin','<=',$a_dt);
 
             }
-
+            
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
                 $ech = $query->orderBy('created_at', 'desc')
                     ->paginate($size, ['*'], 'page', $page);

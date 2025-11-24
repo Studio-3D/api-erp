@@ -2,9 +2,9 @@ name: Laravel CI/CD Pipeline
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "main" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "main" ]
 
 jobs:
   laravel-tests:
@@ -56,7 +56,7 @@ jobs:
   deploy:
     needs: laravel-tests
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -70,19 +70,32 @@ jobs:
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
             cd /home/ec2-user/api_0.1
-            git pull origin master
-            
+            git pull origin main || git pull origin master
+
             # Make sure scripts are executable
-            chmod +x start-prod.sh prod.sh
-            
-            # Stop any running containers
-            docker compose -f docker-compose.prod.yml down
-            
-            # Build and start the production environment
+            chmod +x start-prod.sh prod.sh scheduler.sh
+
+            # Stop any running containers (including scheduler)
+            docker-compose -f docker-compose.prod.yml down
+
+            # Build and start the production environment (including scheduler)
             ./start-prod.sh
-            
-            # Check if the containers are running
+
+            # Wait a moment for services to be ready
+            sleep 15
+
+            # Check if all containers are running
+            echo "Checking running containers:"
             docker ps
-            
+
+            # Verify scheduler container is running
+            echo "Checking scheduler status:"
+            docker-compose -f docker-compose.prod.yml ps scheduler
+
+            # Check scheduler logs to ensure it's working
+            echo "Recent scheduler logs:"
+            docker-compose -f docker-compose.prod.yml logs --tail=10 scheduler
+
             echo "Deployment completed successfully!"
+            echo "Laravel application and scheduler are now running in Docker containers"
           EOF

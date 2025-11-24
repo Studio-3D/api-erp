@@ -67,35 +67,52 @@ class ImportExcelHelper
         }
     }
 
-    $hasError = false;
+    $errors = [];
+    $successCount = 0;
+    $totalLines = count($data);
 
     foreach ($data as $index => $row) {
         try {
             // Traitement
             $callback($row, $projet_id);
+            $successCount++;
         } catch (\Exception $e) {
-            $hasError = true;
+            // Collect error information but continue processing
+            $errors[] = [
+                'ligne' => $index + 1,
+                'message' => $e->getMessage(),
+                'data' => $row
+            ];
 
-            if ($manageStatus && $import) {
-                // Only update status if we're managing it (web calls)
-                $import = Import::on('temp')->find($import->id);
-                $import->statut = '3';
-                $import->message_echou = "Erreur ligne " . ($index + 1) . " : " . $e->getMessage();
-                $import->ligne_echou = $index + 1;
-                $import->date_echou = now();
-                $import->save();
-            }
-
-            // Re-throw the exception so DatabaseHelper can catch it
-            throw $e;
+            \Log::warning("Erreur ligne " . ($index + 1) . " lors de l'import: " . $e->getMessage());
         }
     }
 
-    if (!$hasError && $manageStatus && $import) {
-        // Only update status if we're managing it (web calls)
+    if ($manageStatus && $import) {
         $import = Import::on('temp')->find($import->id);
-        $import->statut = '2';
+
+        if (count($errors) > 0) {
+            // Import completed with errors - set status to "partiellement_importe" (4) or "avec_erreurs" (3)
+            $import->statut = '3';
+            $import->message_echou = json_encode([
+                'total_lignes' => $totalLines,
+                'lignes_reussies' => $successCount,
+                'lignes_echouees' => count($errors),
+                'erreurs' => $errors
+            ]);
+            $import->ligne_echou = count($errors); // Store number of failed lines
+            $import->date_echou = now();
+        } else {
+            // Import completed successfully
+            $import->statut = '2';
+        }
+
         $import->save();
+    }
+
+    // Only throw exception if ALL lines failed
+    if (count($errors) === $totalLines) {
+        throw new \Exception("Toutes les lignes ont échoué lors de l'import.");
     }
 }
 
@@ -128,7 +145,7 @@ class ImportExcelHelper
             return self::importerDonnees($data, $projet_id, function ($row, $projet_id) {
                 // Pas de tranche, bloc, immeuble dans ce cas
                 Bien_Helper::checkAndCreateBienByExcel($projet_id, null, null, null, $row);
-            }, false);
+            }, true);
         }
     }
 
@@ -170,7 +187,7 @@ class ImportExcelHelper
                 }
 
                 Bien_Helper::checkAndCreateBienByExcel($projet_id, null, null, $immeuble->id, $row);
-            }, false);
+            }, true);
         }
     }
 
@@ -211,7 +228,7 @@ class ImportExcelHelper
                 }
 
                 Bien_Helper::checkAndCreateBienByExcel($projet_id, null, $bloc->id, null, $row);
-            }, false);
+            }, true);
         }
     }
 
@@ -268,7 +285,7 @@ class ImportExcelHelper
                 }
 
                 Bien_Helper::checkAndCreateBienByExcel($projet_id, null, $bloc->id, $immeuble->id, $row);
-            }, false);
+            }, true);
         }
     }
 
@@ -313,7 +330,7 @@ class ImportExcelHelper
                 }
 
                 Bien_Helper::checkAndCreateBienByExcel($projet_id, $tranche->id, null, null, $row);
-            }, false);
+            }, true);
         }
     }
 
@@ -372,7 +389,7 @@ class ImportExcelHelper
                 }
 
                 Bien_Helper::checkAndCreateBienByExcel($projet_id, $tranche->id, null, $immeuble->id, $row);
-            }, false);
+            }, true);
         }
     }
 
@@ -431,7 +448,7 @@ class ImportExcelHelper
                 }
 
                 Bien_Helper::checkAndCreateBienByExcel($projet_id, $tranche->id, $bloc->id, null, $row);
-            }, false);
+            }, true);
         }
     }
 
@@ -508,7 +525,7 @@ class ImportExcelHelper
                 }
 
                 Bien_Helper::checkAndCreateBienByExcel($projet_id, $tranche->id, $bloc->id, $immeuble->id, $row);
-            }, false);
+            }, true);
         }
     }
 

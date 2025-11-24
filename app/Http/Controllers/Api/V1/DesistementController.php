@@ -45,7 +45,9 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use \NumberFormatter;
 use App\Models\StatutReservation;
-
+use Illuminate\Support\Facades\DB;
+use Mail;
+use Illuminate\Support\Facades\Log;
 class DesistementController extends Controller
 {
     public function create()
@@ -56,6 +58,8 @@ class DesistementController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+
+
     public function store(StoreDesistementRequest $request)
     {
         $user = Auth::user();
@@ -67,20 +71,26 @@ class DesistementController extends Controller
             $type=$request->type;
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
 
-            //get code desistement partage =>pour stocker dans reservation
+             // Get code desistement - improved logic
             $code_desist_reservation = 0;
             $reservation = Reservation::on('temp')->findOrFail($request->reservation_id);
-            if ($reservation->code_desistement != null) {
+            $code_res=$reservation->code_reservation;
+
+            // If reservation already has a code, use it
+            if (!empty($reservation->code_desistement)) {
                 $code_desist_reservation = $reservation->code_desistement;
             } else {
-                $last_code = Reservation::on('temp')->orderByRaw("CAST(code_desistement as UNSIGNED) DESC")
-                    ->get('code_desistement')->first();
-                if ($last_code->code_desistement != null) {
-                    $code_desist_reservation = $last_code->code_desistement + 1;
+                // Find the maximum code_desistement from ALL reservations
+                $last_reservation = Reservation::on('temp')
+                    ->whereNotNull('code_desistement')
+                    ->orderByRaw('CAST(code_desistement as UNSIGNED) DESC')
+                    ->first();
+
+                if ($last_reservation && !empty($last_reservation->code_desistement)) {
+                    $code_desist_reservation = (int)$last_reservation->code_desistement + 1;
                 } else {
                     $code_desist_reservation = 1;
                 }
-
             }
             $desistement = new Desistement();
             $desistement->setConnection('temp');
@@ -172,22 +182,45 @@ class DesistementController extends Controller
                                     $societe = Societe::findOrfail($user_societes->societe_id);
 
 
-                                    if ($request->hasFile('fichier_autorisation_' . $index)) {
-                                        $remboursement->fichier_autorisation = $request->file('fichier_autorisation_' . $index)->getClientOriginalName();
-                                        File::makeDirectory(public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements' . '/' . 'fichier_autorisations'.'/'.$reservation->code_reservation), 0755, true, true);
-                                        $request->file('fichier_autorisation_' . $index)->move(public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements' . '/' . 'fichier_autorisations'.'/'.$reservation->code_reservation), $request->file('fichier_autorisation_' . $index)->getClientOriginalName());
+                                   if ($request->hasFile('fichier_autorisation_' . $index)) {
+                                        $file = $request->file('fichier_autorisation_' . $index);
+                                        $fileName = $file->getClientOriginalName();
 
+                                        $remboursement->fichier_autorisation = $fileName;
+
+                                        $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements/fichier_autorisations/' . $reservation->code_reservation);
+                                        File::makeDirectory($directory, 0755, true, true);
+
+                                        $file->move($directory, $fileName);
+
+                                    } elseif ($request->has('fichier_autorisation_' . $index) &&
+                                            $request->input('fichier_autorisation_' . $index) !== "" &&
+                                            $request->input('fichier_autorisation_' . $index) !== "null") {
+
+                                        $nomfile = $request->input('fichier_autorisation_' . $index);
+                                        $remboursement->fichier_autorisation = $nomfile;
                                     }
-                                    if ($request->hasFile('cheque_recu_' . $index)) {
+                                   if ($request->hasFile('cheque_recu_' . $index)) {
+                                        $file = $request->file('cheque_recu_' . $index);
+                                        $fileName = $file->getClientOriginalName();
 
-                                        $remboursement->cheque = $request->file('cheque_recu_' . $index)->getClientOriginalName();
-                                        File::makeDirectory(public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements' . '/' . 'cheques_reçus'.'/'.$reservation->code_reservation), 0755, true, true);
-                                        $request->file('cheque_recu_' . $index)->move(public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements' . '/' . 'cheques_reçus'.'/'.$reservation->code_reservation), $request->file('cheque_recu_' . $index)->getClientOriginalName());
+                                        $remboursement->cheque = $fileName;
 
+                                        $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements/cheques_reçus/' . $reservation->code_reservation);
+                                        File::makeDirectory($directory, 0755, true, true);
+
+                                        $file->move($directory, $fileName);
+
+                                    } elseif ($request->has('cheque_recu_' . $index) &&
+                                            $request->input('cheque_recu_' . $index) !== "" &&
+                                            $request->input('cheque_recu_' . $index) !== "null") {
+
+                                        $nomfile = $request->input('cheque_recu_' . $index);
+                                        $remboursement->cheque = $nomfile;
                                     }
                                     //montant rembourse lettre
 
-                                    if (in_array($cl_remb['type_remb'], ['transfert_remb', 'direct']) && isset($cl_remb['reste_a_rembourse'])) {
+                                    if (in_array($cl_remb['type_remb'], ['transfert_remb', 'direct','transfert']) && isset($cl_remb['reste_a_rembourse'])) {
                                         $mont_a_rembourser = (double)$cl_remb['reste_a_rembourse'];
 
                                         if (!empty($request->penalite_montant) && isset($cl_remb['pourcentage'])) {
@@ -239,27 +272,53 @@ class DesistementController extends Controller
                                         $remboursement->etat = 1;
                                         $remboursement->mode_rembourse = 'transfert';
                                         $remboursement->dossier_id_transfert =  $cl_remb['dossier_id'] ;
-                                        $remboursement->montant_transfert = $request->sum_avances_valides;
+                                        $remboursement->montant_transfert = $mont_a_rembourser;
+                                         $remboursement->montant_a_rembourser_par_lettre = $mont_remb_lettre;
+                                       // $remboursement->montant_transfert = $request->sum_avances_valides;
                                     }
                                     $remboursement->save();
                                 }
                             }
                         }
 
-                        elseif ($request->type_remb == 'apres_vente') {
-
-                             if ($dataArray_inputlist_remb) {
+                      elseif ($request->type_remb == 'apres_vente') {
+                            if ($dataArray_inputlist_remb) {
                                 foreach ($dataArray_inputlist_remb as $index => $cl_remb) {
-                                     if (in_array($cl_remb['type_remb'], ['transfert_remb', 'direct']) && isset($cl_remb['reste_a_rembourse'])) {
+                                    // Initialize mont_a_rembourser with a default value
+                                    $mont_a_rembourser = 0;
+
+                                    // Check if this is a valid remboursement type and has the required fields
+                                    if (in_array($cl_remb['type_remb'], ['transfert_remb', 'direct', 'apres_vente']) && isset($cl_remb['reste_a_rembourse'])) {
                                         $mont_a_rembourser = (double)$cl_remb['reste_a_rembourse'];
 
+                                        // Apply penalite if applicable
                                         if (!empty($request->penalite_montant) && isset($cl_remb['pourcentage'])) {
                                             $penalite = (double)$request->penalite_montant * ((double)$cl_remb['pourcentage'] / 100);
                                             $mont_a_rembourser -= $penalite;
+
+                                            // Ensure montant doesn't go negative
+                                            if ($mont_a_rembourser < 0) {
+                                                $mont_a_rembourser = 0;
+                                            }
+                                        }
+                                    } else {
+                                        // If conditions not met, use montant_a_rembourser directly if available
+                                        if (isset($cl_remb['montant_a_rembourser'])) {
+                                            $mont_a_rembourser = (double)$cl_remb['montant_a_rembourser'];
                                         }
                                     }
-                                    $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
-                                    $mont_remb_lettre = $inWords->format($mont_a_rembourser);
+
+                                    // Validate that we have a valid amount
+                                    if ($mont_a_rembourser <= 0) {
+                                        continue; // Skip if no amount to reimburse
+                                    }
+
+                                    try {
+                                        $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
+                                        $mont_remb_lettre = $inWords->format($mont_a_rembourser);
+                                    } catch (Exception $e) {
+                                        $mont_remb_lettre = "Montant en lettres non disponible";
+                                    }
 
                                     $remboursement = new Remboursement();
                                     $remboursement->setConnection('temp');
@@ -268,19 +327,19 @@ class DesistementController extends Controller
                                     $remboursement->s_avances = $request->sum_avances_valides;
                                     $remboursement->statut = 0;
                                     $remboursement->etat = 0;
-                                    $remboursement->mode_rembourse='apres_vente';
+                                    $remboursement->mode_rembourse = 'apres_vente';
                                     $remboursement->aquereur_id = $cl_remb['aq_id'];
                                     $remboursement->montant_a_rembourser = $mont_a_rembourser;
                                     $remboursement->montant_a_rembourser_par_lettre = $mont_remb_lettre;
                                     $remboursement->save();
                                 }
                             }
-                        }
 
                         $bien = Bien::on('temp')->findOrFail($request->bien_id_ancien);
                         $bien->setConnection('temp');
                         $bien->desistement_id = $desistement->id;
                         $bien->save();
+                      }
                     }
 
                 } elseif ($request->type == TypeDesistement::Désistement_Au_Profit->value) {
@@ -532,6 +591,8 @@ class DesistementController extends Controller
                     //les pices jointes des penalité a jouter
 
                     if ($pen->save()) {
+                        $reservation = Reservation::on('temp')->findOrFail($desistement->reservation_id);
+
                         //store notification echeance
                         if ($request->penalite_par == 'prix') {
                             if ($pen->echeance != null) {
@@ -554,11 +615,33 @@ class DesistementController extends Controller
                         }
 
                         //store pice_jointe_penalite
-                        if ($request->file('files_penalite')) {
-                            foreach ($request->file('files_penalite') as $file) {
+                                    //store pice_jointe_penalite
+
+                        // Handle original penalty files (file names only)
+                        if ($request->has('original_files_penalite')) {
+                            $originalFiles = $request->input('original_files_penalite');
+                            if (is_array($originalFiles)) {
+                                foreach ($originalFiles as $fileName) {
+
+
+                                $datapieceJointe = [
+                                            'fichier' => $fileName,
+                                            'type' => null,
+                                            'penalite_id' => $pen->id,
+                                            'active' => 1,
+                                        ];
+                                        $pieceJointeRequest->merge($datapieceJointe);
+                                        $piecesJointeController->store($pieceJointeRequest);
+
+                                }
+                            }
+                        }
+
+                        // Handle new penalty file uploads
+                        if ($request->hasFile('new_files_penalite')) {
+                            foreach ($request->file('new_files_penalite') as $file) {
                                 $piecesJointeController = new PiecesJointeController();
                                 $pieceJointeRequest = new StorePiecesJointeRequest();
-                                $reservation = Reservation::on('temp')->findOrFail($desistement->reservation_id);
 
                                 // Récupérer le nom du fichier
                                 $fileName = $file->getClientOriginalName();
@@ -571,13 +654,39 @@ class DesistementController extends Controller
                                     'type' => $fileType,
                                     'penalite_id' => $pen->id,
                                     'active' => 1,
-
                                 ];
 
                                 $pieceJointeRequest->merge($datapieceJointe);
                                 $piecesJointeController->store($pieceJointeRequest);
                             }
                         }
+
+                        // Alternative: If you prefer to keep the existing structure and delete/recreate
+                        // First delete existing penalty files
+                        PiecesJointe::where('penalite_id', $pen->id)->delete();
+
+                        // Then process all files (both original and new)
+                        if ($request->hasFile('files_penalite')) {
+                            foreach ($request->file('files_penalite') as $file) {
+                                $piecesJointeController = new PiecesJointeController();
+                                $pieceJointeRequest = new StorePiecesJointeRequest();
+                                $fileName = $file->getClientOriginalName();
+                                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/penalites' . '/' . $reservation->code_reservation);
+                                File::makeDirectory($directory, 0755, true, true);
+                                $file->move($directory, $fileName);
+                                $fileType = $file->getClientOriginalExtension();
+                                $datapieceJointe = [
+                                    'fichier' => $fileName,
+                                    'type' => $fileType,
+                                    'penalite_id' => $pen->id,
+                                    'active' => 1,
+                                ];
+
+                                $pieceJointeRequest->merge($datapieceJointe);
+                                $piecesJointeController->store($pieceJointeRequest);
+                            }
+                        }
+
 
                         //store penalite to fiche transmission
                         $fiche = new FicheTransmission();
@@ -609,23 +718,59 @@ class DesistementController extends Controller
                             $fiche->date = Carbon::now();
                         }
                         if ($fiche->save()) {
-                            //if (RoleHelper::Com()) {
-                            //notifiction to admin de valider penalite
-                            $data_notif = [
-                                'lien' => '/ventes/desistements/penalites/' . $pen->id,
-                                'date' => Carbon::now(),
-                                'type' => 22,
-                                'description' => 'DEMANDE VALIDATION Pénalité',
-                                'role' => RoleEnum::ADMIN->value,
-                                'projet_id' => $desistement->projet_id,
-                                'reservation_id' => $desistement->reservation_id,
+                          if (RoleHelper::Com()) {
+                                //notification to admin de valider penalite
+                                $data_notif = [
+                                    'lien' => '/ventes/desistements/penalites/' . $pen->id,
+                                    'date' => Carbon::now(),
+                                    'type' => 22,
+                                    'description' => 'DEMANDE VALIDATION Pénalité',
+                                    'role' => RoleEnum::ADMIN->value,
+                                    'projet_id' => $desistement->projet_id,
+                                    'reservation_id' => $desistement->reservation_id,
+                                ];
+                                $notif_helper = new NotificationHelper();
+                                $notif_helper->storeNotification($request->merge($data_notif));
 
-                            ];
-                            $notif_helper = new NotificationHelper();
-                            $notif_helper->storeNotification($request->merge($data_notif));
+                                broadcast(new NotificationEvent($pen->id));
 
-                            broadcast(new NotificationEvent($pen->id));
-                            // }
+                                // Configuration broadcasting pour notification menu
+                                Config::set('broadcasting.default', 'pusher_5');
+                                broadcast(new NotifMenuEvent(22)); // Type pour pénalités
+
+                                //send mail to admin pour validation pénalité
+                                $admins = User::on('temp')->select('id','email','name')->where('role',2)->where('email','!=',null)->get();
+                                if($admins->count() > 0){
+                                    foreach($admins as $admin){
+                                        try {
+                                            $to_email = $admin->email;
+
+                                            // Eager load the relationships to avoid N+1 queries
+                                            $data = [
+                                                'adminName' => $admin->name,
+                                                'penaliteCode' => $pen->num_recu ?? 'N/A',
+                                                'reservationCode' => $code_res ?? 'N/A',
+                                                'montantPenalite' => number_format($pen->montant, 2, ',', ' ') . ' €',
+                                                'validationLink' => 'http://localhost:3000/ventes/desistements/penalites/'.$pen->id,
+                                                'dateCreation' => Carbon::now()->format('d/m/Y à H:i'),
+                                                'createdBy' => $userAuth->first()->name ?? $userAuth->name ?? 'Un commercial',
+                                                'projetName' => $reservation->projet->nom ?? 'Non spécifié'
+                                            ];
+
+                                            Mail::send('emails.demande_validation_penalite', $data, function ($message) use ($to_email, $pen, $code_res) {
+                                                $message->to($to_email)
+                                                    ->subject('Demande Validation Pénalité - Désistement de dossier: '.($code_res ?? 'N/A'));
+                                                $message->from(env('MAIL_USERNAME'), 'Immobilier Immo');
+                                            });
+
+                                            Log::info("Email de demande de validation pénalité envoyé à l'admin: {$admin->email}");
+
+                                        } catch (\Exception $e) {
+                                            Log::error("Échec de l'envoi de l'email à l'admin {$admin->email}: " . $e->getMessage());
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                     }
@@ -634,36 +779,84 @@ class DesistementController extends Controller
 
                 //store piece jointe
                 if($request->avec_pieces_jointes=="true"){
-                if ($request->file('files_desistement')) {
-                    foreach ($request->file('files_desistement') as $file) {
+                //if ($request->file('files_desistement')) {
+                        //corriger desistement
+                   if ($request->avec_pieces_jointes == "true") {
                         $piecesJointeController = new PiecesJointeController();
                         $pieceJointeRequest = new StorePiecesJointeRequest();
 
-                        // Récupérer le nom du fichier
-                        $fileName = $file->getClientOriginalName();
-                        $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id  . '/desistements' . '/' . $reservation->code_reservation);
+                        // Handle original files (file names only)
+                        if ($request->has('original_files_desistement')) {
+                            $originalFiles = $request->input('original_files_desistement');
+                            if (is_array($originalFiles)) {
+                                foreach ($originalFiles as $fileName) {
+                                $datapieceJointe = [
+                                    'fichier' => $fileName,
+                                    'type' => null,
+                                    'desistement_id' => $desistement->id,
+                                    'active' => 1,
+                                ];
 
-                        File::makeDirectory($directory, 0755, true, true);
-                        $file->move($directory, $fileName);
-                        $fileType = $file->getClientOriginalExtension();
-                        $datapieceJointe = [
-                            'fichier' => $fileName,
-                            'type' => $fileType,
-                            'desistement_id' => $desistement->id,
-                            'active' => 1,
+                                $pieceJointeRequest->merge($datapieceJointe);
+                                $piecesJointeController->store($pieceJointeRequest);
 
-                        ];
+                                }
+                            }
+                        }
 
-                        $pieceJointeRequest->merge($datapieceJointe);
-                        $piecesJointeController->store($pieceJointeRequest);
+                        // Handle new file uploads
+                        if ($request->hasFile('new_files_desistement')) {
+                            foreach ($request->file('new_files_desistement') as $file) {
+                                $fileName = $file->getClientOriginalName();
+                                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/desistements' . '/' . $reservation->code_reservation);
+
+                                File::makeDirectory($directory, 0755, true, true);
+                                $file->move($directory, $fileName);
+                                $fileType = $file->getClientOriginalExtension();
+
+                                $datapieceJointe = [
+                                    'fichier' => $fileName,
+                                    'type' => $fileType,
+                                    'desistement_id' => $desistement->id,
+                                    'active' => 1,
+                                ];
+
+                                $pieceJointeRequest->merge($datapieceJointe);
+                                $piecesJointeController->store($pieceJointeRequest);
+                            }
+                        }
+
+                        // Handle mixed approach - single files_desistement array with both strings and files
+                        // Alternative approach if you prefer to keep single array
+                        if ($request->hasFile('files_desistement')) {
+                            foreach ($request->file('files_desistement') as $file) {
+                                // This will only contain new files as File objects
+                                $fileName = $file->getClientOriginalName();
+                                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/desistements' . '/' . $reservation->code_reservation);
+
+                                File::makeDirectory($directory, 0755, true, true);
+                                $file->move($directory, $fileName);
+                                $fileType = $file->getClientOriginalExtension();
+
+                                $datapieceJointe = [
+                                    'fichier' => $fileName,
+                                    'type' => $fileType,
+                                    'desistement_id' => $desistement->id,
+                                    'active' => 1,
+                                ];
+
+                                $pieceJointeRequest->merge($datapieceJointe);
+                                $piecesJointeController->store($pieceJointeRequest);
+                            }
+                        }
                     }
-                }}
+                }
 
-                //Validation /Notification
-                if (RoleHelper::AdminSup()) {
 
+
+
+                   if (RoleHelper::AdminSup()) {
                     if ($type == TypeDesistement::Désistement_Définitif->value) {
-
                         $reservation = Reservation::on('temp')->findOrFail($request->reservation_id);
                         //update etat de reservation
                         $reservation->setConnection('temp');
@@ -671,7 +864,6 @@ class DesistementController extends Controller
                         $reservation->code_desistement = $code_desist_reservation;
 
                         if ($reservation->save()) {
-
                             //soft_delete_avances
                             $avanceController = new AvanceController();
                             $avanceController->soft_destroy_avances_by_reservationId($request->reservation_id);
@@ -682,74 +874,112 @@ class DesistementController extends Controller
                             $pjController = new PiecesJointeController();
                             $pjController->soft_destroy_pj_by_reservationId($request->reservation_id);
                             //set bien disponible et desistement_id
-
-                            Bien_Helper::libererBien($request->bien_id_ancien, null, $desistement->id);
+                            Bien_Helper::libererBien($request->bien_id_ancien, null, $desistement->id, false);
 
                             //set tva collecte to 4 to ancien
-                            if(count($desistement->Bien_ancien->tva_collectes)>0){
+                            if(count($desistement->Bien_ancien->tva_collectes) > 0){
                                 foreach($desistement->Bien_ancien->tva_collectes as $t_c){
-                                    $t_c->etat=4;
+                                    $t_c->etat = 4;
                                     $t_c->save();
                                 }
                             }
 
-                            if ($request->type_remb =='direct') {
-                                 // multiple remnboursement
+                            if ($request->type_remb == 'direct') {
                                 $data_inputlist_remb = $request->input('inputlist_remb', '[]');
-                                $dataArray_inputlist_remb = json_decode($data_inputlist_remb, true); // Ensure it's an array
+                                $dataArray_inputlist_remb = json_decode($data_inputlist_remb, true);
 
                                 if ($dataArray_inputlist_remb) {
                                     foreach ($dataArray_inputlist_remb as $index => $cl_remb) {
-                                        if ($cl_remb['type_remb'] == 'transfert'|| ($cl_remb['type_remb'] == 'transfert_remb' && $cl_remb['type_remb_transfere']=='immediat')) {
+                                        // FIX: Properly handle montant calculation
+                                        $mont_a_rembourser = 0;
+
+                                        // Calculate amount based on type_remb
+                                        if (in_array($cl_remb['type_remb'], ['transfert_remb', 'direct', 'transfert'])) {
+                                            if (isset($cl_remb['reste_a_rembourse']) && !empty($cl_remb['reste_a_rembourse'])) {
+                                                $mont_a_rembourser = (double)$cl_remb['reste_a_rembourse'];
+                                            } elseif ($cl_remb['type_remb'] == 'transfert_remb' && isset($cl_remb['montant_transferer'])) {
+                                                $mont_a_rembourser = (double)$cl_remb['montant_transferer'];
+                                            }
+
+                                            // Apply penalty if exists
+                                            if (!empty($request->penalite_montant) && isset($cl_remb['pourcentage'])) {
+                                                $penalite = (double)$request->penalite_montant * ((double)$cl_remb['pourcentage'] / 100);
+                                                $mont_a_rembourser -= $penalite;
+                                            }
+                                        }
+
+                                        // FIX: Validate montant is positive
+                                        if ($mont_a_rembourser <= 0) {
+                                            \Log::warning("Invalid montant_a_rembourser for aquereur: " . ($cl_remb['aq_id'] ?? 'unknown'));
+                                            continue; // Skip this iteration
+                                        }
+
+                                        if ($cl_remb['type_remb'] == 'transfert' ||
+                                            ($cl_remb['type_remb'] == 'transfert_remb' &&
+                                            isset($cl_remb['type_remb_transfere']) &&
+                                            $cl_remb['type_remb_transfere'] == 'immediat')) {
+
+                                            // FIX: Validate required fields for transfer
+                                            if (!isset($cl_remb['dossier_id']) || empty($cl_remb['dossier_id'])) {
+                                                \Log::error("Missing dossier_id for transfer remboursement");
+                                                continue;
+                                            }
+
                                             //store avance
                                             $avanceController = new AvanceController();
                                             $avanceRequest = new StoreAvanceRequest();
-
                                             $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
-                                            if ($cl_remb['type_remb'] == 'transfert_remb') {
-                                                $montant = $cl_remb['montant_transferer'];
-                                                $mnt_lettre = $inWords->format($montant);
+
+                                            if ($cl_remb['type_remb'] == 'transfert_remb' && isset($cl_remb['montant_transferer'])) {
+                                                $montant = (double)$cl_remb['montant_transferer'];
                                             } else {
-                                                $montant = $request->sum_avances_valides;
-                                                $mnt_lettre = $inWords->format($montant);
+                                                $montant = $mont_a_rembourser;
                                             }
+
+                                            // FIX: Validate montant is positive
+                                            if ($montant <= 0) {
+                                                \Log::warning("Invalid transfer amount: " . $montant);
+                                                continue;
+                                            }
+
+                                            $mnt_lettre = $inWords->format($montant);
+
                                             $dataAvance = [
-                                            'avance_with_reservation' => false,
-                                            //addedd
-                                            'desistement_id' => $desistement->id,
-                                            'dossier_id_transfert' => $request->reservation_id,
-                                            'reservation_id' =>$cl_remb['dossier_id'],
-                                            /////
-                                            'sr' => false,
-                                            'type_encaissement' => 1,
-                                            'montant' => $montant,
-                                            // 'mode_transfert' => $mode_transfert,
-                                            'mode_paiement' => ModePaiement::transfert_dossier->value,
-                                            'numero_paiement' => null,
-                                            'date_reglement' => Carbon::now(),
-                                            'echeance' => null,
-                                            'banque_id' => null,
-                                            'montant_par_lettre' => $mnt_lettre,
-                                            'commentaireAvance' => null,
-                                            'num_remise' => null,
-                                            'date_encaissement' => null,
+                                                'avance_with_reservation' => false,
+                                                'desistement_id' => $desistement->id,
+                                                'dossier_id_transfert' => $request->reservation_id,
+                                                'reservation_id' => $cl_remb['dossier_id'],
+                                                'sr' => false,
+                                                'type_encaissement' => 1,
+                                                'montant' => $montant,
+                                                'mode_paiement' => ModePaiement::transfert_dossier->value,
+                                                'numero_paiement' => null,
+                                                'date_reglement' => Carbon::now(),
+                                                'echeance' => null,
+                                                'banque_id' => null,
+                                                'montant_par_lettre' => $mnt_lettre,
+                                                'commentaireAvance' => null,
+                                                'num_remise' => null,
+                                                'date_encaissement' => null,
                                             ];
-                                            $avanceRequest->merge($dataAvance);
-                                            $avanceController->store($avanceRequest);
 
+                                            try {
+                                                $avanceRequest->merge($dataAvance);
+                                                $avanceController->store($avanceRequest);
+                                            } catch (\Exception $e) {
+                                                \Log::error("Failed to store avance for transfer: " . $e->getMessage());
+                                                // Continue with other remboursements even if one fails
+                                                continue;
+                                            }
                                         }
-
-
-
                                     }
                                 }
-
                             }
+
                             //validation desistement
                             $desistement->reservation_id_new = $request->reservation_id;
                             if ($desistement->save()) {
                                 //store Historique Désistement
-                                //test si res_id exist deja en table historique
                                 $histo_count = HistoriqueDesistement::on('temp')->where('reservation_id', $request->reservation_id)->count();
                                 if ($histo_count == 0) {
                                     $this->store_historique_desistement($request->reservation_id, null, $request->bien_id_ancien, $code_desist_reservation, $reservation->created_at);
@@ -759,6 +989,7 @@ class DesistementController extends Controller
                             }
                         }
                     }
+
 
                     //DP
                     elseif ($type == TypeDesistement::Désistement_Au_Profit->value) {
@@ -1295,7 +1526,7 @@ class DesistementController extends Controller
                         }
 
                         //libration de l'ancien bien
-                        Bien_Helper::libererBien($request->bien_id_ancien, null, $desistement->id);
+                        Bien_Helper::libererBien($request->bien_id_ancien, null, $desistement->id,false);
                         //reserver le new bien
                         $bien_c=new BienController();
                         $bien_c->reserverBien($request->bien_id_new,null,null);
@@ -1333,7 +1564,7 @@ class DesistementController extends Controller
                         'lien' => '/ventes/desistements/show/' . $desistement->id,
                         'date' => Carbon::now(),
                         'type' => 9,
-                        'description' => 'Demance Validation desistement',
+                        'description' => 'Demande Validation desistement',
                         'role' => RoleEnum::ADMIN->value,
                         'projet_id' => $desistement->projet_id,
                         'reservation_id' => $desistement->reservation_id,
@@ -1344,7 +1575,38 @@ class DesistementController extends Controller
 
                     broadcast(new NotificationEvent($desistement->id));
 
-                }
+                                        //send mail to admin avec etat
+                 //send mail to admin avec etat
+                    $admins = User::on('temp')->select('id','email','name')->where('role',2)->where('email','!=',null)->get();
+                    if($admins->count() > 0){
+                        foreach($admins as $admin){
+                            try {
+                                $to_email = $admin->email;
+                                // Get the reservation properly
+
+                                $data = [
+                                    'adminName' => $admin->name,
+                                    'reservationCode' => $code_res ?? 'N/A',
+                                    'validationLink' => 'http://localhost:3000/ventes/desistements/show/'.$desistement->id,
+                                    'dateCreation' => Carbon::now()->format('d/m/Y à H:i'),
+                                    'createdBy' => $userAuth->first()->name ?? $userAuth->name ?? 'Un commercial',
+                                    'projetName' => $reservation->projet->nom ?? 'Non spécifié',
+                                ];
+
+                                Mail::send('emails.demande_validation_desistement', $data, function ($message) use ($to_email, $code_res) {
+                                    $message->to($to_email)
+                                        ->subject('Demande Validation Désistement - Réservation : '.($code_res ?? 'N/A'));
+                                    $message->from(env('MAIL_USERNAME'), 'Immobilier Immo');
+                                });
+
+                                Log::info("Email de demande de validation désistement envoyé à l'admin: {$admin->email}");
+
+                            } catch (\Exception $e) {
+                                Log::error("Échec de l'envoi de l'email à l'admin {$admin->email}: " . $e->getMessage());
+                            }
+                        }
+                    }
+                    }
 
             }
 
@@ -1357,13 +1619,16 @@ class DesistementController extends Controller
                         $old_desistement->setConnection('temp');
                         $old_desistement->penalite_desistement->archive = 1;
                         $old_desistement->save();
-                        //remboursement
-                        $old_remb = Remboursement::on('temp')->findorfail($request->desistement_id_rejete);
-                        $old_remb->setConnection('temp');
-                        $old_remb->archive=1;
-                        $old_remb->save();
-
                     }
+                     if (count($old_desistement->all_remboursements)>0) {
+                        foreach($old_desistement->all_remboursements as $rembs){
+                        $rembs->setConnection('temp');
+                        $rembs->archive=1;
+                        $rembs->save();
+                        }
+                     }
+
+
                 }
             }
                         // Commit transaction if everything is successful
@@ -1693,24 +1958,30 @@ class DesistementController extends Controller
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $desistement = Desistement::on('temp')->findOrFail($id);
             $reservation = Reservation::on('temp')->findOrFail($desistement->reservation_id);
-            $remboursements=Remboursement::on('temp')->where('desistement_id',$id)->get();
+            $remboursements=Remboursement::on('temp')->where('desistement_id',$id)->where('archive',0)->get();
 
             //valider
             if($request->statut==1){
-                //etape validation
-                $code_desist_reservation=0;
-                if($reservation->code_desistement!=null){
-                  $code_desist_reservation=$reservation->code_desistement;
-                }else{
-                    $last_code = Reservation::on('temp')->where('etat',1)->orderByRaw("CAST(code_desistement as UNSIGNED) DESC")
-                    ->get('code_desistement')->first();
-                    if ($last_code->code_desistement!=null) {
-                        $code_desist_reservation= $last_code->code_desistement + 1;
-                    } else {
-                        $code_desist_reservation = 1;
-                    }
 
+                 // Get code desistement - improved logic
+            $code_desist_reservation = 0;
+
+            // If reservation already has a code, use it
+            if (!empty($reservation->code_desistement)) {
+                $code_desist_reservation = $reservation->code_desistement;
+            } else {
+                // Find the maximum code_desistement from ALL reservations
+                $last_reservation = Reservation::on('temp')
+                    ->whereNotNull('code_desistement')
+                    ->orderByRaw('CAST(code_desistement as UNSIGNED) DESC')
+                    ->first();
+
+                if ($last_reservation && !empty($last_reservation->code_desistement)) {
+                    $code_desist_reservation = (int)$last_reservation->code_desistement + 1;
+                } else {
+                    $code_desist_reservation = 1;
                 }
+            }
                 if($desistement->type==TypeDesistement::Désistement_Définitif->value){
                     //update eta de reservation
                     $reservation->setConnection('temp');
@@ -1728,7 +1999,7 @@ class DesistementController extends Controller
                         $pjController = new PiecesJointeController();
                         $pjController->soft_destroy_pj_by_reservationId($desistement->reservation_id);
                         //set bien disponible et desistement_id
-                        Bien_Helper::libererBien($desistement->bien_id_ancien,null,$desistement->id);
+                        Bien_Helper::libererBien($desistement->bien_id_ancien,null,$desistement->id,false);
                         //si sum_avances >0
 
                         if(count($remboursements)>0){
@@ -1744,7 +2015,7 @@ class DesistementController extends Controller
                                                 $montant=$remboursement->montant_transfert;
                                                 $mnt_lettre = $inWords->format($montant);
                                             }else{
-                                                $montant=$remboursement->s_avances;
+                                                $montant=$remboursement->montant_a_rembourser;
                                                 $mnt_lettre = $inWords->format($montant);
                                             }
                                             $dataAvance = [
@@ -2349,7 +2620,7 @@ class DesistementController extends Controller
                             }
 
                             //libration de l'ancien bien
-                            Bien_Helper::libererBien($desistement->bien_id_ancien,null,$desistement->id);
+                            Bien_Helper::libererBien($desistement->bien_id_ancien,null,$desistement->id,false);
                             //reserver le new bien
                             $bien_c=new BienController();
                             $bien_c->reserverBien($desistement->bien_id_new,null,null);
@@ -2899,7 +3170,7 @@ class DesistementController extends Controller
                     $fiche->date = Carbon::now();
                 }
                 if ($fiche->save()) {
-                    // if (RoleHelper::Com()) {
+                     if (RoleHelper::Com()) {
                     //notifiction to admin de valider penalite
                     $data_notif = [
                         'lien' => '/ventes/desistements/penalites/' . $pen->id,
@@ -2915,7 +3186,44 @@ class DesistementController extends Controller
                     $notif_helper->storeNotification($request->merge($data_notif));
 
                     broadcast(new NotificationEvent($pen->id));
-                    // }
+
+
+                     //send mail to admin pour validation pénalité
+                    $admins = User::on('temp')->select('id','email','name')->where('role',2)->where('email','!=',null)->get();
+                    if($admins->count() > 0){
+                        foreach($admins as $admin){
+                            try {
+                                $to_email = $admin->email;
+
+                                // Eager load the relationships to avoid N+1 queries
+                                            $code_res=$pen->desistement->reservation->code_reservation;
+                                            $data = [
+                                                'adminName' => $admin->name,
+                                                'penaliteCode' => $pen->num_recu ?? 'N/A',
+                                                'reservationCode' =>$code_res ?? 'N/A',
+                                                'montantPenalite' => number_format($pen->montant, 2, ',', ' ') . ' €',
+                                                'validationLink' => 'http://localhost:3000/ventes/desistements/penalites/'.$pen->id,
+                                                'dateCreation' => Carbon::now()->format('d/m/Y à H:i'),
+                                                'createdBy' => $userAuth->first()->name ?? $userAuth->name ?? 'Un commercial',
+                                                'projetName' => $pen->desistement->projet->nom ?? 'Non spécifié'
+                                            ];
+
+
+                                Mail::send('emails.demande_validation_penalite', $data, function ($message) use ($to_email, $pen, $code_res) {
+                                    $message->to($to_email)
+                                        ->subject('Demande Validation Pénalité - Désistement de dossier: '.($code_res ?? 'N/A'));
+                                    $message->from(env('MAIL_USERNAME'), 'Immobilier Immo');
+                                });
+
+                                Log::info("Email de demande de validation pénalité envoyé à l'admin: {$admin->email}");
+
+                            } catch (\Exception $e) {
+                                Log::error("Échec de l'envoi de l'email à l'admin {$admin->email}: " . $e->getMessage());
+                            }
+                        }
+                    }
+
+                     }
                 }
 
             }
@@ -2947,7 +3255,7 @@ class DesistementController extends Controller
 
                 // Construire la requête avec les relations nécessaires
 
-                $query = PenaliteDesistement::on('temp')->with('banque', 'last_statut', 'responsable_validation','desistement')
+                $query = PenaliteDesistement::on('temp')->with( 'last_statut', 'responsable_validation','desistement')
                 ->where('statut', $statut)
                 ->where('archive', 0);
                 $query->whereHas('desistement', function ($q) use ($projet_id) {

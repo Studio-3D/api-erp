@@ -18,7 +18,7 @@ class LinkedInController extends Controller
     protected $clientId;
     protected $clientSecret;
     protected $redirectUri;
-    
+
     public function __construct()
     {
         $this->clientId = env('LINKEDIN_CLIENT_ID', '');
@@ -27,7 +27,7 @@ class LinkedInController extends Controller
     }
 
     /******************************LinkedIn Configuration by Project*************************/
-    
+
     public function linkedin_configurations(Request $request)
     {
         if (RoleHelper::AdminSup()) {
@@ -120,7 +120,7 @@ class LinkedInController extends Controller
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            
+
             try {
                 // Check if table exists, create if not
                 if (!Schema::connection('temp')->hasTable('linkedin_configurations')) {
@@ -134,12 +134,12 @@ class LinkedInController extends Controller
                         $table->timestamp('last_stats_sync')->nullable();
                         $table->softDeletes();
                         $table->timestamps();
-                        
+
                         $table->foreign('projet_id')->references('id')->on('projets')->onDelete('cascade');
                         $table->unique(['projet_id', 'deleted_at'], 'unique_project_linkedin_config');
                     });
                 }
-                
+
                 $request->validate([
                     'linkedin_page_id' => 'required|string',
                     'linkedin_page_name' => 'required|string',
@@ -190,7 +190,7 @@ class LinkedInController extends Controller
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            
+
             try {
                 // Check if table exists
                 if (!Schema::connection('temp')->hasTable('linkedin_configurations')) {
@@ -221,7 +221,7 @@ class LinkedInController extends Controller
     {
         if (RoleHelper::AdminSup()) {
             $state = bin2hex(random_bytes(16));
-            
+
             $authUrl = "https://www.linkedin.com/oauth/v2/authorization?" . http_build_query([
                 'response_type' => 'code',
                 'client_id' => $this->clientId,
@@ -248,11 +248,11 @@ class LinkedInController extends Controller
                     'code' => 'required|string',
                     'state' => 'required|string'
                 ]);
-                
+
                 $code = $request->input('code');
-                
+
                 $client = new Client();
-                
+
                 // Exchange code for access token
                 $tokenResponse = $client->post('https://www.linkedin.com/oauth/v2/accessToken', [
                     'form_params' => [
@@ -263,18 +263,18 @@ class LinkedInController extends Controller
                         'client_secret' => $this->clientSecret,
                     ]
                 ]);
-                
+
                 $tokenData = json_decode($tokenResponse->getBody()->getContents(), true);
-                
+
                 // Get user profile
                 $profileResponse = $client->get('https://api.linkedin.com/v2/userinfo', [
                     'headers' => [
                         'Authorization' => 'Bearer ' . $tokenData['access_token'],
                     ]
                 ]);
-                
+
                 $profile = json_decode($profileResponse->getBody()->getContents(), true);
-                
+
                 return response()->json([
                     'success' => true,
                     'access_token' => $tokenData['access_token'],
@@ -282,10 +282,10 @@ class LinkedInController extends Controller
                     'profile' => $profile,
                     'pages' => [] // LinkedIn API doesn't provide organization pages in this flow
                 ]);
-                
+
             } catch (RequestException $e) {
                 Log::error('LinkedIn OAuth error: ' . $e->getMessage());
-                
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Failed to authenticate with LinkedIn: ' . $e->getMessage()
@@ -306,11 +306,11 @@ class LinkedInController extends Controller
                 'code' => 'required|string',
                 'state' => 'required|string'
             ]);
-            
+
             $code = $request->input('code');
-            
+
             $client = new Client();
-            
+
             // Exchange code for access token
             $tokenResponse = $client->post('https://www.linkedin.com/oauth/v2/accessToken', [
                 'form_params' => [
@@ -321,40 +321,40 @@ class LinkedInController extends Controller
                     'client_secret' => $this->clientSecret,
                 ]
             ]);
-            
+
             $tokenData = json_decode($tokenResponse->getBody()->getContents(), true);
-            
+
             // Use the OpenID Connect userinfo endpoint instead of /v2/me
             $profileResponse = $client->get('https://api.linkedin.com/v2/userinfo', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $tokenData['access_token'],
                 ]
             ]);
-            
+
             $profile = json_decode($profileResponse->getBody()->getContents(), true);
-            
+
             // Log the successful authentication
             Log::info('LinkedIn authentication successful', [
                 'user_id' => $profile['sub'] ?? 'unknown'
             ]);
-            
+
             return response()->json([
                 'success' => true,
                 'access_token' => $tokenData['access_token'],
                 'expires_in' => $tokenData['expires_in'],
                 'profile' => $profile
             ]);
-            
+
         } catch (RequestException $e) {
             Log::error('LinkedIn OAuth error: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to authenticate with LinkedIn: ' . $e->getMessage()
             ], 500);
         }
     }
-    
+
     /**
      * Share content on LinkedIn
      */
@@ -366,27 +366,27 @@ class LinkedInController extends Controller
                 'content' => 'required|string|max:3000',
                 'visibility' => 'required|string|in:PUBLIC,CONNECTIONS'
             ]);
-            
+
             $accessToken = $request->input('accessToken');
             $content = $request->input('content');
             $visibility = $request->input('visibility');
-            $mediaUrl = $request->input('mediaUrl');
-            
+            // $mediaUrl = $request->input('mediaUrl');
+            $mediaUrl='https://immogestion.online/coline_dev/storage/reservations/C529FF99-F5B3-44A2-9B61-BD895DE0555B.jpeg';
             $client = new Client();
-            
+
             // Get user identifier from userinfo endpoint
             $profileResponse = $client->get('https://api.linkedin.com/v2/userinfo', [
                 'headers' => [
                     'Authorization' => 'Bearer ' . $accessToken
                 ]
             ]);
-            
+
             $profile = json_decode($profileResponse->getBody()->getContents(), true);
             $personUrn = $profile['sub']; // Use 'sub' from OpenID instead of 'id'
-            
+
             // Person URN format needs to be adjusted
             $personUrn = str_replace('linkedin:', '', $personUrn);
-            
+
             // Prepare the share payload
             $sharePayload = [
                 'author' => 'urn:li:person:' . $personUrn,
@@ -403,12 +403,12 @@ class LinkedInController extends Controller
                     'com.linkedin.ugc.MemberNetworkVisibility' => $visibility
                 ]
             ];
-            
+
             // If media URL is provided, register it with LinkedIn first
-            if ($mediaUrl) {
+            /*if ($mediaUrl) {
                 // Step 1: Register upload with LinkedIn to get an upload URL
                 $mediaType = $this->getMediaTypeFromUrl($mediaUrl);
-                
+
                 if ($mediaType === 'IMAGE') {
                     $registerUploadResponse = $client->post('https://api.linkedin.com/v2/assets?action=registerUpload', [
                         'headers' => [
@@ -430,23 +430,23 @@ class LinkedInController extends Controller
                             ]
                         ]
                     ]);
-                    
+
                     $registerUploadData = json_decode($registerUploadResponse->getBody()->getContents(), true);
-                    
+
                     // Step 2: Get the upload URL and asset URN
                     $uploadUrl = $registerUploadData['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl'];
                     $assetUrn = $registerUploadData['value']['asset'];
-                    
+
                     // Step 3: Convert HTTP to HTTPS and fetch the media content using APP_URL_HOST
                     try {
                         // Always use HTTPS and the proper host for LinkedIn compatibility
-                        $httpsMediaUrl = $mediaUrl;
-                        
+                        $httpsMediaUrl = '';
+
                         // If it's HTTP, convert to HTTPS
                         if (strpos($mediaUrl, 'http://') === 0) {
                             $httpsMediaUrl = str_replace('http://', 'https://', $mediaUrl);
                         }
-                        
+
                         // Use APP_URL_HOST if it's available and different from the current URL
                         $appUrlHost = env('APP_URL_HOST');
                         if ($appUrlHost) {
@@ -455,19 +455,19 @@ class LinkedInController extends Controller
                             if (isset($urlParts['host'])) {
                                 // Replace the host with APP_URL_HOST (which should be HTTPS)
                                 $httpsMediaUrl = str_replace($urlParts['host'], str_replace(['http://', 'https://'], '', $appUrlHost), $httpsMediaUrl);
-                                
+
                                 // Ensure it starts with https://
                                 if (!str_starts_with($httpsMediaUrl, 'https://')) {
                                     $httpsMediaUrl = 'https://' . ltrim($httpsMediaUrl, '/');
                                 }
                             }
                         }
-                        
+
                         Log::info("LinkedIn media download attempt", [
                             'original_url' => $mediaUrl,
                             'https_url' => $httpsMediaUrl
                         ]);
-                        
+
                         // First, try to use Guzzle to download the content with HTTPS
                         $mediaResponse = $client->get($httpsMediaUrl, [
                             'timeout' => 30,
@@ -477,17 +477,17 @@ class LinkedInController extends Controller
                             ]
                         ]);
                         $mediaContent = $mediaResponse->getBody()->getContents();
-                        
+
                         Log::info("LinkedIn media download successful", [
                             'url' => $httpsMediaUrl,
                             'size' => strlen($mediaContent)
                         ]);
-                        
+
                     } catch (\Exception $e) {
                         Log::warning("HTTPS download failed, trying fallback methods: " . $e->getMessage(), [
                             'url' => $httpsMediaUrl
                         ]);
-                        
+
                         // Fallback 1: Try with different SSL options
                         try {
                             $mediaResponse = $client->get($httpsMediaUrl, [
@@ -496,13 +496,13 @@ class LinkedInController extends Controller
                                 'allow_redirects' => true,
                                 'headers' => [
                                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                                    'Accept' => 'image/*,*/*;q=0.8'
+                                    'Accept' => 'image/*,*;q=0.8'
                                 ]
                             ]);
                             $mediaContent = $mediaResponse->getBody()->getContents();
                         } catch (\Exception $e2) {
                             Log::warning("Guzzle fallback failed, trying cURL: " . $e2->getMessage());
-                            
+
                             // Fallback 2: Use cURL with custom options
                             $ch = curl_init();
                             curl_setopt($ch, CURLOPT_URL, $httpsMediaUrl);
@@ -513,17 +513,17 @@ class LinkedInController extends Controller
                             curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
                             curl_setopt($ch, CURLOPT_TIMEOUT, 30);
                             curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                                'Accept: image/*,*/*;q=0.8'
+                                'Accept: image/*,*;q=0.8'
                             ]);
                             $mediaContent = curl_exec($ch);
                             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
                             $curlError = curl_error($ch);
                             curl_close($ch);
-                            
+
                             if (!$mediaContent || $httpCode !== 200) {
                                 throw new \Exception("Could not download media from URL. HTTP Code: {$httpCode}. cURL Error: {$curlError}. Original URL: {$mediaUrl}, HTTPS URL: {$httpsMediaUrl}");
                             }
-                            
+
                             Log::info("LinkedIn media download successful via cURL", [
                                 'url' => $httpsMediaUrl,
                                 'http_code' => $httpCode,
@@ -531,7 +531,7 @@ class LinkedInController extends Controller
                             ]);
                         }
                     }
-                    
+
                     // Step 4: Upload the media to LinkedIn
                     $client->put($uploadUrl, [
                         'headers' => [
@@ -539,7 +539,7 @@ class LinkedInController extends Controller
                         ],
                         'body' => $mediaContent
                     ]);
-                    
+
                     // Step 5: Include the media URN in the share request
                     $sharePayload['specificContent']['com.linkedin.ugc.ShareContent']['shareMediaCategory'] = 'IMAGE';
                     $sharePayload['specificContent']['com.linkedin.ugc.ShareContent']['media'] = [
@@ -558,8 +558,120 @@ class LinkedInController extends Controller
                     // If it's not an image, default to text-only post
                     Log::warning('LinkedIn only supports image sharing. Defaulting to text-only post.');
                 }
+            }*/
+                // If media URL is provided, register it with LinkedIn first
+            if ($mediaUrl) {
+                // Step 1: Register upload with LinkedIn to get an upload URL
+                $mediaType = $this->getMediaTypeFromUrl($mediaUrl);
+
+                if ($mediaType === 'IMAGE') {
+                    $registerUploadResponse = $client->post('https://api.linkedin.com/v2/assets?action=registerUpload', [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $accessToken,
+                            'Content-Type' => 'application/json'
+                        ],
+                        'json' => [
+                            'registerUploadRequest' => [
+                                'recipes' => [
+                                    'urn:li:digitalmediaRecipe:feedshare-image'
+                                ],
+                                'owner' => 'urn:li:person:' . $personUrn,
+                                'serviceRelationships' => [
+                                    [
+                                        'relationshipType' => 'OWNER',
+                                        'identifier' => 'urn:li:userGeneratedContent'
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]);
+
+                    $registerUploadData = json_decode($registerUploadResponse->getBody()->getContents(), true);
+
+                    // Step 2: Get the upload URL and asset URN
+                    $uploadUrl = $registerUploadData['value']['uploadMechanism']['com.linkedin.digitalmedia.uploading.MediaUploadHttpRequest']['uploadUrl'];
+                    $assetUrn = $registerUploadData['value']['asset'];
+
+                    // Step 3: Download the media content with better error handling
+                    try {
+                        // Ensure the URL is properly formatted
+                        $mediaUrl = trim($mediaUrl);
+
+                        // Add proper headers to simulate a browser request
+                        $mediaResponse = $client->get($mediaUrl, [
+                            'timeout' => 30,
+                            'verify' => false, // Disable SSL verification for development
+                            'headers' => [
+                                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                                'Accept' => 'image/webp,image/apng,image/*,*/*;q=0.8',
+                                'Accept-Language' => 'en-US,en;q=0.9',
+                            ],
+                            'allow_redirects' => true,
+                            'http_errors' => false // Don't throw exceptions for HTTP errors
+                        ]);
+
+                        $httpCode = $mediaResponse->getStatusCode();
+                        $mediaContent = $mediaResponse->getBody()->getContents();
+
+                        if ($httpCode !== 200 || empty($mediaContent)) {
+                            throw new \Exception("Failed to download media. HTTP Code: {$httpCode}, Content Length: " . strlen($mediaContent));
+                        }
+
+                        Log::info("Media downloaded successfully", [
+                            'url' => $mediaUrl,
+                            'http_code' => $httpCode,
+                            'content_length' => strlen($mediaContent)
+                        ]);
+
+                    } catch (\Exception $e) {
+                        Log::error("Media download failed: " . $e->getMessage(), [
+                            'url' => $mediaUrl,
+                            'error' => $e->getMessage()
+                        ]);
+
+                        // Fallback to cURL if Guzzle fails
+                        Log::info("Trying cURL fallback for media download");
+                        $mediaContent = $this->downloadMediaWithCurl($mediaUrl);
+                    }
+
+                    // Step 4: Upload the media to LinkedIn
+                    if (!empty($mediaContent)) {
+                        $uploadResponse = $client->put($uploadUrl, [
+                            'headers' => [
+                                'Authorization' => 'Bearer ' . $accessToken,
+                                'Content-Type' => 'image/jpeg', // Adjust based on actual image type
+                                'Content-Length' => strlen($mediaContent)
+                            ],
+                            'body' => $mediaContent,
+                            'timeout' => 30
+                        ]);
+
+                        if ($uploadResponse->getStatusCode() === 201) {
+                            Log::info("Media uploaded successfully to LinkedIn");
+
+                            // Step 5: Include the media URN in the share request
+                            $sharePayload['specificContent']['com.linkedin.ugc.ShareContent']['shareMediaCategory'] = 'IMAGE';
+                            $sharePayload['specificContent']['com.linkedin.ugc.ShareContent']['media'] = [
+                                [
+                                    'status' => 'READY',
+                                    'description' => [
+                                        'text' => substr(strip_tags($content), 0, 200) // Use first 200 chars of content as description
+                                    ],
+                                    'media' => $assetUrn,
+                                    'title' => [
+                                        'text' => 'Property Image'
+                                    ]
+                                ]
+                            ];
+                        } else {
+                            Log::warning("Media upload to LinkedIn failed, proceeding with text-only post");
+                        }
+                    } else {
+                        Log::warning("No media content downloaded, proceeding with text-only post");
+                    }
+                }
             }
-            
+
             // Create the share
             $shareResponse = $client->post('https://api.linkedin.com/v2/ugcPosts', [
                 'headers' => [
@@ -569,71 +681,110 @@ class LinkedInController extends Controller
                 ],
                 'json' => $sharePayload
             ]);
-            
+
             $shareData = json_decode($shareResponse->getBody()->getContents(), true);
-            
+
             Log::info('LinkedIn post created', [
                 'post_id' => $shareData['id'] ?? 'unknown'
             ]);
-            
+
             return response()->json([
                 'success' => true,
                 'post' => $shareData
             ]);
-            
+
         } catch (RequestException $e) {
             Log::error('LinkedIn share error: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to share on LinkedIn: ' . $e->getMessage()
             ], 500);
         }
     }
-    
+
+    /**
+ * Download media using cURL as a fallback
+ */
+    private function downloadMediaWithCurl($url)
+    {
+        $ch = curl_init();
+
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $url,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_TIMEOUT => 30,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            CURLOPT_HTTPHEADER => [
+                'Accept: image/webp,image/apng,image/*,*/*;q=0.8',
+                'Accept-Language: en-US,en;q=0.9',
+            ],
+        ]);
+
+        $content = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+
+        curl_close($ch);
+
+        if ($httpCode !== 200 || !$content) {
+            throw new \Exception("cURL download failed. HTTP Code: {$httpCode}, Error: {$error}");
+        }
+
+        Log::info("cURL media download successful", [
+            'url' => $url,
+            'http_code' => $httpCode,
+            'content_length' => strlen($content)
+        ]);
+
+        return $content;
+    }
     /**
      * Determine media type from URL
      */
     private function getMediaTypeFromUrl($url) {
         $imageExtensions = ['jpg', 'jpeg', 'png', 'gif'];
         $pathInfo = pathinfo($url);
-        
+
         if (isset($pathInfo['extension'])) {
             $extension = strtolower($pathInfo['extension']);
             if (in_array($extension, $imageExtensions)) {
                 return 'IMAGE';
             }
         }
-        
+
         // Try to determine by making a HEAD request
         try {
             $client = new Client();
             $response = $client->head($url);
             $contentType = $response->getHeaderLine('Content-Type');
-            
+
             if (strpos($contentType, 'image/') === 0) {
                 return 'IMAGE';
             }
         } catch (\Exception $e) {
             // Ignore exceptions from HEAD request
         }
-        
+
         // Default to assuming it's an image if we can't determine
         return 'IMAGE';
     }
 
     /******************************LinkedIn Webhook Configuration by Project*************************/
-    
+
     public function linkedin_webhook_configurations(Request $request)
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            
+
             try {
                 if (!Schema::connection('temp')->hasTable('linkedin_configurations')) {
                     return response()->json(['webhooks' => []], 200);
                 }
-                
+
                 $webhooks = DB::connection('temp')
                     ->table('linkedin_configurations as lc')
                     ->leftJoin('projets as p', 'lc.projet_id', '=', 'p.id')
@@ -656,7 +807,7 @@ class LinkedInController extends Controller
                             'projet' => $config->projet_nom ? ['nom' => $config->projet_nom] : null
                         ];
                     });
-                
+
                 return response()->json(['webhooks' => $webhooks], 200);
             } catch (\Exception $e) {
                 return response()->json(['webhooks' => []], 200);
@@ -670,7 +821,7 @@ class LinkedInController extends Controller
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            
+
             try {
                 $request->validate([
                     'webhook_verify_token' => 'required|string'
@@ -713,7 +864,7 @@ class LinkedInController extends Controller
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            
+
             try {
                 if (!Schema::connection('temp')->hasTable('linkedin_configurations')) {
                     return response()->json(['error' => 'Configuration not found'], 404);
@@ -744,11 +895,11 @@ class LinkedInController extends Controller
 
         try {
             DatabaseHelper::Config();
-            
+
             // Verify webhook signature (LinkedIn uses different verification)
             $signature = $request->header('X-LinkedIn-Signature');
             $payload = $request->getContent();
-            
+
             if (!$this->verifyLinkedInSignature($signature, $payload)) {
                 Log::error('LinkedIn webhook signature verification failed');
                 return response('Unauthorized', 403);
@@ -756,13 +907,13 @@ class LinkedInController extends Controller
 
             // Process LinkedIn webhook events
             $events = $request->input('events', []);
-            
+
             foreach ($events as $event) {
                 $this->processLinkedInEvent($event);
             }
 
             return response()->json(['message' => 'LinkedIn webhook processed successfully']);
-            
+
         } catch (\Exception $e) {
             Log::error('LinkedIn webhook error: ' . $e->getMessage());
             return response()->json(['error' => 'Webhook processing failed'], 500);
@@ -772,12 +923,12 @@ class LinkedInController extends Controller
     public function verifyLinkedInWebhook(Request $request)
     {
         $challenge = $request->input('challenge');
-        
+
         if ($challenge) {
             Log::info('LinkedIn webhook verification challenge: ' . $challenge);
             return response($challenge, 200);
         }
-        
+
         return response('No challenge provided', 400);
     }
 
@@ -792,22 +943,22 @@ class LinkedInController extends Controller
             ->table('linkedin_configurations')
             ->whereNotNull('webhook_verify_token')
             ->first();
-            
+
         if (!$config) {
             return false;
         }
 
         $expectedSignature = hash_hmac('sha256', $payload, $config->webhook_verify_token);
-        
+
         return hash_equals('sha256=' . $expectedSignature, $signature);
     }
 
     private function processLinkedInEvent($event)
     {
         Log::info('Processing LinkedIn event:', $event);
-        
+
         DatabaseHelper::Config();
-        
+
         // Store event in webhook_events table
         $webhookEvent = new \App\Models\WebhookEvent();
         $webhookEvent->setConnection('temp');

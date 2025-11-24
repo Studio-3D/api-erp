@@ -100,7 +100,7 @@ class ClientController extends Controller
             DatabaseHelper::Config();
 
             // Démarrer la requête directement sur le modèle
-            $query = client::on('temp')->with('aquereur', 'prospect', 'aquereur_desistement', 'reclamation')->where('projet_id', $projet_id);
+            $query = client::on('temp')->where('projet_id', $projet_id);
             $query->where(function ($q) use ($request) {
                 if ($request->filled('telephone')) {
                     $q->where(function ($subQuery) use ($request) {
@@ -124,7 +124,7 @@ class ClientController extends Controller
 
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
 
-                $clients = $query->orderBy('created_at', 'desc')
+                $clients = $query->with('aquereur', 'prospect', 'aquereur_desistement', 'reclamation')->orderBy('created_at', 'desc')
                     ->paginate($size, ['*'], 'page', $page);
 
                 // Extraire les propriétés du paginateur
@@ -293,6 +293,21 @@ class ClientController extends Controller
                 'client'       => $client,
                 'reservations' => $reservations,
                 'visites'      => $groupedVisites->values(),
+            ], 200);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+     public function show_client(Request $request, $id)
+    {
+        if (Auth::guard('api')->check()) {
+            DatabaseHelper::Config();
+
+            $client = Client::on('temp')->findOrFail($id);
+            return response()->json([
+                'client'       => $client,
+
             ], 200);
         }
 

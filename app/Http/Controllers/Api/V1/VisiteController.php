@@ -224,15 +224,16 @@ class VisiteController extends Controller
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            $frein_h     = new FreinController();
-            $historiques = Visite::on('temp')->with('relance_relation', 'rdv_relation')
+          //  $frein_h     = new FreinController();
+            $historiques = Visite::on('temp')->with('relance_relation', 'rdv_relation','freins')
+             ->without([
+                            'prospect',
+                            'source',
+                            'historique_bien_visite',
+                            'partenaire'
+                        ])
                 ->where('origin_id', $origin_id)->withTrashed()->orderby('created_at', 'desc')->get();
-            foreach ($historiques as $histo) {
-                if ($histo->interet == InteretEnum::Perdu->value) {
-                    $frein_h_       = $frein_h->searchFreinByVisiteId($histo->id, 'with_row_deleted_at');
-                    $histo['frein'] = $frein_h_;
-                }
-            }
+
             return response()->json(['historiques' => $historiques], 200);
         }
     }
@@ -435,7 +436,7 @@ class VisiteController extends Controller
                 if ($list_bien_interesse) {
                     foreach ($list_bien_interesse as $key => $list_biens) {
                         if ($list_biens['bien_id']) {
-                            Bien_Helper::libererBien($list_biens['bien_id'], null, null);
+                            Bien_Helper::libererBien($list_biens['bien_id'], null, null,false);
                         }
                     }
                 }
@@ -522,7 +523,7 @@ class VisiteController extends Controller
                                     if ($old_visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
                                         $oldBien = Bien::on('temp')->find($old_visite->bien_id);
                                         if ($oldBien->etat == 'Pré_Réservation' && $oldBien->historique_bien_pre_reserve->visite_id == $old_visite->id) {
-                                            Bien_Helper::libererBien($old_visite->bien_id, null, null);
+                                            Bien_Helper::libererBien($old_visite->bien_id, null, null,false);
                                             if ($old_visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
                                                 $old_visite->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
                                             } elseif ($old_visite->statut == StatutVisiteEnum::Vendu->value) {
@@ -1152,16 +1153,48 @@ class VisiteController extends Controller
 
     }
 
-    public function relance_rdv_by_visite($id)
-    {
-        if (Auth::guard('api')->check()) {
-            DatabaseHelper::Config();
-            $histo = Visite::on('temp')->with('historique_relances_rdvs')->where('origin_id', $id)->where('etat', 1)->orderby('created_at', 'DESC')->get();
-            return response()->json(['histo' => $histo], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+   public function relance_rdv_by_visite($id)
+{
+    if (!Auth::guard('api')->check()) {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+    try {
+        DatabaseHelper::Config();
+
+        $histo = Visite::on('temp')
+            ->select('id', 'description')
+            ->with([
+                'historique_relances_rdvs' => function($query) {
+                    $query->select('*')
+                        ->with([
+                            'user' => function($q) {
+                                $q->select('id', 'name', 'prenom')
+                                  ->without('societe');
+                            }
+                        ]);
+                }
+            ])
+             ->without([    'visite',
+                            'prospect',
+                            'bien',
+                            'source',
+                            'user',
+                            'historique_bien_visite',
+                            'partenaire'
+                        ])
+            ->where('origin_id', $id)
+            ->where('etat', 1)
+            ->orderBy('created_at', 'DESC')
+            ->get();
+
+        return response()->json(['histo' => $histo], 200);
+
+    } catch (\Exception $e) {
+        \Log::error('Error fetching relance RDV by visite: ' . $e->getMessage());
+        return response()->json(['error' => 'Internal server error'], 500);
+    }
+}
     public function show($id)
     {
 
@@ -1465,7 +1498,7 @@ class VisiteController extends Controller
                             if ($visite->bien_id != $request->bien_id) {
                                 $oldBien = Bien::on('temp')->find($visite->bien_id);
                                 if ($oldBien->etat == 'PRE_RESERVATION' || $oldBien->etat == 'VENDU') {
-                                    Bien_Helper::libererBien($visite->bien_id, null, null);
+                                    Bien_Helper::libererBien($visite->bien_id, null, null,false);
                                     $newBien = Bien::on('temp')->find($request->bien_id);
                                 $changes['bien'] = [
                                         'old' => $oldBien ? $oldBien : $visite->bien_id,
@@ -1479,7 +1512,7 @@ class VisiteController extends Controller
 
                     //changement d'interet (Réceptif ou Perdu)
                     if ($visite->bien_id != null && $request->interet != InteretEnum::Intéressé->value) {
-                        Bien_Helper::libererBien($visite->bien_id, null, null);
+                        Bien_Helper::libererBien($visite->bien_id, null, null,false);
 
                     }
 
@@ -1874,7 +1907,7 @@ class VisiteController extends Controller
 
             if ($visite->interet == InteretEnum::Intéressé->value) {
                 if ($visite->bien_id) {
-                    Bien_Helper::libererBien($visite->bien_id, null, null);
+                    Bien_Helper::libererBien($visite->bien_id, null, null,false);
                 }
             }
             if ($visite->interet == InteretEnum::Perdu->name) {
@@ -1956,7 +1989,9 @@ class VisiteController extends Controller
             if (!empty($request->date_relance)) {
                 $hasRelanceRequested = true;
             }
-
+///decoder les stringfy
+            $list_bien_interesse       = json_decode($request->input('list_bien_interesse', '[]'), true);
+            $list_bien_transfere_vendu = json_decode($request->input('list_bien_transfere_vendu', '[]'), true);
             // In list_bien_interesse
             if (is_array($list_bien_interesse)) {
                 foreach ($list_bien_interesse as $it) {
@@ -1972,9 +2007,6 @@ class VisiteController extends Controller
                 }
             }
             //get origin id of the last prospect
-
-            $list_bien_interesse       = json_decode($request->input('list_bien_interesse', '[]'), true);
-            $list_bien_transfere_vendu = json_decode($request->input('list_bien_transfere_vendu', '[]'), true);
             $last_number               = null;
             $visite_exist              = Visite::on('temp')->where('origin_id', $origin)->where('etat', 1)->orderBy('created_at', 'DESC')->first();
             if ($visite_exist != null) {
@@ -1986,14 +2018,14 @@ class VisiteController extends Controller
                 if ($list_bien_interesse) {
                     foreach ($list_bien_interesse as $key => $list_biens) {
                         if ($list_biens['bien_id']) {
-                            Bien_Helper::libererBien($list_biens['bien_id'], null, null);
+                            Bien_Helper::libererBien($list_biens['bien_id'], null, null,false);
                         }
                     }
                 }
                 if ($list_bien_transfere_vendu) {
                     foreach ($list_bien_transfere_vendu as $key => $list_biens_ve) {
                         if ($list_biens_ve['bien_id']) {
-                            Bien_Helper::libererBien($list_biens_ve['bien_id'], null, null);
+                            Bien_Helper::libererBien($list_biens_ve['bien_id'], null, null,false);
                         }
                     }
                 }
@@ -2053,7 +2085,7 @@ class VisiteController extends Controller
                                     if ($old_visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
                                         $oldBien = Bien::on('temp')->find($old_visite->bien_id);
                                         if ($oldBien->etat == 'Pré_Réservation' && $oldBien->historique_bien_pre_reserve->visite_id == $old_visite->id) {
-                                            Bien_Helper::libererBien($old_visite->bien_id, null, null);
+                                            Bien_Helper::libererBien($old_visite->bien_id, null, null,false);
                                             if ($old_visite->statut == StatutVisiteEnum::Pré_Réservation->value) {
                                                 $old_visite->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
                                             } elseif ($old_visite->statut == StatutVisiteEnum::Vendu->value) {
@@ -2446,6 +2478,21 @@ class VisiteController extends Controller
             // If created from a visite, do NOT mark as Converti_en_visite by default.
             // Use RDV programmé (1) if any RDV exists, else Relance programmée (3) if any relance exists,
             // otherwise En attente (0).
+              $visitIds = \App\Models\Visite::on('temp')
+                ->where('origin_id', $origin)
+                ->pluck('id');
+            // Prefer request-level intent flags to avoid race condition; fallback to DB check
+            $hasRdv = $hasRdvRequested || \App\Models\Relance_Rdv_Visite::on('temp')
+                ->whereIn('visite_id', $visitIds)
+                ->where('type', 2) // 2 => RDV
+                ->exists();
+            $hasRelance = $hasRelanceRequested || \App\Models\Relance_Rdv_Visite::on('temp')
+                ->whereIn('visite_id', $visitIds)
+                ->where('type', 1) // 1 => Relance
+                ->exists();
+
+            $initialStatut = '0';
+            $comment = '';
             $initialStatut = '0';
             if ($hasRdv|| $hasRdvRequested) {
                 $initialStatut = '1'; // Planification_RDV => Rendez-vous programmé

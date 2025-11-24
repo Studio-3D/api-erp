@@ -97,6 +97,7 @@ Route::middleware('auth:api')->group(function () {
         // Facebook configurations by project
         Route::get('/facebook-configurations', [Facebook_InstagramController::class, 'facebook_configurations']);
         Route::post('/facebook-configurations', [Facebook_InstagramController::class, 'store_facebook_configuration']);
+        Route::put('/facebook-configurations/{id}', [Facebook_InstagramController::class, 'update_facebook_configuration']);
         Route::delete('/facebook-configurations/{id}', [Facebook_InstagramController::class, 'delete_facebook_configuration']);
 
         // Facebook webhook configurations
@@ -107,6 +108,7 @@ Route::middleware('auth:api')->group(function () {
         // Instagram configurations by project
         Route::get('/instagram-configurations', [Facebook_InstagramController::class, 'instagram_configurations']);
         Route::post('/instagram-configurations', [Facebook_InstagramController::class, 'store_instagram_configuration']);
+        Route::put('/instagram-configurations/{id}', [Facebook_InstagramController::class, 'update_instagram_configuration']);
         Route::delete('/instagram-configurations/{id}', [Facebook_InstagramController::class, 'delete_instagram_configuration']);
 
         // Instagram webhook configurations
@@ -117,6 +119,7 @@ Route::middleware('auth:api')->group(function () {
         // WhatsApp Business configurations by project
         Route::get('/whatsapp-configurations', [\App\Http\Controllers\WhatsApp\WhatsAppBusinessController::class, 'get_whatsapp_configurations']);
         Route::post('/whatsapp-configurations', [\App\Http\Controllers\WhatsApp\WhatsAppBusinessController::class, 'store_whatsapp_configuration']);
+        Route::put('/whatsapp-configurations/{id}', [\App\Http\Controllers\WhatsApp\WhatsAppBusinessController::class, 'update_whatsapp_configuration']);
         Route::delete('/whatsapp-configurations/{id}', [\App\Http\Controllers\WhatsApp\WhatsAppBusinessController::class, 'delete_whatsapp_configuration']);
 
         // WhatsApp Business webhook configurations
@@ -199,6 +202,7 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('biens', V1BienController::class);
         Route::get('projets/{idprojet}/biens', [V1BienController::class, 'indexByProjet']);
         Route::get('getBiensByProjet_Concat/{id}', [V1BienController::class, 'getBiensByProjet_Concat'])->name('getBiensByProjet_Concat');
+        Route::get('getBiensByProjet_Concat_for_reservation_visite/{bien_id}/{projet_id}', [V1BienController::class, 'getBiensByProjet_Concat_for_reservation_visite'])->name('');
         Route::delete('libererBien/{id}', [V1BienController::class, 'libererBien_function'])->name('libererBien');
         Route::put('setPropostionBien/{id}/{old_id}', [V1BienController::class, 'setPropostionBien'])->name('');
         Route::get('projets/{idprojet}/getBiensByTranche_tva', [V1BienController::class, 'getBiensByTranche_tva'])->name('');
@@ -250,6 +254,7 @@ Route::middleware('auth:api')->group(function () {
 
         //l'API client
         Route::resource('clients', V1ClientController::class);
+        Route::get('show_client/{id}', [V1ClientController::class, 'show_client']);
         Route::get('search_client_by_cin/{cin}', [V1ClientController::class, 'search_client_by_cin']);
         Route::get('search_client_by_phone/{phone}', [V1ClientController::class, 'search_client_by_phone']);
         Route::get('search_client_by_email/{email}', [V1ClientController::class, 'search_client_by_email']);
@@ -273,6 +278,7 @@ Route::middleware('auth:api')->group(function () {
 
         //lapi reservaton
         Route::resource('reservations', V1ReservationController::class);
+        Route::get('show_dossier_in_dd/{id}', [V1ReservationController::class, 'show_dossier_in_dd']);
         Route::get('projets/{idprojet}/reservations', [V1ReservationController::class, 'indexByProjet']);
         Route::get('search_reservation_by_code/{code_res}', [V1ReservationController::class, 'search_reservation_by_code']);
         Route::get('reservations_by_etat/{projet_id}/{etat}', [V1ReservationController::class, 'get_reservations_by_etat'])->name('');

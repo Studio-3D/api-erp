@@ -197,7 +197,7 @@ class WhatsAppBusinessController extends Controller
             $web = new WebhookEvent();
             $web->setConnection('temp');
             $web->platform = 'whatsapp';
-            $web->event_type = 'whatsapp_message';
+            $web->type = 'whatsapp_message';
             $web->data = $change;
             $web->save();
 
@@ -541,6 +541,54 @@ class WhatsAppBusinessController extends Controller
         }
     }
 
+    public function update_whatsapp_configuration(Request $request, $configId)
+    {
+        if (RoleHelper::AdminSup()) {
+            DatabaseHelper::Config();
+
+            try {
+                // Validate required fields
+                if (!$request->phone_number_id || !$request->access_token || !$request->projet_id) {
+                    return response()->json(['error' => 'Tous les champs obligatoires doivent être remplis'], 400);
+                }
+
+                // Check if configuration exists
+                $exists = DB::connection('temp')
+                    ->table('whatsapp_configurations')
+                    ->where('id', $configId)
+                    ->whereNull('deleted_at')
+                    ->exists();
+
+                if (!$exists) {
+                    return response()->json(['error' => 'Configuration non trouvée'], 404);
+                }
+
+                // Update configuration
+                $updated = DB::connection('temp')
+                    ->table('whatsapp_configurations')
+                    ->where('id', $configId)
+                    ->update([
+                        'phone_number_id' => $request->phone_number_id,
+                        'access_token' => $request->access_token,
+                        'app_id' => $request->app_id,
+                        'app_secret' => $request->app_secret,
+                        'projet_id' => $request->projet_id,
+                        'updated_at' => now()
+                    ]);
+
+                if ($updated) {
+                    return response()->json(['message' => 'Configuration WhatsApp mise à jour avec succès'], 200);
+                } else {
+                    return response()->json(['error' => 'Aucune modification effectuée'], 400);
+                }
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Erreur lors de la mise à jour: ' . $e->getMessage()], 500);
+            }
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
     public function delete_whatsapp_configuration($configId)
     {
         if (RoleHelper::AdminSup()) {
@@ -615,3 +663,5 @@ class WhatsAppBusinessController extends Controller
         }
     }
 }
+
+//1269697291014076?fields=name,phone_numbers,message_templates    827760573749958"

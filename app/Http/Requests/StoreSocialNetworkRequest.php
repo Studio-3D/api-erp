@@ -30,6 +30,7 @@ use Illuminate\Http\Request;
         $rules['description']='required';
         $rules['mode']='required';
         $rules['reseaux_sociaux']='required';
+        $rules['projet_id']='required|integer'; // Add projet_id validation
 
 
         if ($request->mode=='existante' ) {

@@ -160,7 +160,7 @@ class NotificationController extends Controller
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            if(RoleHelper::AdminSup()){
+           // if(RoleHelper::AdminSup()){
                 $freins= Frein::on('temp')
                 ->where('freins.visite_id','!=',null)
                 ->join('visites', 'visites.id', '=', 'freins.visite_id')
@@ -170,7 +170,7 @@ class NotificationController extends Controller
                 ->where('freins.etat', 2)
                 ->where('visites.etat', 1)
                 ->get();
-                }
+                /*}
                 else{
                     $freins= Frein::on('temp')
                     ->where('freins.visite_id','!=',null)
@@ -182,7 +182,7 @@ class NotificationController extends Controller
                     ->where('freins.etat', 2)
                     ->where('visites.etat', 1)
                     ->get();
-                }
+                }*/
 
 
             $clients=array();
@@ -346,79 +346,34 @@ class NotificationController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
          }
     }
-    public function get_nb_frein_client_visite(Request $request,$projet_id)
-    {
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
-
-            DatabaseHelper::Config();
-            if(RoleHelper::AdminSup()){
-                $rel_client_freins=0;
-                $frein=new FreinController();
-                $data_get=$frein->get_clients_freins($request,$projet_id);
-                foreach($data_get->original as $key => $v){
-                    if($key=='count_clients'){
-                        $rel_client_freins = $v;
-                    }
-
-                }
-            }else{
-
-             $rel_client_freins=0;
-                $frein=new FreinController();
-                $data_get=$frein->get_clients_freins($request,$projet_id);
-                foreach($data_get->original as $key => $v){
-                    if($key=='count_clients'){
-                        $rel_client_freins = $v;
-                    }
-                }
-            }
-           return response()->json(['nb' => $rel_client_freins]);
-        }
-         else{
-            return response()->json(['error' => 'Unauthorized'], 401);
-         }
+   public function get_nb_frein_client_visite(Request $request, $projet_id)
+{
+    if (!Auth::guard('api')->check() || !RoleHelper::ACSup()) {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+    DatabaseHelper::Config();
+
+    $frein = new FreinController();
+    $data_get = $frein->get_clients_freins($request, $projet_id);
+
+    $rel_client_freins = $data_get->original['count_clients'] ?? 0;
+
+    return response()->json(['nb' => $rel_client_freins]);
+}
 
     public function get_notifications(Request $request, $projet_id){
         if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $i=0;
-            $platforms = ['facebook', 'instagram'];
             if(RoleHelper::AdminSup()){
-                    // Notifications Webhook Facebook/Instagram/WhatsApp
-               $notifs_webhook_fcb_insta_whstp=WebhookEvent::on('temp')->whereIn('platform', $platforms)->withTrashed()->whereDate('created_at', '<=', Carbon::now())->orderBy('id','desc')->get();
-
-               // Transform webhook events to include type differentiation
-               foreach($notifs_webhook_fcb_insta_whstp as $webhook) {
-                   if($webhook->platform === 'facebook') {
-                       // Check if it's a publication (post) or reaction
-                       $eventData = $webhook->data;
-                       if(isset($eventData['verb']) && $eventData['verb'] === 'add' && isset($eventData['item']) && $eventData['item'] === 'post') {
-                           $webhook->notification_type = 'publication';
-                           $webhook->type = 96; // New type for publications
-                       } else {
-                           $webhook->notification_type = 'reaction';
-                           $webhook->type = 98; // Existing type for reactions
-                       }
-                   } elseif($webhook->platform === 'instagram') {
-                       // Similar logic for Instagram
-                       $eventData = $webhook->data;
-                       if(isset($eventData['object']) && $eventData['object'] === 'instagram' && isset($eventData['entry'][0]['changes'][0]['field']) && $eventData['entry'][0]['changes'][0]['field'] === 'comments') {
-                           $webhook->notification_type = 'comment';
-                           $webhook->type = 97;
-                       }
-                   }
-               }
-
                    // Toutes les notifications (filter out type 99)
                $all_notifications = Notification::on('temp')->with('prospect','user','reservation','avance','bien','projet')
                     ->where(function ($query) {
                         $query->where('role',RoleEnum::ADMIN->value)
                             ->orWhere('user_id',Auth::guard('api')->user()->id)
-                            ->orWhereNull('user_id');
+                            ->orwhere('role',RoleEnum::ADMIN_COMMERCIAL->value);
                     })
                     ->where('projet_id',$projet_id)
-                    ->where('type', '!=', 99)
                     ->withTrashed()
                     ->whereDate('date', '<=', Carbon::now())
                     ->orderBy('id','desc')
@@ -426,47 +381,42 @@ class NotificationController extends Controller
                   // Nombre de nouvelles notifications (not seen)
                $new_notifications_count=Notification::on('temp')
                     ->where('projet_id',$projet_id)
-                    ->where('type', '!=', 99)
+
                     ->whereNull('deleted_at')
                     ->where('seen', false)
                     ->where(function($q){
                         $q->where('role', RoleEnum::ADMIN->value)
                           ->orWhere('user_id', Auth::guard('api')->user()->id)
-                          ->orWhereNull('user_id');
+                          ->orwhere('role',RoleEnum::ADMIN_COMMERCIAL->value);
                     })
                     ->count();
-                  // Nombre de nouvelles notifications Webhook
-               $new_notif_webhook_fcb_inst_whtsp=WebhookEvent::on('temp') ->whereIn('platform', $platforms)->whereDate('created_at', '<=', Carbon::now())->where('deleted_at',null)->orderBy('id','desc')->count();
-
             }else{
                 $all_notifications = Notification::on('temp')->with('prospect','user','reservation','avance','bien','projet')
                     ->where('projet_id',$projet_id)
                     ->where(function($q){
                         $q->where('user_id', Auth::guard('api')->user()->id)
-                          ->orWhereNull('user_id');
+                         ->orwhere('role',RoleEnum::ADMIN_COMMERCIAL->value);
                     })
-                    ->where('type', '!=', 99)
+
                     ->withTrashed()
                     ->whereDate('date', '<=', Carbon::now())
                     ->orderBy('date','desc')
                     ->get();
                 $new_notifications_count=Notification::on('temp')
                     ->where('projet_id',$projet_id)
-                    ->where('type', '!=', 99)
+
                     ->whereNull('deleted_at')
                     ->where('seen', false)
                     ->where(function($q){
                         $q->where('user_id', Auth::guard('api')->user()->id)
-                          ->orWhereNull('user_id');
+                        ->orwhere('role',RoleEnum::ADMIN_COMMERCIAL->value);
                     })
                     ->count();
-                $notifs_webhook_fcb_insta_whstp=[];
-                $new_notif_webhook_fcb_inst_whtsp=0;
+
             }
            return response()->json([
                 'all_notifications' => $all_notifications,
-                'notifs_webhook_fcb_insta_whstp'=>$notifs_webhook_fcb_insta_whstp,
-                'new_notifications_count'=>$new_notifications_count+$new_notif_webhook_fcb_inst_whtsp
+                'new_notifications_count'=>$new_notifications_count
             ]);
         }
          else{
@@ -623,6 +573,8 @@ class NotificationController extends Controller
                 ->where('desistements.user_id', $userAuth->value('id'))
                 ->where('desistements.deleted_at',NULL)
                 ->count();
+
+                
                 $nb_av_en_cours = Avance::on('temp')->join('reservations', 'avances.reservation_id', '=', 'reservations.id')
                 ->whereNull('reservations.deleted_at')
                 ->where('reservations.etat', 1)

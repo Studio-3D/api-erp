@@ -26,6 +26,10 @@ class Tranche extends Model
         return $this->belongsTo(Projet::class, 'projet_id');
     }
 
+      public function echeance_tranches()
+    {
+        return $this->hasMany(EcheancesTranche::class);
+    }
     public function bien()
     {
         return $this->hasMany(Bien::class);

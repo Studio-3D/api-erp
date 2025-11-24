@@ -45,24 +45,18 @@ class EcheancesTrancheController extends Controller
 
             // Démarrer la requête directement sur le modèle
 
-            $query = EcheancesTranche::on('temp')->with('tranche')
-            ->whereHas('tranche', function ($q) use ($projet_id) {
-                $q->where('projet_id', $projet_id);
-            });
-            if ($request->filled('tranche')) {
-               $query ->whereHas('tranche', function ($q) use ($request) {
-                    $q->where('nom', 'like', '%' . $request->input('tranche') . '%');
-                });
-            }
-            if ($request->filled('date')) {
-                $start = Carbon::parse($request->input('date'));
-                $query->whereDate('created_at', $start);
-            }
+            $query = Tranche::on('temp')->select('id','nom')
+            ->where('projet_id', $projet_id)
+            ->has('echeance_tranches')
+            ->with('echeance_tranches')
+            ->without('projet');
+
+             if ($request->filled('tranche')) {
+                 $query->where('nom', 'like', '%' . $request->input('tranche') . '%');
+             }
 
             if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
                 $ech = $query->orderBy('created_at', 'desc')
-                ->select(DB::raw('MIN(id) as id, tranche_id'))
-                ->groupBy('tranche_id')
                     ->paginate($size, ['*'], 'page', $page);
 
                 // Extraire les propriétés du paginateur
@@ -88,17 +82,19 @@ class EcheancesTrancheController extends Controller
 
 
     public function list_echeances_byTrancheId($tranche_id)
-    {
-         if (Auth::guard('api')->check()) {
-            DatabaseHelper::Config();
-            $query = EcheancesTranche::on('temp')->where('tranche_id', $tranche_id);
-            $echeances = $query->orderBy('created_at', 'asc')
-                    ->get();
-            return response()->json(['echeances' => $echeances], 200);
+{
+     if (Auth::guard('api')->check()) {
+        DatabaseHelper::Config();
+        $query = EcheancesTranche::on('temp')
+            ->with('tranche:id,nom') // Charger seulement id et nom de la tranche
+            ->where('tranche_id', $tranche_id);
 
-        }
-        return response()->json(['error' => 'Unauthorized'], 401);
+        $echeances = $query->orderBy('created_at', 'asc')
+                ->get();
+        return response()->json(['echeances' => $echeances], 200);
     }
+    return response()->json(['error' => 'Unauthorized'], 401);
+}
     /**
      * Show the form for creating a new resource.
      */
