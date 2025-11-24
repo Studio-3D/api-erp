@@ -593,7 +593,7 @@ class DatabaseHelper
 
             if (Schema::connection('temp')->hasTable('imports')) {
                 $imports=Import::on('temp')->whereIn('statut',['0','1'])->get();
-                \Log::info("import des fichiers  du base de donne'. $databaseName.");
+                \Log::info("import des fichiers  de la base de données'. $databaseName.");
 
                 foreach($imports as $imp){
                     $store=0;
