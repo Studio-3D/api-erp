@@ -33,7 +33,7 @@ class UploadBienController extends Controller
            $hasImmeuble = in_array('Immeuble', $keys);
            //if excel containe column bloc or immeuble or tranche
             $console=0;
-           if ($hasTranche && $hasBloc && $hasImmeuble) {
+          /* if ($hasTranche && $hasBloc && $hasImmeuble) {
                return ImportExcelHelper::ImportStockByProjet($request,$data,$projet_id,$console);
 
            } elseif ($hasTranche && $hasBloc && !$hasImmeuble) {
@@ -51,6 +51,17 @@ class UploadBienController extends Controller
             return ImportExcelHelper::ImportStockByProjetWithoutTrancheAndImmeuble($request,$data,$projet_id,$console);
 
            } elseif (!$hasTranche && !$hasBloc && $hasImmeuble) {
+               return ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBloc($request,$data,$projet_id,$console);
+           } else {
+               return ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBlocAndImmeuble($request,$data,$projet_id,$console);
+           }*/
+            if ($hasBloc && $hasImmeuble) {
+            return ImportExcelHelper::ImportStockByProjetWithoutTranche($request,$data,$projet_id,$console);
+
+           } elseif ($hasBloc && !$hasImmeuble) {
+            return ImportExcelHelper::ImportStockByProjetWithoutTrancheAndImmeuble($request,$data,$projet_id,$console);
+
+           } elseif (!$hasBloc && $hasImmeuble) {
                return ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBloc($request,$data,$projet_id,$console);
            } else {
                return ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBlocAndImmeuble($request,$data,$projet_id,$console);

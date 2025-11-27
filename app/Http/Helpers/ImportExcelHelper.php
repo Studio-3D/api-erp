@@ -124,8 +124,8 @@ class ImportExcelHelper
 
             $projet = Projet::on('temp')->findOrFail($projet_id);
             $req    = new \Illuminate\Http\Request();
-
-            if ($projet->nbre_tranches == 0 && $projet->nbre_blocs == 0 && $projet->nbre_immeubles == 0) {
+            //$projet->nbre_tranches == 0 &&
+            if ( $projet->nbre_blocs == 0 && $projet->nbre_immeubles == 0) {
                 // Stockage fichier import
                 $dataToStore = [
                     'file'      => $request,
@@ -183,6 +183,8 @@ class ImportExcelHelper
                     $immeuble->setConnection('temp');
                     $immeuble->nom       = $row['Immeuble'];
                     $immeuble->projet_id = $projet_id;
+                      // return response()->json('done stock fic a supprimer si client remove tranche_id in row
+                    $immeuble->tranche_id = $row['tranche_id']??null;
                     $immeuble->save();
                 }
 
@@ -197,8 +199,8 @@ class ImportExcelHelper
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->findOrFail($projet_id);
             $req    = new \Illuminate\Http\Request();
-
-            if ($projet->nbre_tranches == 0 && $projet->nbre_immeubles == 0 && $projet->nbre_blocs > 0) {
+            //$projet->nbre_tranches == 0 &&
+            if ($projet->nbre_immeubles == 0 && $projet->nbre_blocs > 0) {
                 $dataToStore = [
                     'file'      => $request,
                     'projet_id' => $projet_id,
@@ -223,6 +225,8 @@ class ImportExcelHelper
                     $bloc = new Bloc();
                     $bloc->setConnection('temp');
                     $bloc->nom       = $row['Bloc'];
+                      // return response()->json('done stock fic a supprimer si client remove tranche_id in row
+                    $bloc->tranche_id = $row['tranche_id']??null;
                     $bloc->projet_id = $projet_id;
                     $bloc->save();
                 }
@@ -239,8 +243,8 @@ class ImportExcelHelper
 
             $projet = Projet::on('temp')->findOrFail($projet_id);
             $req    = new \Illuminate\Http\Request();
-
-            if ($projet->nbre_tranches == 0 && $projet->nbre_blocs > 0 && $projet->nbre_immeubles > 0) {
+            //$projet->nbre_tranches == 0 &&
+            if ( $projet->nbre_blocs > 0 && $projet->nbre_immeubles > 0) {
                 $dataToStore = [
                     'file'      => $request,
                     'projet_id' => $projet_id,
@@ -266,6 +270,8 @@ class ImportExcelHelper
                     $bloc->setConnection('temp');
                     $bloc->nom       = $row['Bloc'];
                     $bloc->projet_id = $projet_id;
+                    // return response()->json('done stock fic a supprimer si client remove tranche_id in row
+                    $bloc->tranche_id = $row['tranche_id']??null;
                     $bloc->save();
                 }
 
@@ -281,6 +287,8 @@ class ImportExcelHelper
                     $immeuble->nom       = $row['Immeuble'];
                     $immeuble->projet_id = $projet_id;
                     $immeuble->bloc_id   = $bloc->id;
+                    // return response()->json('done stock fic a supprimer si client remove tranche_id in row
+                    $immeuble->tranche_id = $row['tranche_id']??null;
                     $immeuble->save();
                 }
 
