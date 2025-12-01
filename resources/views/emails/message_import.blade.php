@@ -128,6 +128,58 @@
             background-color: #f7fafc;
             font-weight: bold;
         }
+
+        /* New styles for the error table */
+        .error-table-container {
+            margin-top: 20px;
+        }
+        .error-table-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #7c2d12;
+            margin-bottom: 15px;
+        }
+        .error-table-wrapper {
+            max-height: 384px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 5px;
+        }
+        .error-table {
+            width: 100%;
+            background-color: white;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .error-table thead {
+            position: sticky;
+            top: 0;
+        }
+        .error-table thead tr {
+            background-color: #f8f9fa;
+        }
+        .error-table th, .error-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .error-table th {
+            color: #000000;
+            font-weight: 600;
+            border-bottom: 2px solid #e53e3e;
+        }
+        .error-table tbody tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        .error-table tbody tr:nth-child(odd) {
+            background-color: white;
+        }
+        .error-line {
+            font-weight: 500;
+        }
+        .error-message {
+            color: #c53030;
+        }
     </style>
 </head>
 <body>
@@ -181,29 +233,26 @@
             </div>
 
             @if(isset($message_echou['erreurs']) && count($message_echou['erreurs']) > 0)
-                <div class="error-details">
-                    <h4>📋 Détails des erreurs :</h4>
-                    @foreach($message_echou['erreurs'] as $erreur)
-                        <div class="error-item">
-                            <strong>Ligne {{ $erreur['ligne'] }} :</strong><br>
-                            <span style="color: #e53e3e;">{{ $erreur['message'] }}</span>
-
-                            @if(isset($erreur['data']))
-                                <br><br>
-                                <strong>Données de la ligne :</strong>
-                                <table>
-                                    <tbody>
-                                        @foreach($erreur['data'] as $key => $value)
-                                            <tr>
-                                                <td><strong>{{ $key }}:</strong></td>
-                                                <td>{{ is_array($value) ? json_encode($value) : $value }}</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            @endif
-                        </div>
-                    @endforeach
+                <div class="error-table-container">
+                    <h4 class="error-table-header">Détails des erreurs :</h4>
+                    <div class="">
+                        <table class="error-table">
+                            <thead>
+                                <tr>
+                                    <th>Ligne</th>
+                                    <th>Erreur</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($message_echou['erreurs'] as $erreur)
+                                    <tr>
+                                        <td class="error-line">{{ $erreur['ligne'] }}</td>
+                                        <td class="error-message">{{ $erreur['message'] }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             @endif
 
@@ -214,7 +263,7 @@
                 <p>L'importation a échoué. Veuillez vérifier votre fichier et réessayer.</p>
             </div>
 
-@if(isset($message_echou) && !is_array($message_echou))
+            @if(isset($message_echou) && !is_array($message_echou))
                 <div class="error-details">
                     <h4>Message d'erreur :</h4>
                     <p>{{ $message_echou }}</p>
