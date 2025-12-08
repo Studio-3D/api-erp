@@ -259,7 +259,7 @@ class VisiteController extends Controller
 
                 if ($list['action'] == 2) {
                     $bien = Bien::on('temp')->findorfail($list['bien_id']);
-                    //$bien->etat = EtatBien::DISPONIBLE->value;
+                    $bien->etat = EtatBien::DISPONIBLE->value;
                     if ($bien->save()) {
                         if (isset($list['visite_id'])) {
                             $visite         = Visite::on('temp')->findorfail($list['visite_id']);
@@ -270,6 +270,8 @@ class VisiteController extends Controller
                             $t_f->statut = StatutVisiteEnum::Pré_Réservation_Perdu->value;
                             $t_f->save();
                         }
+                        Bien_Helper::store_bien_frein($bien->id, null);
+
 
                     }
 
@@ -1053,20 +1055,32 @@ class VisiteController extends Controller
             $hasRdv = $hasRdvRequested || \App\Models\Relance_Rdv_Visite::on('temp')
                 ->whereIn('visite_id', $visitIds)
                 ->where('type', 2) // 2 => RDV
+                ->where('type_traitement', 0) // non traité
                 ->exists();
             $hasRelance = $hasRelanceRequested || \App\Models\Relance_Rdv_Visite::on('temp')
                 ->whereIn('visite_id', $visitIds)
                 ->where('type', 1) // 1 => Relance
+                ->where('type_traitement', 0) // non traité
                 ->exists();
 
             $initialStatut = '0';
-            $comment = 'Prospect créé via visite';
-            if ($hasRdv) {
+
+            if($request->interet == InteretEnum::Perdu->value){
+                $comment = 'Prospect perdu';
+                $initialStatut = '8';
+            }
+            elseif ($hasRdv) {
                 $initialStatut = '1'; // Planification_RDV => Rendez-vous programmé
                 $comment = 'Rendez-vous programmé via création de visite';
             } elseif ($hasRelance) {
                 $initialStatut = '3'; // Rappel => Relance programmée
                 $comment = 'Relance programmée via création de visite';
+            }elseif($request->prospect_id!=null){//store by prospect ou en saisit num tel ==>propsect deja exist
+                $comment='prospect converti en visite';
+                $initialStatut='4';
+            }else{
+               $comment = 'Prospect créé via visite';
+               $initialStatut = '0';
             }
 
             $statut_pro = new StatutProspect();
@@ -1398,7 +1412,7 @@ class VisiteController extends Controller
                     $prospectChanges = [];
                     $prospectFields = [
                         'cin', 'email', 'nom', 'prenom', 'telephone',
-                        'telephone_num2', 'ville', 'notifie'
+                        'telephone_num2', 'ville'
                     ];
 
                         $prospect = Prospect::on('temp')->findorfail($old_visite->prospect_id);
@@ -1837,14 +1851,19 @@ class VisiteController extends Controller
                         // store new statut Propect
                           $initialStatut = '0';
                            $comment = 'Prospect Modifié via visite';
-                        if ($hasRdv) {
-                            $initialStatut = '1'; // Planification_RDV => Rendez-vous programmé
-                            $comment = 'Rendez-vous programmé via création de visite';
-                        } elseif ($hasRelance) {
-                            $initialStatut = '3'; // Rappel => Relance programmée
-                            $comment = 'Relance programmée via création de visite';
-                        }
-                        if($hasRdv||$hasRelance){
+
+                           if($request->interet == InteretEnum::Perdu->value){
+                                $comment = 'Prospect perdu';
+                                $initialStatut = '8';
+                            }
+                            elseif ($hasRdv) {
+                                $initialStatut = '1'; // Planification_RDV => Rendez-vous programmé
+                                $comment = 'Rendez-vous programmé via création de visite';
+                            } elseif ($hasRelance) {
+                                $initialStatut = '3'; // Rappel => Relance programmée
+                                $comment = 'Relance programmée via création de visite';
+                            }
+                        if($hasRdv||$hasRelance||$request->interet == InteretEnum::Perdu->value){
                         $statut_pro = new StatutProspect();
                         $statut_pro->setConnection('temp');
                         $statut_pro->prospect_id     = $visite->prospect_id;
@@ -1953,7 +1972,6 @@ class VisiteController extends Controller
     //store n visite
     public function store_n_visite($id, Store_n_VisiteRequest $request)
     {
-
         DatabaseHelper::Config();
         Config::set('broadcasting.default', 'pusher_3');
 
@@ -1989,7 +2007,7 @@ class VisiteController extends Controller
             if (!empty($request->date_relance)) {
                 $hasRelanceRequested = true;
             }
-///decoder les stringfy
+            ///decoder les stringfy
             $list_bien_interesse       = json_decode($request->input('list_bien_interesse', '[]'), true);
             $list_bien_transfere_vendu = json_decode($request->input('list_bien_transfere_vendu', '[]'), true);
             // In list_bien_interesse
@@ -2490,18 +2508,21 @@ class VisiteController extends Controller
                 ->whereIn('visite_id', $visitIds)
                 ->where('type', 1) // 1 => Relance
                 ->exists();
-
-            $initialStatut = '0';
-            $comment = '';
-            $initialStatut = '0';
-            if ($hasRdv|| $hasRdvRequested) {
+            if($request->interet == InteretEnum::Perdu->value){
+                $comment = 'Prospect perdu';
+                $initialStatut = '8';
+            }
+            elseif ($hasRdv) {
                 $initialStatut = '1'; // Planification_RDV => Rendez-vous programmé
                 $comment = 'Rendez-vous programmé via création de visite';
-            } elseif ($hasRelance|| $hasRelanceRequested) {
+            } elseif ($hasRelance) {
                 $initialStatut = '3'; // Rappel => Relance programmée
                 $comment = 'Relance programmée via création de visite';
+            }else{
+               $comment = 'Prospect créé via visite';
+               $initialStatut = '0';
             }
-            if($initialStatut!='0'){
+
             $statut_pro = new StatutProspect();
             $statut_pro->setConnection('temp');
             $statut_pro->prospect_id     = $request->prospect_id;
@@ -2511,7 +2532,7 @@ class VisiteController extends Controller
             $statut_pro->visite_id       = $origin;
             $statut_pro->commentaire     = $comment;
             $statut_pro->save();
-            }
+
 
 
             //Si un CIN existe déjà pour un autre prospect, on associe toutes les visites du nouveau prospect à l'ancien et on supprime le nouveau prospect
