@@ -497,6 +497,7 @@ public function get_notifications(Request $request, $projet_id) {
                 $nb_pen_att_valide = PenaliteDesistement::on('temp')->join('desistements', 'desistements.id', '=', 'penalites_desistements.desistement_id')
                 ->where('penalites_desistements.archive',0)
                 ->where('desistements.archive',0)
+                ->where('desistements.statut',1)
                 ->where('desistements.deleted_at',NULL)
                 ->where('desistements.projet_id',$projet_id)->where('penalites_desistements.statut',0)->count();
                 //avance en attente et avance  stored by admin(validé) mais sans encaissement
@@ -569,6 +570,7 @@ public function get_notifications(Request $request, $projet_id) {
                 $nb_pen_en_cours = PenaliteDesistement::on('temp')->join('desistements', 'desistements.id', '=', 'penalites_desistements.desistement_id')
                 ->where('penalites_desistements.archive',0)
                 ->where('desistements.archive',0)
+                  ->where('desistements.statut',1)
                 ->where('desistements.projet_id',$projet_id)
                 ->where('penalites_desistements.statut',0)
                 ->where('desistements.user_id', $userAuth->value('id'))
