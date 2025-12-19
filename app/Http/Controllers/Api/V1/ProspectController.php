@@ -390,10 +390,6 @@ class ProspectController extends Controller
                 $user = Auth::user();
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
 
-                $statutProspect = new StatutProspect();
-                $statutProspect->setConnection('temp');
-                $statutProspect->prospect_id = $prospect->id;
-
             $statutProspect = new StatutProspect();
             $statutProspect->setConnection('temp');
             $statutProspect->prospect_id = $prospect->id;
@@ -632,9 +628,11 @@ class ProspectController extends Controller
             if ($request->has('commercial_affecte')) {
                 // Allow reassignment regardless of final status
                // $lastStatus = $prospect->last_statut;
+                //get user id temp
+                $user = User::on('temp')->where('user_id_origin', $request->commercial_affecte)->first();
 
                 $oldCommercialId = $prospect->commercial_affecte;
-                $newCommercialId = $request->commercial_affecte;
+                $newCommercialId = $user->id;
 
                 // If commercial is changing, update counters and track affectation
                 if ($oldCommercialId != $newCommercialId) {
