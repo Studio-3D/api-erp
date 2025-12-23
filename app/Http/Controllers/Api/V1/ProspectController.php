@@ -744,34 +744,54 @@ class ProspectController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    public function search_prospect_by_param($param_1, $value)
+    public function search_prospect_by_param($param_1, $value, $projet_id)
     {
         //cin ou email
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             if ($param_1 == 'cin' || $param_1 == 'email') {
-                $prospect = Prospect::on('temp')->with('visite_pre_reserves','visite_first', 'visites_perdu', 'visites_perdu.freins', 'visites_perdu.freins.freinTranche', 'visites_perdu.freins.FreinEtage', 'visites_perdu.freins.FreinOrientation', 'visites_perdu.freins.FreinTypologie', 'visites_perdu.freins.FreinVue', 'appels')->where($param_1, $value)
+                $prospect = Prospect::on('temp')->with('visite_pre_reserves','visite_first', 'visites_perdu', 'visites_perdu.freins', 'visites_perdu.freins.freinTranche', 'visites_perdu.freins.FreinEtage', 'visites_perdu.freins.FreinOrientation', 'visites_perdu.freins.FreinTypologie', 'visites_perdu.freins.FreinVue', 'appels')
+                    ->where($param_1, $value)->where('projet_id', $projet_id)
                     ->get()->first();
-                $client = Client::on('temp')->with('prospect')->where($param_1, $value)->get()->first();
-
+                
+                // Get client with reservations having pending payments
+                $client = Client::on('temp')->with(['prospect', 'reservations_actives' => function($query) {
+                    $query->select('reservations.id', 'reservations.code_reservation', 'reservations.prix')
+                        ->withSum('avances', 'montant')
+                        ->where('etat', 1)
+                        ->where('statut', 1)
+                        ->whereRaw('reservations.prix > COALESCE((SELECT SUM(montant) FROM avances WHERE reservation_id = reservations.id), 0)');
+                }])
+                ->where($param_1, $value)
+                ->where('projet_id', $projet_id)
+                ->get()->first();
+    
             } else {
                 //telephone
                 $prospect = Prospect::on('temp')->with('visite_pre_reserves','visite_first',  'visites_perdu','visites_perdu.freins', 'visites_perdu.freins.freinTranche', 'visites_perdu.freins.FreinEtage', 'visites_perdu.freins.FreinOrientation', 'visites_perdu.freins.FreinTypologie', 'visites_perdu.freins.FreinVue', 'appels')
                     ->where(function ($query) use ($value) {
                         $query->where('telephone', $value)
-                            ->orwhere('telephone_num2', $value)
-                        ;
+                            ->orwhere('telephone_num2', $value);
                     })
+                    ->where('projet_id', $projet_id)
                     ->get()->first();
-                $client = Client::on('temp')->with('prospect')
-                    ->where(function ($query) use ($value) {
-                        $query->where('telephone_num1', $value)
-                            ->orwhere('telephone_num2', $value)
-                        ;
-                    })
-                    ->get()->first();
+                
+                // Get client with reservations having pending payments
+                $client = Client::on('temp')->with(['prospect', 'reservations' => function($query) {
+                    $query->select('reservations.id', 'reservations.code_reservation', 'reservations.prix')
+                        ->withSum('avances', 'montant')
+                        ->where('etat', 1)
+                        ->where('statut', 1)
+                        ->whereRaw('reservations.prix > COALESCE((SELECT SUM(montant) FROM avances WHERE reservation_id = reservations.id), 0)');
+                }])
+                ->where(function ($query) use ($value) {
+                    $query->where('telephone_num1', $value)
+                        ->orwhere('telephone_num2', $value);
+                })
+                ->where('projet_id', $projet_id)
+                ->get()->first();
             }
-
+    
             //bien pre reserve par appel on cas des biens disponibles
             $biens_traitement_freins = [];
             if ($prospect != null) {
@@ -780,10 +800,43 @@ class ProspectController extends Controller
                         $q->where('prospect_id', $prospect->id);
                     })
                     ->where('interet', InteretEnum::Intéressé->value)
-                    ->where('statut', StatutVisiteEnum::Pré_Réservation->value)->orderby('created_at', 'desc')->get(['bien_id', 'id'])->take(1);
+                    ->where('statut', StatutVisiteEnum::Pré_Réservation->value)
+                    ->orderby('created_at', 'desc')
+                    ->get(['bien_id', 'id'])
+                    ->take(1);
             }
-
-            return response()->json(['prospect' => $prospect, 'client' => $client, 'biens_traitement_freins' => $biens_traitement_freins]);
+    
+            // Transform the reservations data to remove unwanted relationships
+            if ($client) {
+                // For CIN/email case
+                if ($client->reservations_actives) {
+                    $client->reservations_actives->transform(function ($reservation) {
+                        return [
+                            'id' => $reservation->id,
+                            'code_reservation' => $reservation->code_reservation,
+                            'prix' => $reservation->prix,
+                            'avances_sum_montant' => $reservation->avances_sum_montant
+                        ];
+                    });
+                }
+                // For telephone case
+                if ($client->reservations) {
+                    $client->reservations->transform(function ($reservation) {
+                        return [
+                            'id' => $reservation->id,
+                            'code_reservation' => $reservation->code_reservation,
+                            'prix' => $reservation->prix,
+                            'avances_sum_montant' => $reservation->avances_sum_montant
+                        ];
+                    });
+                }
+            }
+    
+            return response()->json([
+                'prospect' => $prospect, 
+                'client' => $client, 
+                'biens_traitement_freins' => $biens_traitement_freins
+            ]);
         }
     }
     public function VisitesByprospect(Request $request, $prospect_id)

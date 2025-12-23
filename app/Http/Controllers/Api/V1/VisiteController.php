@@ -1200,6 +1200,11 @@ class VisiteController extends Controller
                 $statut_client->commentaire = 'Converti en client via visite VENDU';
                 $statut_client->save();
             }
+        }else{
+            if( $request->interet == InteretEnum::Suivi_dossier->value){
+            //c'est un client avec interet suivi dossie 
+            //store statut client suivi dossier from visite  avec reservation_id
+            }
         }
             //send message WhatsApp de bienvenue en cas de n'existe pas de relance ou rendez-vous ou frein
 
@@ -1922,7 +1927,7 @@ class VisiteController extends Controller
                             $visite->save();
                         }
 
-                        // propsect n'est pas un client
+                        /*// propsect n'est pas un client
                          $statut_convert_client_exist = 0;
 
                         // Optimisation : récupérer seulement les statuts 10
@@ -1939,33 +1944,33 @@ class VisiteController extends Controller
                                 $statut_convert_client_exist = 1;
                             }
                         }
-                        //n'est pa un client
-                        if ($statut_convert_client_exist == 0) {
+                                //c'est un client et ila modifier le suivi dossier 
+                                if ($statut_convert_client_exist >0 ) */
+                                    if($hasRdv||$hasRelance||$request->interet == InteretEnum::Perdu->value){
                                     $initialStatut = '0';
-                                        if($request->interet == InteretEnum::Perdu->value){
-                                                        $comment = 'Prospect perdu par modification visite';
-                                                        $initialStatut = '8';//perdu
+                                    if($request->interet == InteretEnum::Perdu->value){
+                                                    $comment = 'Prospect perdu par modification visite';
+                                                    $initialStatut = '8';//perdu
+                                                }
+                                    elseif($request->interet == InteretEnum::Réceptif->value){
+                                                    $initialStatut = '9';//receptif
+                                                    if ($hasRelance) {
+                                                        $comment = 'Relance programmée via modification de visite';
+                                                    }else{
+                                                        $comment = 'Réceptif via modification de visite ';
                                                     }
-                                        elseif($request->interet == InteretEnum::Réceptif->value){
-                                                        $initialStatut = '9';//receptif
-                                                        if ($hasRelance) {
-                                                            $comment = 'Relance programmée via modification de visite';
-                                                        }else{
-                                                            $comment = 'Réceptif via modification de visite ';
-                                                        }
+                                                }
+                                    elseif($request->interet == InteretEnum::Intéressé->value){
+                                                    $initialStatut = '7';//interesse
+                                                    if ($hasRdv) {
+                                                        $comment = 'Rendez-vous programmé via modification  visite';
+                                                    }elseif ($hasRelance) {
+                                                        $comment = 'Relance programmée via modification visite';
                                                     }
-                                        elseif($request->interet == InteretEnum::Intéressé->value){
-                                                        $initialStatut = '7';//interesse
-                                                        if ($hasRdv) {
-                                                            $comment = 'Rendez-vous programmé via modification  visite';
-                                                        }elseif ($hasRelance) {
-                                                            $comment = 'Relance programmée via modification visite';
-                                                        }
-                                                        else{
-                                                        $comment = 'Intéressé via modification visite ';
-                                                    }
-                                        }
-                                if($hasRdv||$hasRelance||$request->interet == InteretEnum::Perdu->value){
+                                                    else{
+                                                    $comment = 'Intéressé via modification visite ';
+                                                }
+                                    }
                                     $statut_pro = new StatutProspect();
                                     $statut_pro->setConnection('temp');
                                     $statut_pro->prospect_id     = $visite->prospect_id;
@@ -1981,8 +1986,9 @@ class VisiteController extends Controller
                                     $statut_pro->visite_id       = $visite->origin_id;
                                     $statut_pro->commentaire     = $comment;
                                     $statut_pro->save();
-                                }
-                        }
+                               }
+                            
+                       
 
 
                 // Commit transaction if everything is successful

@@ -416,32 +416,32 @@ class ClientController extends Controller
         }
     }
 
-    public function search_client_by_cin($cin)
+    public function search_client_by_cin($cin,$projet_id)
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $client = Client::on('temp')->where('cin', $cin)
+            $client = Client::on('temp')->where('cin', $cin)->where('projet_id',$projet_id)
                 ->get()->first();
 
             if ($client != null) {
                 //si client n'est pas prospect
                 if ($client->prospect_id == null) {
-                    $prospect = Prospect::on('temp')->with('visites_perdu')->where('cin', $cin)
+                    $prospect = Prospect::on('temp')->with('visites_perdu')->where('cin', $cin)->where('projet_id',$projet_id)
                         ->get()->first();
                 } else {
                     //client est un prospect
-                    $prospect = Prospect::on('temp')->where('id', $client->prospect_id)->with('visites_perdu')->get()->first();
+                    $prospect = Prospect::on('temp')->where('id', $client->prospect_id)->with('visites_perdu')->where('projet_id',$projet_id)->get()->first();
                 }
             } else {
                 //client n'existe  pas
-                $prospect = Prospect::on('temp')->with('visites_perdu')->where('cin', $cin)
+                $prospect = Prospect::on('temp')->with('visites_perdu')->where('projet_id',$projet_id)->where('cin', $cin)
                     ->get()->first();
             }
 
             return response()->json(['client' => $client, 'prospect' => $prospect]);
         }
     }
-    public function search_client_by_phone($phone)
+    public function search_client_by_phone($phone,$projet_id)
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
@@ -456,7 +456,7 @@ class ClientController extends Controller
             if ($client != null) {
                 //si client n'est pas prospect
                 if ($client->prospect_id == null) {
-                    $prospect = Prospect::on('temp')->with('visites_perdu')
+                    $prospect = Prospect::on('temp')->with('visites_perdu')->where('projet_id',$projet_id)
                         ->where(function ($query) use ($phone) {
                             $query->where('telephone', $phone)
                                 ->orwhere('telephone_num2', $phone)
@@ -465,7 +465,7 @@ class ClientController extends Controller
                         ->get()->first();
                 } else {
                     //client est un prospect
-                    $prospect = Prospect::on('temp')->where('id', $client->prospect_id)->with('visites_perdu')->get()->first();
+                    $prospect = Prospect::on('temp')->where('id', $client->prospect_id)->with('visites_perdu')->where('projet_id',$projet_id)->get()->first();
                 }
             } else {
                 $prospect = Prospect::on('temp')->with('visites_perdu')
@@ -473,7 +473,7 @@ class ClientController extends Controller
                         $query->where('telephone', $phone)
                             ->orwhere('telephone_num2', $phone)
                         ;
-                    })
+                    })->where('projet_id',$projet_id)
                     ->get()->first();
             }
         }
@@ -482,25 +482,25 @@ class ClientController extends Controller
 
     }
 
-    public function search_client_by_email($email)
+    public function search_client_by_email($email,$projet_id)
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            $client = Client::on('temp')->where('email', $email)
+            $client = Client::on('temp')->where('email', $email)->where('projet_id',$projet_id)
                 ->get()->first();
 
             if ($client != null) {
                 //si client n'est pas prospect
                 if ($client->prospect_id == null) {
-                    $prospect = Prospect::on('temp')->with('visites_perdu')->where('email', $email)
+                    $prospect = Prospect::on('temp')->with('visites_perdu')->where('projet_id',$projet_id)->where('email', $email)
                         ->get()->first();
                 } else {
                     //client est un prospect
-                    $prospect = Prospect::on('temp')->where('id', $client->prospect_id)->with('visites_perdu')->get()->first();
+                    $prospect = Prospect::on('temp')->where('projet_id',$projet_id)->where('id', $client->prospect_id)->with('visites_perdu')->get()->first();
                 }
             } else {
                 //client n'existe  pas
-                $prospect = Prospect::on('temp')->with('visites_perdu')->where('email', $email)
+                $prospect = Prospect::on('temp')->with('visites_perdu')->where('projet_id',$projet_id)->where('email', $email)
                     ->get()->first();
             }
 
