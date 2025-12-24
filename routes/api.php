@@ -243,7 +243,7 @@ Route::middleware('auth:api')->group(function () {
 
         Route::resource('prospects', V1ProspectController::class);
         Route::get('projets/{idprojet}/prospects', [V1ProspectController::class, 'indexByProjet']);
-        Route::get('search_prospect_by_param/{param_1}/{value}', [V1ProspectController::class, 'search_prospect_by_param']);
+        Route::get('search_prospect_by_param/{param_1}/{value}/{projet_id}', [V1ProspectController::class, 'search_prospect_by_param']);
         Route::get('search_prospect_by_cin/{cin}', [V1ProspectController::class, 'search_prospect_by_cin']);
         Route::get('search_prospect_by_phone/{phone}', [V1ProspectController::class, 'search_prospect_by_phone']);
         Route::post('upload_excel_prospect', [V1ProspectController::class, 'upload'])->name('');
@@ -255,9 +255,9 @@ Route::middleware('auth:api')->group(function () {
         //l'API client
         Route::resource('clients', V1ClientController::class);
         Route::get('show_client/{id}', [V1ClientController::class, 'show_client']);
-        Route::get('search_client_by_cin/{cin}', [V1ClientController::class, 'search_client_by_cin']);
-        Route::get('search_client_by_phone/{phone}', [V1ClientController::class, 'search_client_by_phone']);
-        Route::get('search_client_by_email/{email}', [V1ClientController::class, 'search_client_by_email']);
+        Route::get('search_client_by_cin/{cin}/{projet_id}', [V1ClientController::class, 'search_client_by_cin']);
+        Route::get('search_client_by_phone/{phone}/{projet_id}', [V1ClientController::class, 'search_client_by_phone']);
+        Route::get('search_client_by_email/{email}/{projet_id}', [V1ClientController::class, 'search_client_by_email']);
         Route::get('projets/{idprojet}/clients', [V1ClientController::class, 'indexByProjet']);
 
         //l'API Aquerreur

@@ -570,6 +570,8 @@ private function finalizeReservation($reservation, $userAuth)
             {
                 $clientController = new ClientController();
                 $aquereurController = new AquereurController();
+                $clientRequest = new StoreClientRequest();
+                $aquereurRequest = new StoreAquereurRequest();
 
 
                 if ($request->origin == 'visite') {
@@ -594,7 +596,6 @@ private function finalizeReservation($reservation, $userAuth)
                             'projet_id' => $request->projet_id,
                             'telephone_num1' => $request->telephone_num1
                         ]);
-                        $clientRequest = new StoreClientRequest();
                         $aquereurRequest = new StoreAquereurRequest();
 
                         $dataClient = [
@@ -616,7 +617,6 @@ private function finalizeReservation($reservation, $userAuth)
                          $clientData = $clientController->store($clientRequest);
                         \Log::info('Client created successfully with ID: ' . $clientData->id);
                     }
-                    $aquereurRequest = new StoreAquereurRequest();
                     $dataAquereur = [
                         'pourcentage' => 100,
                         'client_id' => $clientData->id,
