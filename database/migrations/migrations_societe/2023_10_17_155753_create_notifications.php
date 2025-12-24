@@ -20,7 +20,7 @@ return new class extends Migration
             $table->dateTime('date')->nullable();;
             $table->bigInteger('type');
             $table->string('description_type');
-            $table->enum('role',[RoleEnum::SUPERADMIN->value,RoleEnum::ADMIN->value,RoleEnum::COMMERCIAL->value,RoleEnum::ADMIN_COMMERCIAL])->nullable()->comment('1=>superamin 2=>admin 3=>commercial');
+            $table->enum('role',[RoleEnum::SUPERADMIN->value,RoleEnum::ADMIN->value,RoleEnum::COMMERCIAL->value,RoleEnum::ADMIN_COMMERCIAL->value])->nullable()->comment('1=>superamin 2=>admin 3=>commercial');
             $table->foreignId('user_id')->nullable()->references('user_id_origin')->on('users')->onDelete('cascade');
             $table->foreignId('visite_id')->nullable()->constrained('visites')->onDelete('cascade');
             $table->foreignId('projet_id')->nullable()->constrained('projets')->onDelete('cascade');

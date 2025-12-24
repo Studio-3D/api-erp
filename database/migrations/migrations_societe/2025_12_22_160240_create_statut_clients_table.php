@@ -46,7 +46,7 @@ return new class extends Migration
 
                 $table->foreignId('reservation_id')->nullable()->constrained('reservations')->onDelete('cascade');
                 $table->foreignId('desistement_id')->nullable()->constrained('desistements')->onDelete('cascade');
-                $table->foreignId('penalite_id')->nullable()->constrained('penalites')->onDelete('cascade');
+                $table->foreignId('penalite_id')->nullable()->constrained('penalites_desistements')->onDelete('cascade');
                 $table->foreignId('remboursement_id')->nullable()->constrained('remboursements')->onDelete('cascade');
 
                 $table->timestamps();
