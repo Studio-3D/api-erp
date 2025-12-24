@@ -52,5 +52,9 @@ class StatutProspect extends Model
     {
         return $this->belongsTo(User::class,'user_id_traite')->withTrashed();
     }
+     public function visite()
+    {
+        return $this->belongsTo(Visite::class,'visite_id');
+    }
 
 }

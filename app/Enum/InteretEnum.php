@@ -7,5 +7,6 @@ enum InteretEnum:int
     case Intéressé=1;
     case Réceptif=2;
     case Perdu=3;
-    case Suivi_dossier=4;
+    //4 injoignable for appel
+    case Suivi_dossier=5;
 }

@@ -305,7 +305,10 @@ class ProspectController extends Controller
 
             DatabaseHelper::Config();
 
-            $query = StatutProspect::on('temp')->with([
+            $query = StatutProspect::on('temp')
+            ->with(['visite' => function($query) {
+                $query->select('id','origin_id')->without('historique_bien_visite','bien','partenaire','prospect','source','user'); // Fixed syntax
+            },
                  'user' => function($query) {
                 $query->select('id','name','prenom')->without('societe'); // Fixed syntax
             },
@@ -753,7 +756,7 @@ class ProspectController extends Controller
                 $prospect = Prospect::on('temp')->with('visite_pre_reserves','visite_first', 'visites_perdu', 'visites_perdu.freins', 'visites_perdu.freins.freinTranche', 'visites_perdu.freins.FreinEtage', 'visites_perdu.freins.FreinOrientation', 'visites_perdu.freins.FreinTypologie', 'visites_perdu.freins.FreinVue', 'appels')
                     ->where($param_1, $value)->where('projet_id', $projet_id)
                     ->get()->first();
-                
+
                 // Get client with reservations having pending payments
                 $client = Client::on('temp')->with(['prospect', 'reservations_actives' => function($query) {
                     $query->select('reservations.id', 'reservations.code_reservation', 'reservations.prix')
@@ -765,7 +768,7 @@ class ProspectController extends Controller
                 ->where($param_1, $value)
                 ->where('projet_id', $projet_id)
                 ->get()->first();
-    
+
             } else {
                 //telephone
                 $prospect = Prospect::on('temp')->with('visite_pre_reserves','visite_first',  'visites_perdu','visites_perdu.freins', 'visites_perdu.freins.freinTranche', 'visites_perdu.freins.FreinEtage', 'visites_perdu.freins.FreinOrientation', 'visites_perdu.freins.FreinTypologie', 'visites_perdu.freins.FreinVue', 'appels')
@@ -775,7 +778,7 @@ class ProspectController extends Controller
                     })
                     ->where('projet_id', $projet_id)
                     ->get()->first();
-                
+
                 // Get client with reservations having pending payments
                 $client = Client::on('temp')->with(['prospect', 'reservations' => function($query) {
                     $query->select('reservations.id', 'reservations.code_reservation', 'reservations.prix')
@@ -791,7 +794,7 @@ class ProspectController extends Controller
                 ->where('projet_id', $projet_id)
                 ->get()->first();
             }
-    
+
             //bien pre reserve par appel on cas des biens disponibles
             $biens_traitement_freins = [];
             if ($prospect != null) {
@@ -805,7 +808,7 @@ class ProspectController extends Controller
                     ->get(['bien_id', 'id'])
                     ->take(1);
             }
-    
+
             // Transform the reservations data to remove unwanted relationships
             if ($client) {
                 // For CIN/email case
@@ -831,10 +834,10 @@ class ProspectController extends Controller
                     });
                 }
             }
-    
+
             return response()->json([
-                'prospect' => $prospect, 
-                'client' => $client, 
+                'prospect' => $prospect,
+                'client' => $client,
                 'biens_traitement_freins' => $biens_traitement_freins
             ]);
         }

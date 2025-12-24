@@ -16,10 +16,10 @@ return new class extends Migration
         if (!Schema::hasTable('statut_clients')) {
             Schema::create('statut_clients', function (Blueprint $table) {
                 $table->id();
-                
+
                 // Correction: 'clients' au pluriel (convention Laravel)
                 $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
-                
+
                 $table->enum('statut', [
                     StatutClientEnum::Suivi_Dossier->value,
                     StatutClientEnum::Nouvelle_Avance->value,
@@ -36,22 +36,23 @@ return new class extends Migration
                     StatutClientEnum::Payer_penalite->value,
                     StatutClientEnum::Rembourser->value,
                 ])->comment('0=>Suivi_Dossier, 1=>Nouvelle_Avance, 2=>Creation_Reservation, 3=>Ajouter_Rdv, 4=>Signer_Attestation_Vente, 5=>Signer_Contrat_Vente, 6=>Remise_Cle, 7=>Desistement_dd, 8=>Desistement_dp_profit, 9=>Desistement_dp_co, 10=>Desistement_dp_partiel, 11=>Desistement_change_bien, 12=>Payer_penalite, 13=>Rembourser');
-                
+
                 $table->foreignId('user_id_traite')->nullable()->constrained('users')->onDelete('cascade');
                 $table->string('commentaire')->nullable();
-                
+                $table->date('date_traitement')->nullable();
                 // Correction: 'visites' au pluriel
                 $table->foreignId('visite_id')->nullable()->constrained('visites')->onDelete('cascade');
-                
+                $table->foreignId('avance_id')->nullable()->constrained('avances')->onDelete('cascade');
+
                 $table->foreignId('reservation_id')->nullable()->constrained('reservations')->onDelete('cascade');
                 $table->foreignId('desistement_id')->nullable()->constrained('desistements')->onDelete('cascade');
                 $table->foreignId('penalite_id')->nullable()->constrained('penalites')->onDelete('cascade');
                 $table->foreignId('remboursement_id')->nullable()->constrained('remboursements')->onDelete('cascade');
-                
+
                 $table->timestamps();
                 $table->softDeletes();
             });
-            
+
             // Message pour confirmer la création
             echo "Table 'statut_clients' créée avec succès.\n";
         } else {
