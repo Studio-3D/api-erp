@@ -576,32 +576,43 @@ class ProspectController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($id)
-    {
-        if (Auth::guard('api')->check()) {
-            DatabaseHelper::Config();
-            //visites_perdu
-            $prospect = Prospect::on('temp')->with([
-                 'traite_par_user' => function($query) {
-                $query->select('id','name','prenom')->without('societe'); // Fixed syntax
+   public function show($id)
+{
+    if (Auth::guard('api')->check()) {
+        DatabaseHelper::Config();
+        $prospect = Prospect::on('temp')->with([
+            'client' => function($query) {
+                $query->select('id')
+                    ->with(['reservations' => function($q) {
+                        $q->select('reservations.id', 'reservations.code_reservation', 'reservations.prix')
+                            ->withSum('avances', 'montant')
+                            ->where('etat', 1)
+                            ->where('statut', 1)
+                            ->whereRaw('reservations.prix > COALESCE((SELECT SUM(montant) FROM avances WHERE reservation_id = reservations.id), 0)')->without('user', 'projet', 'historiques', 'piece_jointe', 'bien', 'aquereurs', 'aquereurs_ancien');
+                    }])->without('partenaire');
+            },
+            'traite_par_user' => function($query) {
+                $query->select('id', 'name', 'prenom');
             },
             'partenaire' => function($query) {
-                $query->select('id','description'); // Fixed syntax
+                $query->select('id', 'description');
             },
-                'commercial_affecte' => function($query) {
-                $query->select('id','user_id_origin')->without('societe'); // Fixed syntax
+            'commercial_affecte' => function($query) {
+                $query->select('id', 'user_id_origin');
             },
-                'appels' => function($query) {
-    $query->without('prospect', 'projet');
-},
-                'affecte_par_admin' => function($query) {
-                $query->select('id','name','prenom')->without('societe'); // Fixed syntax
-            }])->findOrfail($id);
-            return response()->json(['prospect' => $prospect], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+            'appels' => function($query) {
+                $query->without('prospect', 'projet');
+            },
+            'affecte_par_admin' => function($query) {
+                $query->select('id', 'name', 'prenom');
+            }
+        ])->findOrFail($id);
+
+        return response()->json(['prospect' => $prospect], 200);
+    } else {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+}
 
     /**
      * Show the form for editing the specified resource.

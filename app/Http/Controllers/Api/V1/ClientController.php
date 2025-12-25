@@ -258,55 +258,69 @@ class ClientController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Request $request, $id)
-    {
-        if (Auth::guard('api')->check()) {
-            DatabaseHelper::Config();
+   public function show(Request $request, $id)
+{
+    if (Auth::guard('api')->check()) {
+        DatabaseHelper::Config();
 
-            $client = Client::on('temp')->with('prospect','prospect.appels')->findOrFail($id);
-            $reservations = $client->reservations()->with([
-                'bien', 'user', 'projet', 'aquereurs.client'
-            ])->get();
+        $client = Client::on('temp')
+            ->with([
+                'prospect',
+                'prospect.appels',
+                'reservations' => function($resQuery) {
+                    $resQuery->select('reservations.id', 'reservations.code_reservation', 'reservations.prix')
+                        ->withSum('avances', 'montant')
+                        ->where('etat', 1)
+                        ->where('statut', 1)
+                        ->whereRaw('reservations.prix > COALESCE((SELECT SUM(montant) FROM avances WHERE reservation_id = reservations.id), 0)')
+                        ->without('user', 'projet', 'historiques', 'piece_jointe', 'bien', 'aquereurs', 'aquereurs_ancien');
+                }
+            ])
+            ->findOrFail($id);
 
-            $visites = Visite::on('temp')
-                ->where('etat', 1)
-                ->where('prospect_id', $client->prospect_id)
-                ->latest('created_at')
-                ->get();
+        $reservations = $client->reservations()->with([
+            'bien', 'user', 'projet', 'aquereurs.client'
+        ])->get();
 
-            $groupedVisites = $visites->groupBy('origin_id')->map(function ($visite) {
-                $firstVisite = $visite->first();
-                return [
-                    'id'                  => $firstVisite->id,
-                    'origin_id'           => $firstVisite->origin_id,
-                    'nom_cc'              => $firstVisite->user ? $firstVisite->user->name : null,
-                    'prenom_cc'           => $firstVisite->user ? $firstVisite->user->prenom : null,
-                    'date'                => $firstVisite->created_at,
-                    'cin'                 => $firstVisite->prospect ? $firstVisite->prospect->cin : null,
-                    'nom'                 => $firstVisite->prospect ? $firstVisite->prospect->nom : null,
-                    'prenom'              => $firstVisite->prospect ? $firstVisite->prospect->prenom : null,
-                    'telephone'           => $firstVisite->prospect ? $firstVisite->prospect->telephone : null,
-                    'telephone2'          => $firstVisite->prospect ? $firstVisite->prospect->telephone_num2 : null,
-                    'prospect_id'         => $firstVisite->prospect ? $firstVisite->prospect->id : null,
-                    'interet'             => $firstVisite->interet,
-                    'statut'              => $firstVisite->statut,
-                    'propriete_dite_bien' => $firstVisite->bien ? $firstVisite->bien->propriete_dite_bien : '',
-                    'etat_bien'           => $firstVisite->bien ? $firstVisite->bien->etat : '',
-                    'bien_id'             => $firstVisite->bien_id ?? '',
-                    'visit_count'         => $visite->count(),
-                    'reservation'         => $firstVisite->reservation ?? null,
-                ];
-            });
+        $visites = Visite::on('temp')
+            ->where('etat', 1)
+            ->where('prospect_id', $client->prospect_id)
+            ->latest('created_at')
+            ->get();
 
-            return response()->json([
-                'client'       => $client,
-                'reservations' => $reservations,
-                'visites'      => $groupedVisites->values(),
-            ], 200);
-        }
+        $groupedVisites = $visites->groupBy('origin_id')->map(function ($visite) {
+            $firstVisite = $visite->first();
+            return [
+                'id'                  => $firstVisite->id,
+                'origin_id'           => $firstVisite->origin_id,
+                'nom_cc'              => $firstVisite->user ? $firstVisite->user->name : null,
+                'prenom_cc'           => $firstVisite->user ? $firstVisite->user->prenom : null,
+                'date'                => $firstVisite->created_at,
+                'cin'                 => $firstVisite->prospect ? $firstVisite->prospect->cin : null,
+                'nom'                 => $firstVisite->prospect ? $firstVisite->prospect->nom : null,
+                'prenom'              => $firstVisite->prospect ? $firstVisite->prospect->prenom : null,
+                'telephone'           => $firstVisite->prospect ? $firstVisite->prospect->telephone : null,
+                'telephone2'          => $firstVisite->prospect ? $firstVisite->prospect->telephone_num2 : null,
+                'prospect_id'         => $firstVisite->prospect ? $firstVisite->prospect->id : null,
+                'interet'             => $firstVisite->interet,
+                'statut'              => $firstVisite->statut,
+                'propriete_dite_bien' => $firstVisite->bien ? $firstVisite->bien->propriete_dite_bien : '',
+                'etat_bien'           => $firstVisite->bien ? $firstVisite->bien->etat : '',
+                'bien_id'             => $firstVisite->bien_id ?? '',
+                'visit_count'         => $visite->count(),
+                'reservation'         => $firstVisite->reservation ?? null,
+            ];
+        });
 
-        return response()->json(['error' => 'Unauthorized'], 401);
+        return response()->json([
+            'client'       => $client,
+            'reservations' => $reservations,
+            'visites'      => $groupedVisites->values(),
+        ], 200);
     }
+
+    return response()->json(['error' => 'Unauthorized'], 401);
+}
 
      public function show_client(Request $request, $id)
     {

@@ -1526,17 +1526,34 @@ class VisiteController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit_visite($id)
-    {
+public function edit_visite($id)
+{
+    if (Auth::guard('api')->check()) {
+        DatabaseHelper::Config();
+        $visite = Visite::on('temp')->with([
+            'relance_relation',
+            'rdv_relation',
+            'reservation',
+            'freins',
+            'prospect' => function($query) {
+                $query->with(['client' => function($q) {
+                    $q->with(['reservations' => function($resQuery) {
+                        $resQuery->select('reservations.id', 'reservations.code_reservation', 'reservations.prix')
+                            ->withSum('avances', 'montant')
+                            ->where('etat', 1)
+                            ->where('statut', 1)
+                            ->whereRaw('reservations.prix > COALESCE((SELECT SUM(montant) FROM avances WHERE reservation_id = reservations.id), 0)')
+                            ->without('user', 'projet', 'historiques', 'piece_jointe', 'bien', 'aquereurs', 'aquereurs_ancien');
+                    }]);
+                }]);
+            }
+        ])->findOrFail($id);
 
-        if (Auth::guard('api')->check()) {
-            DatabaseHelper::Config();
-            $visite = Visite::on('temp')->with('relance_relation', 'rdv_relation', 'reservation','freins')->findOrfail($id);
-            return response()->json(['visite' => $visite], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+        return response()->json(['visite' => $visite], 200);
+    } else {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+}
 
     /**
      * Update the specified resource in storage.
@@ -2447,7 +2464,7 @@ class VisiteController extends Controller
 
                             //first visite bien==>show=1 et related_sho meme id du visite
                             if ($key == 0) {
-                                $main_visite_id = $newVisite->id;
+                                $main_visite_id = $newVisit->id;
                                 $newVisit->related_show_id = $newVisit->id;
                                 $first_v_id                = $newVisit->id;
                                 $newVisit->show            = 1;
@@ -2607,7 +2624,6 @@ class VisiteController extends Controller
                         if ($newVisit->save()) {
                             //push les vistes_id to array pour supprimer les relances where id not int array_v_id
                             array_push($array_v_id, $newVisit->id);
-                            array_push($array_visite_id, $newVisit->id);
 
                             // related_sho meme id du visite
                             if ($list_bien_interesse == null) {
@@ -2691,6 +2707,7 @@ class VisiteController extends Controller
                                     $t_f->save();
                                 }
 
+                                
                             }
                         }
                     }
