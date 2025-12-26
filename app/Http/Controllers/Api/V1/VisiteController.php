@@ -1175,7 +1175,7 @@ class VisiteController extends Controller
         }
 
         if($request->interet == InteretEnum::Réceptif->value||$request->interet == InteretEnum::Perdu->value||$request->interet == InteretEnum::Intéressé->value){
-            if ($statut_convert_visite_exist == 0) {
+            if ($statut_convert_visite_exist == 0 && $request->prospect_id!='') {
                 $statut_pro = new StatutProspect();
                 $statut_pro->setConnection('temp');
                 $statut_pro->prospect_id     = $prospect->id;
@@ -2707,7 +2707,7 @@ public function edit_visite($id)
                                     $t_f->save();
                                 }
 
-                                
+
                             }
                         }
                     }
