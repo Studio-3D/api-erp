@@ -79,6 +79,10 @@ class Visite extends Model
     {
         return $this->hasMany(TraitementFrein::class,'visite_id','id')->orderby('created_at','asc');
     }
-
+    //le cas en suivi dossier with nouvelle avance
+   public function statut_client(){
+    return $this->hasOne(StatutClient::class,'visite_id')
+                   ;
+    }
 
 }

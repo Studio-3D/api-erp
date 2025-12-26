@@ -20,9 +20,15 @@ return new class extends Migration
                 // Correction: 'clients' au pluriel (convention Laravel)
                 $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
 
+                // Mise à jour avec tous les cas de l'enum
                 $table->enum('statut', [
-                    StatutClientEnum::Suivi_Dossier->value,
                     StatutClientEnum::Nouvelle_Avance->value,
+                    StatutClientEnum::Question_sur_avance->value,
+                    StatutClientEnum::Suivi_de_paiement->value,
+                    StatutClientEnum::Question_sur_documents->value,
+                    StatutClientEnum::Suivi_livraison->value,
+                    StatutClientEnum::Signature_contrat->value,
+                    StatutClientEnum::Autre_Question->value,
                     StatutClientEnum::Creation_Reservation->value,
                     StatutClientEnum::Ajouter_Rdv->value,
                     StatutClientEnum::Signer_Attestation_Vente->value,
@@ -35,8 +41,9 @@ return new class extends Migration
                     StatutClientEnum::Desistement_change_bien->value,
                     StatutClientEnum::Payer_penalite->value,
                     StatutClientEnum::Rembourser->value,
-                ])->comment('0=>Suivi_Dossier, 1=>Nouvelle_Avance, 2=>Creation_Reservation, 3=>Ajouter_Rdv, 4=>Signer_Attestation_Vente, 5=>Signer_Contrat_Vente, 6=>Remise_Cle, 7=>Desistement_dd, 8=>Desistement_dp_profit, 9=>Desistement_dp_co, 10=>Desistement_dp_partiel, 11=>Desistement_change_bien, 12=>Payer_penalite, 13=>Rembourser');
-                 $table->date('date_traitement')->nullable();
+                ])->comment('1=>Nouvelle_Avance, 2=>Question_sur_avance, 3=>Suivi_de_paiement, 4=>Question_sur_documents, 5=>Suivi_livraison, 7=>Signature_contrat, 8=>Autre_Question, 9=>Creation_Reservation, 10=>Ajouter_Rdv, 11=>Signer_Attestation_Vente, 12=>Signer_Contrat_Vente, 13=>Remise_Cle, 14=>Desistement_dd, 15=>Desistement_dp_profit, 16=>Desistement_dp_co, 17=>Desistement_dp_partiel, 18=>Desistement_change_bien, 19=>Payer_penalite, 20=>Rembourser');
+
+                $table->date('date_traitement')->nullable();
                 $table->foreignId('user_id_traite')->nullable()->constrained('users')->onDelete('cascade');
                 $table->string('commentaire')->nullable();
                 $table->foreignId('avance_id')->nullable()->constrained('avances')->onDelete('cascade');

@@ -12,7 +12,7 @@ class StatutClient extends Model
     use SoftDeletes;
 
     protected $table='statut_clients';
-    protected $with = ['reservation','user'];
+    protected $with = ['reservation','user','avance'];
     protected $dates=['deleted_at'];
 
      public function client(){
@@ -20,6 +20,9 @@ class StatutClient extends Model
     }
     public function reservation(){
         return $this->belongsTo(Reservation::class,'reservation_id');
+    }
+    public function avance(){
+        return $this->belongsTo(Avance::class,'avance_id');
     }
     public function user()
     {

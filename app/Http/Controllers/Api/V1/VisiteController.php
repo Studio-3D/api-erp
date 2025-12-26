@@ -1250,7 +1250,7 @@ class VisiteController extends Controller
                 $statut_client->setConnection('temp');
                 $statut_client->visite_id = $main_visite_id;
                 $statut_client->client_id = $prospect->client_id ?? null;
-                $statut_client->statut = '0';//suivi dossier
+                $statut_client->statut = $request->statut_suivi;//suivi dossier
                 $statut_client->avance_id = $avance_id??null;
                 $statut_client->reservation_id = $request->dossier_id_suivi;
                 $statut_client->date_traitement = Carbon::now();
@@ -1377,26 +1377,54 @@ class VisiteController extends Controller
         return response()->json(['error' => 'Internal server error'], 500);
     }
 }
-    public function show($id)
-    {
+   public function show($id)
+{
+    if (Auth::guard('api')->check()) {
+        DatabaseHelper::Config();
 
-        if (Auth::guard('api')->check()) {
-            DatabaseHelper::Config();
+        $visite = Visite::on('temp')->select('id', 'bien_id')->findOrFail($id);
 
-            $visite = Visite::on('temp')->select('id', 'bien_id')->findOrFail($id);
-            $relatedVisites = Visite::on('temp')->with('freins', 'pre_reservation_visite', 'relance_relation', 'rdv_relation', 'reservation', 'traitement_frein', 'traitement_frein.bien', 'traitement_frein.rdv_relation', 'traitement_frein.frein')->where('origin_id', $visite->id)->where('etat', 1)->orderby('created_at', 'DESC')->get();
-            $relatedVisites_show = Visite::on('temp')->where('origin_id', $visite->id)->where('etat', 1)->where('show', 1)->orderby('created_at', 'DESC')->get(['related_show_id','created_at','id']);
-            //get nom propriete _dite_bien concat utilisé dans edit visite
-            $propriete = null;
-            if ($visite->bien_id != null) {
-                $propriete = $this->get_propriete_bien_concat($visite->bien_id);
-            }
+        $relatedVisites = Visite::on('temp')
+            ->with([
+                'statut_client' => function($query) {
+                    $query->with(['avance' => function($q) {
+                        $q->with('banque:id,nom'); // Seulement les colonnes nécessaires
+                        $q->select('id', 'montant', 'mode_paiement', 'banque_id',
+                                   'numero_paiement', 'echeance','commentaireAvance'); // Ajoutez d'autres colonnes si nécessaire
+                    }])->without('reservation','user');
+                },
+                'freins',
+                'pre_reservation_visite',
+                'relance_relation',
+                'rdv_relation',
+                'reservation',
+                'traitement_frein',
+                'traitement_frein.bien',
+                'traitement_frein.rdv_relation',
+                'traitement_frein.frein'
+            ])
+            ->where('origin_id', $visite->id)
+            ->where('etat', 1)
+            ->orderby('created_at', 'DESC')
+            ->get();
 
-            return response()->json(['propriete_dite_bien' => $propriete, 'visites' => $relatedVisites, 'visites_show' => $relatedVisites_show], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        $relatedVisites_show = Visite::on('temp')
+            ->where('origin_id', $visite->id)
+            ->where('etat', 1)
+            ->where('show', 1)
+            ->orderby('created_at', 'DESC')
+            ->get(['related_show_id','created_at','id']);
+
+        $propriete = null;
+        if ($visite->bien_id != null) {
+            $propriete = $this->get_propriete_bien_concat($visite->bien_id);
         }
+
+        return response()->json(['propriete_dite_bien' => $propriete, 'visites' => $relatedVisites, 'visites_show' => $relatedVisites_show], 200);
+    } else {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+}
 
     public static function traiter_relance_rdv_visite($id, UpdateDate_relance_Rdv $request)
     {
@@ -2844,7 +2872,7 @@ public function edit_visite($id)
                     $statut_client->setConnection('temp');
                     $statut_client->visite_id = $main_visite_id;
                     $statut_client->client_id = $prospect->client_id ?? null;
-                    $statut_client->statut = '0';//suivi dossier
+                    $statut_client->statut =$request->statut_suivi;//suivi dossier
                     $statut_client->avance_id = $avance_id??null;
                     $statut_client->reservation_id = $request->dossier_id_suivi;
                     $statut_client->date_traitement = Carbon::now();
