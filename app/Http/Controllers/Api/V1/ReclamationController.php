@@ -107,6 +107,29 @@ class ReclamationController extends Controller
         //
     }
 
+    public function show($id)
+    {
+        if (Auth::guard('api')->check()) {
+           DatabaseHelper::Config();
+            $user     = Auth::user();
+            $userAuth      = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+            $societe       = Societe::findOrfail($user_societes->societe_id);
+            $societeDB = 'erp_' . $societe->raison_sociale_concatene . '_' . $societe->id;
+            //$user = Auth::user();
+            $reclamation = DB::connection('mysql_client')->table('reclamations')
+            ->Leftjoin("$societeDB.reservations", 'reservations.id', '=', 'reclamations.dossier_id')
+                        ->Leftjoin("$societeDB.users", 'users.id', '=', 'reclamations.user_id_traite')
+                         ->Leftjoin("users as us_espace_client", 'us_espace_client.id', '=', 'reclamations.user_id')
+                         ->Leftjoin("$societeDB.clients", 'clients.id', '=', 'us_espace_client.client_id')
+
+           ->Leftjoin("$societeDB.services_prestataires", 'services_prestataires.id', '=', 'reclamations.service')//,'services.nom as nom_service'
+            ->where('reclamations.id', $id)->select('reclamations.*','reservations.code_reservation','services_prestataires.nom as nom_service','users.name as users_traite_nom','users.prenom as users_traite_prenom','clients.nom as client_nom','clients.prenom as client_prenom','clients.id as client_id','clients.email as client_email','clients.telephone_num1 as client_telephone')->first();
+            return response()->json(['reclamation' => $reclamation], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
     /**
      * Store a newly created resource in storage.
      */
@@ -121,34 +144,40 @@ class ReclamationController extends Controller
             DatabaseHelper::Config();
             $user     = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-
+            $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+            $societe       = Societe::findOrfail($user_societes->societe_id);
+            $societeDB = 'erp_' . $societe->raison_sociale_concatene . '_' . $societe->id;
             $rec_f = DB::connection('mysql_client')->table('reclamations')->where('id', $id)->update(['user_id_traite' => $userAuth->value('id'), 'etat' => $request->statut, 'date_fin_traitement' => $request->date_fin_traitement, 'date_traitement' => $request->date_traitement, 'commentaire' => $request->commentaire]);
             //send notif to client
-            $rec  = DB::connection('mysql_client')->table('reclamations')->where('id', $id)->get()->first();
+            $rec  = DB::connection('mysql_client')->table('reclamations')->where('reclamations.id', $id) ->Leftjoin("users as us_espace_client", 'us_espace_client.id', '=', 'reclamations.user_id')
+                         ->Leftjoin("$societeDB.clients", 'clients.id', '=', 'us_espace_client.client_id')->select('reclamations.*','clients.email')->get()->first();
             $type = 0;
             $text = '';
-            if ($rec->etat == 1) {
-                $type = 1;
-                $text = 'Le Responsable a résolu votre Réclamation d\'objet :' . $rec->objet;
-            } elseif ($rec->etat == 2) {
+            if ($rec->etat == 2) {
                 $type = 2;
+                $text = 'Le Responsable a résolu votre Réclamation d\'objet :' . $rec->objet;
+            } elseif ($rec->etat == 3) {
+                $type = 3;
                 $text = 'Objet de Réclamation: ' . $rec->objet . ' Non Résolu.';
             } else {
-                $type = 3;
+                $type = 1;
                 $text = 'Objet de Réclamation: ' . $rec->objet . ' Est En cours De Traitement.';
             }
 
             $rec_notif_to_client = DB::connection('mysql_client')->table('notifications')->insert(['user_id' => $rec->user_id, 'text' => $text, 'lien' => '/reclamations', 'type' => $type, 'created_at' => Carbon::now()]);
             //send mail to client avec etat
 
-            $to_email = 'fadwa.test02@gmail.com';
-            $data     = ['etat' => $rec->etat, 'objet_rec' => $rec->objet, 'comment' => $rec->commentaire];
+            $to_email = $rec->email;
+            if($to_email!=null){
+                $data     = ['etat' => $rec->etat, 'objet_rec' => $rec->objet, 'comment' => $rec->commentaire];
             Mail::send('Client.mail', $data, function ($message) use ($to_email) {
                 $message->to($to_email)
                     ->subject('Avis Réclamation');
                 $message->from(env('MAIL_USERNAME'), 'Immobilier Immo ');
 
             });
+            }
+
 
             return response()->json('c bien', 200);
         } else {

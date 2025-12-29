@@ -316,7 +316,7 @@
                   <b>Votre Réclamation de :</b>
                     <p>
                         Objet:{{$objet_rec}}<br/>
-                        @if($etat==1) Est Résolu @elseif($etat==2) Non Résolu @else En cours de Traitement @endif <br/>
+                        @if($etat==1)  En cours de Traitement @elseif($etat==2)  Résolu @else Non Résolu @endif <br/>
                         Commentaire:{{$comment}}
                     </p>
                   <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
