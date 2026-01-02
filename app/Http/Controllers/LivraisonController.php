@@ -31,7 +31,9 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Events\RdvEvent;
 use App\Events\AttestationVenteEvent;
 use App\Events\ContratVenteEvent;
+use App\Models\Aquereur;
 
+use App\Models\StatutClient;
 
 use DB;
 
@@ -145,6 +147,7 @@ public function store_rdv_reservation($id, Request $request)
             $rdv->user_id = $userAuth->id;
             $rdv->statut = '1';
             $rdv->save();
+            $rdvId = $rdv->id;
 
             // Mark time slot as occupied
             //check the creneau propose ==> supprimer it
@@ -166,11 +169,95 @@ public function store_rdv_reservation($id, Request $request)
                 Config::set('broadcasting.default', 'pusher_8');
                 // Broadcast event to all users subscribed to this reservation
                 broadcast(new RdvEvent($id));
+        $this->createStatutClientFor($id, $userAuth, $dateDebut);
 
         return response()->json(['message' => 'Rendez-vous enregistré avec succès'], 201);
     }
 }
 
+private function createStatutClientFor($id, $userAuth, $dateRdv)
+    {
+        try {
+            // Get all aquereurs for this reservation
+            $aquereurs = Aquereur::on('temp')
+                ->where('reservation_id', $id)
+                ->with('client')
+                ->get();
+
+            if ($aquereurs->isEmpty()) {
+                \Log::warning('No aquereurs found : '  . ', Reservation ID: ' . $id);
+                return;
+            }
+
+                // Get reservation details
+                $reservation = Reservation::on('temp')->find($id);
+                if (!$reservation) {
+                    \Log::warning('Reservation not found for ID: ' . $id);
+                    return;
+                }
+
+            // Get the last created rendez-vous for this reservation
+            $rendezVous = Rendez_vous::on('temp')
+                ->where('reservation_id', $id)
+                ->latest()
+                ->first();
+
+            if (!$rendezVous) {
+                \Log::warning('No rendez-vous found for reservation ID: ' . $id);
+                return;
+            }
+
+              foreach ($aquereurs as $aquereur) {
+                    $statutClient = new StatutClient();
+                    $statutClient->setConnection('temp');
+                    $statutClient->visite_id = null;
+                    $statutClient->client_id = $aquereur->client_id;
+                    $statutClient->statut = '6'; // Ajouter rdv
+                    $statutClient->rdv_id = $rendezVous->id;
+                    $statutClient->reservation_id = $id;
+                    $statutClient->date_traitement = now();
+                    $statutClient->user_id_traite = $userAuth->value('id');
+
+                   // Format date and time for the comment
+            $dateFormatted = Carbon::parse($dateRdv)->locale('fr')->isoFormat('dddd D MMMM YYYY');
+            $heureFormatted = Carbon::parse($dateRdv)->format('H:i');
+
+            // Build comment for rendez-vous
+                    $rdvType = $rendezVous->type;
+                    $typeText = '';
+
+                    switch($rdvType) {
+                        case 1:
+                            $typeText = 'Attestation de Vente';
+                            break;
+                        case 2:
+                            $typeText = 'Contrat de Vente';
+                            break;
+                        default:
+                            $typeText = '';
+                            break;
+                    }
+
+                    $comment = 'Rendez-vous planifié le ' . $dateFormatted . ' à ' . $heureFormatted .
+                            ' - Type: ' . $typeText .
+                            ' - Réservation: ' . $reservation->code_reservation .
+                            ' - Bien: ' . $reservation->bien->propriete_dite_bien;
+
+
+                // Add agent info if available
+                if ($userAuth) {
+                    $comment .= ' - Commercial: ' . $userAuth->name;
+                }
+
+            $statutClient->commentaire = $comment;
+            $statutClient->save();
+              }
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to create StatutClient for avance payment: ' . $e->getMessage());
+            // Don't throw error to avoid breaking the avance creation
+        }
+    }
 // In your controller
 public function updateReservationCreneau($reservation_id, Request $request)
 {
@@ -710,7 +797,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $user = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get()->first();
             if ($request->hasFile('fichier_scanner')) {
 
                 $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
@@ -723,7 +810,8 @@ public function updateReservationCreneau($reservation_id, Request $request)
                 $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/compromis_vente');
                 File::makeDirectory($directory, 0755, true, true);
                 $request->file('fichier_scanner')->move($directory, $request->file('fichier_scanner')->getClientOriginalName());
-
+                // Créer StatutClient après le scan
+                    $this->createStatutClientForScanner($comp->reservation_id, $userAuth, 'compromis');
                       //actualiser compromise de reservation
                     Config::set('broadcasting.default', 'pusher_9');
                     // Broadcast event to all users subscribed to this reservation
@@ -860,7 +948,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $user = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get()->first();
             if ($request->hasFile('fichier_scanner')) {
 
                 $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
@@ -874,7 +962,9 @@ public function updateReservationCreneau($reservation_id, Request $request)
                 $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/contrat_vente' . '/' . $codeReservation);
                 File::makeDirectory($directory, 0755, true, true);
                 $request->file('fichier_scanner')->move($directory, $request->file('fichier_scanner')->getClientOriginalName());
-                    //actualiser contrat de vente
+                 // Créer StatutClient après le scan
+                $this->createStatutClientForScanner($comp->reservation_id, $userAuth, 'contrat');
+                //actualiser contrat de vente
                     Config::set('broadcasting.default', 'pusher_10');
                     // Broadcast event to all users subscribed to this reservation
                     broadcast(new ContratVenteEvent($comp->reservation_id));
@@ -887,6 +977,117 @@ public function updateReservationCreneau($reservation_id, Request $request)
         }
         return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+    private function createStatutClientForScanner($reservationId, $userAuth, $documentType)
+{
+    try {
+        // Get all aquereurs for this reservation
+        $aquereurs = Aquereur::on('temp')
+            ->where('reservation_id', $reservationId)
+            ->with('client')
+            ->get();
+
+        if ($aquereurs->isEmpty()) {
+            \Log::warning('No aquereurs found for Reservation ID: ' . $reservationId);
+            return;
+        }
+
+        // Get reservation details
+        $reservation = Reservation::on('temp')->find($reservationId);
+        if (!$reservation) {
+            \Log::warning('Reservation not found for ID: ' . $reservationId);
+            return;
+        }
+
+        // Get document details based on type
+        $document = null;
+        $statutCode = '';
+        $documentText = '';
+
+        if ($documentType === 'compromis') {
+            $document = Compromis_vente::on('temp')
+                ->where('reservation_id', $reservationId)
+                ->latest()
+                ->first();
+            $statutCode = '7'; // Statut pour Signer_Attestation_Vente
+            $documentText = 'Attestation de Vente scanné';
+        } elseif ($documentType === 'contrat') {
+            $document = Contrat_vente::on('temp')
+                ->where('reservation_id', $reservationId)
+                ->latest()
+                ->first();
+            $statutCode = '8'; // Statut pour contrat scanné
+            $documentText = 'Contrat de Vente scanné';
+        }
+
+        if (!$document) {
+            \Log::warning('No ' . $documentType . ' found for reservation ID: ' . $reservationId);
+            return;
+        }
+
+        foreach ($aquereurs as $aquereur) {
+            $statutClient = new StatutClient();
+            $statutClient->setConnection('temp');
+            $statutClient->client_id = $aquereur->client_id;
+            $statutClient->statut = $statutCode;
+
+            // Set the appropriate document ID based on type
+            if ($documentType == 'compromis') {
+                $statutClient->compromis_vente_id = $document->id;
+            } elseif ($documentType == 'contrat') {
+                $statutClient->contrat_vente_id = $document->id;
+            }
+
+            $statutClient->reservation_id = $reservationId;
+            $statutClient->date_traitement = now();
+            $statutClient->user_id_traite = $userAuth->id;
+
+            // Build comment
+            $comment = $documentText . ' - ';
+
+            if ($document->date_sign_client) {
+                $dateSignClient = Carbon::parse($document->date_sign_client)
+                    ->locale('fr')
+                    ->isoFormat('dddd D MMMM YYYY');
+                $comment .= 'Signé par client le ' . $dateSignClient;
+            }
+
+            if ($document->date_sign_mo) {
+                $dateSignMo = Carbon::parse($document->date_sign_mo)
+                    ->locale('fr')
+                    ->isoFormat('dddd D MMMM YYYY');
+                $comment .= ', Signé par maître d\'ouvrage le ' . $dateSignMo;
+            }
+
+            if ($document->date_enreg) {
+                $dateEnreg = Carbon::parse($document->date_enreg)
+                    ->locale('fr')
+                    ->isoFormat('dddd D MMMM YYYY');
+                $comment .= ', Enregistré le ' . $dateEnreg;
+            }
+
+            $comment .= ' - Réservation: ' . $reservation->code_reservation;
+            $comment .= ' - Bien: ' . $reservation->bien->propriete_dite_bien;
+
+            // Add agent info if available
+            if ($userAuth) {
+                $comment .= ' - Commercial: ' . $userAuth->name;
+            }
+
+            // Add document number if exists
+            if ($document->num_recu) {
+                $comment .= ' - N°: ' . $document->num_recu;
+            }
+
+            $statutClient->commentaire = $comment;
+            $statutClient->save();
+        }
+
+    } catch (\Exception $e) {
+        \Log::error('Failed to create StatutClient for ' . $documentType . ' scan: ' . $e->getMessage());
+        // Don't throw error to avoid breaking the scan process
+    }
+}
     /**
      * Show the form for editing the specified resource.
      */

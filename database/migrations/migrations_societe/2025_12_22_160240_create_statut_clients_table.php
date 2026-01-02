@@ -21,14 +21,11 @@ return new class extends Migration
                 $table->foreignId('client_id')->constrained('clients')->onDelete('cascade');
 
                 // Mise à jour avec tous les cas de l'enum
-                $table->enum('statut', [
+                        $table->enum('statut', [
                     StatutClientEnum::Nouvelle_Avance->value,
-                    StatutClientEnum::Question_sur_avance->value,
-                    StatutClientEnum::Suivi_de_paiement->value,
-                    StatutClientEnum::Question_sur_documents->value,
-                    StatutClientEnum::Suivi_livraison->value,
-                    StatutClientEnum::Signature_contrat->value,
-                    StatutClientEnum::Autre_Question->value,
+                    StatutClientEnum::Suivi_Avancement_travaux->value,
+                    StatutClientEnum::Demande_des_documents->value,
+                    StatutClientEnum::Autre->value,
                     StatutClientEnum::Creation_Reservation->value,
                     StatutClientEnum::Ajouter_Rdv->value,
                     StatutClientEnum::Signer_Attestation_Vente->value,
@@ -39,22 +36,23 @@ return new class extends Migration
                     StatutClientEnum::Desistement_dp_co->value,
                     StatutClientEnum::Desistement_dp_partiel->value,
                     StatutClientEnum::Desistement_change_bien->value,
-                    StatutClientEnum::Payer_penalite->value,
-                    StatutClientEnum::Rembourser->value,
-                ])->comment('1=>Nouvelle_Avance, 2=>Question_sur_avance, 3=>Suivi_de_paiement, 4=>Question_sur_documents, 5=>Suivi_livraison, 7=>Signature_contrat, 8=>Autre_Question, 9=>Creation_Reservation, 10=>Ajouter_Rdv, 11=>Signer_Attestation_Vente, 12=>Signer_Contrat_Vente, 13=>Remise_Cle, 14=>Desistement_dd, 15=>Desistement_dp_profit, 16=>Desistement_dp_co, 17=>Desistement_dp_partiel, 18=>Desistement_change_bien, 19=>Payer_penalite, 20=>Rembourser');
-
+                    StatutClientEnum::Penalite_valide->value,
+                StatutClientEnum::Remise_du_remboursement->value, StatutClientEnum::Decaissement_effctue->value, StatutClientEnum::Penalite_rejete->value,
+                ])->default(StatutClientEnum::Autre->value)->comment(' 1=>Nouvelle_Avance, 2=>Suivi_Avancement_travaux, 3=>Demande_des_documents, 4=>Autre, 5=>Creation_Reservation, 6=>Ajouter_Rdv, 7=>Signer_Attestation_Vente, 8=>Signer_Contrat_Vente, 9=>Remise_Cle, 10=>Desistement_dd, 11=>Desistement_dp_profit, 12=>Desistement_dp_co, 13=>Desistement_dp_partiel, 14=>Desistement_change_bien, 15=>Penalite Valide, 16=>Remise Remboursement,17=>dacaissement effectue ,19=>penalite rejete');
                 $table->date('date_traitement')->nullable();
                 $table->foreignId('user_id_traite')->nullable()->constrained('users')->onDelete('cascade');
                 $table->string('commentaire')->nullable();
                 $table->foreignId('avance_id')->nullable()->constrained('avances')->onDelete('cascade');
-
+                $table->foreignId('compromis_vente_id')->nullable()->constrained('compromis_vente')->onDelete('cascade');
+                $table->foreignId('contrat_vente_id')->nullable()->constrained('contrat_ventes')->onDelete('cascade');
                 // Correction: 'visites' au pluriel
                 $table->foreignId('visite_id')->nullable()->constrained('visites')->onDelete('cascade');
-
                 $table->foreignId('reservation_id')->nullable()->constrained('reservations')->onDelete('cascade');
                 $table->foreignId('desistement_id')->nullable()->constrained('desistements')->onDelete('cascade');
                 $table->foreignId('penalite_id')->nullable()->constrained('penalites_desistements')->onDelete('cascade');
                 $table->foreignId('remboursement_id')->nullable()->constrained('remboursements')->onDelete('cascade');
+                $table->foreignId('rdv_id')->nullable()->constrained('rdv')->onDelete('cascade');
+                $table->foreignId('remise_cle_id')->nullable()->constrained('remise_cles')->onDelete('cascade');
 
                 $table->timestamps();
                 $table->softDeletes();

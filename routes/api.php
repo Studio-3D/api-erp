@@ -251,8 +251,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('historiques_prospects/{id}', [V1ProspectController::class, 'get_Historiques_by_prospect'])->name('');
         Route::get('projets/{idprojet}/prospects', [V1ProspectController::class, 'indexByProjet']);
         Route::post('prospects/auto-assign', [V1ProspectController::class, 'autoAssignProspects'])->name('auto_assign_prospects');
-
         //l'API client
+        Route::get('historiques_clients/{id}', [V1ClientController::class, 'get_Historiques_by_client'])->name('');
         Route::resource('clients', V1ClientController::class);
         Route::get('show_client/{id}', [V1ClientController::class, 'show_client']);
         Route::get('search_client_by_cin/{cin}/{projet_id}', [V1ClientController::class, 'search_client_by_cin']);

@@ -11,6 +11,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Config;
 use App\Models\User;
 use App\Models\Bien;
+use App\Models\StatutClient;
+use App\Models\Banque;
+
 use App\Http\Controllers\Controller;
 use App\Models\Societe;
 use Illuminate\Support\Facades\File;
@@ -254,7 +257,7 @@ class RemboursementController extends Controller
             DatabaseHelper::Config();
             Config::set('broadcasting.default', 'pusher_3');
             $user = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
             $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
             $societe = Societe::findOrfail($user_societes->societe_id);
 
@@ -287,7 +290,76 @@ class RemboursementController extends Controller
                     $notif_helper->storeNotification($request->merge($data_notif));
                         broadcast(new NotificationEvent($id));
                 }
+                 //new Statut Client
+                    $statutClient = new StatutClient();
+                    $statutClient->setConnection('temp');
+                    $statutClient->client_id = $remboursement->aquereur->client_id;
+                    $statutClient->statut = 16;//Remis du Rembourse a signe le cheque
+                    $statutClient->remboursement_id = $remboursement->id;
+                    $statutClient->desistement_id = $remboursement->desistement_id;
+                    $statutClient->reservation_id = $remboursement->reservation_id;
+                    $statutClient->date_traitement = Carbon::now();
+                    $statutClient->user_id_traite = $userAuth->id;
+
+                    // Build comment
+
+                        // Construction du commentaire pour StatutClient
+                        $comment = 'Le client a reçu le chèque de remboursement ';
+
+                        // Ajouter les détails du remboursement
+                        $comment .= ' - Montant: ' . number_format($remboursement->montant_a_rembourser, 0, ',', ' ') . ' ' . ('MAD');
+
+                        // Ajouter la référence du remboursement
+                        if ($remboursement->num_paiement) {
+                            $comment .= ' - Réf: ' . $remboursement->num_paiement;
+                        }
+
+                       // Ajouter le mode de remboursement avec libellé explicite
+                        $modePaiementLabels = [
+                            1 => 'Espèce',
+                            2 => 'Chèque',
+                            3 => 'Chèque banque',
+                            4 => 'Chèque certifié',
+                            5 => 'Virement',
+                            6 => 'Versement',
+                            7 => 'Transfert dossier'
+                        ];
+
+                        if ($remboursement->mode_paiement && isset($modePaiementLabels[$remboursement->mode_paiement])) {
+                            $comment .= ' - Mode de remboursement: ' . $modePaiementLabels[$remboursement->mode_paiement];
+                        } elseif ($remboursement->mode_paiement) {
+                            $comment .= ' - Mode de remboursement: ' . $remboursement->mode_paiement;
+                        }
+
+
+                        // Ajouter la référence de la réservation
+                        $comment .= ' - Réservation: ' . $codeReservation;
+
+                        // Ajouter le projet concerné
+                        if ($remboursement->reservation && $remboursement->reservation->projet) {
+                            $comment .= ' - Projet: ' . $remboursement->reservation->projet->nom;
+                        }
+                         // Ajouter la date de remise
+                        if ($request->remis_le) {
+                            $comment .= ' - Date remise: ' . Carbon::parse($request->remis_le)->format('d/m/Y');
+                        }
+
+                        // Ajouter le nom de l'agent qui a remis le chèque
+                        if ($userAuth && $userAuth->value('name')) {
+                            $comment .= ' - Commercial: ' . $userAuth->value('name').' '.$userAuth->value('prenom');
+                        }
+
+                        // Si le chèque signé a été uploadé
+                        if ($request->hasFile('cheque_client_signe')) {
+                            $comment .= ' - Chèque signé reçu';
+                        }
+
+                        $statutClient->commentaire = $comment;
+                        $statutClient->save();
+
             }
+
+
 
             return response()->json(['message' => 'le Chèque du Remboursement est distribué au client.'], 200);
 
@@ -306,7 +378,10 @@ class RemboursementController extends Controller
             DatabaseHelper::Config();
             Config::set('broadcasting.default', 'pusher_3');
             $user = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+            if (!$userAuth) {
+                return response()->json(['error' => 'Utilisateur non trouvé'], 404);
+            }
             $remboursement = Remboursement::on('temp')->findOrFail($id);
             $bien= Bien::on('temp')->withSum('tva_collectes','tva_a_payer')->findorfail($remboursement->reservation->bien_id);
             $remboursement->statut=3;
@@ -324,7 +399,7 @@ class RemboursementController extends Controller
                 $encaiss->montant = $remboursement->montant_a_rembourser;
                 $encaiss->date_reglement = Carbon::now();
                 $encaiss->date_encaissement =$request->date_decaissement;
-                $encaiss->user_id_valider = $userAuth->value('id');
+                $encaiss->user_id_valider = $userAuth->id;
                 if($encaiss->save()){
                     if($bien->Bien_Tva!=null){
                         $data=[
@@ -345,15 +420,69 @@ class RemboursementController extends Controller
                     }
                 }
 
+                 // AJOUT DU STATUT CLIENT
+                $statutClient = new StatutClient();
+                $statutClient->setConnection('temp');
+
+                // Récupération des informations nécessaires
+                $codeReservation = $remboursement->reservation->code_reservation;
+                $nomProjet = $remboursement->reservation->projet->nom ?? 'N/A';
+                $banque = Banque::on('temp')->find($request->banque_id);
+
+                // Libellés des modes de paiement
+                $modePaiementLabels = [
+                    1 => 'Espèce',
+                    2 => 'Chèque',
+                    3 => 'Chèque banque',
+                    4 => 'Chèque certifié',
+                    5 => 'Virement',
+                    6 => 'Versement',
+                    7 => 'Transfert dossier'
+                ];
+
+                // Construction du commentaire
+                $comment = 'Décaissement effectué pour le remboursement ';
+                $comment .= ' - Montant: ' . number_format($remboursement->montant_a_rembourser, 0, ',', ' ') . ' MAD';
+
+                if ($remboursement->num_paiement) {
+                    $comment .= ' - Référence: ' . $remboursement->num_paiement;
+                }
+
+                if ($remboursement->mode_paiement && isset($modePaiementLabels[$remboursement->mode_paiement])) {
+                    $comment .= ' - Mode: ' . $modePaiementLabels[$remboursement->mode_paiement];
+                }
+
+                if ($banque) {
+                    $comment .= ' - Banque: ' . $banque->nom;
+                }
+
+                $comment .= ' - Date décaissement: ' . Carbon::parse($request->date_decaissement)->format('d/m/Y');
+                $comment .= ' - Réservation: ' . $codeReservation;
+                $comment .= ' - Projet: ' . $nomProjet;
+
+                if ($userAuth->name) {
+                    $comment .= ' - Traité par: ' . $userAuth->name . ' ' . ($userAuth->prenom ?? '');
+                }
+
+                // Attribution des valeurs au StatutClient
+                $statutClient->client_id = $remboursement->aquereur->client_id;
+                $statutClient->statut = 17; // Statut pour "Décaissement effectué"
+                $statutClient->remboursement_id = $remboursement->id;
+                $statutClient->desistement_id = $remboursement->desistement_id;
+                $statutClient->reservation_id = $remboursement->reservation_id;
+                $statutClient->date_traitement = Carbon::now();
+                $statutClient->user_id_traite = $userAuth->id;
+                $statutClient->commentaire = $comment;
+
+                $statutClient->save();
             }
 
-            return response()->json(['message' => 'le Chèque du Remboursement est distribué au client.'], 200);
 
-       } else {
-           return response()->json(['error' => 'Unauthorized'], 401);
-       }
-
+         return response()->json(['message' => 'Le décaissement du remboursement a été effectué avec succès.'], 200);
+    } else {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+}
 
 
 

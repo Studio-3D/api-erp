@@ -20,6 +20,8 @@ use App\Http\Requests\StorePiecesJointeRequest;
 use App\Http\Requests\StoreReservationRequest;
 use App\Http\Requests\UpdateReservationRequest;
 use App\Models\Aquereur;
+use App\Models\StatutClient;
+
 use App\Models\Avance;
 use App\Models\Bien;
 use App\Models\Client;
@@ -555,7 +557,7 @@ private function finalizeReservation($reservation, $userAuth)
                 }
 
                 // Process clients and aquereurs
-                $this->processClients($reservation, $request);
+                $this->processClients($reservation, $request,$userAuth);
 
                 // Process payment if specified
                 if ($request->avance) {
@@ -566,7 +568,35 @@ private function finalizeReservation($reservation, $userAuth)
             /**
              * Process client data
              */
-            private function processClients($reservation, $request)
+            private function createStatutClient(
+                        int $clientId,
+                        int $reservationId,
+                        int $userId,
+                        string $codeReservation,
+                        ?string $additionalComment = null
+                    ): StatutClient {
+                        $statutClient = new StatutClient();
+                        $statutClient->setConnection('temp');
+                        $statutClient->visite_id = null;
+                        $statutClient->client_id = $clientId;
+                        $statutClient->statut = '5'; // création reservation
+                        $statutClient->avance_id = null;
+                        $statutClient->reservation_id = $reservationId;
+                        $statutClient->date_traitement = now();
+                        $statutClient->user_id_traite = $userId;
+
+                        // Build comment with optional additional information
+                        $comment = 'Création Réservation code : ' . $codeReservation;
+                        if ($additionalComment) {
+                            $comment .= ' - ' . $additionalComment;
+                        }
+                        $statutClient->commentaire = $comment;
+
+                        $statutClient->save();
+
+                        return $statutClient;
+                    }
+            private function processClients($reservation, $request,$userAuth)
             {
                 $clientController = new ClientController();
                 $aquereurController = new AquereurController();
@@ -615,6 +645,13 @@ private function finalizeReservation($reservation, $userAuth)
                         ];
                         $clientRequest->merge($dataClient);
                          $clientData = $clientController->store($clientRequest);
+                            // Create statut client using the new function
+                            $this->createStatutClient(
+                                clientId: $clientData->id,
+                                reservationId: $reservation->id,
+                                userId: $userAuth->value('id'),
+                                codeReservation: $reservation->code_reservation
+                            );
                         \Log::info('Client created successfully with ID: ' . $clientData->id);
                     }
                     $dataAquereur = [
@@ -624,6 +661,7 @@ private function finalizeReservation($reservation, $userAuth)
                     ];
                     $aquereurRequest->merge($dataAquereur);
                      $aquereurResult = $aquereurController->store($aquereurRequest);
+
                     \Log::info('Aquereur created for reservation: ' . $reservation->id);
                 } else {
                     $dataArray_clients = json_decode($request->input('clients'), true);
@@ -634,10 +672,18 @@ private function finalizeReservation($reservation, $userAuth)
                               if (empty($clientInfo['pourcentage']) || !is_numeric($clientInfo['pourcentage']) || $clientInfo['pourcentage'] <= 0) {
                                     continue; // Skip this client
                                 }
+
+
                             $clientInfo['projet_id'] = $request->projet_id;
                             $clientRequest->merge($clientInfo);
                             $clientData = $clientController->store($clientRequest);
-
+                            // Create statut client using the new function
+                                    $this->createStatutClient(
+                                        clientId: $clientData->id,
+                                        reservationId: $reservation->id,
+                                        userId: $userAuth->value('id'),
+                                        codeReservation: $reservation->code_reservation
+                                    );
                             $dataAquereur = [
                                 'pourcentage' => $clientInfo['pourcentage'],
                                 'client_id' => $clientData->id,
@@ -658,6 +704,13 @@ private function finalizeReservation($reservation, $userAuth)
                                         continue; // Skip this client
                                     }
 
+                                   // Create statut client using the new function
+                                    $this->createStatutClient(
+                                        clientId: $clientInfo['id'],
+                                        reservationId: $reservation->id,
+                                        userId: $userAuth->value('id'),
+                                        codeReservation: $reservation->code_reservation
+                                    );
                                     $dataAquereur = [
                                         'pourcentage' => $pourcentage,
                                         'client_id' => $clientInfo['id'],
@@ -1038,44 +1091,88 @@ private function finalizeReservation($reservation, $userAuth)
         //
     }
 
+    private function formatBienInfo($bien) {
+    if (!$bien) {
+        return '';
+    }
+
+    $parts = [];
+
+    // Add bien property name
+    $parts[] = $bien->propriete_dite_bien;
+
+    // Add immeuble if exists
+    if ($bien->immeuble && $bien->immeuble->nom) {
+        $parts[] = $bien->immeuble->nom;
+    }
+
+    // Add bloc if exists
+    if ($bien->bloc && $bien->bloc->nom) {
+        $parts[] = $bien->bloc->nom;
+    }
+
+    // Add tranche if exists
+    if ($bien->tranche && $bien->tranche->nom) {
+        $parts[] = $bien->tranche->nom;
+    }
+
+    // Reverse the array to get the hierarchy in the correct order
+    $parts = array_reverse($parts);
+
+    return implode('-', $parts);
+}
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateReservationRequest $request, $id)
-    {
+        public function update(UpdateReservationRequest $request, $id)
+{
+    if (!RoleHelper::ACSup()) {
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
 
+    DatabaseHelper::Config();
+    DB::connection('temp')->beginTransaction();
 
-        if (RoleHelper::ACSup()) {
-            DatabaseHelper::Config();
-            $reservation = Reservation::on('temp')->findOrFail($id);
-              // Store original values before any changes
-            $originalAttributes = $reservation->getOriginal();
-            if ($request->has('code_reservation')) {
+    try {
+        $reservation = Reservation::on('temp')->findOrFail($id);
+        $originalAttributes = $reservation->getOriginal();
 
-                    $societe_id = Auth::guard('api')->user()->societe_id;
-                    $societe=Societe::findOrfail( $societe_id);
-                    $DatabaseName='Erp_'.$societe->raison_sociale_concatene.'_'.$societe_id;
+        if ($request->has('code_reservation')) {
+            $societe_id = Auth::guard('api')->user()->societe_id;
+            $societe = Societe::findOrfail($societe_id);
+            $DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
 
-                    $request->validate([
-                                'code_reservation' => [
-                                    Rule::unique('temp.'.$DatabaseName.'.reservations')
-                                                                ->where('etat', 1)->whereNull('deleted_at')->ignore($id),
-                                ],
-                            ]);
+            $request->validate([
+                'code_reservation' => [
+                    Rule::unique('temp.' . $DatabaseName . '.reservations')
+                        ->where('etat', 1)
+                        ->whereNull('deleted_at')
+                        ->ignore($id),
+                ],
+            ]);
+        }
+
+        $user = Auth::user();
+        $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+        $old_bien_id = $reservation->bien_id;
+
+        // Test if the connected user is the one who made the proposal / property status
+        if ($old_bien_id != $request->input('bien_id')) {
+            $bien_prop = Bien::on('temp')->findorfail($request->input('bien_id'));
+
+            if ($bien_prop->etat == 'ENCOURS_DE_PROPOSITION' &&
+                $bien_prop->is_proposed->user_id != $userAuth->user_id_origin) {
+                return response()->json([
+                    'error_33' => 'le bien choisi :' . $bien_prop->propriete_dite_bien .
+                    ' est en cours de proposition par : ' .
+                    $bien_prop->is_proposed->user->name . ' ' .
+                    $bien_prop->is_proposed->user->prenom
+                ], 333);
             }
-            $user = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            $old_bien_id = $reservation->bien_id;
-            //test si le user connecte celui qui a  fait la proposition /etat du bien
-            if ($old_bien_id != $request->input('bien_id')) {
-                $bien_prop = Bien::on('temp')->findorfail($request->input('bien_id'));
+        }
 
-                if ($bien_prop->etat == 'ENCOURS_DE_PROPOSITION' && $bien_prop->is_proposed->user_id != $userAuth->value('user_id_origin')) {
-                    return response()->json(['error_33' => 'le bien choisi :' . $bien_prop->propriete_dite_bien . ' est en cours de proposition  par : ' . $bien_prop->is_proposed->user->name . ' ' . $bien_prop->is_proposed->user->prenom], 333);
-                }
+        $changes = [];
 
-            }
-          $changes = [];
         // Define your finance modes enum
         $financeModes = [
             1 => ['code' => 1, 'label' => 'Comptant'],
@@ -1085,250 +1182,275 @@ private function finalizeReservation($reservation, $userAuth)
 
         // Track changes for each field
         $fieldsToTrack = [
-            'nb_acquereurs', 'code_reservation', 'prix', 'mode_financement',
+            'code_reservation', 'prix', 'mode_financement',
             'date_reservation', 'commentaire', 'prix_remise', 'prix_forfetaire'
         ];
 
-            foreach ($fieldsToTrack as $field) {
-                if ($request->has($field)) {
-                    $newValue = $request->input($field);
-                    $oldValue = $reservation->$field;
+        foreach ($fieldsToTrack as $field) {
+            if ($request->has($field)) {
+                $newValue = $request->input($field);
+                $oldValue = $reservation->$field;
 
-                    if ($newValue != $oldValue) {
-                        // Special handling for mode_financement
-                        if ($field == 'mode_financement') {
-                            $changes[$field] = [
-                                'old' => isset($financeModes[$oldValue]) ? $financeModes[$oldValue]['label'] : $oldValue,
-                                'new' => isset($financeModes[$newValue]) ? $financeModes[$newValue]['label'] : $newValue
-                            ];
-                        }
-                         else {
-                            $changes[$field] = [
-                                'old' => $oldValue,
-                                'new' => $newValue
-                            ];
-                        }
+                if ($newValue != $oldValue) {
+                    // Fix: Show empty string instead of "N/A" for null values
+                    $oldDisplay = $oldValue;
+                    $newDisplay = $newValue;
+
+                    // Special handling for mode_financement
+                    if ($field == 'mode_financement') {
+                        $oldDisplay = isset($financeModes[$oldValue]) ? $financeModes[$oldValue]['label'] : $oldValue;
+                        $newDisplay = isset($financeModes[$newValue]) ? $financeModes[$newValue]['label'] : $newValue;
+                    }
+
+                    // Only add to changes if not both null/empty
+                    if (!(empty($oldDisplay) && empty($newDisplay))) {
+                        $changes[$field] = [
+                            'old' => $oldDisplay ?? '', // Show empty instead of "N/A"
+                            'new' => $newDisplay ?? ''  // Show empty instead of "N/A"
+                        ];
                     }
                 }
             }
-            // Handle bien change separately
-            if ($old_bien_id != $request->input('bien_id')) {
-                $oldBien = Bien::on('temp')->find($old_bien_id);
-                $newBien = Bien::on('temp')->find($request->input('bien_id'));
+        }
 
-                $changes['bien'] = [
-                    'old' => $oldBien ? $oldBien->propriete_dite_bien : $old_bien_id,
-                    'new' => $newBien ? $newBien->propriete_dite_bien : $request->input('bien_id')
+        // Handle bien change separately
+       // Then in your update method, replace this section:
+        if ($old_bien_id != $request->input('bien_id')) {
+            $oldBien = Bien::on('temp')->with(['tranche', 'bloc', 'immeuble'])->find($old_bien_id);
+            $newBien = Bien::on('temp')->with(['tranche', 'bloc', 'immeuble'])->find($request->input('bien_id'));
+
+            $changes['bien'] = [
+                'old' => $oldBien ? $this->formatBienInfo($oldBien) : $old_bien_id,
+                'new' => $newBien ? $this->formatBienInfo($newBien) : $request->input('bien_id')
+            ];
+        }
+
+        $reservation->setConnection('temp');
+        $reservation->nb_acquereurs = $request->input('nb_acquereurs');
+        $reservation->code_reservation = $request->input('code_reservation');
+        $reservation->prix = $request->input('prix');
+        $reservation->mode_financement = $request->mode_financement;
+        $reservation->date_reservation = $request->input('date_reservation');
+        $reservation->commentaire = $request->input('commentaire') == "null" ? null : $request->input('commentaire');
+        $reservation->prix_remise = $request->input('prix_remise');
+
+        $numberToWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
+        $prix_remise_lettre = $numberToWords->format($request->input('prix_remise'));
+        $reservation->prix_remise_lettre = $prix_remise_lettre;
+
+        $reservation->prix_forfetaire = $request->input('prix_forfetaire');
+        $prix_forfetaire_lettre = $numberToWords->format($request->input('prix_forfetaire'));
+        $reservation->prix_forfetaire_lettre = $prix_forfetaire_lettre;
+        $reservation->bien_id = $request->input('bien_id');
+
+        if ($reservation->save()) {
+            if (RoleHelper::AdminSup()) {
+                // Admin/super admin can change property and advances
+                if ($old_bien_id != $request->input('bien_id')) {
+                    // Reserve new property
+                    $bienController = new BienController();
+                    $bienController->reserverBien($request->input('bien_id'), null, $reservation->id);
+
+                    // Free old property
+                    Bien_Helper::libererBien($old_bien_id, null, null, false);
+
+                    // Store to reservation history
+                    /*$histo = new HistoReservation();
+                    $histo->setConnection('temp');
+                    $histo->reservation_id = $reservation->id;
+                    $histo->user_id = $userAuth->id;
+                    $histo->bien_id = $old_bien_id;
+                    $histo->action = 1;
+                    $histo->description = json_encode(['bien' => $changes['bien']]);
+                    $histo->save();*/
+
+                    // Store notification to all commercial users
+                    $commerciaux = User::on('temp')->where('role', 3)->get();
+                    foreach ($commerciaux as $comm) {
+                        Config::set('broadcasting.default', 'pusher_3');
+                        $data_notif = [
+                            'lien' => '/ventes/reservations/' . $id,
+                            'date' => Carbon::now(),
+                            'type' => 8,
+                            'user_id' => $comm->user_id_origin,
+                            'description' => 'admin a changé le bien du reservation',
+                            'projet_id' => $reservation->projet_id,
+                            'reservation_id' => $reservation->id,
+                        ];
+                        $notif_helper = new NotificationHelper();
+                        $notif_helper->storeNotification($request->merge($data_notif));
+                        broadcast(new NotificationEvent($id));
+                    }
+                }
+            }
+
+            // Track acquereurs changes
+            $old_aquereurs = Aquereur::on('temp')->with('client')->where('reservation_id', $id)->get();
+
+            // Map to include client names
+            $old_aquereurs_data = $old_aquereurs->map(function($aq) {
+                return [
+                    'client_id' => $aq->client_id,
+                    'client_nom' => $aq->client->nom ?? null,
+                    'client_prenom' => $aq->client->prenom ?? null,
+                    'pourcentage' => $aq->pourcentage
+                ];
+            })->toArray();
+
+            // Delete old acquereurs
+            foreach ($old_aquereurs as $aq) {
+                $aq->forceDelete();
+            }
+
+            // Store new acquereurs
+            $clientController = new ClientController();
+            $clientRequest = new StoreClientRequest();
+            $aquereurController = new AquereurController();
+            $aquereurRequest = new StoreAquereurRequest();
+
+            $dataArray_clients = json_decode($request->input('clients'), true);
+            $dataArrayString = $request->input('oldClients', '[]');
+            $dataArray_oldClients = json_decode($dataArrayString, true);
+
+            $new_aquereurs = [];
+
+            if ($dataArray_clients) {
+                foreach ($dataArray_clients as $clientInfo) {
+                    $clientInfo['projet_id'] = $reservation->projet_id;
+                    $clientRequest->merge($clientInfo);
+                    $clientData = $clientController->store($clientRequest);
+
+                    $dataAquereur = [
+                        'pourcentage' => $clientInfo['pourcentage'],
+                        'client_id' => $clientData->id,
+                        'reservation_id' => $reservation->id,
+                    ];
+                    $aquereurRequest->merge($dataAquereur);
+                    $aquereurController->store($aquereurRequest);
+
+                    // Add to new acquereurs array
+                    $new_aquereurs[] = [
+                        'client_id' => $clientData->id,
+                        'nom' => $clientData->nom,
+                        'prenom' => $clientData->prenom,
+                        'pourcentage' => $clientInfo['pourcentage']
+                    ];
+                }
+            }
+
+            if ($dataArray_oldClients) {
+                foreach ($dataArray_oldClients as $clientInfo) {
+                    // Get existing client
+                    $client = Client::on('temp')->find($clientInfo['id']);
+
+                    $dataAquereur = [
+                        'pourcentage' => $clientInfo['pourcentage1'] ?? $clientInfo['pourcentage'] ?? 0,
+                        'client_id' => $clientInfo['id'],
+                        'reservation_id' => $reservation->id,
+                    ];
+                    $aquereurRequest->merge($dataAquereur);
+                    $aquereurController->store($aquereurRequest);
+
+                    // Add to new acquereurs array
+                    $new_aquereurs[] = [
+                        'client_id' => $clientInfo['id'],
+                        'nom' => $client->nom,
+                        'prenom' => $client->prenom,
+                        'pourcentage' => $clientInfo['pourcentage1'] ?? $clientInfo['pourcentage'] ?? 0
+                    ];
+                }
+            }
+
+            // Extract just the essential comparison data
+            $old_client_data = collect($old_aquereurs_data)->map(function($aq) {
+                return [
+                    'client_id' => $aq['client_id'],
+                    'pourcentage' => $aq['pourcentage']
+                ];
+            })->sortBy('client_id')->values()->toArray();
+
+            $new_client_data = collect($new_aquereurs)->map(function($aq) {
+                return [
+                    'client_id' => $aq['client_id'],
+                    'pourcentage' => $aq['pourcentage']
+                ];
+            })->sortBy('client_id')->values()->toArray();
+
+            // Only create history if clients or percentages changed
+            if ($old_client_data != $new_client_data) {
+                $changes['acquereurs'] = [
+                    'old' => $old_aquereurs_data,
+                    'new' => $new_aquereurs
                 ];
             }
-            $reservation->setConnection('temp');
-            $reservation->nb_acquereurs = $request->input('nb_acquereurs');
-            $reservation->code_reservation = $request->input('code_reservation');
-            $reservation->prix = $request->input('prix');
-            $reservation->mode_financement = $request->mode_financement;
-            $reservation->date_reservation = $request->input('date_reservation');
-            $reservation->commentaire = $request->input('commentaire') == "null" ? null : $request->input('commentaire');
-            $reservation->prix_remise = $request->input('prix_remise');
-            $numberToWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
-            $prix_remise_lettre = $numberToWords->format($request->input('prix_remise'));
-            $reservation->prix_remise_lettre = $prix_remise_lettre;
-            $reservation->prix_forfetaire = $request->input('prix_forfetaire');
-            $prix_forfetaire_lettre = $numberToWords->format($request->input('prix_forfetaire'));
-            $reservation->prix_forfetaire_lettre = $prix_forfetaire_lettre;
-            $reservation->bien_id = $request->input('bien_id');
 
-            if ($reservation->save()) {
+            // Edit attachments
+            $user_societes = User::where('id', $userAuth->user_id_origin)->first();
+            $societe = Societe::findOrfail($user_societes->societe_id);
 
-                if (RoleHelper::AdminSup()) {
-                    //admin /sup admin peut changer le bien et les avances
-                    if ($old_bien_id != $request->input('bien_id')) {
+            if ($request->file('files_reservation')) {
+                // Delete old attachments
+                $pjController = new PiecesJointeController();
+                $old_files = $pjController->getFilesUsingReservationId($id, $societe);
+                $pjController->destoryFileUsingReservationId($id, $request->input('code_reservation'), $societe);
 
-                        //reserver new bien
-                        $bienController = new BienController();
-                        $bienController->reserverBien($request->input('bien_id'), null, $reservation->id);
-                        //liberer l'ancien bien
-                        Bien_Helper::libererBien($old_bien_id, null, null,false);
-                        //store to historique reservation
-                        $histo = new HistoReservation();
-                        $histo->setConnection('temp');
-                        $histo->reservation_id = $reservation->id;
-                        $histo->user_id = $userAuth->value('id');
-                        $histo->bien_id = $old_bien_id;
-                        $histo->action=1;
-                        $histo->description = json_encode(['bien' => $changes['bien']]);
-                        $histo->save();
-                        //store notif to all commerciaux
-                        $commerciaux = User::on('temp')->where('role', 3)->get();
-                        foreach ($commerciaux as $comm) {
-                            Config::set('broadcasting.default', 'pusher_3');
-                            $data_notif = [
-                                'lien' => '/ventes/reservations/' . $id,
-                                'date' => Carbon::now(),
-                                'type' => 8,
-                                'user_id' => $comm->user_id_origin,
-                                'description' => 'admin a changé le bien du reservation',
-                                'projet_id' => $reservation->projet_id,
-                                'reservation_id' => $reservation->id,
+                $new_files = [];
+                foreach ($request->file('files_reservation') as $file) {
+                    $piecesJointeController = new PiecesJointeController();
+                    $pieceJointeRequest = new StorePiecesJointeRequest();
 
-                            ];
-                            $notif_helper = new NotificationHelper();
-                            $notif_helper->storeNotification($request->merge($data_notif));
-                            broadcast(new NotificationEvent($id));
+                    // Get file name
+                    $Myfile = $file->getClientOriginalName();
+                    $fileType = $file->getClientOriginalExtension();
 
-                        }
+                    // Move file to destination directory
+                    $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations/' . $reservation->code_reservation);
+                    File::makeDirectory($directory, 0755, true, true);
+                    $file->move($directory, $Myfile);
 
-                    }
-                }
-
-                 // Track acquereurs changes
-                $old_aquereurs = Aquereur::on('temp')->with('client')->where('reservation_id', $id)->get();
-               // Then map to include client names
-                $old_aquereurs_data = $old_aquereurs->map(function($aq) {
-                    return [
-                        'client_id' => $aq->client_id,
-                        'client_nom' => $aq->client->nom ?? null, // Add null coalescing for safety
-                        'client_prenom' => $aq->client->prenom ?? null,
-                        'pourcentage' => $aq->pourcentage
+                    $datapieceJointe = [
+                        'fichier' => $Myfile,
+                        'type' => $fileType,
+                        'reservation_id' => $reservation->id,
+                        'active' => 1,
                     ];
-                })->toArray();
-                //delete aquereurs
-                foreach ($old_aquereurs as $aq) {
-                    $aq->forceDelete();
-                }
-                //store new aqueereur
-                $clientController = new ClientController();
-                $clientRequest = new StoreClientRequest();
-                $aquereurController = new AquereurController();
-                $aquereurRequest = new StoreAquereurRequest();
-                $dataArray_clients = json_decode($request->input('clients'), true);
-                $dataArrayString = $request->input('oldClients', '[]');
 
-                $dataArray_oldClients = json_decode($dataArrayString, true); // Ensure it's an array
-                 // history
-                $new_aquereurs = [];
+                    $pieceJointeRequest->merge($datapieceJointe);
+                    $piecesJointeController->store($pieceJointeRequest);
 
-                if ($dataArray_clients) {
-                    foreach ($dataArray_clients as $clientInfo) {
-                        $clientInfo['projet_id'] = $reservation->projet_id;
-                        $clientRequest->merge($clientInfo);
-                        $clientData = $clientController->store($clientRequest);
-                        $dataAquereur = [
-                            'pourcentage' => $clientInfo['pourcentage'],
-                            'client_id' => $clientData->id,
-                            'reservation_id' => $reservation->id,
-                        ];
-                        $aquereurRequest->merge($dataAquereur);
-                        $aquereurController->store($aquereurRequest);
-                         // history
-                      // Add to new aquereurs array
-                        $new_aquereurs[] = [
-                            'client_id' => $clientData->id,
-                            'nom' => $clientData->nom,
-                            'prenom' => $clientData->prenom,
-                            'pourcentage' => $clientInfo['pourcentage']
-                        ];
-                    }
-                }
-                if ($dataArray_oldClients) {
-                    foreach ($dataArray_oldClients as $clientInfo) {
-                         // Get existing client
-                        $client = Client::on('temp')->find($clientInfo['id']);
-
-                        $dataAquereur = [
-                            'pourcentage' => $clientInfo['pourcentage1'] ?? $clientInfo['pourcentage'] ?? 0, // Fallback to 0 if neither exists
-                            'client_id' => $clientInfo['id'],
-                            'reservation_id' => $reservation->id,
-                        ];
-                        $aquereurRequest->merge($dataAquereur);
-                        $aquereurController->store($aquereurRequest);
-                         // history
-                        // Add to new aquereurs array
-                                $new_aquereurs[] = [
-                                    'client_id' => $clientInfo['id'],
-                                    'nom' => $client->nom,
-                                    'prenom' => $client->prenom,
-                                    'pourcentage' => $clientInfo['pourcentage1'] ?? $clientInfo['pourcentage'] ?? 0
-                                ];                    }
-                }
-                // Add acquereurs changes to changes array if they changed  // history
-                if ($old_aquereurs_data != $new_aquereurs) {
-                    $changes['acquereurs'] = [
-                        'old' => $old_aquereurs_data,
-                        'new' => $new_aquereurs
-                    ];
+                    // History
+                    $new_files[] = $Myfile;
                 }
 
-                //****edit piece jointe***
-                $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
-                $societe = Societe::findOrfail($user_societes->societe_id);
-
-                /*if (!$request->file('files_reservation')) {
-                    $pjController = new PiecesJointeController();
-                    $pjController->destoryFileUsingReservationId($id,$reservation->code_reservation,$societe);
-                }*/
-                if ($request->file('files_reservation')) {
-
-                    //*delete old piece jointe**
-
-                    $pjController = new PiecesJointeController();
-                     $old_files = $pjController->getFilesUsingReservationId($id,$societe);
-
-                    $pjController->destoryFileUsingReservationId($id,$request->input('code_reservation'), $societe);
-                   //
-                   $new_files = [];
-                    foreach ($request->file('files_reservation') as $file) {
-                        $piecesJointeController = new PiecesJointeController();
-                        $pieceJointeRequest = new StorePiecesJointeRequest();
-
-                        // Récupérer le nom du fichier
-                        $Myfile = $file->getClientOriginalName();
-
-                        $fileType = $file->getClientOriginalExtension();
-
-                        // Déplacer le fichier vers le répertoire de destination
-                        $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations/'.$reservation->code_reservation);
-                        File::makeDirectory($directory, 0755, true, true);
-
-                        $file->move($directory, $Myfile);
-
-                        $datapieceJointe = [
-                            'fichier' => $Myfile,
-                            'type' => $fileType,
-                            'reservation_id' => $reservation->id,
-                            'active' => 1,
-
-                        ];
-
-                        $pieceJointeRequest->merge($datapieceJointe);
-                        $piecesJointeController->store($pieceJointeRequest);
-                        // history
-                        $new_files[] = $Myfile;
-                    }
-                    // Add file changes to changes array
-                        $changes['files'] = [
-                            'old' => $old_files->pluck('fichier')->toArray(),
-                            'new' => $new_files
-                        ];
-                }
-
-                //store new pieces jointes
+                // Add file changes to changes array
+                $changes['files'] = [
+                    'old' => $old_files->pluck('fichier')->toArray(),
+                    'new' => $new_files
+                ];
             }
-                        // Store history with all changes
-            if (!empty($changes)) {
-                $histo = new HistoReservation();
-                $histo->setConnection('temp');
-                $histo->reservation_id = $reservation->id;
-                $histo->user_id = $userAuth->value('id');
-                $histo->bien_id = $request->input('bien_id');
-                $histo->action = 3;
-                $histo->description = json_encode($changes);
-                $histo->save();
-            }
-            return response()->json(['reservation' => $reservation], 200);
         }
-        return response()->json(['error', 'Unauthorized'], 401);
-    }
 
+        // Store history with all changes
+        if (!empty($changes)) {
+            $histo = new HistoReservation();
+            $histo->setConnection('temp');
+            $histo->reservation_id = $reservation->id;
+            $histo->user_id = $userAuth->id;
+            $histo->bien_id = $request->input('bien_id');
+            $histo->action = 3;
+            $histo->description = json_encode($changes);
+            $histo->save();
+        }
+
+        DB::connection('temp')->commit();
+        return response()->json(['reservation' => $reservation], 200);
+
+    } catch (\Exception $e) {
+        DB::connection('temp')->rollBack();
+        \Log::error('Reservation update error: ' . $e->getMessage());
+        return response()->json(['error' => 'Update failed: ' . $e->getMessage()], 500);
+    }
+}
     public function relancer_reservation($id, Request $request)
     {
         if (Auth::guard('api')->check()) {
