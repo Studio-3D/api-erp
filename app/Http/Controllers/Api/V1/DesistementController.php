@@ -26,6 +26,8 @@ use App\Models\Avance;
 use App\Models\Bien;
 use App\Models\Client;
 use App\Models\Desistement;
+use App\Models\StatutClient;
+
 use App\Models\Encaissement;
 use App\Models\FicheTransmission;
 use App\Models\HistoriqueDesistement;
@@ -62,6 +64,9 @@ class DesistementController extends Controller
 
     public function store(StoreDesistementRequest $request)
     {
+
+
+
         $user = Auth::user();
         Config::set('broadcasting.default', 'pusher_3');
         if (RoleHelper::ACSup()) {
@@ -69,9 +74,7 @@ class DesistementController extends Controller
             DB::connection('temp')->beginTransaction();
         try{
             $type=$request->type;
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-
-             // Get code desistement - improved logic
+           $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
             $code_desist_reservation = 0;
             $reservation = Reservation::on('temp')->findOrFail($request->reservation_id);
             $code_res=$reservation->code_reservation;
@@ -137,7 +140,7 @@ class DesistementController extends Controller
             $desistement->bien_id_ancien = $request->bien_id_ancien;
             $desistement->projet_id = $request->projet_id;
 
-            $desistement->user_id = intval($userAuth->value('id'));
+            $desistement->user_id =$userAuth->id;
 
             $last_num_recu = Desistement::on('temp')->orderByRaw("CAST(num_recu as UNSIGNED) DESC")
                 ->get('num_recu')->first();
@@ -151,13 +154,13 @@ class DesistementController extends Controller
                 //validé
                 $desistement->statut = 1;
                 $desistement->date_validation = Carbon::now();
-                $desistement->user_id_valider = intval($userAuth->value('id'));
+                $desistement->user_id_valider =$userAuth->id;
             }
 
             if ($desistement->save()) {
-
+                $this->createStatutClientForDesistement($desistement->id, $userAuth,$reservation->aquereurs,$code_res);
                 //DD
-                $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+                $user_societes = User::where('id', $userAuth->user_id_origin)->first();
                 $societe = Societe::findOrfail($user_societes->societe_id);
 
                 if ($request->type == TypeDesistement::Désistement_Définitif->value) {
@@ -178,7 +181,7 @@ class DesistementController extends Controller
                                     $remboursement->statut = 0;
                                     $remboursement->aquereur_id = $cl_remb['aq_id'];
 
-                                    $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+                                    $user_societes = User::where('id', $userAuth->user_id_origin)->first();
                                     $societe = Societe::findOrfail($user_societes->societe_id);
 
 
@@ -254,7 +257,7 @@ class DesistementController extends Controller
                                             $remboursement->mode_rembourse = 'transfert_rem_direct';
                                             $remboursement->statut = 1;
                                             $remboursement->etat = 1;
-                                            $remboursement->user_id_valider = $userAuth->value('id');
+                                            $remboursement->user_id_valider = $userAuth->id;
 
                                         } else {
                                             $remboursement->mode_rembourse = 'transfert_rem_apres_vente';
@@ -269,7 +272,7 @@ class DesistementController extends Controller
                                         $remboursement->pour_le_compte = $cl_remb['pour_le_compte'];
                                         $remboursement->num_paiement = $cl_remb['num_paiement'];
                                         $remboursement->statut = 1;
-                                        $remboursement->user_id_valider = $userAuth->value('id');
+                                        $remboursement->user_id_valider =  $userAuth->id;
                                         $remboursement->etat = 1;
                                         $remboursement->montant_a_rembourser = $mont_a_rembourser;
                                         $remboursement->montant_a_rembourser_par_lettre = $mont_remb_lettre;
@@ -718,7 +721,7 @@ class DesistementController extends Controller
                         }
                         $fiche->avance_id = null;
                         $fiche->penalite_id = $pen->id;
-                        $fiche->user_id = $userAuth->value('id');
+                        $fiche->user_id =  $userAuth->id;
                         if ($request->mode_paiement_pen == 2 || $request->mode_paiement_pen == 3 || $request->mode_paiement_pen == 4) {
                             $fiche->date = $pen->echeance;
                         } else {
@@ -755,18 +758,18 @@ class DesistementController extends Controller
                                             // Eager load the relationships to avoid N+1 queries
                                             $data = [
                                                 'adminName' => $admin->name,
-                                                'penaliteCode' => $pen->num_recu ?? 'N/A',
-                                                'reservationCode' => $code_res ?? 'N/A',
+                                                'penaliteCode' => $pen->num_recu ?? '',
+                                                'reservationCode' => $code_res ?? '',
                                                 'montantPenalite' => number_format($pen->montant, 2, ',', ' ') . ' €',
                                                 'validationLink' => 'http://localhost:3000/ventes/desistements/penalites/'.$pen->id,
                                                 'dateCreation' => Carbon::now()->format('d/m/Y à H:i'),
-                                                'createdBy' => $userAuth->first()->name ?? $userAuth->name ?? 'Un commercial',
+                                                'createdBy' => $userAuth->name ?? $userAuth->name ?? 'Un commercial',
                                                 'projetName' => $reservation->projet->nom ?? 'Non spécifié'
                                             ];
 
                                             Mail::send('emails.demande_validation_penalite', $data, function ($message) use ($to_email, $pen, $code_res) {
                                                 $message->to($to_email)
-                                                    ->subject('Demande Validation Pénalité - Désistement de dossier: '.($code_res ?? 'N/A'));
+                                                    ->subject('Demande Validation Pénalité - Désistement de dossier: '.($code_res ?? ''));
                                                 $message->from(env('MAIL_USERNAME'), 'Immobilier Immo');
                                             });
 
@@ -1593,16 +1596,16 @@ class DesistementController extends Controller
 
                                 $data = [
                                     'adminName' => $admin->name,
-                                    'reservationCode' => $code_res ?? 'N/A',
+                                    'reservationCode' => $code_res ?? '',
                                     'validationLink' => 'http://localhost:3000/ventes/desistements/show/'.$desistement->id,
                                     'dateCreation' => Carbon::now()->format('d/m/Y à H:i'),
-                                    'createdBy' => $userAuth->first()->name ?? $userAuth->name ?? 'Un commercial',
+                                    'createdBy' => $userAuth->name ?? $userAuth->name ?? 'Un commercial',
                                     'projetName' => $reservation->projet->nom ?? 'Non spécifié',
                                 ];
 
                                 Mail::send('emails.demande_validation_desistement', $data, function ($message) use ($to_email, $code_res) {
                                     $message->to($to_email)
-                                        ->subject('Demande Validation Désistement - Réservation : '.($code_res ?? 'N/A'));
+                                        ->subject('Demande Validation Désistement - Réservation : '.($code_res ?? ''));
                                     $message->from(env('MAIL_USERNAME'), 'Immobilier Immo');
                                 });
 
@@ -1656,6 +1659,147 @@ class DesistementController extends Controller
     }
 
 
+private function createStatutClientForDesistement($desistementId, $userAuth, $aquereurs, $code_reservation)
+{
+    try {
+        \Log::info('=== Starting createStatutClientForDesistement ===');
+        \Log::info('Desistement ID: ' . $desistementId);
+
+        // Vérifiez le type de $userAuth
+        if ($userAuth instanceof \Illuminate\Support\Collection) {
+            \Log::info('User Auth: Collection with ' . $userAuth->count() . ' items');
+            $user = $userAuth->first();
+            $userId = $user ? $user->id : null;
+            $userName = $user ? $user->name : null;
+        } else {
+            \Log::info('User Auth: Object, ID: ' . ($userAuth->id ?? 'null'));
+            $userId = $userAuth->id ?? null;
+            $userName = $userAuth->name ?? null;
+        }
+
+        \Log::info('Aquereurs count: ' . ($aquereurs ? $aquereurs->count() : 0));
+
+        // Get the desistement
+        $desistement = Desistement::on('temp')->find($desistementId);
+
+        if (!$desistement) {
+            \Log::warning('Desistement not found for ID: ' . $desistementId);
+            return;
+        }
+
+        if (!$aquereurs || $aquereurs->isEmpty()) {
+            \Log::warning('No aquereurs found for desistement ID: ' . $desistementId);
+            return;
+        }
+
+        // Déterminer le statut et le texte basé sur le type de désistement
+        $statutCode = '';
+        $documentText = 'Désistement';
+        $typeDetail = '';
+
+        switch($desistement->type) {
+            case TypeDesistement::Désistement_Définitif->value:
+                $statutCode = '10';
+                $documentText = 'Désistement Définitif';
+                break;
+
+            case TypeDesistement::Désistement_Au_Profit->value:
+                $documentText = 'Désistement Au Profit';
+                if ($desistement->type_dp) {
+                    switch($desistement->type_dp) {
+                        case TypeDesistementProfit::Désistement_AU_PROFIT_UN_PROCHE->value:
+                            $statutCode = '11';
+                            $typeDetail = 'Au Profit d\'un Proche';
+                            break;
+
+                        case TypeDesistementProfit::Désistement_AU_PROFIT_UN_CO_RESERVATAIRE->value:
+                            $statutCode = '12';
+                            $typeDetail = 'Au Profit d\'un Co-Réservataire';
+                            break;
+
+                        case TypeDesistementProfit::Désistement_Partiel->value:
+                            $statutCode = '13';
+                            $typeDetail = 'Désistement Partiel';
+                            break;
+                    }
+                }
+                break;
+
+            case TypeDesistement::Changement_De_Bien->value:
+                $statutCode = '14';
+                $documentText = 'Changement de Bien';
+                break;
+        }
+
+        // Vérifiez que le statutCode est défini
+        if (empty($statutCode)) {
+            \Log::warning('Statut code not defined for desistement type: ' . $desistement->type);
+            return;
+        }
+
+        foreach ($aquereurs as $aquereur) {
+            if (!$aquereur->client_id) {
+                \Log::warning('Aquereur without client found for desistement ID: ' . $desistementId);
+                continue;
+            }
+
+            $statutClient = new StatutClient();
+            $statutClient->setConnection('temp');
+            $statutClient->client_id = $aquereur->client_id;
+            $statutClient->statut = $statutCode;
+            $statutClient->desistement_id = $desistementId;
+            $statutClient->reservation_id = $desistement->reservation_id;
+            $statutClient->date_traitement = now();
+            $statutClient->user_id_traite = $userId;
+
+            // Build comment
+            $comment = $documentText;
+
+            if ($typeDetail) {
+                $comment .= ' - ' . $typeDetail;
+            }
+
+            $comment .= ' - N°: ' . ($desistement->num_recu ?? '');
+
+            if ($desistement->motif) {
+                $comment .= ' - Motif: ' . $desistement->motif;
+            }
+
+            // Pour changement de bien
+            if ($desistement->type == TypeDesistement::Changement_De_Bien->value && $desistement->bien_id_new) {
+                  $OldBien = Bien::on('temp')->find($desistement->bien_id_ancien);
+                if ($OldBien) {
+                    $comment .= ' - Ancien bien: ' . $OldBien->propriete_dite_bien;
+                }
+                $bienNew = Bien::on('temp')->find($desistement->bien_id_new);
+                if ($bienNew) {
+                    $comment .= ' - Nouveau bien: ' . $bienNew->propriete_dite_bien;
+                }
+            }
+
+            $comment .= ' - Réservation: ' . $code_reservation;
+
+            if ($userName) {
+                $comment .= ' - Commercial: ' . $userName;
+            }
+
+            $statutClient->commentaire = $comment;
+
+            try {
+                $statutClient->save();
+                \Log::info('StatutClient created for client ID: ' . $aquereur->client_id);
+            } catch (\Exception $e) {
+                \Log::error('Failed to save StatutClient for client ID ' . $aquereur->client_id . ': ' . $e->getMessage());
+            }
+        }
+
+        \Log::info('=== Finished createStatutClientForDesistement ===');
+
+    } catch (\Exception $e) {
+        \Log::error('Failed to create StatutClient for desistement: ' . $e->getMessage());
+        \Log::error('Error trace: ' . $e->getTraceAsString());
+    }
+}
     public function store_historique_desistement($res_id, $des_id, $bien_id, $code_des, $date)
     {
         if (RoleHelper::ACSup()) {
@@ -1962,7 +2106,7 @@ class DesistementController extends Controller
         if(RoleHelper::AdminSup()){
             DatabaseHelper::Config();
             $user = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
             $desistement = Desistement::on('temp')->findOrFail($id);
             $reservation = Reservation::on('temp')->findOrFail($desistement->reservation_id);
             $remboursements=Remboursement::on('temp')->where('desistement_id',$id)->where('archive',0)->get();
@@ -2253,13 +2397,13 @@ class DesistementController extends Controller
                                     $aquereurRequest = new StoreAquereurRequest();
                                         if(count($nouvel_aqu)>0){
                                         foreach ($nouvel_aqu as $info) {
-                                            $client_exist=Client::on('temp')->where('cin',$info->cin)->orderBy('created_at', 'DESC')->get()->first();
+                                            $client_exist=Client::on('temp')->where('cin',$info->cin)->where('projet_id',$desistement->projet_id)->orderBy('created_at', 'DESC')->get()->first();
 
                                                 if($client_exist!=null){
                                                     $clientData =$client_exist;
                                                 }else{
                                                     // si est un prospect
-                                                    $prospect_exist = Prospect::on('temp')->where(function($query) use ($info) {
+                                                    $prospect_exist = Prospect::on('temp')->where('projet_id',$desistement->projet_id)->where(function($query) use ($info) {
                                                     $query->where('telephone',$info->telephone)
                                                         ->orwhere('telephone_num2',$info->telephone)
                                                         ->orwhere('cin',$info->cin)
@@ -2276,7 +2420,8 @@ class DesistementController extends Controller
                                                              'civilite' => '1',
                                                             'situation_familliale' => '1',
                                                             'type_client'=>1,
-                                                              'projet_id'=>$desistement->projet_id
+                                                              'projet_id'=>$desistement->projet_id,
+                                                              'prospect_id'=>$prospect_exist->id
                                                         ];
                                                     }else{
                                                         //new client
@@ -2361,13 +2506,13 @@ class DesistementController extends Controller
                                     $aquereurRequest = new StoreAquereurRequest();
                                         if(count($nouvel_aqu)>0){
                                         foreach ($nouvel_aqu as $info) {
-                                            $client_exist=Client::on('temp')->where('cin',$info->cin)->orderBy('created_at', 'DESC')->get()->first();
+                                            $client_exist=Client::on('temp')->where('cin',$info->cin)->where('projet_id',$desistement->projet_id)->orderBy('created_at', 'DESC')->get()->first();
 
                                                 if($client_exist!=null){
                                                     $clientData =$client_exist;
                                                 }else{
                                                     // si est un prospect
-                                                    $prospect_exist = Prospect::on('temp')->where(function($query) use ($info) {
+                                                    $prospect_exist = Prospect::on('temp')->where('projet_id',$desistement->projet_id)->where(function($query) use ($info) {
                                                     $query->where('telephone',$info->telephone)
                                                         ->orwhere('telephone_num2',$info->telephone)
                                                         ->orwhere('cin',$info->cin)
@@ -2657,7 +2802,7 @@ class DesistementController extends Controller
                     }
                     $desistement->statut=1;
                     $desistement->date_validation=Carbon::now();
-                    $desistement->user_id_valider=intval($userAuth->value('id'));
+                    $desistement->user_id_valider= $userAuth->id;
 
                     if( $desistement->save()){
                         Config::set('broadcasting.default', 'pusher_5');
@@ -2687,7 +2832,7 @@ class DesistementController extends Controller
                 $desistement->statut=$request->statut;
                 $desistement->commentaire_rejete=$request->commentaire;
                 $desistement->date_validation=Carbon::now();
-                $desistement->user_id_valider=intval($userAuth->value('id'));
+                $desistement->user_id_valider= $userAuth->id;
 
                 if($desistement->save()){
                     Config::set('broadcasting.default', 'pusher_5');
@@ -3206,8 +3351,8 @@ class DesistementController extends Controller
                                             $code_res=$pen->desistement->reservation->code_reservation;
                                             $data = [
                                                 'adminName' => $admin->name,
-                                                'penaliteCode' => $pen->num_recu ?? 'N/A',
-                                                'reservationCode' =>$code_res ?? 'N/A',
+                                                'penaliteCode' => $pen->num_recu ?? '',
+                                                'reservationCode' =>$code_res ?? '',
                                                 'montantPenalite' => number_format($pen->montant, 2, ',', ' ') . ' €',
                                                 'validationLink' => 'http://localhost:3000/ventes/desistements/penalites/'.$pen->id,
                                                 'dateCreation' => Carbon::now()->format('d/m/Y à H:i'),
@@ -3218,7 +3363,7 @@ class DesistementController extends Controller
 
                                 Mail::send('emails.demande_validation_penalite', $data, function ($message) use ($to_email, $pen, $code_res) {
                                     $message->to($to_email)
-                                        ->subject('Demande Validation Pénalité - Désistement de dossier: '.($code_res ?? 'N/A'));
+                                        ->subject('Demande Validation Pénalité - Désistement de dossier: '.($code_res ?? ''));
                                     $message->from(env('MAIL_USERNAME'), 'Immobilier Immo');
                                 });
 
@@ -3420,7 +3565,10 @@ class DesistementController extends Controller
         if(RoleHelper::ACSup()) {
             DatabaseHelper::Config();
             $user = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+            if (!$userAuth) {
+            return response()->json(['error' => 'Utilisateur non trouvé'], 404);
+            }
             $penalite = PenaliteDesistement::on('temp')->findOrFail($id);
             $penalite->statut=$request->etat;
                 if($penalite->save()){
@@ -3438,11 +3586,71 @@ class DesistementController extends Controller
                     }
 
                     $st_pen->penalite_id=$penalite->id;
-                    $st_pen->user_id_valider = $userAuth->value('id');
+                    $st_pen->user_id_valider = $userAuth->id;
                     $st_pen->date_validation = Carbon::now();
                     $st_pen->save();
+
+                     // AJOUT DU STATUT CLIENT
+            if (isset($penalite->desistement->reservation_ancien->aquereurs_ancien)) {
+                foreach ($penalite->desistement->reservation_ancien->aquereurs_ancien as $aquereur) {
+                    if ($aquereur->client_id) {
+                        $statutClient = new StatutClient();
+                        $statutClient->setConnection('temp');
+
+                        // Récupération des informations
+                        $codeReservation = $penalite->desistement->reservation_ancien->code_reservation ?? '';
+                        $nomProjet = $penalite->desistement->projet->nom ?? '';
+                        $client = $aquereur->client ?? null;
+
+                        if ($client) {
+                            // Construction du commentaire selon l'état
+                            if ($request->etat == 1) {
+                                // Pénalité validée
+                                $comment = "Pénalité de désistement validée ";
+                                $comment .= "- Montant: " . number_format($penalite->montant, 0, ',', ' ') . " MAD ";
+                                if ($request->n_remise) {
+                                    $comment .= " - N° remise: " . $request->n_remise;
+                                }
+                                if ($request->date_encaiss) {
+                                    $comment .= " - Date encaissement: " . Carbon::parse($request->date_encaiss)->format('d/m/Y');
+                                }
+
+                                $statutClient->statut = 15; // Statut pour "Pénalité validée"
+                            } else {
+                                // Pénalité rejetée
+                                $comment = "Pénalité de désistement rejetée ";
+                                $comment .= "- Montant: " . number_format($penalite->montant, 0, ',', ' ') . " MAD ";
+
+                                if ($request->commentaire) {
+                                    $comment .= " - Motif: " . $request->commentaire;
+                                }
+
+                                $statutClient->statut = 18; // Statut pour "Pénalité rejetée"
+                            }
+
+                            // Informations communes
+                            $comment .= " - Réservation: " . $codeReservation;
+                            $comment .= " - Projet: " . $nomProjet;
+                            $comment .= " - Traité par: " . $userAuth->name . " " . ($userAuth->prenom ?? '');
+
+                            // Attribution des valeurs au StatutClient
+                            $statutClient->client_id = $aquereur->client_id;
+                            $statutClient->penalite_id = $penalite->id;
+                            $statutClient->desistement_id = $penalite->desistement_id;
+                            $statutClient->reservation_id = $penalite->desistement->reservation_ancien->id ?? null;
+                            $statutClient->date_traitement = Carbon::now();
+                            $statutClient->user_id_traite = $userAuth->id;
+                            $statutClient->commentaire = $comment;
+
+                            $statutClient->save();
+                        }
+                    }
+                }
+            }
                 }
                 if($request->etat==1){
+                    //new statut Client
+
                  Config::set('broadcasting.default', 'pusher_5');
                  //3 traitement  penalite
                  broadcast(new NotifMenuEvent(3));
@@ -3475,7 +3683,7 @@ class DesistementController extends Controller
                  $encaiss->penalite_id = $penalite->id;
                  $encaiss->date_reglement = $penalite->created_at;
                  $encaiss->date_encaissement = $request->date_encaiss;
-                 $encaiss->user_id_valider = $userAuth->value('id');
+                 $encaiss->user_id_valider = $userAuth->id;
                  $encaiss->save();
 
 

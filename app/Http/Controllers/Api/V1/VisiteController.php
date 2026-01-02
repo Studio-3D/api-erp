@@ -337,7 +337,7 @@ class VisiteController extends Controller
         try {
             $msg_sended = 0;
             $projet = Projet::on('temp')->findorfail($request->selectedProjet);
-            $main_visite_id = '';//get visite id used in store statut prospect
+            $main_visite_id = null;//get visite id used in store statut prospect
             ///decoder les stringfy
             $list_bien_interesse       = json_decode($request->input('list_bien_interesse', '[]'), true);
             $list_bien_transfere_vendu = json_decode($request->input('list_bien_transfere_vendu', '[]'), true);
@@ -572,6 +572,7 @@ class VisiteController extends Controller
                                     $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
                                     $mnt_lettre = $inWords->format($request->montant_suivi);
                                     $dataAvance = [
+                                        'origin' => 'visite',
                                         'avance_with_reservation' => false,
                                         'sr' => $request->sr_suivi,
                                         'type_encaissement' => 1,
@@ -1218,19 +1219,10 @@ class VisiteController extends Controller
                     break;
             }
 
-            $statut_pro = new StatutProspect();
-            $statut_pro->setConnection('temp');
-            $statut_pro->prospect_id     = $prospect->id;
-            $statut_pro->statut          = $initialStatut;
-            $statut_pro->date_rappel     = $lastDateRelance;
-            $statut_pro->rdv             = $lastRdv;
-            $statut_pro->date_traitement = Carbon::now();
-            $statut_pro->user_id_traite  = $userAuth->value('id');
-            $statut_pro->visite_id       =  $main_visite_id;
-            $statut_pro->commentaire     = $comment;
-            $statut_pro->save();
+
             // Ajouter la création du statut 10 si vente détectée
             if ($hasVenteRequested && $request->interet == InteretEnum::Intéressé->value) {
+                if($statut_convert_client_exist==0){
                 $statut_pro = new StatutProspect();
                 $statut_pro->setConnection('temp');
                 $statut_pro->prospect_id = $prospect->id;
@@ -1242,6 +1234,19 @@ class VisiteController extends Controller
                 $statut_pro->visite_id =  $main_visite_id;
                 $statut_pro->commentaire = 'Converti en client via visite VENDU';
                 $statut_pro->save();
+                }
+            }else{
+                    $statut_pro = new StatutProspect();
+                    $statut_pro->setConnection('temp');
+                    $statut_pro->prospect_id     = $prospect->id;
+                    $statut_pro->statut          = $initialStatut;
+                    $statut_pro->date_rappel     = $lastDateRelance;
+                    $statut_pro->rdv             = $lastRdv;
+                    $statut_pro->date_traitement = Carbon::now();
+                    $statut_pro->user_id_traite  = $userAuth->value('id');
+                    $statut_pro->visite_id       =  $main_visite_id;
+                    $statut_pro->commentaire     = $comment;
+                    $statut_pro->save();
             }
         }else if( $request->interet == InteretEnum::Suivi_dossier->value){
             if($statut_convert_client_exist==1||$prospect->client_id!=null){
@@ -1255,8 +1260,29 @@ class VisiteController extends Controller
                 $statut_client->reservation_id = $request->dossier_id_suivi;
                 $statut_client->date_traitement = Carbon::now();
                 $statut_client->user_id_traite = $userAuth->value('id');
-                $statut_client->commentaire = $request->commentaire_av_suivi;
-                $statut_client->save();
+                if ($request->statut_suivi == '1') { // Assuming '1' is "nouveau" or "nouvell"
+                        // Build payment comment
+                        $comment = 'Paiement Avance montant: ' . number_format($request->montant_suivi, 2) .
+                                ' DH - Réservation code: ' . $request->code_suivi;
+
+                        // Add payment reference if available
+                        if ($request->num_paiement_suivi) {
+                            $comment .= ' - Ref paiement: ' . $request->num_paiement_suivi;
+                        }
+
+                        // Add check/echeance info for checks
+                        if ($request->mode_paiement_suivi == '2' || $request->mode_paiement_suivi == '3' || $request->mode_paiement_suivi == '4') {
+                            if ($request->echeance_suivi) {
+                                $comment .= ' - Échéance: ' . Carbon::parse($request->echeance_suivi)->format('d/m/Y');
+                            }
+                        }
+                    } else {
+                        // Use the existing comment for other statuts
+                        $comment = $request->commentaire;
+                    }
+
+                    $statut_client->commentaire = $comment;
+                    $statut_client->save();
             }
         }
 
@@ -1574,7 +1600,13 @@ public function edit_visite($id)
                             ->without('user', 'projet', 'historiques', 'piece_jointe', 'bien', 'aquereurs', 'aquereurs_ancien');
                     }]);
                 }]);
-            }
+            },'statut_client' => function($query) {
+                    $query->with(['avance' => function($q) {
+                        $q->with('banque:id,nom'); // Seulement les colonnes nécessaires
+                        $q->select('id', 'montant', 'mode_paiement', 'banque_id',
+                                   'numero_paiement', 'echeance','commentaireAvance'); // Ajoutez d'autres colonnes si nécessaire
+                    }])->without('reservation','user');
+                },
         ])->findOrFail($id);
 
         return response()->json(['visite' => $visite], 200);
@@ -1588,7 +1620,6 @@ public function edit_visite($id)
      */
     public function update(UpdateVisiteRequest $request, $id)
     {
-
         $user = Auth::user();
         if (RoleHelper::ACSup()) {
                 DatabaseHelper::Config();
@@ -1691,12 +1722,6 @@ public function edit_visite($id)
                         $old_visite->etat = 0;
                         $old_visite->save();
                     }
-                    //calcul nb visite
-                    /*$description=null;
-                    $visites_count=Visite::on('temp')->where('origin_id',$visite->origin_id)->where('etat',1)->orderBy('created_at', 'DESC')->count();
-                    if($visites_count>0){
-                    $description='MODIFICATION VISITE '.$visites_count;
-                    }*/
 
                     //recupere le prospect //modifier info
                     $prospect = Prospect::on('temp')->findorfail($visite->prospect_id);
@@ -1786,6 +1811,10 @@ public function edit_visite($id)
                         $visite->statut  = null;
                         $visite->bien_id = null;
                     }
+                    elseif ($request->interet == InteretEnum::Suivi_dossier->value) {
+                        $visite->statut  = $request->statut;
+                        $visite->bien_id = null;
+                    }
                     $visite->save();
 
                     /** store relances et rdv **/
@@ -1807,7 +1836,7 @@ public function edit_visite($id)
                     }
 
                     //store relances et rdv et notifications
-                    if ($visite->statut == StatutVisiteEnum::Pré_Réservation->value || $visite->interet == InteretEnum::Réceptif->value) {
+                    if ($visite->statut == StatutVisiteEnum::Pré_Réservation->value || $visite->interet == InteretEnum::Réceptif->value ||$visite->interet == InteretEnum::Suivi_dossier->value) {
                                 // Track relance/rdv fields only for this condition
                                /* $relanceFields = ['date_relance', 'mode_relance', 'rdv'];
                                 foreach ($relanceFields as $field) {
@@ -1885,6 +1914,77 @@ public function edit_visite($id)
                             $rdv->user_id         = $userAuth->value('id');
                             $rdv->visite_id       = $visite->id;
                             $rdv->save();
+                        }
+                        if($request->statut_client_id!=null && $request->statut_client_id!=''){
+                            $statut_client=StatutClient::on('temp')->findOrFail($request->statut_client_id);
+                            if($statut_client){
+                                $statut_client->delete();
+                            }
+
+                            if($request->statut_suivi==StatutSuiviDossier::Nouvelle_avance->value){
+                                    $avanceController = new AvanceController();
+                                    $avanceRequest = new StoreAvanceRequest();
+                                    $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
+                                    $mnt_lettre = $inWords->format($request->montant_suivi);
+                                    $dataAvance = [
+                                        'origin'=>'visite',
+                                        'avance_with_reservation' => false,
+                                        'sr' => $request->sr_suivi,
+                                        'type_encaissement' => 1,
+                                        'montant' => $request->montant_suivi,
+                                        'mode_paiement' => $request->mode_paiement_suivi,
+                                        'numero_paiement' => $request->num_paiement_suivi,
+                                        'date_reglement' => $request->date_paiement_suivi,
+                                        'echeance' => $request->echeance_suivi,
+                                        'banque_id' => $request->banque_id_suivi,
+                                        'montant_par_lettre' => $mnt_lettre,
+                                        'reservation_id' => $request->dossier_id_suivi,
+                                        'commentaireAvance' => $request->commentaire_av_suivi,
+                                        'num_remise' => $request->num_remise_suivi,
+                                        'date_encaissement' => $request->date_encaissement_suivi,
+                                    ];
+
+                                    $avanceRequest->merge($dataAvance);
+
+                                     // Store avance and get the response
+                                    $avanceResponse = $avanceController->store($avanceRequest);
+
+                                            // Get the avance_id from the response
+                                    $avanceData = json_decode($avanceResponse->getContent(), true);
+                                    $avance_id = isset($avanceData['avance']) ? $avanceData['avance']['id'] : null;
+                            }
+                                    $new_staut_client = new StatutClient();
+                                    $new_staut_client->setConnection('temp');
+                                    $new_staut_client->visite_id = $visite->id;
+                                    $new_staut_client->client_id = $prospect->client_id ?? null;
+                                    $new_staut_client->statut =$request->statut_suivi;//suivi dossier
+                                    $new_staut_client->avance_id = $avance_id??null;
+                                    $new_staut_client->reservation_id = $request->dossier_id_suivi;
+                                    $new_staut_client->date_traitement = Carbon::now();
+                                    $new_staut_client->user_id_traite = $userAuth->value('id');
+                                   if ($request->statut_suivi == '1') { // Assuming '1' is "nouveau" or "nouvell"
+                                        // Build payment comment
+                                        $comment = 'Paiement Avance montant: ' . number_format($request->montant_suivi, 2) .
+                                                ' DH - Réservation code: ' . $request->code_suivi;
+
+                                        // Add payment reference if available
+                                        if ($request->num_paiement_suivi) {
+                                            $comment .= ' - Ref paiement: ' . $request->num_paiement_suivi;
+                                        }
+
+                                        // Add check/echeance info for checks
+                                        if ($request->mode_paiement_suivi == '2' || $request->mode_paiement_suivi == '3' || $request->mode_paiement_suivi == '4') {
+                                            if ($request->echeance_suivi) {
+                                                $comment .= ' - Échéance: ' . Carbon::parse($request->echeance_suivi)->format('d/m/Y');
+                                            }
+                                        }
+                                    } else {
+                                        // Use the existing comment for other statuts
+                                        $comment = $request->commentaire;
+                                    }
+
+                                    $new_staut_client->commentaire = $comment;
+                                    $new_staut_client->save();
                         }
                     }
                     /*//store code pre reserve to table ==>PreReservation
@@ -2209,7 +2309,7 @@ public function edit_visite($id)
                         $prospect->save();
                 }
             }
-            $main_visite_id = '';//get visite id used in store statut prospect
+            $main_visite_id = null;//get visite id used in store statut prospect
 
             // Precompute whether this request includes a RDV or a Relance to avoid race conditions
             $hasRdvRequested = false;
@@ -2363,6 +2463,7 @@ public function edit_visite($id)
                                     $inWords = new NumberFormatter('fr', NumberFormatter::SPELLOUT);
                                     $mnt_lettre = $inWords->format($request->montant_suivi);
                                     $dataAvance = [
+                                         'origin' => 'visite',
                                         'avance_with_reservation' => false,
                                         'sr' => $request->sr_suivi,
                                         'type_encaissement' => 1,
@@ -2840,34 +2941,39 @@ public function edit_visite($id)
                         break;
                     }
 
-                $statut_pro = new StatutProspect();
-                $statut_pro->setConnection('temp');
-                $statut_pro->prospect_id     = $request->prospect_id;
-                $statut_pro->statut          = $initialStatut;
-                $statut_pro->date_traitement = Carbon::now();
-                $statut_pro->date_rappel=$lastDateRelance;
-                $statut_pro->rdv=$lastRdv;
-                $statut_pro->user_id_traite  = $userAuth->value('id');
-                $statut_pro->visite_id       = $main_visite_id;
-                $statut_pro->commentaire     = $comment;
-                $statut_pro->save();
+
                 // Ajouter la création du statut 10 si vente détectée
                 if ($hasVenteRequested && $request->interet == InteretEnum::Intéressé->value) {
+                    if( $statut_convert_client_exist==0){
+                        $statut_pro = new StatutProspect();
+                        $statut_pro->setConnection('temp');
+                        $statut_pro->prospect_id = $request->prospect_id;;
+                        $statut_pro->statut = '10';
+                        $statut_pro->date_rappel = null;
+                        $statut_pro->rdv = null;
+                        $statut_pro->date_traitement = Carbon::now();
+                        $statut_pro->user_id_traite = $userAuth->value('id');
+                        $statut_pro->visite_id = $main_visite_id;
+                        $statut_pro->commentaire = 'Converti en client via visite VENDU';
+                        $statut_pro->save();
+                    }
+
+                }else{
                     $statut_pro = new StatutProspect();
                     $statut_pro->setConnection('temp');
-                    $statut_pro->prospect_id = $request->prospect_id;;
-                    $statut_pro->statut = '10';
-                    $statut_pro->date_rappel = null;
-                    $statut_pro->rdv = null;
+                    $statut_pro->prospect_id     = $request->prospect_id;
+                    $statut_pro->statut          = $initialStatut;
                     $statut_pro->date_traitement = Carbon::now();
-                    $statut_pro->user_id_traite = $userAuth->value('id');
-                    $statut_pro->visite_id = $main_visite_id;
-                    $statut_pro->commentaire = 'Converti en client via visite VENDU';
+                    $statut_pro->date_rappel=$lastDateRelance;
+                    $statut_pro->rdv=$lastRdv;
+                    $statut_pro->user_id_traite  = $userAuth->value('id');
+                    $statut_pro->visite_id       = $main_visite_id;
+                    $statut_pro->commentaire     = $comment;
                     $statut_pro->save();
                 }
         }else if( $request->interet == InteretEnum::Suivi_dossier->value){
                 if($statut_convert_client_exist==1||$prospect->client_id!=null){
-                    //c'est un client
+                    //c'est un client et si statut suivi
                     $statut_client = new StatutClient();
                     $statut_client->setConnection('temp');
                     $statut_client->visite_id = $main_visite_id;
@@ -2877,7 +2983,30 @@ public function edit_visite($id)
                     $statut_client->reservation_id = $request->dossier_id_suivi;
                     $statut_client->date_traitement = Carbon::now();
                     $statut_client->user_id_traite = $userAuth->value('id');
-                    $statut_client->commentaire = $request->commentaire_av_suivi;
+                   // $statut_client->commentaire = $request->commentaire;
+                   // Condition for comment based on statut_suivi
+                    if ($request->statut_suivi == '1') { // Assuming '1' is "nouveau" or "nouvell"
+                        // Build payment comment
+                        $comment = 'Paiement Avance montant: ' . number_format($request->montant_suivi, 2) .
+                                ' DH - Réservation code: ' . $request->code_suivi;
+
+                        // Add payment reference if available
+                        if ($request->num_paiement_suivi) {
+                            $comment .= ' - Ref paiement: ' . $request->num_paiement_suivi;
+                        }
+
+                        // Add check/echeance info for checks
+                        if ($request->mode_paiement_suivi == '2' || $request->mode_paiement_suivi == '3' || $request->mode_paiement_suivi == '4') {
+                            if ($request->echeance_suivi) {
+                                $comment .= ' - Échéance: ' . Carbon::parse($request->echeance_suivi)->format('d/m/Y');
+                            }
+                        }
+                    } else {
+                        // Use the existing comment for other statuts
+                        $comment = $request->commentaire;
+                    }
+
+                    $statut_client->commentaire = $comment;
                     $statut_client->save();
                 }
         }

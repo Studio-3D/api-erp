@@ -40,4 +40,7 @@ class StatutClient extends Model
      public function remboursement(){
             return $this->belongsTo(Remboursement::class,'remboursement_id');
     }
+     public function rdv(){
+            return $this->belongsTo(Rendez_vous::class,'rdv_id');
+    }
 }

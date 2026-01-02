@@ -6,11 +6,15 @@ use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\RoleHelper;
 use App\Models\RemiseCle;
 use App\Models\Societe;
+use App\Models\Bien;
+use App\Models\StatutClient;
+
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\File;
+use DB;
 
 class RemiseCleController extends Controller
 {
@@ -107,40 +111,136 @@ class RemiseCleController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
-     */
+     * Store a newly created resource in storage.*/
     public function store(Request $request)
-{
-    if (RoleHelper::ACSup()) {
-        DatabaseHelper::Config();
-        $user          = Auth::user();
-        $userAuth      = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-        $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
-        $societe       = Societe::findOrfail($user_societes->societe_id);
-        $rec           = new RemiseCle();
-        $rec->setConnection('temp');
-        $rec->bien_id       = $request->bien_id;
-        $rec->projet_id     = $request->projet_id;
-        $rec->date_remise   = $request->date_remise;
-        $rec->user_id       = $userAuth->value('id');
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
 
-        // Corrected logic for user_id_remis
-        $rec->user_id_remis = $request->has('user_id_remise') && !empty($request->user_id_remise)
-            ? $request->user_id_remise
-            : $userAuth->value('id');;
+            // Démarrer la transaction
+            DB::connection('temp')->beginTransaction();
 
-        if ($request->hasFile('fichier')) {
-            $rec->fichier = $request->file('fichier')->getClientOriginalName();
-            $directory    = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remise_cles');
-            File::makeDirectory($directory, 0755, true, true);
-            $request->file('fichier')->move($directory, $request->file('fichier')->getClientOriginalName());
+            try {
+                $user = Auth::user();
+                $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+
+                if (!$userAuth) {
+                    throw new \Exception('Utilisateur non trouvé');
+                }
+
+                $user_societes = User::where('id', $userAuth->user_id_origin)->first();
+                $societe = Societe::findOrFail($user_societes->societe_id);
+
+                // Création de la remise de clés
+                $rec = new RemiseCle();
+                $rec->setConnection('temp');
+                $rec->bien_id = $request->bien_id;
+                $rec->projet_id = $request->projet_id;
+                $rec->date_remise = $request->date_remise;
+                $rec->user_id = $userAuth->id;
+
+                // Corrected logic for user_id_remis
+                $rec->user_id_remis = $request->has('user_id_remise') && !empty($request->user_id_remise)
+                    ? $request->user_id_remise
+                    : $userAuth->id;
+
+                // Gestion du fichier uploadé
+                if ($request->hasFile('fichier')) {
+                    $rec->fichier = $request->file('fichier')->getClientOriginalName();
+                    $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remise_cles');
+                    File::makeDirectory($directory, 0755, true, true);
+                    $request->file('fichier')->move($directory, $request->file('fichier')->getClientOriginalName());
+                }
+
+                $rec->save();
+
+                // NEW STATUT CLIENT
+                $bien = Bien::on('temp')->with(['reservation.aquereurs.client', 'projet'])->find($request->bien_id);
+
+                if ($bien && $bien->reservation) {
+                    // Récupérer l'utilisateur qui a remis les clés
+                    $userRemis = User::on('temp')->find($rec->user_id_remis);
+                    $nomUserRemis = $userRemis ? ($userRemis->name . ' ' . ($userRemis->prenom ?? '')) : 'N/A';
+
+                    // Pour chaque acquéreur de la réservation
+                    foreach ($bien->reservation->aquereurs as $aquereur) {
+                        if ($aquereur->client_id) {
+                            $statutClient = new StatutClient();
+                            $statutClient->setConnection('temp');
+
+                            // Construction du commentaire
+                            $comment = "Remise des clés effectuée ";
+
+                            // Ajouter les informations du bien
+                            if ($bien->propriete_dite_bien) {
+                                $comment .= "- Bien: " . $bien->propriete_dite_bien . " ";
+                            }
+
+                            if ($bien->projet) {
+                                $comment .= "- Projet: " . $bien->projet->nom . " ";
+                            }
+
+                            // Ajouter la date de remise
+                            if ($request->date_remise) {
+                                $comment .= "- Date: " . Carbon::parse($request->date_remise)->format('d/m/Y') . " ";
+                            }
+
+                            // Ajouter la personne qui a remis les clés
+                            $comment .= "- Clés remises par: " . $nomUserRemis . " ";
+
+                            // Si fichier uploadé
+                            if ($request->hasFile('fichier')) {
+                                $comment .= "- Document signé joint ";
+                            }
+
+                            // Ajouter la référence de réservation
+                            if ($bien->reservation->code_reservation) {
+                                $comment .= "- Réservation: " . $bien->reservation->code_reservation;
+                            }
+
+                            // Attribution des valeurs au StatutClient
+                            $statutClient->client_id = $aquereur->client_id;
+                            $statutClient->statut = 9; // Statut pour "Remise des clés"
+                            $statutClient->reservation_id = $bien->reservation->id;
+                            $statutClient->remise_cle_id = $rec->id;
+                            $statutClient->date_traitement = Carbon::now();
+                            $statutClient->user_id_traite = $userAuth->id;
+                            $statutClient->commentaire = trim($comment);
+
+                            $statutClient->save();
+                        }
+                    }
+                }
+
+                // Valider la transaction
+                DB::connection('temp')->commit();
+
+                return response()->json([
+                    'remise' => $rec,
+                    'message' => 'Remise des clés enregistrée avec succès'
+                ], 200);
+
+            } catch (\Exception $e) {
+                // Annuler la transaction en cas d'erreur
+                DB::connection('temp')->rollBack();
+
+                // Journaliser l'erreur (optionnel)
+                \Log::error('Erreur lors de la remise des clés: ' . $e->getMessage(), [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+
+                return response()->json([
+                    'error' => 'Une erreur est survenue lors de l\'enregistrement',
+                    'details' => config('app.debug') ? $e->getMessage() : 'Erreur interne'
+                ], 500);
+            }
+
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
-        $rec->save();
-        return response()->json(['remise' => $rec], 200);
-    } else {
-        return response()->json(['error' => 'Unauthorized'], 401);
     }
-}
 
     /**
      * Display the specified resource.

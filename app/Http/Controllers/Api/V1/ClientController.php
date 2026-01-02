@@ -18,6 +18,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use App\Models\StatutClient;
+
+
 
 class ClientController extends Controller
 {
@@ -166,6 +169,185 @@ class ClientController extends Controller
         //
     }
 
+
+
+    public function get_Historiques_by_client($id, Request $request)
+{
+    if (Auth::guard('api')->check()) {
+        $size = $request->input('size', config('app.default_item_number_perpage'));
+        $page = $request->input('page', 1);
+
+        DatabaseHelper::Config();
+
+        $statutsClient = collect();
+            $statutsClient = StatutClient::on('temp')
+                ->select(
+                    'id',
+                    'statut',
+                    'user_id_traite',
+                    'date_traitement',
+                    'commentaire',
+                    'visite_id',
+                    'created_at',
+                    'updated_at',
+                    'reservation_id',
+                    'avance_id',
+                    'desistement_id',
+                    'penalite_id',
+                    'remboursement_id',
+                    'client_id',
+                    'rdv_id'
+                )
+                ->where('client_id', $id)
+                ->with([
+                    'user' => function($query) {
+                        $query->select('id', 'name', 'prenom')
+                            ->without('societe');
+                    },
+                    'reservation' => function($query) {
+                        $query->select('id', 'code_reservation');
+                    },
+                    'avance' => function($query) {
+                        $query->select('id', 'montant');
+                    },'rdv' => function($query) {
+                        $query->select('id', 'rdv');
+                    }
+                ])
+                ->without('client')
+                ->get();
+
+
+        // 3. Combiner et formater les résultats
+        $allHistoriques = collect();
+
+        // Ajouter les statuts de client
+        foreach ($statutsClient as $statut) {
+             // Get RDV date from related Rendez_vous model if rdv_id exists
+            $rdvDate = null;
+            if ($statut->rdv_id && $statut->rdv) {
+                $rdvDate = $statut->rdv->rdv; // 'rdv' is the column in rendez_vous table
+            }
+            $allHistoriques->push([
+                'id' => $statut->id,
+                'prospect_id' => null,
+                'statut' => $statut->statut,
+                'user_id_traite' => $statut->user_id_traite,
+                'date_traitement' => $statut->date_traitement,
+                'rdv' => $rdvDate, // RDV from related Rendez_vous model
+                'date_rappel' => null,
+                'commentaire' => $statut->commentaire,
+                'visite_id' => $statut->visite_id,
+                'appel_id' => null,
+                'created_at' => $statut->created_at,
+                'updated_at' => $statut->updated_at,
+                'type_source' => 'client',
+                'reservation_id' => $statut->reservation_id,
+                'avance_id' => $statut->avance_id,
+                'desistement_id' => $statut->desistement_id,
+                'penalite_id' => $statut->penalite_id,
+                'remboursement_id' => $statut->remboursement_id,
+                'client_id' => $statut->client_id,
+                'rdv_id' => $statut->rdv_id, // Include rdv_id in response
+                'user' => $statut->user ? [
+                    'id' => $statut->user->id,
+                    'name' => $statut->user->name,
+                    'prenom' => $statut->user->prenom
+                ] : null,
+                'reservation' => $statut->reservation ? [
+                    'id' => $statut->reservation->id,
+                    'code_reservation' => $statut->reservation->code_reservation
+                ] : null,
+                'avance' => $statut->avance ? [
+                    'id' => $statut->avance->id,
+                    'montant' => $statut->avance->montant
+                ] : null,
+                'rendez_vous' => $statut->rdv ? [
+                    'id' => $statut->rdv->id,
+                    'rdv' => $statut->rdv->rdv,
+                ] : null
+            ]);
+        }
+
+        // 4. Appliquer les filtres
+        $filteredHistoriques = $allHistoriques;
+
+        if ($request->filled('date_traitement')) {
+            $date = Carbon::parse($request->input('date_traitement'))->format('Y-m-d');
+            $filteredHistoriques = $filteredHistoriques->filter(function ($item) use ($date) {
+                return $item['date_traitement'] &&
+                       Carbon::parse($item['date_traitement'])->format('Y-m-d') == $date;
+            });
+        }
+
+       if ($request->filled('rdv')) {
+            $date = Carbon::parse($request->input('rdv'))->format('Y-m-d');
+            $filteredHistoriques = $filteredHistoriques->filter(function ($item) use ($date) {
+                // Check both prospect RDV and client RDV (from related rendez_vous)
+                if ($item['rdv']) {
+                    return Carbon::parse($item['rdv'])->format('Y-m-d') == $date;
+                }
+                return false;
+            });
+        }
+
+        if ($request->filled('date_rappel')) {
+            $date = Carbon::parse($request->input('date_rappel'))->format('Y-m-d');
+            $filteredHistoriques = $filteredHistoriques->filter(function ($item) use ($date) {
+                return $item['date_rappel'] &&
+                       Carbon::parse($item['date_rappel'])->format('Y-m-d') == $date;
+            });
+        }
+
+        if ($request->filled('statut')) {
+                // Gérer les valeurs préfixées
+                 $statutValue = $request->input('statut');
+            if (str_starts_with($statutValue, 'P_')) {
+                // Statut prospect - retirer le préfixe
+                $statutId = str_replace('P_', '', $statutValue);
+                $filteredHistoriques = $filteredHistoriques->filter(function ($item) use ($statutId) {
+                    return $item['type_source'] === 'prospect' &&
+                        $item['statut'] == $statutId;
+                });
+            } elseif (str_starts_with($statutValue, 'C_')) {
+                // Statut client - retirer le préfixe
+                $statutId = str_replace('C_', '', $statutValue);
+                $filteredHistoriques = $filteredHistoriques->filter(function ($item) use ($statutId) {
+                    return $item['type_source'] === 'client' &&
+                        $item['statut'] == $statutId;
+                });
+            } else {
+                // Ancien format (sans préfixe) - pour la rétrocompatibilité
+                $filteredHistoriques = $filteredHistoriques->filter(function ($item) use ($request) {
+                    return $item['statut'] == $request->statut;
+                });
+            }
+
+        }
+
+        // 5. Trier et paginer
+        $sortedHistoriques = $filteredHistoriques->sortByDesc('created_at')->values();
+        $totalItems = $sortedHistoriques->count();
+
+        $historiques = $sortedHistoriques->slice(($page - 1) * $size, $size)->values();
+
+
+    // 7. Informations de pagination
+    $pagination = [
+        'currentPage' => (int)$page,
+        'totalItems'  => $totalItems, // Gardez 'totalItems'
+        'totalPages'  => ceil($totalItems / $size),
+        'perPage' => $size
+    ];
+
+    return response()->json([
+        'historiques' => $historiques,
+        'pagination'  => $pagination,
+    ], 200);
+    }
+
+    return response()->json(['error' => 'Unauthorized'], 401);
+}
+
     /**
      * Store a newly created resource in storage.
      */
@@ -216,7 +398,6 @@ class ClientController extends Controller
                     $prospect            = Prospect::on('temp')->findorfail($client->prospect_id);
                     $prospect->client_id = $client->id;
                     $prospect->save();
-
                     // Append statut 10: Converti en client
                     $sp = new \App\Models\StatutProspect();
                     $sp->setConnection('temp');
