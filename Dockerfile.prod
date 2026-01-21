@@ -1,4 +1,4 @@
-FROM php:8.2-fpm
+FROM php:8.2-cli
 
 WORKDIR /var/www/html
 
@@ -22,11 +22,6 @@ RUN chown www-data:www-data /var/www/html/prod.sh
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 RUN composer install --optimize-autoloader --no-dev
-
-# Optimize Laravel for production
-RUN php artisan config:cache && \
-    php artisan route:cache && \
-    php artisan view:cache
 
 EXPOSE 8000
 

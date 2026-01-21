@@ -12,7 +12,8 @@
 /.env
 /.env.backup
 /.env.production
-/.phpunit.result.cache
+/.env.aws
+.phpunit.result.cache
 Homestead.json
 Homestead.yaml
 auth.json
@@ -27,4 +28,14 @@ nginx/ssl/
 
 *.swp
 *.swo
+
+# Deployment scripts with credentials
+deploy-wrapper.sh
+get-api-url.sh
+aws-deploy-ecs.sh
+dev.sh
+prod.sh
+scheduler.sh
+docker-compose.dev.yml
+docker-compose.prod.yml
 

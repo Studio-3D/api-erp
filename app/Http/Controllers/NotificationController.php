@@ -383,7 +383,7 @@ public function get_notifications(Request $request, $projet_id) {
                 ->get()
                 ->map(function ($notification) use ($userId) {
                     // Transform the seen field to boolean for current user
-                    $seenArray = $notification->seen ?? [];
+                    $seenArray = is_array($notification->seen) ? $notification->seen : [];
                     $notification->seen_for_current_user = in_array($userId, $seenArray);
                     return $notification;
                 });
@@ -406,7 +406,7 @@ public function get_notifications(Request $request, $projet_id) {
                 ->get()
                 ->map(function ($notification) use ($userId) {
                     // Transform the seen field to boolean for current user
-                    $seenArray = $notification->seen ?? [];
+                    $seenArray = is_array($notification->seen) ? $notification->seen : [];
                     $notification->seen_for_current_user = in_array($userId, $seenArray);
                     return $notification;
                 });
