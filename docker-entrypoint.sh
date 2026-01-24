@@ -15,6 +15,8 @@ echo "Database connected!"
 if [ "${RUN_MIGRATIONS}" = "true" ]; then
     echo "Running database migrations..."
     php artisan migrate --force || echo "Migration failed, continuing..."
+    echo "Seeding admin user..."
+    php artisan db:seed --class=AdminUserSeeder --force || echo "Seeder failed, continuing..."
 fi
 
 # Install Passport (only first time)
