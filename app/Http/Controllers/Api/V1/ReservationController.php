@@ -976,7 +976,7 @@ private function getAllHistoriquesWithAncien($reservationId)
                     },*/
     public function show($id)
 {
-    if (RoleHelper::ACSup()) {
+    if (RoleHelper::ACSup()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()) {
         DatabaseHelper::Config();
 
         $reservation = Reservation::on('temp')
@@ -1015,6 +1015,10 @@ private function getAllHistoriquesWithAncien($reservationId)
                 'projet' => function($query) {
                     $query->select('id', 'nom', 'adresse')
                           ->without('user_projet', 'type_projet');
+                },//'aquereurs','aquereurs_ancien'
+                'notaire' => function($query) {
+                    $query->select('id', 'user_id_origin','name', 'prenom')
+                          ->without('societe');
                 },//'aquereurs','aquereurs_ancien'
 
             ])

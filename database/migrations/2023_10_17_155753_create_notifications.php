@@ -18,7 +18,17 @@ return new class extends Migration
             $table->dateTime('date')->nullable();;
             $table->bigInteger('type');
             $table->string('description_type');
-            $table->enum('role',[RoleEnum::SUPERADMIN->value,RoleEnum::ADMIN->value,RoleEnum::COMMERCIAL->value,RoleEnum::ADMIN_COMMERCIAL->value])->nullable()->comment('1=>superamin 2=>admin 3=>commercial');
+            $table->enum('role',[RoleEnum::SUPERADMIN->value,
+                RoleEnum::ADMIN->value, // Add ADMIN to the enum list
+                RoleEnum::COMMERCIAL->value,
+                RoleEnum::NOTAIRE->value,
+                RoleEnum::RESPO_LIVRAISON->value,
+                RoleEnum::COMPTABLE->value,
+                RoleEnum::SAV->value,
+                RoleEnum::RESPO_COMMERCIAL->value,
+                RoleEnum::AGENT_ADMINISTRATIF->value
+            ])->comment('1=>superadmin 2=>Admin 3=>Commercial 5=>Notaire 6=>RESPO LIVRAISON 7=>Comptable 8=>SAV 9==>RESPO_COMMERCIAL 10==>AGENT_ADMINISTRATIF');
+
             $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
             $table->foreignId('visite_id')->nullable()->constrained('visites')->onDelete('cascade');
             $table->foreignId('projet_id')->nullable()->constrained('projets')->onDelete('cascade');

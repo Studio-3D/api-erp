@@ -3365,7 +3365,7 @@ public function validation_desitement($id,Request $request){
 
 
     // Gérer les rôles et la pagination
-    if (RoleHelper::AdminSup()) {
+    if (RoleHelper::AdminSup_RC()) {
         $desistements = $query->orderBy('created_at', 'desc')
             ->paginate($size, ['*'], 'page', $page);
     } elseif (RoleHelper::Com()) {
@@ -3664,7 +3664,7 @@ public function validation_desitement($id,Request $request){
     public function get_all_penalites(Request $request, $projet_id,$statut)
     {
 
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup_RC()) {
             DatabaseHelper::Config();
             $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
@@ -3749,7 +3749,7 @@ public function validation_desitement($id,Request $request){
 
 
 
-                if (RoleHelper::AdminSup()) {
+                if (RoleHelper::AdminSup_RC()) {
                     $penalites = $query->orderBy('created_at', 'desc')
                     ->paginate($size, ['*'], 'page', $page);
                 } elseif (RoleHelper::Com()) {

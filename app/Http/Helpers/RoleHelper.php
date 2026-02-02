@@ -31,9 +31,24 @@ class RoleHelper
 
         return false;
     }
+     public static function AdminSup_RC()
+    {
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->role == 1 || Auth::guard('api')->user()->role == 2|| Auth::guard('api')->user()->role == 9)) {
+            return true;
+        }
+
+        return false;
+    }
     public static function ACSup()
     {
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->role == 1 || Auth::guard('api')->user()->role == 2 || Auth::guard('api')->user()->role == 3)) {
+            return true;
+        }
+        return false;
+    }
+ public static function ACSup_RC()
+    {
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->role == 1 || Auth::guard('api')->user()->role == 2 || Auth::guard('api')->user()->role == 3||Auth::guard('api')->user()->role == 9)) {
             return true;
         }
         return false;
@@ -88,7 +103,7 @@ class RoleHelper
         }
         return false;
     }
-     public static function RespoLivraion(){
+     public static function RespoLivraison(){
 
         if (Auth::guard('api')->check() && (Auth::guard('api')->user()->role == 6)) {
 
@@ -104,9 +119,28 @@ class RoleHelper
         }
         return false;
     }
-    public static function Notaire_Respo_Comptable_SAV_Comm(){
+  public static function RespoCommercial(){
 
-        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->role == 8|| Auth::guard('api')->user()->role == 7|| Auth::guard('api')->user()->role == 6|| Auth::guard('api')->user()->role == 5|| Auth::guard('api')->user()->role == 3)) {
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->role ==9)) {
+
+            return true;
+        }
+        return false;
+    }
+     public static function AgentAdmin(){
+
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->role ==10)) {
+
+            return true;
+        }
+        return false;
+    }
+
+    public static function Notaire_Respo_Comptable_SAV_Comm_RC_AA(){
+
+        if (Auth::guard('api')->check() && (Auth::guard('api')->user()->role == 8
+        || Auth::guard('api')->user()->role == 7|| Auth::guard('api')->user()->role == 6||
+         Auth::guard('api')->user()->role == 5|| Auth::guard('api')->user()->role == 3||Auth::guard('api')->user()->role == 9||Auth::guard('api')->user()->role == 10)) {
 
             return true;
         }

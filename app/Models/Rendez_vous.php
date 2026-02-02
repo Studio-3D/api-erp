@@ -14,7 +14,12 @@ class Rendez_vous extends Model
     protected $table='rendez_vous';
     protected $dates=['deleted_at'];
     protected $with=['user','reservation'];
-
+    protected $casts = [
+            'relances_history' => 'array',
+            'rdv' => 'datetime',
+            'prochaine_relance' => 'datetime',
+            'date_validation' => 'datetime',
+        ];
     public function  reservation()
     {
         return $this->belongsTo(Reservation::class,'reservation_id');

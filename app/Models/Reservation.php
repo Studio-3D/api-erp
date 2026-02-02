@@ -33,6 +33,10 @@ class Reservation extends Model
         return $this->belongsTo(User::class,'user_id')->withTrashed();
     }
 
+     public function notaire(){
+        return $this->belongsTo(User::class,'notaire_id');
+    }
+
     public function projet(){
         return  $this->belongsTo(Projet::class,'projet_id');
     }
@@ -58,15 +62,15 @@ class Reservation extends Model
     }
     public function compromis_vente()
     {
-        return $this->hasOne(Compromis_vente::class,'reservation_id')->orderby('created_at','asc')->latest();
+        return $this->hasOne(Compromis_vente::class,'reservation_id')->orderby('id','desc')->latest();
     }
     public function contrat_vente()
     {
-        return $this->hasOne(Contrat_vente::class,'reservation_id')->orderby('created_at','asc')->latest();
+        return $this->hasOne(Contrat_vente::class,'reservation_id')->orderby('id','desc')->latest();
     }
     public function first_avance()
     {
-        return $this->hasOne(Avance::class,'reservation_id')->orderby('created_at','asc')->latest();
+        return $this->hasOne(Avance::class,'reservation_id')->orderby('id','asc')->latest();
     }
     public function avances_desist()
     {

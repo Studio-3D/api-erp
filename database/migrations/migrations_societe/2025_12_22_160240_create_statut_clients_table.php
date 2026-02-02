@@ -40,6 +40,7 @@ return new class extends Migration
                 ])->default(StatutClientEnum::Autre->value)->comment(' 1=>Nouvelle_Avance, 2=>Suivi_Avancement_travaux, 3=>Demande_des_documents, 4=>Autre, 5=>Creation_Reservation, 6=>Ajouter_Rdv, 7=>Signature_Attestation_Vente, 8=>Signer_Contrat_Vente, 9=>Remise_Cle, 10=>Desistement_dd, 11=>Desistement_dp_profit, 12=>Desistement_dp_co, 13=>Desistement_dp_partiel, 14=>Desistement_change_bien, 15=>Penalite Valide, 16=>Remise Remboursement,17=>dacaissement effectue ,19=>penalite rejete');
                 $table->string('commentaire')->nullable();
                 $table->date('date_traitement')->nullable();
+                $table->foreignId('user_id_traite')->nullable()->constrained('users')->onDelete('cascade');
                 // Correction: 'visites' au pluriel
                 $table->foreignId('visite_id')->nullable()->constrained('visites')->onDelete('cascade');
                 $table->foreignId('avance_id')->nullable()->constrained('avances')->onDelete('cascade');
