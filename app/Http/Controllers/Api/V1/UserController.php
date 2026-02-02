@@ -35,7 +35,7 @@ class UserController extends Controller
      */
     public function get_commerciaux($projet_id)
     {
-        if (RoleHelper::Admin()) {
+        if (RoleHelper::Admin()||RoleHelper::RespoCommercial()) {
             DatabaseHelper::Config();
             //->where('role',3)
             $users = UserProjet::on('temp')->with('user')

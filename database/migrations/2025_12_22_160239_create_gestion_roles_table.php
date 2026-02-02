@@ -12,24 +12,56 @@ return new class extends Migration
     {
         Schema::create('gestion_roles', function (Blueprint $table) {
             $table->id();
-            $table->enum('role',[
+            $table->enum('role', [
+                RoleEnum::ADMIN->value, // Add ADMIN to the enum list
                 RoleEnum::COMMERCIAL->value,
                 RoleEnum::NOTAIRE->value,
                 RoleEnum::RESPO_LIVRAISON->value,
                 RoleEnum::COMPTABLE->value,
-                RoleEnum::SAV->value
-            ])->comment('3=>Commercial 5=>Notaire 6=>RESPO LIVRAISON 7=>Comptable 8=>SAV');
-            $table->boolean('actif')->default(true);
+                RoleEnum::SAV->value,
+                RoleEnum::RESPO_COMMERCIAL->value,
+                RoleEnum::AGENT_ADMINISTRATIF->value
+            ])->comment('2=>Admin 3=>Commercial 5=>Notaire 6=>RESPO LIVRAISON 7=>Comptable 8=>SAV 9==>RESPO_COMMERCIAL 10==>AGENT_ADMINISTRATIF');
+            $table->boolean('projet')->default(false);
+            $table->boolean('vente')->default(false);
+            $table->boolean('crm')->default(false);
+            $table->boolean('remise_cles')->default(false);
+            $table->boolean('comptabilite')->default(false);
+            $table->boolean('encaissements')->default(false);
+            $table->boolean('sav')->default(false);
+            $table->boolean('reclamations')->default(false);
             $table->timestamps();
             $table->softDeletes();
         });
 
-        // Insérer le rôle Commercial par défaut après création de la table
+        // Insérer les rôles par défaut
         DB::table('gestion_roles')->insert([
-            'role' => RoleEnum::COMMERCIAL->value,
-            'actif' => true,
-            'created_at' => now(),
-            'updated_at' => now(),
+            [
+                'role' => '2',
+                'projet' => true,
+                'vente' => true,
+                'crm' => true,
+                'remise_cles' => true,
+                'comptabilite' => true,
+                'encaissements' => true,
+                'sav' => true,
+                'reclamations' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'role' => '3',
+                'projet' => true,
+                'vente' => true,
+                'crm' => true,
+                'remise_cles' => false,
+                'comptabilite' => false,
+                'encaissements' => false,
+                'sav' => false,
+                'reclamations' => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
         ]);
     }
 

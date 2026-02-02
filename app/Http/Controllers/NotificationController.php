@@ -58,14 +58,13 @@ class NotificationController extends Controller
 
     public function get_relances_visites(Request $request,$projet_id)
     {
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+        if (Auth::guard('api')->check() && RoleHelper::ACSup_RC()) {
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            if(RoleHelper::AdminSup()){
-
+                 if(RoleHelper::AdminSup()||RoleHelper::RespoCommercial()){
 
                 $rel_visites=Relance_Rdv_Visite::on('temp')->join('visites','visites.id', '=', 'relances_rdv_visites.visite_id')
                 ->select('relances_rdv_visites.*')
@@ -86,12 +85,12 @@ class NotificationController extends Controller
     }
     public function get_nb_relances_visites(Request $request,$projet_id)
     {
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+        if (Auth::guard('api')->check() && RoleHelper::ACSup_RC()) {
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            if(RoleHelper::AdminSup()){
-                $nb_rel_visites=Relance_Rdv_Visite::on('temp')->join('visites','visites.id', '=', 'relances_rdv_visites.visite_id')
+                if(RoleHelper::AdminSup()||RoleHelper::RespoCommercial()){
+                    $nb_rel_visites=Relance_Rdv_Visite::on('temp')->join('visites','visites.id', '=', 'relances_rdv_visites.visite_id')
                 ->select('relances_rdv_visites.*')
                 ->where('visites.projet_id',$projet_id)->whereDate('relances_rdv_visites.date_relance', '<=', Carbon::now())->where('visites.etat',1)
                 ->where('relances_rdv_visites.type_traitement', 0)->where('relances_rdv_visites.type', 1)
@@ -109,13 +108,13 @@ class NotificationController extends Controller
     }
     public function get_rdv_visites(Request $request,$projet_id)
     {
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+        if (Auth::guard('api')->check() && RoleHelper::ACSup_RC()) {
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            if(RoleHelper::AdminSup()){
+             if(RoleHelper::AdminSup()||RoleHelper::RespoCommercial()){
                 $rdv_visites=Relance_Rdv_Visite::on('temp')->join('visites','visites.id', '=', 'relances_rdv_visites.visite_id')
                 ->select('relances_rdv_visites.*')
                 ->where('visites.projet_id',$projet_id)->whereDate('relances_rdv_visites.rdv', '<=', Carbon::now())
@@ -134,11 +133,11 @@ class NotificationController extends Controller
     }
     public function get_nb_rdv_visites(Request $request,$projet_id)
     {
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+        if (Auth::guard('api')->check() && RoleHelper::ACSup_RC()) {
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            if(RoleHelper::AdminSup()){
+             if(RoleHelper::AdminSup()||RoleHelper::RespoCommercial()){
                 $nb_rdv_visites=Relance_Rdv_Visite::on('temp')->join('visites','visites.id', '=', 'relances_rdv_visites.visite_id')
                 ->select('relances_rdv_visites.*')
                 ->where('visites.projet_id',$projet_id)->whereDate('relances_rdv_visites.rdv', '<=', Carbon::now())
@@ -158,7 +157,7 @@ class NotificationController extends Controller
 
     public function get_clients_freins($projet_id,Request $request)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup_RC()) {
             DatabaseHelper::Config();
            // if(RoleHelper::AdminSup()){
                 $freins= Frein::on('temp')
@@ -273,12 +272,12 @@ class NotificationController extends Controller
 
     public function get_notifications_menu_horizontal_crm(Request $request,$projet_id)
     {
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+        if (Auth::guard('api')->check() && (RoleHelper::ACSup_RC())) {
 
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            if(RoleHelper::AdminSup()){
+            if(RoleHelper::AdminSup()||RoleHelper::RespoCommercial()){
 
                 $rel_visites=Relance_Rdv_Visite::on('temp')->join('visites','visites.id', '=', 'relances_rdv_visites.visite_id')
                 ->where('visites.projet_id',$projet_id)->whereDate('relances_rdv_visites.date_relance', '<=', Carbon::now())
@@ -348,7 +347,7 @@ class NotificationController extends Controller
     }
    public function get_nb_frein_client_visite(Request $request, $projet_id)
 {
-    if (!Auth::guard('api')->check() || !RoleHelper::ACSup()) {
+    if (!Auth::guard('api')->check() || !RoleHelper::ACSup_RC()) {
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
@@ -364,11 +363,11 @@ class NotificationController extends Controller
 
    // Also update the get_notifications method to properly handle JSON array
 public function get_notifications(Request $request, $projet_id) {
-    if (Auth::guard('api')->check() && (RoleHelper::AdminSup() ||RoleHelper::Notaire_Respo_Comptable_SAV_Comm())) {
+    if (Auth::guard('api')->check() && (RoleHelper::AdminSup() ||RoleHelper::Notaire_Respo_Comptable_SAV_Comm_RC_AA())) {
         DatabaseHelper::Config();
         $userId = Auth::guard('api')->user()->id;
 
-        if(RoleHelper::AdminSup()) {
+         if(RoleHelper::AdminSup()||RoleHelper::RespoCommercial()){
             // All notifications (filter out type 99)
             $all_notifications = Notification::on('temp')->with('prospect','user','reservation','avance','bien','projet')
                 ->where(function ($query) {
@@ -493,9 +492,9 @@ public function get_notifications(Request $request, $projet_id) {
 
 
     public function get_notif_menu_horizontal_vente_admin(Request $request,$projet_id){
-        if (Auth::guard('api')->check() ) {
+        if (Auth::guard('api')->check() && RoleHelper::ACSup_RC()) {
             DatabaseHelper::Config();
-            if(RoleHelper::AdminSup()){
+                if(RoleHelper::AdminSup()||RoleHelper::RespoCommercial()){
                 $nb_desistement_att_valide = Desistement::on('temp')->where('archive',0)->where('projet_id',$projet_id)->where('statut',0)->count();
                 $nb_pen_att_valide = PenaliteDesistement::on('temp')->join('desistements', 'desistements.id', '=', 'penalites_desistements.desistement_id')
                 ->where('penalites_desistements.archive',0)
@@ -563,7 +562,7 @@ public function get_notifications(Request $request, $projet_id) {
          }
     }
     public function get_notif_menu_horizontal_vente_comm(Request $request,$projet_id){
-        if (Auth::guard('api')->check() ) {
+        if (Auth::guard('api')->check() && RoleHelper::ACSup_RC()) {
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();

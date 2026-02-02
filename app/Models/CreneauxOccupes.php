@@ -14,14 +14,32 @@ class CreneauxOccupes extends Model
 
     protected $table='creneaux_occupes';
     protected $dates=['deleted_at'];
-      protected $casts = [
+     // Spécifiez les colonnes qui peuvent être remplies en masse
+    protected $fillable = [
+        'user_id', // AJOUTEZ CE CHAMP
+        'debut',
+        'fin',
+        'disponible',
+        'type',
+        'created_at',
+        'updated_at'
+    ];
+
+    // Spécifiez les casts de type
+    protected $casts = [
         'debut' => 'datetime',
         'fin' => 'datetime',
-        'disponible' => 'boolean'
+        'disponible' => 'boolean',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class,'user_id')->withTrashed();
+    }
+     public function reservation()
+    {
+        return $this->belongsTo(Reservation::class,'reservation_id');
     }
 }

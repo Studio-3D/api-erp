@@ -6,8 +6,7 @@ use Illuminate\Validation\Rules\Enum;
 
 Enum StatutRdvEnum:int
 {
-    case En_Attente=0;
-    case Validé=1;
-    case Refusé=2;
-    case Raté=3;
+    case En_Attente=1;
+    case traite=2;
+    case non_traite=3;
 }

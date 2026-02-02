@@ -69,7 +69,7 @@ class AvanceController extends Controller
 
     public function getAvancesByReservation(Request $request, $reservation_id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::RespoCommercial()) {
             DatabaseHelper::Config();
             $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
@@ -1650,12 +1650,12 @@ class AvanceController extends Controller
     public function get_echeances($projet_id, Request $request)
     {
 
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+        if (Auth::guard('api')->check() && RoleHelper::ACSup_RC()) {
             DatabaseHelper::Config();
             $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
 
-            if (RoleHelper::AdminSup()) {
+            if (RoleHelper::AdminSup_RC()) {
                 //ADMIN
                     $query =Avance::on('temp')->with('last_statut','reservation')
                     ->where('mode_paiement','!=',7)->where('montant','>',0)
