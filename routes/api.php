@@ -78,7 +78,10 @@ Route::get('/', function () {
     return response()->json(['status' => 'ok', 'service' => 'immogestion-api'], 200);
 });
 Route::get('/health', function () {
-    return response()->json(['status' => 'ok', 'service' => 'immogestion-api'], 200);
+    return response()->json([
+        'status' => 'ok',
+        'env' => app()->environment(),
+    ]);
 });
 
 Route::post('login', [UserController::class, 'login'])->name('login');
