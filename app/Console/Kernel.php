@@ -26,11 +26,13 @@ class Kernel extends ConsoleKernel
         $schedule->command('delete_creneau_propose')->everyThreeMinutes();//3min
         $schedule->command('annuler_rdv_automatique')->everyFifteenMinutes();//15min
 
+        
         // Poll LinkedIn stats every 5 minutes
         $schedule->command('linkedin:poll-stats')
                  ->everyFiveMinutes()
                  ->withoutOverlapping()
                  ->runInBackground();
+
         $schedule->call(function () {
         app()->make(\App\Http\Controllers\Facebook_Instagram\Facebook_InstagramController::class)->checkExpiredPhoneReminders();
         })->everyMinute(); // or ->everyFiveMinutes() depending on your needs
