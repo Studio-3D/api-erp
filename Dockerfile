@@ -1,29 +1,39 @@
 FROM php:8.2-fpm
 
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     nginx \
     git \
     unzip \
+    libzip-dev \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
     zip \
-    curl
+    curl \
+    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl bcmath
 
-RUN docker-php-ext-install pdo pdo_mysql mbstring bcmath gd
-
+# Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-WORKDIR /var/www
+# Set working directory
+WORKDIR /var/www/html
 
+# Copy Laravel project
 COPY . .
 
+# Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
 
-COPY nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
+# Copy Nginx config
+COPY docker/nginx/default.conf /etc/nginx/sites-available/default
 
-RUN chown -R www-data:www-data /var/www
+# Fix permissions
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
+# Expose port
 EXPOSE 80
 
-CMD php-fpm -D && nginx -g "daemon off;"
+# Start services
+CMD service nginx start && php-fpm
