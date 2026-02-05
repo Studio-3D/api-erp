@@ -81,6 +81,13 @@ Route::get('/health', function () {
         'env' => app()->environment(),
     ]);
 });
+//Route Debug
+Route::get('/env-check', function () {
+    return [
+        'db_connection_env' => env('DB_CONNECTION'),
+        'db_connection_config' => config('database.default'),
+    ];
+});
 
 Route::post('login', [UserController::class, 'login'])->name('login');
 Route::post('/validateToken/{token}', [UserController::class, 'validateToken']);
