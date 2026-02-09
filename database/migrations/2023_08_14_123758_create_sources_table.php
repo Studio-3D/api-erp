@@ -62,4 +62,5 @@ return new class extends Migration
         DB::unprepared('DROP TRIGGER IF EXISTS enforce_unique_source_before_update');
         Schema::dropIfExists('sources');
     }
+    
 };
