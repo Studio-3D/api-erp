@@ -81,6 +81,7 @@ Route::get('/health', function () {
         'env' => app()->environment(),
         'timestamp' => now()->toDateTimeString(),
         'service' => 'ERP Studio3D API',
+        'environment' => 'Erp-studio3d-v2-env'
     ]);
 });
 //Route Debug
