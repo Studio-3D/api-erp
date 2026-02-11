@@ -79,6 +79,8 @@ Route::get('/health', function () {
     return response()->json([
         'status' => 'ok',
         'env' => app()->environment(),
+        'timestamp' => now()->toDateTimeString(),
+        'service' => 'ERP Studio3D API',
     ]);
 });
 //Route Debug

@@ -1,29 +1,48 @@
 FROM php:8.2-fpm
 
+# Installation des dépendances
 RUN apt-get update && apt-get install -y \
-    nginx \
     git \
+    curl \
     unzip \
-    libzip-dev \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
+    libzip-dev \
     zip \
-    curl \
-    && docker-php-ext-install pdo_mysql mbstring zip exif pcntl bcmath
+    nginx \
+    supervisor \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+# Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
+# Configuration Nginx
+RUN rm /etc/nginx/sites-enabled/default
+COPY docker/nginx.conf /etc/nginx/sites-available/laravel
+RUN ln -sf /etc/nginx/sites-available/laravel /etc/nginx/sites-enabled/
+
+# Configuration Supervisor
+COPY docker/supervisor.conf /etc/supervisor/conf.d/supervisor.conf
+
+# Répertoire de travail
 WORKDIR /var/www/html
+
+# Copie des fichiers
 COPY . .
 
-RUN composer install --no-dev --optimize-autoloader
+# Installation PHP
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-COPY docker/nginx/default.conf /etc/nginx/sites-available/default
+# Permissions
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-RUN mkdir -p storage bootstrap/cache \
-    && chown -R www-data:www-data /var/www/html \
-    && chmod -R 775 storage bootstrap/cache
+# Génération clé Laravel
+RUN if [ ! -f .env ]; then cp .env.example .env && php artisan key:generate; fi
 
+# Port exposé
 EXPOSE 80
-CMD service nginx start && php-fpm
+
+# Commande de démarrage
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisor.conf"]

@@ -10,3 +10,7 @@ docker-compose.*.yml
 Dockerfile*
 README.md
 *.md
+*.log
+.DS_Store
+.idea
+.vscode
