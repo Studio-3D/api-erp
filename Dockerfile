@@ -1,23 +1,43 @@
-FROM php:8.2-apache
+FROM php:8.2-fpm
 
+# Installer dépendances système
 RUN apt-get update && apt-get install -y \
-    git unzip curl libpng-dev libonig-dev libxml2-dev zip
+    git \
+    curl \
+    zip \
+    unzip \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    libzip-dev \
+    nginx \
+    supervisor \
+    && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd zip
 
-RUN docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd
+# Installer Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Activer mod_rewrite
-RUN a2enmod rewrite
+# Définir le dossier de travail
+WORKDIR /var/www
 
-WORKDIR /var/www/html
-
+# Copier le projet
 COPY . .
 
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html
+# Installer dépendances Laravel
+RUN composer install --no-dev --optimize-autoloader
 
-RUN cp .env.example .env || true
-RUN php artisan key:generate || true
+# Permissions
+RUN chown -R www-data:www-data /var/www
+
+# Supprimer config nginx par défaut
+RUN rm /etc/nginx/sites-enabled/default
+
+# Copier config nginx
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copier config supervisor
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 80
 
-CMD ["apache2-foreground"]
+CMD ["/usr/bin/supervisord"]
