@@ -29,5 +29,4 @@ artifacts:
   files:
     - imagedefinitions.json
     - Dockerrun.aws.json
-  name: build-output.zip
-    discard-paths: yes
+  discard-paths: true
