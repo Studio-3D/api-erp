@@ -17,7 +17,6 @@ RUN apt-get update && apt-get install -y \
 # Installer Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Définir le dossier de travail
 WORKDIR /var/www
 
 # Copier le projet
@@ -26,8 +25,15 @@ COPY . .
 # Installer dépendances Laravel
 RUN composer install --no-dev --optimize-autoloader
 
-# Permissions
-RUN chown -R www-data:www-data /var/www
+# 🔥 CRÉER LES DOSSIERS LARAVEL OBLIGATOIRES
+RUN mkdir -p storage/framework/sessions \
+    storage/framework/cache \
+    storage/framework/views \
+    bootstrap/cache
+
+# 🔥 PERMISSIONS CORRECTES
+RUN chown -R www-data:www-data /var/www \
+    && chmod -R 775 storage bootstrap/cache
 
 # Supprimer config nginx par défaut
 RUN rm /etc/nginx/sites-enabled/default
