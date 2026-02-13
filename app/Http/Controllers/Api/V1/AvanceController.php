@@ -596,7 +596,7 @@ class AvanceController extends Controller
     public function store(StoreAvanceRequest $request)
     {
 
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::RespoCommercial()) {
                     DatabaseHelper::Config();
                     DB::connection('temp')->beginTransaction();
                 try {
@@ -658,7 +658,7 @@ class AvanceController extends Controller
                         $avance->num_remise = ModePaiement::transfert_dossier->value;*/
                         // $avance->mode_transfert = $request->mode_transfert;
                     } else {
-                        if (RoleHelper::Com()) {
+                        if (RoleHelper::Com()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::RespoCommercial()) {
                             $avance->statut = StatutReservationEnum::En_Attente->value;
                         } elseif (RoleHelper::AdminSup()) {
                             $avance->statut = StatutReservationEnum::Validé->value;
@@ -1101,7 +1101,7 @@ class AvanceController extends Controller
     public function update(UpdateAvanceRequest $request, $id)
     {
 
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::RespoCommercial()) {
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -1227,7 +1227,8 @@ class AvanceController extends Controller
                     }
                 }
                 //si commercial  si deja rejete on fait statut =>en cours
-                elseif(RoleHelper::Com()){
+                elseif (RoleHelper::Com()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::RespoCommercial()) {
+
                     if ($avance->statut == StatutReservationEnum::Refusé->value) {
                         $avance->statut = StatutReservationEnum::En_Attente->value;
                     }

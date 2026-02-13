@@ -161,6 +161,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('commerciaux/{projet_id}', [V1UserController::class, 'list_commerciaux'])->name('');
         Route::get('get_commerciaux/{projet_id}', [V1UserController::class, 'get_commerciaux'])->name('get_commerciaux');
         Route::post('/utilisateurs/{id}', [V1UserController::class, 'update']);
+        Route::put('/update_personal_info/{id}', [V1UserController::class, 'update_personal_info']);
+        Route::put('/update_password/{id}', [V1UserController::class, 'update_password']);
 
         // l'API societes
         Route::resource('societes', V1SocieteController::class);
@@ -307,6 +309,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('relancer_reservation/{id}', [V1ReservationController::class, 'relancer_reservation'])->name('');
         Route::get('get_pj_res/{id}', [V1ReservationController::class, 'get_pj_res'])->name('');
         Route::get('getDossiers/{projet_id}/{dos_id}', [v1ReservationController::class, 'get_dossiers'])->name('');
+        Route::get('projets/{idprojet}/etat-dossiers', [V1ReservationController::class, 'indexByProjet']);
+        Route::get('etat_dossier/{dos_id}', [v1ReservationController::class, 'get_etat_dossier'])->name('');
 
         //l'api desistement
         Route::resource('desistements', V1DesistementController::class);
@@ -442,6 +446,8 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('delete_fichier_import/{id}', [V1UploadBienController::class, 'delete_fichier_import'])->name('');
 
         Route::post('upload_excel_bien_modif_en_masse', [V1UploadBienController::class, 'upload_excel_bien_modif_en_masse'])->name('');
+        Route::post('upload_excel_titre_foncier_en_masse', [V1UploadBienController::class, 'upload_excel_titre_foncier_en_masse'])->name('');
+
 
         //Dashboad
         Route::get('dashboard/{projet_id}/{de}/{a}', [V1HomeController::class, 'dashboard'])->name('');
