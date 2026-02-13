@@ -24,7 +24,7 @@ class RemiseCleController extends Controller
 
     public function indexByProjet(Request $request, $projet_id)
     {
-        if (Auth::guard('api')->check()) {
+         if (RoleHelper::ACSup()||RoleHelper::RespoLivraison()) {
             // Default values for pagination null si non pas envoyer avec la raquete
             $size = $request->input('size', null);
             $page = $request->input('page', null);
@@ -42,7 +42,7 @@ class RemiseCleController extends Controller
             $query->whereHas('bien', function ($q) use ($request) {
                 $q->where('propriete_dite_bien', 'like', '%' . $request->input('bien') . '%');
             });
-        }
+            }
 
              if ($request->filled('cc')) {
                 $query->whereHas('userRemis', function ($q) use ($request) {
@@ -114,7 +114,7 @@ class RemiseCleController extends Controller
      * Store a newly created resource in storage.*/
     public function store(Request $request)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()||RoleHelper::RespoLivraison()) {
             DatabaseHelper::Config();
 
             // Démarrer la transaction
@@ -247,7 +247,7 @@ class RemiseCleController extends Controller
      */
     public function show($id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()||RoleHelper::RespoLivraison()) {
             DatabaseHelper::Config();
             $remise = RemiseCle::on('temp')->findOrFail($id);
             return response()->json(['remise' => $remise], 200);
@@ -269,7 +269,7 @@ class RemiseCleController extends Controller
      */
     public function update(Request $request, $id)
     {
-        if (RoleHelper::ACSup()) {
+       if (RoleHelper::ACSup()||RoleHelper::RespoLivraison()) {
             DatabaseHelper::Config();
             $user          = Auth::user();
             $userAuth      = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -307,7 +307,7 @@ class RemiseCleController extends Controller
      */
     public function destroy(string $id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()||RoleHelper::RespoLivraison()) {
             DatabaseHelper::Config();
             $user          = Auth::user();
             $userAuth      = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -331,18 +331,6 @@ class RemiseCleController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    public static function AjouterVue($vues, $projet_id)
-    {
-        $vueController = new VueController();
-        $vueRequest    = new StoreVueRequest();
 
-        $datavue = [
-            'vue'       => $vues,
-            'projet_id' => $projet_id,
-        ];
-        $vueRequest->merge($datavue);
-        $vueController->store($vueRequest);
-
-    }
 
 }

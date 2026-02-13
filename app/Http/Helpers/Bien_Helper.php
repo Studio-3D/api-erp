@@ -143,7 +143,9 @@ class Bien_Helper
         if (array_key_exists("Numero", $row) && $row['Numero'] != null) {
             $bien->propriete_dite_bien = $row['Numero'];
         }
-
+        if (array_key_exists("Titre foncier", $row) && $row['Titre foncier'] != null) {
+            $bien->propriete_dite_bien = $row['Titre foncier'];
+        }
         if (str_contains($row['Numero'], 'Appt')) {
             $explode_numero = explode("Appt", $row['Numero']);
             $num            = $explode_numero[1];
@@ -593,6 +595,9 @@ class Bien_Helper
         if (array_key_exists("Nom", $row) && $row['Nom'] != null) {
             $bien->propriete_dite_bien = $row['Nom'];
         }
+        if (array_key_exists("Titre foncier", $row) && $row['Titre foncier'] != null) {
+            $bien->titre_foncier = $row['Titre foncier'];
+        }
 
         if (str_contains($row['Numero'], 'Appt')) {
             $explode_numero = explode("Appt", $row['Numero']);
@@ -861,6 +866,48 @@ class Bien_Helper
 
     }
 
+
+
+
+
+     public static function updateBien_titre_foncie_ByExcel($projet_id, $row)
+    {
+        \Log::info("🔄 updateBien_titre_foncie_ByExcel called for ID: " . ($row['ID'] ?? 'Unknown'));
+
+        // Validate that ID exists and is numeric
+        if (!isset($row['ID']) || $row['ID'] === null || $row['ID'] === '') {
+            throw new \Exception("ID manquant dans la ligne");
+        }
+
+        $bien = Bien::on('temp')->where('id', $row['ID'])->where(function ($query) use ($row, $projet_id) {
+            $query->where('projet_id', $projet_id);
+        })->first();
+
+        if (!$bien) {
+            \Log::warning("Bien not found with ID: {$row['ID']} in projet: {$projet_id}");
+            throw new \Exception("Bien non trouvé avec ID: {$row['ID']} dans le projet {$projet_id}");
+        }
+            \Log::info("✅ Bien found: ID {$bien->id}, Numéro: {$bien->numero}");
+
+
+        // Collect ALL errors for this row
+        $errors = [];
+
+        // 1. Champs requis avec messages personnalisés
+
+        if (array_key_exists("Titre foncier", $row) && $row['Titre foncier'] != null) {
+            $bien->titre_foncier = $row['Titre foncier'];
+        }
+
+        if ($bien->save()) {
+            \Log::info("✅ Bien saved successfully: ID {$bien->id}");
+            return $bien;
+        } else {
+            \Log::error("❌ Failed to save bien: ID {$bien->id}");
+            throw new \Exception("Échec de sauvegarde du bien ID: {$bien->id}");
+        }
+
+    }
 
 
 

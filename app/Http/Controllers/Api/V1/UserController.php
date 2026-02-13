@@ -289,9 +289,6 @@ class UserController extends Controller
 
     public function update(UpdateUserRequest $request, $id)
     {
-
-
-
         $user = User::findOrFail($id);
         if ($request->has('cin')) {
             $request->validate([
@@ -499,6 +496,139 @@ class UserController extends Controller
 
             \Log::error("Visite creation failed: " . $e->getMessage());
             return response()->json(['error' => 'Visite creation failed: ' . $e->getMessage()], 500);
+        }
+    }
+
+   public function update_personal_info(Request $request, $id)
+{
+    try {
+        DB::connection()->beginTransaction();
+
+        $user = User::findOrFail($id);
+
+        // Update basic info
+        if ($request->has('name')) {
+            $user->name = $request->name;
+        }
+        if ($request->has('prenom')) {
+            $user->prenom = $request->prenom;
+        }
+        if ($request->has('gender')) {
+            $user->gender = $request->gender;
+        }
+        if ($request->has('phone')) {
+            $user->phone = $request->phone;
+        }
+
+        // Handle photo upload if present
+        if ($request->hasFile('photo')) {
+            $societe = Societe::findOrFail($user->societe_id);
+
+            // Delete old photo if exists
+            if ($user->photo != null) {
+                $old_photo_path = public_path('docs/'. $societe->raison_sociale_concatene . '_' . $user->societe_id . '/users/' . $user->photo);
+                if (file_exists($old_photo_path)) {
+                    unlink($old_photo_path);
+                }
+            }
+
+            // Get the file extension
+            $extension = $request->photo->getClientOriginalExtension();
+
+            // Generate filename using current user data (or fallback to user's existing data)
+            $nameForFile = $request->has('name') ? $request->name : $user->name;
+            $prenomForFile = $request->has('prenom') ? $request->prenom : $user->prenom;
+
+            // Create a safe filename (remove special characters)
+            $safeName = preg_replace('/[^a-zA-Z0-9]/', '_', $nameForFile);
+            $safePrenom = preg_replace('/[^a-zA-Z0-9]/', '_', $prenomForFile);
+
+            $photo = time() . '.' . $safeName . '_' . $safePrenom . '.' . $extension;
+
+            // Upload new photo
+            FichierHelper::ajouter_fichier($request->photo, $societe->raison_sociale_concatene, $user->societe_id, 'users', $photo);
+            $user->photo = $photo;
+        }
+
+        if ($user->save()) {
+            // Update in temp database if exists
+            DatabaseHelper::Config($user->societe_id);
+            $user_temp = User::on('temp')->where('user_id_origin', $user->id)->first();
+
+            if ($user_temp) {
+                $user_temp->name = $user->name;
+                $user_temp->prenom = $user->prenom;
+                $user_temp->gender = $user->gender;
+                $user_temp->phone = $user->phone;
+
+                if ($request->hasFile('photo')) {
+                    $user_temp->photo = $user->photo;
+                }
+
+                $user_temp->save();
+            }
+        }
+
+        DB::connection()->commit();
+
+        // Refresh user model to get all attributes
+        $user = User::find($id);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Informations personnelles mises à jour avec succès',
+            'user' => $user
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::connection()->rollBack();
+        \Log::error("Update personal info failed: " . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Échec de la mise à jour: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function update_password(Request $request, $id)
+    {
+        try {
+            DB::connection()->beginTransaction();
+
+            $user = User::findOrFail($id);
+
+            // Update password
+            $user->password = Hash::make($request->new_password);
+            $user->save();
+
+            // Update in temp database if exists
+            DatabaseHelper::Config($user->societe_id);
+            $user_temp = User::on('temp')->where('user_id_origin', $user->id)->first();
+
+            if ($user_temp) {
+                $user_temp->password = $user->password;
+                $user_temp->save();
+            }
+
+            DB::connection()->commit();
+
+            // Optional: Log out user from other devices or send notification email
+            // $user->tokens()->delete(); // If using Laravel Sanctum
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Mot de passe mis à jour avec succès'
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::connection()->rollBack();
+            \Log::error("Update password failed: " . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Échec de la mise à jour du mot de passe: ' . $e->getMessage()
+            ], 500);
         }
     }
     public static function destroy($id)

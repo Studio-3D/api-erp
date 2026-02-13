@@ -1307,7 +1307,7 @@ class BienController extends Controller
     public function getBiens_Vendu_ByProjet_Concat($projet_id, $text)
     {
 
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()||RoleHelper::RespoLivraison()) {
             DatabaseHelper::Config();
             if ($text == 'BiensNonRemise') {
                 //biens vendu sans Remise

@@ -607,8 +607,7 @@ public function get_notaires(Request $request, $projet_id)
             $query->whereHas('aquereurs.client', function ($q) use ($telephoneSearch) {
                 $q->where(function ($q) use ($telephoneSearch) {
                     $q->where('telephone_num1', 'like', '%' . $telephoneSearch . '%')
-                      ->orWhere('telephone_num2', 'like', '%' . $telephoneSearch . '%')
-                      ->orWhere('portable_num', 'like', '%' . $telephoneSearch . '%');
+                      ->orWhere('telephone_num2', 'like', '%' . $telephoneSearch . '%');
                 });
             });
         }
@@ -863,8 +862,7 @@ public function get_notaires(Request $request, $projet_id)
                         $query->whereHas('aquereurs.client', function ($q) use ($telephoneSearch) {
                             $q->where(function ($q) use ($telephoneSearch) {
                                 $q->where('telephone_num1', 'like', '%' . $telephoneSearch . '%')
-                                ->orWhere('telephone_num2', 'like', '%' . $telephoneSearch . '%')
-                                ->orWhere('portable_num', 'like', '%' . $telephoneSearch . '%');
+                                ->orWhere('telephone_num2', 'like', '%' . $telephoneSearch . '%') ;
                             });
                         });
                     }
@@ -1229,13 +1227,18 @@ public function getCreneauxOccupes_by_User(Request $request)
             $existingCreneau = CreneauxOccupes::on('temp')
                 ->where('id', '!=', $id)
                 ->where(function($query) use ($validated) {
-                    $query->whereBetween('debut', [$validated['debut'], $validated['fin']])
-                        ->orWhereBetween('fin', [$validated['debut'], $validated['fin']])
-                        ->orWhere(function($q) use ($validated) {
-                            $q->where('debut', '<=', $validated['debut'])
-                                ->where('fin', '>=', $validated['fin']);
-                        });
+                // Vérifier si un créneau existant chevauche le nouveau créneau
+                $query->where(function($q) use ($validated) {
+                    // Cas 1 : Le créneau existant commence avant et finit après le début du nouveau
+                    $q->where('debut', '<', $validated['fin'])
+                      ->where('fin', '>',$validated['debut']);
                 })
+                ->orWhere(function($q) use ($validated) {
+                    // Cas 2 : Même début et fin exacts
+                    $q->where('debut',$validated['debut'])
+                      ->where('fin', $validated['fin']);
+                });
+            })
                 ->first();
 
             if ($existingCreneau) {
