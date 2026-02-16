@@ -29,6 +29,10 @@ nginx/ssl/
 *.swp
 *.swo
 
+# Allow Passport keys
+!storage/oauth-private.key
+!storage/oauth-public.key
+
 # Deployment scripts with credentials
 deploy-wrapper.sh
 get-api-url.sh
