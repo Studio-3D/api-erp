@@ -26,11 +26,6 @@ COPY . .
 # Installer dépendances Laravel
 RUN composer install --no-dev --optimize-autoloader
 
-# Générer clé application
-RUN php artisan key:generate
-
-# Générer clés OAuth Passport
-RUN php artisan passport:keys
 
 # 🔥 CRÉER LES DOSSIERS LARAVEL OBLIGATOIRES
 RUN mkdir -p storage/framework/sessions \
@@ -54,3 +49,9 @@ COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 EXPOSE 80
 
 CMD ["/usr/bin/supervisord"]
+
+# Copier entrypoint
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
