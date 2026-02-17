@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+# 🔥 REDIRIGE TOUTE LA SORTIE VERS UN FICHIER
+exec > /var/log/container.log 2>&1
+
 # 🔥 MODE DEBUG : affiche chaque commande
 set -x
 
