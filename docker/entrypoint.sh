@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+# 🔥 MODE DEBUG : affiche chaque commande
+set -x
+
 cd /var/www
 
 echo "🚀 Initializing Laravel..."
