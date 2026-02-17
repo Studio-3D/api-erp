@@ -1,6 +1,6 @@
-FROM php:8.2-apache
+FROM public.ecr.aws/docker/library/php:8.2-fpm
 
-# Install system dependencies
+# Installer dépendances système
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -10,24 +10,48 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     libzip-dev \
+    nginx \
+    supervisor \
     && docker-php-ext-install pdo pdo_mysql mbstring exif pcntl bcmath gd zip
 
-# Enable Apache rewrite
-RUN a2enmod rewrite
+# Installer Composer
+RUN curl -sS https://getcomposer.org/installer | php \
+    && mv composer.phar /usr/local/bin/composer
 
-# Install Composer (OFFICIAL METHOD)
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+WORKDIR /var/www
 
-WORKDIR /var/www/html
-
+# Copier le projet
 COPY . .
 
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Installer dépendances Laravel
+RUN composer install --no-dev --optimize-autoloader
 
-# Set correct permissions
-RUN chown -R www-data:www-data /var/www/html \
+
+# 🔥 CRÉER LES DOSSIERS LARAVEL OBLIGATOIRES
+RUN mkdir -p storage/framework/sessions \
+    storage/framework/cache \
+    storage/framework/views \
+    bootstrap/cache
+
+# 🔥 PERMISSIONS CORRECTES
+RUN chown -R www-data:www-data /var/www \
     && chmod -R 775 storage bootstrap/cache
+
+# Supprimer config nginx par défaut
+RUN rm /etc/nginx/sites-enabled/default
+
+# Copier config nginx
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Copier config supervisor
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 80
 
-CMD ["apache2-foreground"]
+CMD ["/usr/bin/supervisord"]
+
+# Copier entrypoint
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

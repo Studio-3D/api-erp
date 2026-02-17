@@ -26,5 +26,4 @@ fi
 # Permissions runtime
 chown -R www-data:www-data storage bootstrap/cache
 
-echo "🔥 Starting Supervisor..."
-exec /usr/bin/supervisord
+
