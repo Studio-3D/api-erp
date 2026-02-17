@@ -1,12 +1,6 @@
 #!/bin/sh
 set -e
 
-# 🔥 REDIRIGE TOUTE LA SORTIE VERS UN FICHIER
-exec > /var/log/container.log 2>&1
-
-# 🔥 MODE DEBUG : affiche chaque commande
-set -x
-
 cd /var/www
 
 echo "🚀 Initializing Laravel..."
@@ -32,4 +26,5 @@ fi
 # Permissions runtime
 chown -R www-data:www-data storage bootstrap/cache
 
-exec /usr/bin/supervisord
+# Lancer supervisord au premier plan
+exec /usr/bin/supervisord -n
