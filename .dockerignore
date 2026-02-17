@@ -1,7 +1,9 @@
 vendor
 node_modules
 .env
-.env.*
+.env.production
+.env.staging
+.env.local
 .git
 .gitignore
 storage/
