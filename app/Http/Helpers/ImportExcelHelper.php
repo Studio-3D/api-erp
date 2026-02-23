@@ -598,6 +598,51 @@ class ImportExcelHelper
             ];
         }
 
+
+         public static function Import_titre_foncier_EnMasse($data, $projet_id)
+        {
+            \Log::info("=== STARTING Import_titre_foncier_EnMasse ===");
+            \Log::info("Projet ID: {$projet_id}");
+            \Log::info("Data count: " . count($data));
+
+            if (empty($data)) {
+                \Log::error("Data is empty!");
+                throw new \Exception("No data provided for import");
+            }
+
+            try {
+                // Pass false for manageStatus since cron job handles status management
+                $result = self::importerDonnees_masse($data, $projet_id, function ($row, $projet_id) {
+                    \Log::info("--- Processing Row ---");
+                    \Log::info("Row ID: " . ($row['ID'] ?? 'Unknown'));
+                    \Log::info("Row Numéro: " . ($row['Numero'] ?? 'Not provided'));
+
+                    try {
+                        $bienResult = Bien_Helper::updateBien_titre_foncie_ByExcel($projet_id, $row);
+                        \Log::info("✅ Successfully processed ID: " . ($row['ID'] ?? 'Unknown'));
+                        return $bienResult;
+                    } catch (\Exception $e) {
+                        \Log::error("❌ Error processing ID " . ($row['ID'] ?? 'Unknown') . ": " . $e->getMessage());
+                        throw $e;
+                    }
+                }, false); // Set to false since cron handles status
+
+                \Log::info("importerDonnees final result: " . json_encode($result));
+
+                // Check if result is valid and has successes
+                if (!$result || !isset($result['success']) || $result['success'] === false) {
+                    throw new \Exception("Import failed in importerDonnees");
+                }
+
+                \Log::info("=== IMPORT COMPLETED SUCCESSFULLY ===");
+                return $result;
+            } catch (\Exception $e) {
+                \Log::error("=== IMPORT FAILED ===");
+                \Log::error("Error in ImportStock_Bien_EnMasse: " . $e->getMessage());
+                \Log::error("Stack trace: " . $e->getTraceAsString());
+                throw $e;
+            }
+        }
         public static function ImportStock_Bien_EnMasse($data, $projet_id)
         {
             \Log::info("=== STARTING ImportStock_Bien_EnMasse ===");

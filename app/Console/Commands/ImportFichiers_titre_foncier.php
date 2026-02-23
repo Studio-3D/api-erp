@@ -6,32 +6,25 @@ use Illuminate\Console\Command;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\ChroneJobHelpers;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Proposition;
-use App\Models\User;
-use App\Models\Societe;
 use Illuminate\Support\Facades\DB;
 
 
 
-
-
-
-
-class ClearPropositionTable extends Command
+class ImportFichiers_titre_foncier extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'app:clear-proposition-table';
+    protected $signature = 'app:import_fichiers_titre_foncier_en_masse';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Libérer le bien après 30 minutes s\'il est toujours en cours de proposition.';
+    protected $description = 'Commande pour importer les titres fonciers  en masse ';
 
     /**
      * Execute the console command.
@@ -40,9 +33,11 @@ class ClearPropositionTable extends Command
     public function handle()
     {
         $databases = DB::table('societes')
-                        ->whereNull('deleted_at')
-                        //->where('id', '!=', 1)
-                        ->get();
-        DatabaseHelper::deletePropositionTable($databases);
+        ->whereNull('deleted_at')
+        ->whereNot('id', 1)   // Filtrer uniquement la société avec id = 292
+        ->get();
+
+        DatabaseHelper::import_titre_foncier_en_masse($databases);
+
     }
 }

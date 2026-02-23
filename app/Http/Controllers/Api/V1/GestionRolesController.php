@@ -19,7 +19,7 @@ class GestionRolesController extends Controller
 
         try {
             // Utiliser la connexion temp (qui pointe vers la base de la société)
-            $roles = Gestion_Roles::on('temp')->where('actif', 1)->get();
+            $roles = Gestion_Roles::on('temp')->get();
 
             return response()->json([
                 'success' => true,
@@ -62,7 +62,7 @@ class GestionRolesController extends Controller
 
         $validator = Validator::make($request->all(), [
             'role' => 'required|in:' . implode(',', $this->getRoleValues()),
-            'actif' => 'boolean'
+
         ]);
 
         if ($validator->fails()) {
@@ -87,7 +87,7 @@ class GestionRolesController extends Controller
 
             $role = Gestion_Roles::on('temp')->create([
                 'role' => $request->role,
-                'actif' => $request->boolean('actif', true)
+         // 'actif' => $request->boolean('actif', true)
             ]);
 
             return response()->json([
@@ -107,7 +107,7 @@ class GestionRolesController extends Controller
     // Afficher un rôle spécifique
 
 
-    // Mettre à jour un rôle
+    /* Mettre à jour un rôle
     public function update(Request $request, $id)
     {
         DatabaseHelper::Config();
@@ -142,7 +142,7 @@ class GestionRolesController extends Controller
                 'message' => 'Erreur lors de la mise à jour du rôle'
             ], 500);
         }
-    }
+    }*/
 
     // Supprimer un rôle (soft delete)
     public function destroy($id)
@@ -151,7 +151,7 @@ class GestionRolesController extends Controller
 
         try {
             $role = Gestion_Roles::on('temp')->findOrFail($id);
-            $role->delete();
+            $role->forceDelete();
 
             return response()->json([
                 'success' => true,
@@ -180,6 +180,8 @@ class GestionRolesController extends Controller
             RoleEnum::RESPO_LIVRAISON->value,
             RoleEnum::COMPTABLE->value,
             RoleEnum::SAV->value,
+            RoleEnum::RESPO_COMMERCIAL->value,
+            RoleEnum::AGENT_ADMINISTRATIF->value
         ];
     }
 
@@ -213,6 +215,8 @@ class GestionRolesController extends Controller
             RoleEnum::RESPO_LIVRAISON->value => 'Service Livraison',
             RoleEnum::COMPTABLE->value => 'Service Comptable',
             RoleEnum::SAV->value => 'Service Après-Vente (SAV)',
+            RoleEnum::AGENT_ADMINISTRATIF->value => 'Service Administratif',
+            RoleEnum::RESPO_COMMERCIAL->value => 'Service Commercial (Responsable)',
         ];
 
         return $descriptions[$roleValue] ?? 'Description non définie';

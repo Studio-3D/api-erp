@@ -48,6 +48,8 @@ use App\Http\Controllers\Api\V1\UserController as V1UserController;
 use App\Http\Controllers\Api\V1\VisiteController as V1VisiteController;
 use App\Http\Controllers\Api\V1\VueController as V1VueController;
 use App\Http\Controllers\Api\V1\GestionRolesController as V1GestionRolesController;
+use App\Http\Controllers\Api\V1\NotaireController as V1NotaireController;
+
 use App\Http\Controllers\EnumController;
 use App\Http\Controllers\Facebook_Instagram\Facebook_InstagramController;
 use App\Http\Controllers\Landing_page\Landing_pageController;
@@ -169,6 +171,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('commerciaux/{projet_id}', [V1UserController::class, 'list_commerciaux'])->name('');
         Route::get('get_commerciaux/{projet_id}', [V1UserController::class, 'get_commerciaux'])->name('get_commerciaux');
         Route::post('/utilisateurs/{id}', [V1UserController::class, 'update']);
+        Route::put('/update_personal_info/{id}', [V1UserController::class, 'update_personal_info']);
+        Route::put('/update_password/{id}', [V1UserController::class, 'update_password']);
 
         // l'API societes
         Route::resource('societes', V1SocieteController::class);
@@ -315,6 +319,8 @@ Route::middleware('auth:api')->group(function () {
         Route::get('relancer_reservation/{id}', [V1ReservationController::class, 'relancer_reservation'])->name('');
         Route::get('get_pj_res/{id}', [V1ReservationController::class, 'get_pj_res'])->name('');
         Route::get('getDossiers/{projet_id}/{dos_id}', [v1ReservationController::class, 'get_dossiers'])->name('');
+        Route::get('projets/{idprojet}/etat-dossiers', [V1ReservationController::class, 'indexByProjet']);
+        Route::get('etat_dossier/{dos_id}', [v1ReservationController::class, 'get_etat_dossier'])->name('');
 
         //l'api desistement
         Route::resource('desistements', V1DesistementController::class);
@@ -364,6 +370,7 @@ Route::middleware('auth:api')->group(function () {
         Route::resource('fournisseurs', V1FournisseurController::class);
         Route::get('projets/{idprojet}/fournisseurs', [V1FournisseurController::class, 'indexByProjet']);
         Route::get('get_info_ice_unique/{id}/{ice}', [V1FournisseurController::class, 'get_info_ice_unique']);
+        Route::get('projets/{idprojet}/rapports', [V1ComptabiliteController::class, 'get_rapport'])->name('');
 
         //decomptes
         Route::resource('decomptes', V1DecompteController::class);
@@ -450,6 +457,8 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('delete_fichier_import/{id}', [V1UploadBienController::class, 'delete_fichier_import'])->name('');
 
         Route::post('upload_excel_bien_modif_en_masse', [V1UploadBienController::class, 'upload_excel_bien_modif_en_masse'])->name('');
+        Route::post('upload_excel_titre_foncier_en_masse', [V1UploadBienController::class, 'upload_excel_titre_foncier_en_masse'])->name('');
+
 
         //Dashboad
         Route::get('dashboard/{projet_id}/{de}/{a}', [V1HomeController::class, 'dashboard'])->name('');
@@ -474,7 +483,28 @@ Route::middleware('auth:api')->group(function () {
         Route::get('projets/{idprojet}/commissions_traites', [V1CommissionController::class, 'commissions_traites']);
         Route::get('projets/{idprojet}/commissions_cumuls_by_projet', [V1CommissionController::class, 'commissions_cumuls_by_projet']);
 
-        // TikTok API Integration - updated with OAuth flow
+               /***********************************Notaire*******************/
+
+        Route::get('projets/{idprojet}/notaires', [V1NotaireController::class, 'get_notaires'])->name('');
+        Route::put('/affecter_notaire/{id}', [V1NotaireController::class, 'affecter_notaire'])->name('');
+        Route::get('projets/{idprojet}/new_dossiers_notaire', [V1NotaireController::class, 'get_new_dossier_notaire'])->name('');
+        Route::get('projets/{idprojet}/rdvs_notaire', [V1NotaireController::class, 'get_rdvs_notaire'])->name('');
+        Route::get('projets/{idprojet}/relances_notaire', [V1NotaireController::class, 'get_relances_notaire'])->name('');
+        Route::put('add_prochaine_relance/{rdv_id}', [V1NotaireController::class, 'add_prochaine_relance'])->name('');
+        Route::get('get_relances_history/{rdv_id}', [V1NotaireController::class, 'get_relances_history'])->name('');
+        Route::get('projets/{idprojet}/get_attestations_ventes', [V1NotaireController::class, 'get_attestations_ventes'])->name('');
+        Route::get('projets/{idprojet}/get_contrats_ventes', [V1NotaireController::class, 'get_contrats_ventes'])->name('');
+         // Nouvelles routes pour gérer les créneaux
+            // Route POST pour un seul créneau (MÊME URL que GET)
+        Route::post('storeCreneau', [V1NotaireController::class, 'storeCreneau']);
+        Route::get('creaneau_occupes_by_user_id', [V1NotaireController::class, 'getCreneauxOccupes_by_User']);
+            // Route DELETE
+        Route::delete('creaneau_occupes_by_user_id/{id}', [V1NotaireController::class, 'deleteCreneau']);
+        Route::put('/update-creneau-by-user/{id}', [V1NotaireController::class, 'updateCreneau']);
+        Route::post('/update-agenda-by-user', [V1NotaireController::class, 'updateAgendaByUser']);
+
+        /****************************Fin NotaireController************************ */
+            // TikTok API Integration - updated with OAuth flow
         Route::get('/tiktok/auth-url', [TikTokApiController::class, 'getAuthUrl']);
         Route::post('/tiktok/callback', [TikTokApiController::class, 'handleCallback']);
         Route::post('/tiktok/publish', [TikTokApiController::class, 'publishContent']);
@@ -568,6 +598,8 @@ Route::middleware('auth:api')->group(function () {
     Route::put('traiter_rdv_reservation/{rdv_id}', [LivraisonController::class, 'traiter_rdv_reservation'])->name('');
     Route::delete('destroy_rdv_reservation/{id}', [LivraisonController::class, 'destroy_rdv_reservation'])->name('');
     Route::get('get_rdv_notaire_menu/{projet_id}', [LivraisonController::class, 'get_rdv_notaire_menu'])->name('');
+
+
     //Rendez Vous
     Route::get('creneaux-occupes', [LivraisonController::class, 'getCreneauxOccupes']);
     Route::post('/update-reservation-creneau/{reservation_id}', [LivraisonController::class, 'updateReservationCreneau']);

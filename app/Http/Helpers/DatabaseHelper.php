@@ -13,6 +13,7 @@ use App\Models\Visite;
 use App\Models\Relance_Rdv_Visite;
 use App\Models\Relance_Rdv_Appel;
 use App\Models\TraitementAppel;
+use App\Models\Rendez_vous;
 
 
 use App\Models\Societe;
@@ -160,70 +161,103 @@ class DatabaseHelper
     }
 
    public static function deletePropositionTable($databases)
-{
-    foreach ($databases as $database) {
-        $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+    {
+        foreach ($databases as $database) {
+            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
 
-        try {
-            // Établir la connexion
-            $connection = DatabaseHelper::Connection_database($databaseName);
-            config(['database.connections.temp' => $connection]);
-            DB::connection('temp')->setDatabaseName($connection['database']);
-            DB::reconnect('temp');
+            try {
+                // Établir la connexion
+                $connection = DatabaseHelper::Connection_database($databaseName);
+                config(['database.connections.temp' => $connection]);
+                DB::connection('temp')->setDatabaseName($connection['database']);
+                DB::reconnect('temp');
 
-            // Vérifier l'existence de la table une seule fois
-            if (!Schema::connection('temp')->hasTable('propositions')) {
-                \Log::info("Table 'propositions' does not exist in $databaseName.");
-                continue;
-            }
-
-            // Récupérer les utilisateurs une seule fois
-            $notConnectedUsers = DB::table('users')->where('is_connected', 0)->pluck('id');
-            $connectedUsers = DB::table('users')->where('is_connected', 1)->pluck('id');
-
-            // Fusionner les deux traitements similaires
-            $allUsers = [
-                'not_connected' => $notConnectedUsers,
-                'connected' => $connectedUsers
-            ];
-
-            foreach ($allUsers as $type => $users) {
-                if ($users->isEmpty()) {
+                // Vérifier l'existence de la table une seule fois
+                if (!Schema::connection('temp')->hasTable('propositions')) {
+                    \Log::info("Table 'propositions' does not exist in $databaseName.");
                     continue;
                 }
 
-                $propositions = Proposition::on('temp')
-                    ->when($type == 'connected', function ($query) {
-                        return $query->select('id', 'created_at', 'bien_id');
-                    })
-                    ->whereIn('user_id', $users)
-                    ->with(['bien' => function($query) {
-                        $query->select('id', 'etat', 'created_at');
-                    }])
-                    ->get();
+                // Récupérer les utilisateurs une seule fois
+                $notConnectedUsers = DB::table('users')->where('is_connected', 0)->pluck('id');
+                $connectedUsers = DB::table('users')->where('is_connected', 1)->pluck('id');
 
-                foreach ($propositions as $prop) {
-                    $bien = $prop->bien;
-                    if ($bien && $bien->etat == 'ENCOURS_DE_PROPOSITION') {
-                        $expiryTime = Carbon::parse($bien->created_at)->addMinutes(30);
-                        if ($expiryTime->isPast()) {
-                            Bien_Helper::libererBien($bien->id, 'console', null);
-                            \Log::info("Bien proposé updated==>.".$bien->id);
+                // Fusionner les deux traitements similaires
+                $allUsers = [
+                    'not_connected' => $notConnectedUsers,
+                    'connected' => $connectedUsers
+                ];
 
-                        }
+                foreach ($allUsers as $type => $users) {
+                    if ($users->isEmpty()) {
+                        continue;
                     }
-                    $prop->forceDelete();
-                }
 
-                \Log::info("Deleted propositions for {$type} users in $databaseName.");
+                    $propositions = Proposition::on('temp')
+                        ->when($type == 'connected', function ($query) {
+                            return $query->select('id', 'created_at', 'bien_id');
+                        })
+                        ->whereIn('user_id', $users)
+                        ->with(['bien' => function($query) {
+                            $query->select('id', 'etat', 'created_at');
+                        }])
+                        ->get();
+
+                    foreach ($propositions as $prop) {
+                        $bien = $prop->bien;
+                        if ($bien && $bien->etat == 'ENCOURS_DE_PROPOSITION') {
+                            $expiryTime = Carbon::parse($bien->created_at)->addMinutes(30);
+                            if ($expiryTime->isPast()) {
+                                Bien_Helper::libererBien($bien->id, 'console', null);
+                                \Log::info("Bien proposé updated==>.".$bien->id);
+
+                            }
+                        }
+                        $prop->forceDelete();
+                    }
+
+                    \Log::info("Deleted propositions for {$type} users in $databaseName.");
+                }
+            } catch (\Exception $e) {
+                \Log::error("Error processing database $databaseName: " . $e->getMessage());
             }
-        } catch (\Exception $e) {
-            \Log::error("Error processing database $databaseName: " . $e->getMessage());
         }
     }
-}
 
   public static function deleteCreneauPropose($databases)
+    {
+        foreach ($databases as $database) {
+            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+
+            try {
+                // Établir la connexion
+                $connection = DatabaseHelper::Connection_database($databaseName);
+                config(['database.connections.temp' => $connection]);
+                DB::connection('temp')->setDatabaseName($connection['database']);
+                DB::reconnect('temp');
+
+                // Vérifier l'existence de la table une seule fois
+                if (!Schema::connection('temp')->hasTable('creneaux_occupes')) {
+                    \Log::info("Table creneaux_occupes does not exist in $databaseName.");
+                    continue;
+                }
+
+                $creneaux = CreneauxOccupes::on('temp')->get();
+                    foreach ($creneaux as $prop) {
+                            $expiryTime = Carbon::parse($prop->created_at)->addMinutes(3);
+                            if ($expiryTime->isPast() && $prop->type==0) {
+                                $prop->forceDelete();
+                                \Log::info("creneay proposé deleted.");
+                            }
+                    }
+            } catch (\Exception $e) {
+                \Log::error("Error processing database $databaseName: " . $e->getMessage());
+            }
+        }
+    }
+
+
+    public static function annuler_rdv_automatique($databases)
 {
     foreach ($databases as $database) {
         $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
@@ -235,20 +269,37 @@ class DatabaseHelper
             DB::connection('temp')->setDatabaseName($connection['database']);
             DB::reconnect('temp');
 
-            // Vérifier l'existence de la table une seule fois
-            if (!Schema::connection('temp')->hasTable('creneaux_occupes')) {
-                \Log::info("Table creneaux_occupes does not exist in $databaseName.");
+            // Vérifier l'existence de la table
+            if (!Schema::connection('temp')->hasTable('rendez_vous')) {
+                \Log::info("Table rendez_vous does not exist in $databaseName.");
                 continue;
             }
 
-            $creneaux = CreneauxOccupes::on('temp')->get();
-                foreach ($creneaux as $prop) {
-                        $expiryTime = Carbon::parse($prop->created_at)->addMinutes(3);
-                        if ($expiryTime->isPast() && $prop->type==0) {
-                            $prop->forceDelete();
-                            \Log::info("creneay proposé deleted.");
-                        }
+            // Récupérer les RDV en attente (statut = 1) dont la date est passée de plus d'une heure
+            $now = now();
+
+            $rdvs = Rendez_vous::on('temp')
+                ->where('statut', '1') // en attente
+                ->whereNotNull('rdv') // vérifier que rdv n'est pas null
+                ->where('rdv', '<=', $now->subHour()) // rdv date plus ancienne qu'il y a une heure
+                ->get();
+
+            foreach ($rdvs as $rdv) {
+                // Vérifier si plus d'une heure s'est écoulée depuis la date du RDV
+                $rdvDateTime = \Carbon\Carbon::parse($rdv->rdv);
+                $hoursDifference = $rdvDateTime->diffInHours($now);
+
+                if ($hoursDifference >= 1) {
+                    // Mettre à jour le statut à 4 (annulé automatique)
+                    $rdv->statut = '4';
+                    $rdv->save();
+
+                    \Log::info("RDV ID {$rdv->id} dans $databaseName annulé automatiquement. RDV date: {$rdv->rdv}, Heure actuelle: {$now}");
                 }
+            }
+
+            \Log::info("Processed $databaseName: " . $rdvs->count() . " RDVs annulés automatiquement.");
+
         } catch (\Exception $e) {
             \Log::error("Error processing database $databaseName: " . $e->getMessage());
         }
@@ -1233,137 +1284,268 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
 
     /*********en Masse*********** */
 
-    public static function import_fichiers_biens_en_masse($databases)
-{
-    foreach ($databases as $database) {
-        $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+public static function import_titre_foncier_en_masse($databases)
+    {
+        foreach ($databases as $database) {
+            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
 
-        // Switch to the temporary database
-        $connection = DatabaseHelper::Connection_database($databaseName);
-        config(['database.connections.temp' => $connection]);
-        DB::connection('temp')->setDatabaseName($connection['database']);
-        DB::reconnect('temp');
+            // Switch to the temporary database
+            $connection = DatabaseHelper::Connection_database($databaseName);
+            config(['database.connections.temp' => $connection]);
+            DB::connection('temp')->setDatabaseName($connection['database']);
+            DB::reconnect('temp');
 
-        if (Schema::connection('temp')->hasTable('imports')) {
-            $imports = Import::on('temp')->where('type','1')->with('user')->whereIn('statut',['0','1'])->get();
-            \Log::info("import des fichiers du base de donne'. $databaseName.");
+            if (Schema::connection('temp')->hasTable('imports')) {
+                $imports = Import::on('temp')->where('type','1')->with('user')->whereIn('statut',['0','1'])->get();
+                \Log::info("import des fichiers du base de donne'. $databaseName.");
 
-            foreach($imports as $imp) {
-                // Skip if already processed (status 2 or 3)
-                if($imp->statut == 2 || $imp->statut == 3) {
-                    \Log::info("Skipping import {$imp->id} - already processed (status {$imp->statut})");
-                    continue;
-                }
+                foreach($imports as $imp) {
+                    // Skip if already processed (status 2 or 3)
+                    if($imp->statut == 2 || $imp->statut == 3) {
+                        \Log::info("Skipping import {$imp->id} - already processed (status {$imp->statut})");
+                        continue;
+                    }
 
-                $to_email = $imp->user->email;
+                    $to_email = $imp->user->email;
 
-                // Set import status to "en_cours" (1) only if it's not already
-                if($imp->statut != '1') {
-                    $imp->statut = '1';
-                    $imp->save();
-                }
+                    // Set import status to "en_cours" (1) only if it's not already
+                    if($imp->statut != '1') {
+                        $imp->statut = '1';
+                        $imp->save();
+                    }
 
-                try {
-                    $projet = Projet::on('temp')->findOrfail($imp->projet_id);
-                    $result = ImportExcelHelper::ImportStock_Bien_EnMasse($imp->data, $imp->projet_id);
+                    try {
+                        $projet = Projet::on('temp')->findOrfail($imp->projet_id);
+                        $result = ImportExcelHelper::Import_titre_foncier_EnMasse($imp->data, $imp->projet_id);
 
-                    // Update import with results from importerDonnees_masse
-                    $imp = Import::on('temp')->find($imp->id); // Refresh the import object
+                        // Update import with results from importerDonnees_masse
+                        $imp = Import::on('temp')->find($imp->id); // Refresh the import object
 
-                    if(isset($result['error_count']) && $result['error_count'] > 0) {
-                        // Import completed with errors - set status to "echoue" (3)
+                        if(isset($result['error_count']) && $result['error_count'] > 0) {
+                            // Import completed with errors - set status to "echoue" (3)
+                            $imp->statut = '3';
+                            $imp->message_echou = json_encode([
+                                'total_lignes' => $result['total'] ?? 0,
+                                'lignes_reussies' => $result['success_count'] ?? 0,
+                                'lignes_echouees' => $result['error_count'] ?? 0,
+                                'erreurs' => $result['errors'] ?? []
+                            ]);
+                            $imp->ligne_echou = $result['error_count'] ?? 0;
+                            $imp->date_echou = now();
+
+                            // Log partial success
+                            \Log::info("Import partially completed for projet_id: {$imp->projet_id}, import_id: {$imp->id}, success: {$result['success_count']}, errors: {$result['error_count']}");
+                        } else {
+                            // Import completed successfully
+                            $imp->statut = '2';
+                            \Log::info("Import completed successfully for projet_id: {$imp->projet_id}, import_id: {$imp->id}");
+                        }
+
+                        $imp->save();
+
+                        // Send notification
+                        Config::set('broadcasting.default', 'pusher_3');
+                        $imp->load('user');
+
+                        if($imp->statut == '2') {
+                            // Completely successful import
+                            $data_notif = [
+                                'lien' => '/histo-importation/' . $imp->id,
+                                'date' => Carbon::now(),
+                                'type' => 29,
+                                'description' => 'Fichier des Biens en masse importé avec succès',
+                                'user_id' => $imp->user ? $imp->user->user_id_origin : null,
+                                'projet_id' => $imp->projet_id,
+                            ];
+                        } elseif($imp->statut == '3') {
+                            // Import with errors
+                            $data_notif = [
+                                'lien' => '/histo-importation/' . $imp->id,
+                                'date' => Carbon::now(),
+                                'type' => 29,
+                                'description' => 'Import terminé avec des erreurs - Vérifiez les détails',
+                                'user_id' => $imp->user ? $imp->user->user_id_origin : null,
+                                'projet_id' => $imp->projet_id,
+                            ];
+                        }
+
+                        if(isset($data_notif)) {
+                            $notif_helper = new NotificationHelper();
+                            $req = new \Illuminate\Http\Request();
+                            $notif_helper->storeNotification($req->merge($data_notif));
+                        }
+
+                        // Send email
+                        if($to_email != null) {
+                            self::sendImportEmail($imp, $to_email);
+                        }
+
+                    } catch (\Exception $e) {
+                        // If import failed completely
+                        $imp = Import::on('temp')->find($imp->id); // Refresh
                         $imp->statut = '3';
-                        $imp->message_echou = json_encode([
-                            'total_lignes' => $result['total'] ?? 0,
-                            'lignes_reussies' => $result['success_count'] ?? 0,
-                            'lignes_echouees' => $result['error_count'] ?? 0,
-                            'erreurs' => $result['errors'] ?? []
-                        ]);
-                        $imp->ligne_echou = $result['error_count'] ?? 0;
+                        $imp->message_echou = $e->getMessage();
                         $imp->date_echou = now();
+                        $imp->save();
 
-                        // Log partial success
-                        \Log::info("Import partially completed for projet_id: {$imp->projet_id}, import_id: {$imp->id}, success: {$result['success_count']}, errors: {$result['error_count']}");
-                    } else {
-                        // Import completed successfully
-                        $imp->statut = '2';
-                        \Log::info("Import completed successfully for projet_id: {$imp->projet_id}, import_id: {$imp->id}");
-                    }
+                        \Log::error("Import failed for projet {$imp->projet_id}: " . $e->getMessage());
 
-                    $imp->save();
+                        // Send notification for failed import
+                        Config::set('broadcasting.default', 'pusher_3');
+                        $imp->load('user');
 
-                    // Send notification
-                    Config::set('broadcasting.default', 'pusher_3');
-                    $imp->load('user');
-
-                    if($imp->statut == '2') {
-                        // Completely successful import
                         $data_notif = [
                             'lien' => '/histo-importation/' . $imp->id,
                             'date' => Carbon::now(),
                             'type' => 29,
-                            'description' => 'Fichier des Biens en masse importé avec succès',
+                            'description' => 'Échec d\'importation du fichier',
                             'user_id' => $imp->user ? $imp->user->user_id_origin : null,
                             'projet_id' => $imp->projet_id,
                         ];
-                    } elseif($imp->statut == '3') {
-                        // Import with errors
-                        $data_notif = [
-                            'lien' => '/histo-importation/' . $imp->id,
-                            'date' => Carbon::now(),
-                            'type' => 29,
-                            'description' => 'Import terminé avec des erreurs - Vérifiez les détails',
-                            'user_id' => $imp->user ? $imp->user->user_id_origin : null,
-                            'projet_id' => $imp->projet_id,
-                        ];
-                    }
 
-                    if(isset($data_notif)) {
                         $notif_helper = new NotificationHelper();
                         $req = new \Illuminate\Http\Request();
                         $notif_helper->storeNotification($req->merge($data_notif));
-                    }
 
-                    // Send email
-                    if($to_email != null) {
-                        self::sendImportEmail($imp, $to_email);
-                    }
-
-                } catch (\Exception $e) {
-                    // If import failed completely
-                    $imp = Import::on('temp')->find($imp->id); // Refresh
-                    $imp->statut = '3';
-                    $imp->message_echou = $e->getMessage();
-                    $imp->date_echou = now();
-                    $imp->save();
-
-                    \Log::error("Import failed for projet {$imp->projet_id}: " . $e->getMessage());
-
-                    // Send notification for failed import
-                    Config::set('broadcasting.default', 'pusher_3');
-                    $imp->load('user');
-
-                    $data_notif = [
-                        'lien' => '/histo-importation/' . $imp->id,
-                        'date' => Carbon::now(),
-                        'type' => 29,
-                        'description' => 'Échec d\'importation du fichier',
-                        'user_id' => $imp->user ? $imp->user->user_id_origin : null,
-                        'projet_id' => $imp->projet_id,
-                    ];
-
-                    $notif_helper = new NotificationHelper();
-                    $req = new \Illuminate\Http\Request();
-                    $notif_helper->storeNotification($req->merge($data_notif));
-
-                    if($to_email != null) {
-                        self::sendImportEmail($imp, $to_email);
+                        if($to_email != null) {
+                            self::sendImportEmail($imp, $to_email);
+                        }
                     }
                 }
             }
         }
     }
-}
+    public static function import_fichiers_biens_en_masse($databases)
+    {
+        foreach ($databases as $database) {
+            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+
+            // Switch to the temporary database
+            $connection = DatabaseHelper::Connection_database($databaseName);
+            config(['database.connections.temp' => $connection]);
+            DB::connection('temp')->setDatabaseName($connection['database']);
+            DB::reconnect('temp');
+
+            if (Schema::connection('temp')->hasTable('imports')) {
+                $imports = Import::on('temp')->where('type','1')->with('user')->whereIn('statut',['0','1'])->get();
+                \Log::info("import des fichiers du base de donne'. $databaseName.");
+
+                foreach($imports as $imp) {
+                    // Skip if already processed (status 2 or 3)
+                    if($imp->statut == 2 || $imp->statut == 3) {
+                        \Log::info("Skipping import {$imp->id} - already processed (status {$imp->statut})");
+                        continue;
+                    }
+
+                    $to_email = $imp->user->email;
+
+                    // Set import status to "en_cours" (1) only if it's not already
+                    if($imp->statut != '1') {
+                        $imp->statut = '1';
+                        $imp->save();
+                    }
+
+                    try {
+                        $projet = Projet::on('temp')->findOrfail($imp->projet_id);
+                        $result = ImportExcelHelper::ImportStock_Bien_EnMasse($imp->data, $imp->projet_id);
+
+                        // Update import with results from importerDonnees_masse
+                        $imp = Import::on('temp')->find($imp->id); // Refresh the import object
+
+                        if(isset($result['error_count']) && $result['error_count'] > 0) {
+                            // Import completed with errors - set status to "echoue" (3)
+                            $imp->statut = '3';
+                            $imp->message_echou = json_encode([
+                                'total_lignes' => $result['total'] ?? 0,
+                                'lignes_reussies' => $result['success_count'] ?? 0,
+                                'lignes_echouees' => $result['error_count'] ?? 0,
+                                'erreurs' => $result['errors'] ?? []
+                            ]);
+                            $imp->ligne_echou = $result['error_count'] ?? 0;
+                            $imp->date_echou = now();
+
+                            // Log partial success
+                            \Log::info("Import partially completed for projet_id: {$imp->projet_id}, import_id: {$imp->id}, success: {$result['success_count']}, errors: {$result['error_count']}");
+                        } else {
+                            // Import completed successfully
+                            $imp->statut = '2';
+                            \Log::info("Import completed successfully for projet_id: {$imp->projet_id}, import_id: {$imp->id}");
+                        }
+
+                        $imp->save();
+
+                        // Send notification
+                        Config::set('broadcasting.default', 'pusher_3');
+                        $imp->load('user');
+
+                        if($imp->statut == '2') {
+                            // Completely successful import
+                            $data_notif = [
+                                'lien' => '/histo-importation/' . $imp->id,
+                                'date' => Carbon::now(),
+                                'type' => 29,
+                                'description' => 'Fichier des Biens en masse importé avec succès',
+                                'user_id' => $imp->user ? $imp->user->user_id_origin : null,
+                                'projet_id' => $imp->projet_id,
+                            ];
+                        } elseif($imp->statut == '3') {
+                            // Import with errors
+                            $data_notif = [
+                                'lien' => '/histo-importation/' . $imp->id,
+                                'date' => Carbon::now(),
+                                'type' => 29,
+                                'description' => 'Import terminé avec des erreurs - Vérifiez les détails',
+                                'user_id' => $imp->user ? $imp->user->user_id_origin : null,
+                                'projet_id' => $imp->projet_id,
+                            ];
+                        }
+
+                        if(isset($data_notif)) {
+                            $notif_helper = new NotificationHelper();
+                            $req = new \Illuminate\Http\Request();
+                            $notif_helper->storeNotification($req->merge($data_notif));
+                        }
+
+                        // Send email
+                        if($to_email != null) {
+                            self::sendImportEmail($imp, $to_email);
+                        }
+
+                    } catch (\Exception $e) {
+                        // If import failed completely
+                        $imp = Import::on('temp')->find($imp->id); // Refresh
+                        $imp->statut = '3';
+                        $imp->message_echou = $e->getMessage();
+                        $imp->date_echou = now();
+                        $imp->save();
+
+                        \Log::error("Import failed for projet {$imp->projet_id}: " . $e->getMessage());
+
+                        // Send notification for failed import
+                        Config::set('broadcasting.default', 'pusher_3');
+                        $imp->load('user');
+
+                        $data_notif = [
+                            'lien' => '/histo-importation/' . $imp->id,
+                            'date' => Carbon::now(),
+                            'type' => 29,
+                            'description' => 'Échec d\'importation du fichier',
+                            'user_id' => $imp->user ? $imp->user->user_id_origin : null,
+                            'projet_id' => $imp->projet_id,
+                        ];
+
+                        $notif_helper = new NotificationHelper();
+                        $req = new \Illuminate\Http\Request();
+                        $notif_helper->storeNotification($req->merge($data_notif));
+
+                        if($to_email != null) {
+                            self::sendImportEmail($imp, $to_email);
+                        }
+                    }
+                }
+            }
+        }
+    }
     public static function liberer_bien_pre_reserve($databases)
     {
         Config::set('broadcasting.default', 'pusher_3');
