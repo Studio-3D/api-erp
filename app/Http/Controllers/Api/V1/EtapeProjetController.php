@@ -184,4 +184,3 @@ class EtapeProjetController extends Controller
         }
     }
 }
-

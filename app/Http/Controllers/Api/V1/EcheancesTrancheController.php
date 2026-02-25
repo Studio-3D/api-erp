@@ -206,4 +206,3 @@ class EcheancesTrancheController extends Controller
         }
     }
 }
-

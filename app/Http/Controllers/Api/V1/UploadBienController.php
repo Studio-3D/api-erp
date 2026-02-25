@@ -79,55 +79,100 @@ class UploadBienController extends Controller
 
 
     public function upload_excel_bien_modif_en_masse(Request $request)
-{
-    if (RoleHelper::ACSup()) {
-        DatabaseHelper::Config();
-        $projet_id = $request->projet_id;
-        set_time_limit(0);
-        ini_set('memory_limit', '-1');
-        $data = json_decode($request->input('jsonData', '[]'), true);
+    {
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $projet_id = $request->projet_id;
+            set_time_limit(0);
+            ini_set('memory_limit', '-1');
+            $data = json_decode($request->input('jsonData', '[]'), true);
 
-        $user = Auth::user();
-        DatabaseHelper::Config();
-        $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
-        $user_societes = User::where('id', $userAuth->user_id_origin)->first();
-        $societe = Societe::findOrfail($user_societes->societe_id);
+            $user = Auth::user();
+            DatabaseHelper::Config();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+            $user_societes = User::where('id', $userAuth->user_id_origin)->first();
+            $societe = Societe::findOrfail($user_societes->societe_id);
 
-        $imp = new Import();
-        $imp->setConnection('temp');
-        $imp->projet_id = $projet_id;
-        $imp->statut = '0';
-        $imp->user_id = $userAuth->id;
-        $imp->data = $data;
-        $imp->type = '1';
+            $imp = new Import();
+            $imp->setConnection('temp');
+            $imp->projet_id = $projet_id;
+            $imp->statut = '0';
+            $imp->user_id = $userAuth->id;
+            $imp->data = $data;
+            $imp->type = '1';
 
-        // Handle file upload only if file exists
-        if ($request->hasFile('piece_jointe')) {
-            $client_origin_name = $request->file('piece_jointe')->getClientOriginalName();
-            $date = str_replace(str_split('\\/:*?"<>|+-\s+'), '_', date("Y-m-d H:i:s"));
-            $filename = pathinfo($client_origin_name, PATHINFO_FILENAME) . '_' . $date;
-            $extension = pathinfo($client_origin_name, PATHINFO_EXTENSION);
-            $imp->fichier = $filename . '.' . $extension;
-            $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Import_fichier_en_masse');
-            File::makeDirectory($directory, 0755, true, true);
-            $request->file('piece_jointe')->move($directory, $filename . '.' . $extension);
+            // Handle file upload only if file exists
+            if ($request->hasFile('piece_jointe')) {
+                $client_origin_name = $request->file('piece_jointe')->getClientOriginalName();
+                $date = str_replace(str_split('\\/:*?"<>|+-\s+'), '_', date("Y-m-d H:i:s"));
+                $filename = pathinfo($client_origin_name, PATHINFO_FILENAME) . '_' . $date;
+                $extension = pathinfo($client_origin_name, PATHINFO_EXTENSION);
+                $imp->fichier = $filename . '.' . $extension;
+                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Import_fichier_en_masse');
+                File::makeDirectory($directory, 0755, true, true);
+                $request->file('piece_jointe')->move($directory, $filename . '.' . $extension);
+            }
+
+            $imp->save();
+            return response()->json('done stock fichier');
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
         }
-
-        $imp->save();
-        return response()->json('done stock fichier');
-    } else {
-        return response()->json(['error' => 'Unauthorized'], 401);
     }
-}
+     public function upload_excel_titre_foncier_en_masse(Request $request)
+    {
+        if (RoleHelper::AdminSup()||RoleHelper::RespoLivraison()) {
+            DatabaseHelper::Config();
+            $projet_id = $request->projet_id;
+            set_time_limit(0);
+            ini_set('memory_limit', '-1');
+            $data = json_decode($request->input('jsonData', '[]'), true);
+
+            $user = Auth::user();
+            DatabaseHelper::Config();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+            $user_societes = User::where('id', $userAuth->user_id_origin)->first();
+            $societe = Societe::findOrfail($user_societes->societe_id);
+
+            $imp = new Import();
+            $imp->setConnection('temp');
+            $imp->projet_id = $projet_id;
+            $imp->statut = '0';
+            $imp->user_id = $userAuth->id;
+            $imp->data = $data;
+            $imp->type = '1';//modif en masse
+
+            // Handle file upload only if file exists
+            if ($request->hasFile('piece_jointe')) {
+                $client_origin_name = $request->file('piece_jointe')->getClientOriginalName();
+                $date = str_replace(str_split('\\/:*?"<>|+-\s+'), '_', date("Y-m-d H:i:s"));
+                $filename = pathinfo($client_origin_name, PATHINFO_FILENAME) . '_' . $date;
+                $extension = pathinfo($client_origin_name, PATHINFO_EXTENSION);
+                $imp->fichier = $filename . '.' . $extension;
+                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Import_fichier_en_masse');
+                File::makeDirectory($directory, 0755, true, true);
+                $request->file('piece_jointe')->move($directory, $filename . '.' . $extension);
+            }
+
+            $imp->save();
+            return response()->json('done stock fichier');
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
     public function histo_importation(Request $request, $projet_id)
     {
         if (Auth::guard('api')->check()) {
             $size = $request->input('size', null);
             $page = $request->input('page', null);
             DatabaseHelper::Config();
-
             // Démarrer la requête directement sur le modèle
             $query = Import::on('temp')->where('projet_id', $projet_id);
+            if(RoleHelper::RespoLivraison()){
+                $user = Auth::user();
+                $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+                $query->where('user_id', $userAuth->id );
+            }
             if ($request->filled('date')) {
                 $start = Carbon::parse($request->input('date'));
                 $query->whereDate('created_at', $start);
@@ -210,4 +255,3 @@ class UploadBienController extends Controller
      */
 
 }
-

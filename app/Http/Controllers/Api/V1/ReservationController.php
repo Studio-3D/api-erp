@@ -975,100 +975,182 @@ private function getAllHistoriquesWithAncien($reservationId)
                             ->orderBy('created_at', 'desc');
                     },*/
     public function show($id)
-{
-    if (RoleHelper::ACSup()) {
-        DatabaseHelper::Config();
+    {
+        if (RoleHelper::ACSup_RC()||RoleHelper::NotaireRespoL()||RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
+            DatabaseHelper::Config();
 
-        $reservation = Reservation::on('temp')
-            ->withSum('avances','montant')
-            ->without('avances_valides')
-            ->with([
-                'bien' => function($query) {
-                    $query->with([
-                        'immeuble' => function($q) {
-                            $q->select('id', 'nom')
-                              ->without(['projet', 'tranche','bloc']);
-                        },
-                        'bloc' => function($q) {
-                            $q->select('id', 'nom')
-                              ->without(['projet', 'tranche']);
-                        },
-                        'tranche' => function($q) {
-                            $q->select('id', 'nom')
-                              ->without(['projet']);
-                        }
-                    ]);
-                   // $query->without('projet','typologie','vue','compositionBien','typeBien');
-                },
-                'last_statut' => function($query) {
-                    $query->without('reservation','user');
-                },
-                'compromis_vente' => function($query) {
-                    $query-> select('*')->without('reservation','user');
-                },
-                'contrat_vente' => function($query) {
-                    $query->without('reservation','user');
-                },
-                'first_avance' => function($query) {
-                    $query->without('reservation','user');
-                },
-                'projet' => function($query) {
-                    $query->select('id', 'nom', 'adresse')
-                          ->without('user_projet', 'type_projet');
-                },//'aquereurs','aquereurs_ancien'
+            $reservation = Reservation::on('temp')
+                ->withSum('avances','montant')
+                ->without('avances_valides')
+                ->with([
+                    'bien' => function($query) {
+                        $query->with([
+                            'immeuble' => function($q) {
+                                $q->select('id', 'nom')
+                                ->without(['projet', 'tranche','bloc']);
+                            },
+                            'bloc' => function($q) {
+                                $q->select('id', 'nom')
+                                ->without(['projet', 'tranche']);
+                            },
+                            'tranche' => function($q) {
+                                $q->select('id', 'nom')
+                                ->without(['projet']);
+                            }
+                        ]);
+                    // $query->without('projet','typologie','vue','compositionBien','typeBien');
+                    },
+                    'last_statut' => function($query) {
+                        $query->without('reservation','user');
+                    },
+                    'compromis_vente' => function($query) {
+                        $query-> select('*')->without('reservation','user');
+                    },
+                    'contrat_vente' => function($query) {
+                        $query->without('reservation','user');
+                    },
+                    'first_avance' => function($query) {
+                        $query->without('reservation','user');
+                    },
+                    'projet' => function($query) {
+                        $query->select('id', 'nom', 'adresse')
+                            ->without('user_projet', 'type_projet');
+                    },//'aquereurs','aquereurs_ancien'
+                    'notaire' => function($query) {
+                        $query->select('id', 'user_id_origin','name', 'prenom')
+                            ->without('societe');
+                    },//'aquereurs','aquereurs_ancien'
 
-            ])
-            ->findOrFail($id);
+                ])
+                ->findOrFail($id);
 
 
-        // Hide avances_valides from response
-        $reservation->makeHidden('avances_valides');
+            // Hide avances_valides from response
+            $reservation->makeHidden('avances_valides');
 
-        $sum_avances_valides = 0;
+            $sum_avances_valides = 0;
 
-        // Conditionally replace aquereurs with aquereurs_ancien if etat > 1
-        if ($reservation->etat > 1) {
-             $reservation->load('remboursement_dd_with_transfert');
-           // Load aquereurs_ancien relationship
-            $reservation->load('aquereurs_ancien');
-            // Replace aquereurs with aquereurs_ancien for the response
-            $reservation->aquereurs = $reservation->aquereurs_ancien;
-            // Hide the original aquereurs_ancien from response if needed
-            $reservation->load('desistements_ancien');
+            // Conditionally replace aquereurs with aquereurs_ancien if etat > 1
+            if ($reservation->etat > 1) {
+                $reservation->load('remboursement_dd_with_transfert');
+            // Load aquereurs_ancien relationship
+                $reservation->load('aquereurs_ancien');
+                // Replace aquereurs with aquereurs_ancien for the response
+                $reservation->aquereurs = $reservation->aquereurs_ancien;
+                // Hide the original aquereurs_ancien from response if needed
+                $reservation->load('desistements_ancien');
 
-            // Load piece_jointe_desiste when etat > 1
-            $reservation->load('piece_jointe_desiste');
-            // Hide piece_jointe from response
-            $reservation->makeHidden('piece_jointe');
-            foreach ($reservation->avances_desist as $av) {
-                if ($av->statut == StatutReservationEnum::Validé->value) {
+                // Load piece_jointe_desiste when etat > 1
+                $reservation->load('piece_jointe_desiste');
+                // Hide piece_jointe from response
+                $reservation->makeHidden('piece_jointe');
+                foreach ($reservation->avances_desist as $av) {
+                    if ($av->statut == StatutReservationEnum::Validé->value) {
+                        $sum_avances_valides += $av->montant;
+                    }
+                }
+            } else if($reservation->etat == 1) {
+                // Load piece_jointe when etat == 1
+                $reservation->load('piece_jointe');
+                // Hide piece_jointe_desiste from response
+                $reservation->makeHidden('piece_jointe_desiste');
+                // Load desistement_att_validation_rejete only when etat == 1
+                $reservation->load('desistement_att_validation_rejete');
+                foreach ($reservation->avances_valides as $av) {
                     $sum_avances_valides += $av->montant;
                 }
             }
-        } else if($reservation->etat == 1) {
-             // Load piece_jointe when etat == 1
-            $reservation->load('piece_jointe');
-            // Hide piece_jointe_desiste from response
-            $reservation->makeHidden('piece_jointe_desiste');
-            // Load desistement_att_validation_rejete only when etat == 1
-            $reservation->load('desistement_att_validation_rejete');
-             foreach ($reservation->avances_valides as $av) {
-                $sum_avances_valides += $av->montant;
-            }
-        }
-          // Get all historiques (with ancien if applicable)
-        $allHistoriques = $this->getAllHistoriquesWithAncien($id);
+            // Get all historiques (with ancien if applicable)
+            $allHistoriques = $this->getAllHistoriquesWithAncien($id);
 
-        // Set the relation on reservation object
-        $reservation->setRelation('historiques', $allHistoriques);
-        return response()->json([
-            'reservation' => $reservation,
-            'sum_avances_valides' => $sum_avances_valides
-        ], 200);
-    } else {
-        return response()->json(['error' => 'Unauthorized'], 401);
+            // Set the relation on reservation object
+            $reservation->setRelation('historiques', $allHistoriques);
+            return response()->json([
+                'reservation' => $reservation,
+                'sum_avances_valides' => $sum_avances_valides
+            ], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
-}
+
+
+    public function get_etat_dossier($id)
+    {
+        if (RoleHelper::ACSup()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::Comptable()) {
+            DatabaseHelper::Config();
+
+            $reservation = Reservation::on('temp')->where('etat',1)
+                ->withSum('avances','montant')
+                ->without('avances_valides','first_avance','historiques','projet')
+                ->with([
+                    'bien' => function($query) {
+                        $query->with([
+                            'immeuble' => function($q) {
+                                $q->select('id', 'nom')
+                                ->without(['projet', 'tranche','bloc']);
+                            },
+                            'bloc' => function($q) {
+                                $q->select('id', 'nom')
+                                ->without(['projet', 'tranche']);
+                            },
+                            'tranche' => function($q) {
+                                $q->select('id', 'nom')
+                                ->without(['projet']);
+                            },
+
+                            'remiseCle' => function($q) {
+                                // Try without any constraints first
+                                // $q->select('*');
+                                // Or with minimal constraints
+                                $q->select('id', 'bien_id', 'date_remise', 'fichier')->without(['bien','user','user_remis']);
+                            }
+                        ])->without('projet');
+                    // $query->without('projet','typologie','vue','compositionBien','typeBien');
+                    },
+                    'last_statut' => function($query) {
+                        $query->select('statut')->without('reservation','user');
+                    },
+                    'compromis_vente' => function($query) {
+                        $query-> select('*')->without('reservation','user');
+                    },
+                    'contrat_vente' => function($query) {
+                        $query->without('reservation','user');
+                    },
+                    'first_avance' => function($query) {
+                        $query->without('reservation','user');
+                    },
+                    'projet' => function($query) {
+                        $query->select('id', 'nom', 'adresse')
+                            ->without('user_projet', 'type_projet');
+                    },//'aquereurs','aquereurs_ancien'
+                    'notaire' => function($query) {
+                        $query->select('id', 'user_id_origin','name', 'prenom','email','phone')
+                            ->without('societe');
+                    },//'aquereurs','aquereurs_ancien'
+
+                ])
+                ->findOrFail($id);
+
+
+            // Hide avances_valides from response
+            $reservation->makeHidden('avances_valides');
+
+            $sum_avances_valides = 0;
+
+            if($reservation->etat == 1) {
+                foreach ($reservation->avances_valides as $av) {
+                    $sum_avances_valides += $av->montant;
+                }
+            }
+            return response()->json([
+                'reservation' => $reservation,
+                'sum_avances_valides' => $sum_avances_valides
+            ], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
         public function show_dossier_in_dd($id)
         {
             if (RoleHelper::ACSup()) {

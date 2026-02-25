@@ -49,7 +49,7 @@ class LivraisonController extends Controller
     /**************************************RDV**********************************************/
     public function get_rdvs_reservation($reservation_id, Request $request)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::RespoCommercial()) {
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
@@ -75,7 +75,7 @@ class LivraisonController extends Controller
             DatabaseHelper::Config();
 
             // Ensuite vérifiez le rôle
-            if (!RoleHelper::ACSup()) {
+            if (!RoleHelper::ACSup()&&!RoleHelper::Notaire()&&!RoleHelper::RespoLivraison()) {
                 return response()->json(['error' => 'Unauthorized'], 403);
             }
             $start = Carbon::createFromTimestamp($request->input('start')/1000);
@@ -96,8 +96,6 @@ class LivraisonController extends Controller
         }
 
 
-
-
 public function store_rdv_reservation($id, Request $request)
 {
     $validated = $request->validate([
@@ -105,7 +103,7 @@ public function store_rdv_reservation($id, Request $request)
         'type' => 'required|string',
     ]);
 
-    if (RoleHelper::ACSup()) {
+    if (RoleHelper::ACSup()||RoleHelper::Notaire()) {
         $user = Auth::user();
         DatabaseHelper::Config();
         $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
@@ -152,12 +150,6 @@ public function store_rdv_reservation($id, Request $request)
             $rdv->save();
             $rdvId = $rdv->id;
 
-            // Mark time slot as occupied
-            //check the creneau propose ==> supprimer it
-            $cren_prop=CreneauxOccupes::on('temp')->where('debut',$dateDebut)->where('fin',$dateFin)->where('type',0)->where('user_id',$userAuth->id)->first();
-            if($cren_prop!=null){
-                $cren_prop->forceDelete();
-            }
             $cren = new CreneauxOccupes();
             $cren->setConnection('temp');
             $cren->debut = $dateDebut;
@@ -167,11 +159,43 @@ public function store_rdv_reservation($id, Request $request)
             $cren->reservation_id=$id;
             $cren->disponible = false;
             $cren->save();
+            // Mark time slot as occupied
+            //check the creneau propose ==> supprimer it ->where('debut',$dateDebut)->where('fin',$dateFin)
+            $cren_prop=CreneauxOccupes::on('temp')->where('type',0)->where('user_id',$userAuth->id)->get();
+             if (count($cren_prop) > 0) {
+                    foreach($cren_prop as $cr){
+                    $cr->forceDelete();
+                    }
+            }
+
         });
                 //actualiser avances
                 Config::set('broadcasting.default', 'pusher_8');
                 // Broadcast event to all users subscribed to this reservation
                 broadcast(new RdvEvent($id));
+                  // send notif to notaire
+                  if(RoleHelper::ACSup()){
+                        $res=Reservation::on('temp')->findOrFail($id);
+                        if($res->notaire_id!=null){
+                             $data_notif = [
+                            'lien' => '/ventes/reservations/' . $id,
+                            'date' => $dateDebut,
+                            'type' => 32,
+                            'description' => 'nouveau rendez vous affecté',
+                            'projet_id' => $res->projet_id,
+                            'reservation_id' => $id,
+                            'user_id' =>$res->notaire->user_id_origin,
+                            'bien_id' => $res->bien_id,
+                            'role' => RoleEnum::NOTAIRE->value,
+                            ];
+                            Config::set('broadcasting.default', 'pusher_3');
+                            $notif_helper = new NotificationHelper();
+                            $notif_helper->storeNotification($request->merge($data_notif));
+                            broadcast(new NotificationEvent($id));
+                        }
+                  }
+
+
         $this->createStatutClientFor($id, $userAuth, $dateDebut);
 
         return response()->json(['message' => 'Rendez-vous enregistré avec succès'], 201);
@@ -268,7 +292,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
         'rdv' => 'required|date',
     ]);
 
-    if (!RoleHelper::ACSup()) {
+    if (!RoleHelper::ACSup()&&!RoleHelper::Notaire()&&!RoleHelper::RespoLivraison()) {
         return response()->json(['message' => 'Unauthorized'], 403);
     }
 
@@ -281,17 +305,18 @@ public function updateReservationCreneau($reservation_id, Request $request)
     $dateFin = $rdvTime->copy()->addMinutes(30)->format('Y-m-d H:i:s');
 
     // Business hours check
-    if ($rdvTime->format('H:i') < '08:00' || $rdvTime->format('H:i') > '18:00') {
+    if ($rdvTime->format('H:i') < '09:00' || $rdvTime->format('H:i') > '17:00') {
         return response()->json([
-            'message' => 'Outside business hours',
-            'errors' => ['rdv' => ['Please select a time between 8am and 6pm']]
+            'message' => 'Hors des heures d\'ouverture',
+            'errors' => ['rdv' => ['Veuillez choisir un horaire entre 9h et 17h']]
+
         ], 422);
     }
 
     return DB::connection('temp')->transaction(function () use ($reservation_id, $dateDebut, $dateFin, $userAuth, $validated) {
         // 1. Find and delete only the most recent creneau for this reservation
         $lastCreneau = CreneauxOccupes::on('temp')
-            ->where('reservation_id', $reservation_id)
+         ->where('reservation_id', $reservation_id)
             ->where('type',0)//proposition
             ->where('user_id',$userAuth->id)//proposition
             ->latest('debut')
@@ -301,16 +326,27 @@ public function updateReservationCreneau($reservation_id, Request $request)
             $lastCreneau->forceDelete();
         }
 
-        // 2. Check if new slot is available
-        $existingConflict = CreneauxOccupes::on('temp')
-            ->where('debut', $dateDebut)
-            ->where('disponible', false)
-            ->exists();
+         // Vérifier si le créneau existe déjà
 
-        if ($existingConflict) {
-            throw new \Exception('This time slot is no longer available');
+             $existingCreneau = CreneauxOccupes::on('temp')
+                        //->where('user_id','!=', $userAuth->id)
+                        ->where(function($query) use ($dateDebut,$dateFin) {
+                            // Vérifie les chevauchements (sans inclure les créneaux qui se touchent)
+                            $query->where('debut', '<',$dateDebut)   // début existant < fin nouveau
+                                ->where('fin', '>', $dateFin);  // fin existant > début nouveau
+                        })
+                        ->first();
+
+        if ($existingCreneau) {
+            return response()->json([
+                'error' => 'Ce créneau chevauche un créneau existant',
+                'conflict_with' => [
+                    'id' => $existingCreneau->id,
+                    'debut' => $existingCreneau->debut->format('Y-m-d H:i:s'),
+                    'fin' => $existingCreneau->fin->format('Y-m-d H:i:s')
+                ]
+            ], 409);
         }
-
         // 3. Create new creneau
           $cren = new CreneauxOccupes();
             $cren->setConnection('temp');
@@ -462,7 +498,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
 
     public function destroy_rdv_reservation($rdv_id)
     {
-        if (RoleHelper::ACSup()) {
+            if (RoleHelper::ACSup()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()) {
             DatabaseHelper::Config();
             $rdv = Rendez_vous::on('temp')->findorfail($rdv_id);
             $dateDebut=$rdv->rdv;
@@ -492,7 +528,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
 
     public function traiter_rdv_reservation($id, Request $request)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()) {
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -501,11 +537,11 @@ public function updateReservationCreneau($reservation_id, Request $request)
             $rdv->statut = $request->statut;
             $rdv->user_id_valider = $userAuth->value('id');
             $rdv->date_validation = Carbon::now();
-            if ($request->statut == 2) {
+           // if ($request->statut == 3) {
                 $rdv->commentaire = $request->commentaire;
-            }
+            //}
             if ($rdv->save()) {
-                if ($request->statut == 1) {
+               /*** if ($request->statut == 2) {
                     //store new notification validé
                     Config::set('broadcasting.default', 'pusher_3');
                     $data_notif = [
@@ -547,6 +583,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
                     broadcast(new NotifMenuEvent(6));
 
                 }
+                    **/
 
             }
 
@@ -563,7 +600,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
     public function store_compromis_vente($id, Request $request)
     {
 
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()) {
             $user = Auth::user();
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -607,11 +644,28 @@ public function updateReservationCreneau($reservation_id, Request $request)
                         'reservation_id' => $comp->reservation_id,
                         'projet_id' => $comp->reservation->projet_id,
                         'user_id' => $comp->reservation->user->user_id_origin,
+                        'bien_id' => $comp->reservation->bien_id,
 
                     ];
                     $notif_helper = new NotificationHelper();
                     $notif_helper->storeNotification($request->merge($data_notif));
                     broadcast(new NotificationEvent($comp->id));
+                       if($comp->reservation->notaire_id!=null){
+                             $data_notif = [
+                            'lien' => '/ventes/reservations/' . $id,
+                            'date' => date('Y-m-d', strtotime($request->date_echeance . ' - 3 days')),
+                            'type' => 26,
+                            'description' => 'compromis bientot expirer',
+                            'reservation_id' => $comp->reservation_id,
+                            'projet_id' => $comp->reservation->projet_id,
+                            'user_id' =>$comp->reservation->notaire->user_id_origin,
+                            'bien_id' => $comp->reservation->bien_id,
+                            'role' => RoleEnum::NOTAIRE->value,
+                            ];
+                            $notif_helper = new NotificationHelper();
+                            $notif_helper->storeNotification($request->merge($data_notif));
+                            broadcast(new NotificationEvent($id));
+                        }
 
 
                 }
@@ -674,7 +728,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
     public function update_compromis($id, Request $request)
     {
 
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()) {
             $user = Auth::user();
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -797,7 +851,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
 
     public function scanner_compromis(Request $request)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()) {
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get()->first();
@@ -854,7 +908,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
     }
     public function store_contrat_vente($id, Request $request)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()) {
 
             $user = Auth::user();
             DatabaseHelper::Config();
@@ -924,7 +978,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
     public function update_contrat($id, Request $request)
     {
 
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()) {
             $user = Auth::user();
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -957,7 +1011,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
 
     public function scanner_contrat(Request $request)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()) {
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get()->first();
