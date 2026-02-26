@@ -255,4 +255,3 @@ class UploadBienController extends Controller
      */
 
 }
-

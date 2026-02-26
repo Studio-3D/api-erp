@@ -88,12 +88,12 @@ class ObjectifController extends Controller
 
             DatabaseHelper::Config();
             $user     = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
             $obj      = new Objectif();
             $obj->setConnection('temp');
             $obj->projet_id   = $request->projet_id;
             $obj->user_id     = $request->user_id;
-            $obj->user_id_add = $userAuth->value('id');
+            $obj->user_id_add = $userAuth->id;
             $obj->visites = $request->visites;
             $obj->appels = $request->appels;
             $obj->reservations = $request->reservations;
@@ -147,7 +147,7 @@ class ObjectifController extends Controller
             $obj            = Objectif::on('temp')->findOrfail($id);
             $obj->projet_id = $request->projet_id;
             $obj->user_id   = $request->user_id;
-            
+
             $obj->visites = $request->visites;
             $obj->appels = $request->appels;
             $obj->reservations = $request->reservations;

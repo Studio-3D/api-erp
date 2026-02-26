@@ -61,6 +61,7 @@ return new class extends Migration
         } else {
             echo "Table 'statut_clients' existe déjà.\n";
         }
+
     }
 
     /**

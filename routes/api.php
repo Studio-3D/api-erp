@@ -81,17 +81,7 @@ Route::get('/health', function () {
     return response()->json([
         'status' => 'ok',
         'env' => app()->environment(),
-        'timestamp' => now()->toDateTimeString(),
-        'service' => 'ERP Studio3D API',
-        'environment' => 'Erp-studio3d-v2-env'
     ]);
-});
-//Route Debug
-Route::get('/env-check', function () {
-    return [
-        'db_connection_env' => env('DB_CONNECTION'),
-        'db_connection_config' => config('database.default'),
-    ];
 });
 
 Route::post('login', [UserController::class, 'login'])->name('login');

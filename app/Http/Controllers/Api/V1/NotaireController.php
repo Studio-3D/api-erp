@@ -1436,16 +1436,3 @@ public function updateAgendaByUser(Request $request)
     });
 }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-

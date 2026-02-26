@@ -1224,4 +1224,3 @@ class AppelController extends Controller
     }
 
 }
-
