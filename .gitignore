@@ -1,9 +1,21 @@
+# Ignore everything by default
+/*
+
+# Except these specific files/directories
+!/public/docs/exemplaires-import-biens/
+!/import_prospects.xlsx
+
+# Keep the directory structure
+!/public/
+!/public/docs/
+
+# Ignore all other files and directories
 /.phpunit.cache
 /node_modules
 /public/build
 /public/img
 /public/files
-/public/Docs
+/public/docs/**
 /public/hot
 /public/storage
 /storage/*.key
@@ -29,6 +41,10 @@ nginx/ssl/
 *.swp
 *.swo
 
+# Allow Passport keys
+!storage/oauth-private.key
+!storage/oauth-public.key
+
 # Deployment scripts with credentials
 deploy-wrapper.sh
 get-api-url.sh
@@ -39,3 +55,6 @@ scheduler.sh
 docker-compose.dev.yml
 docker-compose.prod.yml
 
+# Re-ignore everything else in public/docs except the specific folder
+/public/docs/*
+!/public/docs/exemplaires-import-biens/
