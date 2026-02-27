@@ -1074,7 +1074,7 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
             $emailData = [
                 'adminName' => $imp->user->name . ' ' . $imp->user->prenom,
                 'fichier' => $imp->fichier,
-                'link_import' => 'http://localhost:3000/histo-importation/'.$imp->id,
+                'link_import' => env('APP_URL').'/histo-importation/'.$imp->id,
                 'dateCreation' => $imp->created_at,
                 'statut' => $imp->statut,
             ];
