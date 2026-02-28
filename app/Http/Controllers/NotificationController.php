@@ -676,7 +676,7 @@ public function get_notifications(Request $request, $projet_id) {
                     'notification_ids' => 'required|array',
                     'projet_id' => 'required|integer'
                 ]);
-// Debug: Log validated data
+            // Debug: Log validated data
                \Log::info('Validated notification_ids:', ['ids' => $validated['notification_ids']]);
                 $userId = Auth::guard('api')->user()->id;
 
