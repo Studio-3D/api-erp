@@ -2231,7 +2231,7 @@ class Facebook_InstagramController extends Controller
                         $table->id();
                         $table->string('page_fcb_id');
                         $table->longText('acces_token_page');//long term
-                        $table->longText('acces_token_page_short_term');
+                        $table->longText('acces_token_page_short_terme');
                         $table->unsignedBigInteger('projet_id');
                         $table->string('webhook_verify_token')->nullable();
                         $table->boolean('webhook_enabled')->default(false);
@@ -2277,7 +2277,7 @@ class Facebook_InstagramController extends Controller
                 $configId = DB::connection('temp')->table('facebook_configurations')->insertGetId([
                     'page_fcb_id' => $request->page_fcb_id,
                     'acces_token_page' => $request->acces_token_page,//long term
-                    'acces_token_page_short_term' => $request->acces_token_page_short_term,
+                    'acces_token_page_short_terme' => $request->acces_token_page_short_term,
                     'projet_id' => $request->projet_id,
                     'webhook_enabled' => false, // Explicitly set to false
                     'webhook_verify_token' => null,
@@ -2335,7 +2335,7 @@ class Facebook_InstagramController extends Controller
                     ->update([
                         'page_fcb_id' => $request->page_fcb_id,
                         'acces_token_page' => $request->acces_token_page,//long terme
-                        'acces_token_page_short_term' => $request->acces_token_page_short_term,
+                        'acces_token_page_short_terme' => $request->acces_token_page_short_term,
                         'projet_id' => $request->projet_id,
                         'updated_at' => now()
                     ]);
