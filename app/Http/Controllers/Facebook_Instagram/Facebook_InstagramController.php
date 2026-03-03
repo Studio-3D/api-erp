@@ -106,7 +106,6 @@ class Facebook_InstagramController extends Controller
                             'caption' => $description,
                             'text' => $text,
                           'url' => $url, // Use dynamic URL instead of
-                        //url=https://immogestion.online/coline_dev/storage/reservations/C529FF99-F5B3-44A2-9B61-BD895DE0555B.jpeg
                            // 'url'=> str_replace('\/\/', '/', 'https://images.unsplash.com/photo-1596705775825-194570c1f0cd?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z3JlZW4lMjBmbG93ZXJ8ZW58MHx8MHx8fDA%3D'),
                             'network' => 'facebook',
                             'accessToken' => $accessToken
@@ -137,9 +136,8 @@ class Facebook_InstagramController extends Controller
                             'caption' => $request->description,
                             'text' => 'media',
                             'type_media' => $type_media,
-                            //https://immogestion.online/coline_dev/storage/reservations/C529FF99-F5B3-44A2-9B61-BD895DE0555B.jpeg
-                            'url'=> str_replace('\/\/', '/', 'https://images.unsplash.com/photo-1596705775825-194570c1f0cd?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z3JlZW4lMjBmbG93ZXJ8ZW58MHx8MHx8fDA%3D'),
-                        // 'url' => $url, // Use dynamic URL instead of hardcoded
+                           // 'url'=> str_replace('\/\/', '/', 'https://images.unsplash.com/photo-1596705775825-194570c1f0cd?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z3JlZW4lMjBmbG93ZXJ8ZW58MHx8MHx8fDA%3D'),
+                             'url' => $url, // Use dynamic URL instead of hardcoded
                             'network' => 'instagram',
                             'accessToken' => $accessToken
                         ];
