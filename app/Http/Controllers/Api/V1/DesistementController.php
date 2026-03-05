@@ -880,8 +880,12 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
                                 broadcast(new NotifMenuEvent(22));
 
                                 //send mail to admin pour validation pénalité
-                                $admins = User::on('temp')->select('id','email','name')->where('role',2)->where('email','!=',null)->get();
-                                if($admins->count() > 0){
+                                    $admins = User::on('temp')
+                                        ->select('id', 'email', 'name')
+                                        ->whereIn('role', [2, 7])
+                                        ->where('email', '!=', null)
+                                        ->get();
+                         if($admins->count() > 0){
                                     foreach($admins as $admin){
                                         try {
                                             $to_email = $admin->email;
