@@ -365,7 +365,7 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
 
         $user = Auth::user();
         Config::set('broadcasting.default', 'pusher_3');
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup_RC()) {
             DatabaseHelper::Config();
             DB::connection('temp')->beginTransaction();
         try{
@@ -858,7 +858,7 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
                         }
                        // $fiche->save();
                         if ($fiche->save()) {
-                          if (RoleHelper::Com()) {
+                          if (RoleHelper::Com()||RoleHelper::RespoCommercial()) {
 
                                 //notification to admin de valider penalite
                                 $data_notif = [
@@ -1927,7 +1927,7 @@ private function createStatutClientForDesistement($desistementId, $userAuth, $aq
 }
     public function store_historique_desistement($res_id, $des_id, $bien_id, $code_des, $date)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup_RC()) {
             DatabaseHelper::Config();
             $histo = new HistoriqueDesistement();
             $histo->setConnection('temp');
@@ -1943,7 +1943,7 @@ private function createStatutClientForDesistement($desistementId, $userAuth, $aq
 
     public function get_historiques_desistement_by_reservation(Request $request, $code_desistement)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup_RC()) {
             DatabaseHelper::Config();
             $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
@@ -3213,7 +3213,7 @@ public function validation_desitement($id,Request $request){
     }
 
    public function get_notif_dst_att_validation_par_type($projet_id){
-        if(RoleHelper::AdminSup()){
+        if(RoleHelper::AdminSup_RC()){
              DatabaseHelper::Config();
             //nb_des desistement par type
             $nb_dd =Desistement::on('temp')
@@ -3493,7 +3493,7 @@ public function validation_desitement($id,Request $request){
 
         $user = Auth::user();
         Config::set('broadcasting.default', 'pusher_3');
-        if (RoleHelper::AC()) {
+        if (RoleHelper::AC()||RoleHelper::RespoCommercial()) {
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
@@ -3623,7 +3623,7 @@ public function validation_desitement($id,Request $request){
                     $fiche->date = Carbon::now();
                 }
               if ($fiche->save()) {
-                    if (RoleHelper::Com()) {
+                    if (RoleHelper::Com()||RoleHelper::RespoCommercial()) {
 
                         $projet_id = $pen->desistement->projet_id;
 
@@ -3879,7 +3879,7 @@ public function validation_desitement($id,Request $request){
 
     public function update_sr_penalite($id,Request $request)
     {
-        if(RoleHelper::ACSup()) {
+        if(RoleHelper::ACSup_RC()) {
             DatabaseHelper::Config();
             $penalite = PenaliteDesistement::on('temp')->findOrFail($id);
             $penalite->sr=$request->sr_pen==true?0:1;
@@ -3891,7 +3891,7 @@ public function validation_desitement($id,Request $request){
     }
    public function traiter_penalite($id,Request $request)
     {
-        if(RoleHelper::ACSup()||RoleHelper::Comptable()) {
+        if(RoleHelper::AdminSup()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();

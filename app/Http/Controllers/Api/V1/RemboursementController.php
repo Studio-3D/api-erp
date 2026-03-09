@@ -53,7 +53,7 @@ class RemboursementController extends Controller
                 });
 
 
-           if (RoleHelper::AdminSup()||RoleHelper::Comptable()) {
+           if (RoleHelper::AdminSup_RC()||RoleHelper::Comptable()) {
                 switch ($action) {
                     case 0: // Demande de pré-remboursement
                         $query->where('remboursements.statut', 0)
@@ -202,7 +202,7 @@ class RemboursementController extends Controller
     public function traiter_demande_pre_rembourse($id,Request $request)
     {
 
-        if(RoleHelper::ACSup()||RoleHelper::Comptable()) {
+        if(RoleHelper::AdminSup()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
            // Config::set('broadcasting.default', 'pusher_3');
            Config::set('broadcasting.default', 'pusher_5');
@@ -260,7 +260,7 @@ class RemboursementController extends Controller
 
     public function traiter_accuse($id,Request $request)
     {
-       if(RoleHelper::ACSup()||RoleHelper::Comptable()) {
+       if(RoleHelper::AdminSup()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
             Config::set('broadcasting.default', 'pusher_3');
             $user = Auth::user();
@@ -381,7 +381,7 @@ class RemboursementController extends Controller
     {
 
 
-       if(RoleHelper::ACSup()||RoleHelper::Comptable()) {
+       if(RoleHelper::AdminSup()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
             Config::set('broadcasting.default', 'pusher_3');
             $user = Auth::user();
