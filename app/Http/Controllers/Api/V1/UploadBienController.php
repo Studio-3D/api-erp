@@ -32,7 +32,7 @@ class UploadBienController extends Controller
             $data = json_decode($request->input('jsonData', '[]'), true) ;
 
             $keys = array_keys($data[0]);
-           $hasTranche = in_array('Tranche', $keys);
+           //$hasTranche = in_array('Tranche', $keys);
            $hasBloc = in_array('Bloc', $keys);
            $hasImmeuble = in_array('Immeuble', $keys);
            //if excel containe column bloc or immeuble or tranche
@@ -108,7 +108,7 @@ class UploadBienController extends Controller
                 $filename = pathinfo($client_origin_name, PATHINFO_FILENAME) . '_' . $date;
                 $extension = pathinfo($client_origin_name, PATHINFO_EXTENSION);
                 $imp->fichier = $filename . '.' . $extension;
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Import_fichier_en_masse');
+                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Edit_fichier_en_masse');
                 File::makeDirectory($directory, 0755, true, true);
                 $request->file('piece_jointe')->move($directory, $filename . '.' . $extension);
             }
@@ -140,7 +140,7 @@ class UploadBienController extends Controller
             $imp->statut = '0';
             $imp->user_id = $userAuth->id;
             $imp->data = $data;
-            $imp->type = '1';//modif en masse
+            $imp->type = '2';//titre foncier
 
             // Handle file upload only if file exists
             if ($request->hasFile('piece_jointe')) {
@@ -149,7 +149,7 @@ class UploadBienController extends Controller
                 $filename = pathinfo($client_origin_name, PATHINFO_FILENAME) . '_' . $date;
                 $extension = pathinfo($client_origin_name, PATHINFO_EXTENSION);
                 $imp->fichier = $filename . '.' . $extension;
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Import_fichier_en_masse');
+                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Edit_titre_foncier');
                 File::makeDirectory($directory, 0755, true, true);
                 $request->file('piece_jointe')->move($directory, $filename . '.' . $extension);
             }

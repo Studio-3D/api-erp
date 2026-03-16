@@ -4,11 +4,13 @@ namespace App\Services\V1;
 use App\Events\NewSocieteEvent;
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\FichierHelper;
+use App\Http\Helpers\StringHelper;
 use App\Repositories\V1\Contracts\SocieteRepository;
 use App\Services\V1\Contracts\SocieteService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+
 
 class SocieteServiceDefault implements SocieteService
 {
@@ -31,7 +33,11 @@ class SocieteServiceDefault implements SocieteService
             'request_data' => $request->except(['logo'])
         ]);
 
-        $raison_sociale_concatene = str_replace(' ', '', $request->input('raison_sociale'));
+        // Or with the slugify method (if you want to replace spaces with underscores or hyphens)
+            $raison_sociale = $request->input('raison_sociale');
+            $raison_sociale_normalized = StringHelper::normalize($raison_sociale);
+            $raison_sociale_concatene = str_replace(' ', '', $raison_sociale_normalized);
+       // $raison_sociale_concatene = str_replace(' ', '', $request->input('raison_sociale'));
         $data = $request->all();
         $data['raison_sociale_concatene'] = $raison_sociale_concatene;
 
