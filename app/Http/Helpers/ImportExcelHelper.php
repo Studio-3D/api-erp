@@ -157,7 +157,7 @@ class ImportExcelHelper
             $req    = new \Illuminate\Http\Request();
             $projet = Projet::on('temp')->findOrFail($projet_id);
 
-            if ($projet->nbre_blocs == 0 && $projet->nbre_tranches == 0 && $projet->nbre_immeubles > 0) {
+            if ($projet->nbre_blocs == 0 && $projet->nbre_immeubles > 0) {
                 $dataToStore = [
                     'file'      => $request,
                     'projet_id' => $projet_id,
@@ -539,14 +539,14 @@ class ImportExcelHelper
     }
     /*********************************Masssssssssssssssssssssssssssse */
 
-   public static function importerDonnees_masse($data, $projet_id, callable $callback, $manageStatus = true)
+         public static function importerDonnees_masse($data, $projet_id, callable $callback, $manageStatus = true)
         {
             $import = null;
 
             if ($manageStatus) {
                 // Only find and manage import status when called from web (not from cron)
                 $import = Import::on('temp')->where('projet_id', $projet_id)
-                                            ->whereIn('statut', ['0', '1'])
+                                            ->where('statut',0)
                                             ->orderBy('created_at', 'desc')
                                             ->first();
 
@@ -599,94 +599,68 @@ class ImportExcelHelper
         }
 
 
-         public static function Import_titre_foncier_EnMasse($data, $projet_id)
-        {
-            \Log::info("=== STARTING Import_titre_foncier_EnMasse ===");
-            \Log::info("Projet ID: {$projet_id}");
-            \Log::info("Data count: " . count($data));
+            public static function ImportEdit_biens_edit_titre_foncier_EnMasse($data, $projet_id, $type)
+            {
+                \Log::info($type==1?"=== STARTING ImportStock_Bien_EnMasse ===":"=== STARTING Import_titre_foncier_EnMasse ===");
+                \Log::info("Projet ID: {$projet_id}");
+                \Log::info("Data type: " . $type);
+                \Log::info("Data count: " . count($data));
+                \Log::info("First row sample: " . json_encode($data[0] ?? 'No data'));
 
-            if (empty($data)) {
-                \Log::error("Data is empty!");
-                throw new \Exception("No data provided for import");
-            }
-
-            try {
-                // Pass false for manageStatus since cron job handles status management
-                $result = self::importerDonnees_masse($data, $projet_id, function ($row, $projet_id) {
-                    \Log::info("--- Processing Row ---");
-                    \Log::info("Row ID: " . ($row['ID'] ?? 'Unknown'));
-                    \Log::info("Row Numéro: " . ($row['Numero'] ?? 'Not provided'));
-
-                    try {
-                        $bienResult = Bien_Helper::updateBien_titre_foncie_ByExcel($projet_id, $row);
-                        \Log::info("✅ Successfully processed ID: " . ($row['ID'] ?? 'Unknown'));
-                        return $bienResult;
-                    } catch (\Exception $e) {
-                        \Log::error("❌ Error processing ID " . ($row['ID'] ?? 'Unknown') . ": " . $e->getMessage());
-                        throw $e;
-                    }
-                }, false); // Set to false since cron handles status
-
-                \Log::info("importerDonnees final result: " . json_encode($result));
-
-                // Check if result is valid and has successes
-                if (!$result || !isset($result['success']) || $result['success'] === false) {
-                    throw new \Exception("Import failed in importerDonnees");
+                if (empty($data)) {
+                    \Log::error("Data is empty!");
+                    throw new \Exception("No data provided for import");
                 }
 
-                \Log::info("=== IMPORT COMPLETED SUCCESSFULLY ===");
-                return $result;
-            } catch (\Exception $e) {
-                \Log::error("=== IMPORT FAILED ===");
-                \Log::error("Error in ImportStock_Bien_EnMasse: " . $e->getMessage());
-                \Log::error("Stack trace: " . $e->getTraceAsString());
-                throw $e;
-            }
-        }
-        public static function ImportStock_Bien_EnMasse($data, $projet_id)
-        {
-            \Log::info("=== STARTING ImportStock_Bien_EnMasse ===");
-            \Log::info("Projet ID: {$projet_id}");
-            \Log::info("Data count: " . count($data));
+                try {
+                    // Pass false for manageStatus since cron job handles status management
+                    $result = self::importerDonnees_masse($data, $projet_id, function ($row, $projet_id) use ($type) {
+                        \Log::info("--- Processing Row ---");
+                        \Log::info("Row ID: " . ($row['ID'] ?? 'Unknown'));
+                        \Log::info("Row Numéro: " . ($row['Numero'] ?? 'Not provided'));
 
-            if (empty($data)) {
-                \Log::error("Data is empty!");
-                throw new \Exception("No data provided for import");
-            }
+                        // Log the entire row for debugging
+                        \Log::info("Full row data: " . json_encode($row));
 
-            try {
-                // Pass false for manageStatus since cron job handles status management
-                $result = self::importerDonnees_masse($data, $projet_id, function ($row, $projet_id) {
-                    \Log::info("--- Processing Row ---");
-                    \Log::info("Row ID: " . ($row['ID'] ?? 'Unknown'));
-                    \Log::info("Row Numéro: " . ($row['Numero'] ?? 'Not provided'));
-                    \Log::info("Row Type: " . ($row['Type'] ?? 'Not provided'));
+                        if($type == 1){
+                            \Log::info("Row Type field: " . ($row['Type'] ?? 'Not provided'));
+                        }
 
-                    try {
-                        $bienResult = Bien_Helper::updateBienByExcel($projet_id, $row);
-                        \Log::info("✅ Successfully processed ID: " . ($row['ID'] ?? 'Unknown'));
-                        return $bienResult;
-                    } catch (\Exception $e) {
-                        \Log::error("❌ Error processing ID " . ($row['ID'] ?? 'Unknown') . ": " . $e->getMessage());
-                        throw $e;
+                        try {
+                            if($type == 1){
+                                \Log::info("Calling updateBienByExcel for ID: " . ($row['ID'] ?? 'Unknown'));
+                                $bienResult = Bien_Helper::updateBienByExcel($projet_id, $row);
+                                \Log::info("updateBienByExcel result: " . json_encode($bienResult));
+                            } else {
+                                //type 2
+                                \Log::info("Calling updateBien_titre_foncie_ByExcel for ID: " . ($row['ID'] ?? 'Unknown'));
+                                $bienResult = Bien_Helper::updateBien_titre_foncie_ByExcel($projet_id, $row);
+                                \Log::info("updateBien_titre_foncie_ByExcel result: " . json_encode($bienResult));
+                            }
+                            \Log::info("✅ Successfully processed ID: " . ($row['ID'] ?? 'Unknown'));
+                            return $bienResult;
+                        } catch (\Exception $e) {
+                            \Log::error("❌ Error processing ID " . ($row['ID'] ?? 'Unknown') . ": " . $e->getMessage());
+                            \Log::error("Error trace: " . $e->getTraceAsString());
+                            throw $e;
+                        }
+                    }, false);
+
+                    \Log::info("importerDonnees final result: " . json_encode($result));
+
+                    if (!$result || !isset($result['success']) || $result['success'] === false) {
+                        throw new \Exception("Import failed in importerDonnees");
                     }
-                }, false); // Set to false since cron handles status
 
-                \Log::info("importerDonnees final result: " . json_encode($result));
-
-                // Check if result is valid and has successes
-                if (!$result || !isset($result['success']) || $result['success'] === false) {
-                    throw new \Exception("Import failed in importerDonnees");
+                    \Log::info("=== IMPORT COMPLETED SUCCESSFULLY ===");
+                    return $result;
+                } catch (\Exception $e) {
+                    \Log::error("=== IMPORT FAILED ===");
+                    \Log::error("Error in ImportStock_Bien_EnMasse: " . $e->getMessage());
+                    \Log::error("Stack trace: " . $e->getTraceAsString());
+                    throw $e;
                 }
-
-                \Log::info("=== IMPORT COMPLETED SUCCESSFULLY ===");
-                return $result;
-            } catch (\Exception $e) {
-                \Log::error("=== IMPORT FAILED ===");
-                \Log::error("Error in ImportStock_Bien_EnMasse: " . $e->getMessage());
-                \Log::error("Stack trace: " . $e->getTraceAsString());
-                throw $e;
             }
-        }
+
 
 }
