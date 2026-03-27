@@ -19,10 +19,12 @@ use App\Models\StatutProspect;
 use App\Models\TraitementFrein;
 use App\Models\User;
 use App\Models\Visite;
-
-use App\Models\StatutClient;
-
 use Carbon\Carbon;
+use App\Models\Societe;
+use Illuminate\Support\Facades\File;
+use App\Models\StatutClient;
+use App\Models\Import;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
@@ -1139,7 +1141,55 @@ class ProspectController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-    public function upload(Request $request)
+     public function upload(Request $request)
+    {
+         // ✅ Validate that 'jsonData' is required and must not be null
+        $request->validate([
+            'jsonData' => 'required',
+        ], [
+            'jsonData.required' => 'Le champ des données est obligatoire.',
+        ]);
+        if (RoleHelper::ACSup()) {
+            DatabaseHelper::Config();
+            $projet_id = $request->projet_id;
+            set_time_limit(0);
+            ini_set('memory_limit', '-1');
+            $data = json_decode($request->input('jsonData', '[]'), true);
+
+            $user = Auth::user();
+            DatabaseHelper::Config();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+            $user_societes = User::where('id', $userAuth->user_id_origin)->first();
+            $societe = Societe::findOrfail($user_societes->societe_id);
+
+            $imp = new Import();
+            $imp->setConnection('temp');
+            $imp->projet_id = $projet_id;
+            $imp->statut = '0';
+            $imp->user_id = $userAuth->id;
+            $imp->data = $data;
+            $imp->type = '3';//prospects
+
+            // Handle file upload only if file exists
+            if ($request->hasFile('piece_jointe')) {
+                $client_origin_name = $request->file('piece_jointe')->getClientOriginalName();
+                $date = str_replace(str_split('\\/:*?"<>|+-\s+'), '_', date("Y-m-d H:i:s"));
+                $filename = pathinfo($client_origin_name, PATHINFO_FILENAME) . '_' . $date;
+                $extension = pathinfo($client_origin_name, PATHINFO_EXTENSION);
+                $imp->fichier = $filename . '.' . $extension;
+                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Import_prospects');
+                File::makeDirectory($directory, 0755, true, true);
+                $request->file('piece_jointe')->move($directory, $filename . '.' . $extension);
+            }
+
+            $imp->save();
+            return response()->json('done stock fichier');
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+    }
+
+     /*public function upload(Request $request)
     {
         // ✅ Validate that 'jsonData' is required and must not be null
         $request->validate([
@@ -1194,7 +1244,14 @@ class ProspectController extends Controller
                         if (! empty($row['source'])) {
                             $source = Source::on('temp')->where('source', $row['source'])->first();
                             if ($source != null) {
-                                $source_id = $source->id;
+                                $source_id = $row['source'];
+                            }
+                        }
+                              $part_id = null;
+                        if (! empty($row['partenaire'])) {
+                            $part = Partenaire::on('temp')->where('description', $row['partenaire'])->first();
+                            if ($part != null) {
+                                $part_id = $row['partenaire'];
                             }
                         }
 
@@ -1209,7 +1266,7 @@ class ProspectController extends Controller
                         $prospect->origin         = 'import';
                         $prospect->notifie        = 0;
                         $prospect->source         = $source_id;
-                        $prospect->partenaire_id  = null;
+                        $prospect->partenaire_id  = $part_id;
                         $prospect->message        = null;
                         $prospect->projet_id      = $request->projet_id;
                         $prospect->ville          = empty($row['ville']) ? null : $row['ville'];
@@ -1236,7 +1293,7 @@ class ProspectController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-    }
+    */
     public function autoAssignProspects(Request $request)
     {
         if (RoleHelper::ACSup()||RoleHelper::RespoCommercial()) {
