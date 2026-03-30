@@ -91,105 +91,139 @@ class UpdateBienRequest extends FormRequest
 
         // Règles conditionnelles pour le champ niveau
         if ($this->bloc_id || $this->tranche_id || $this->immeuble_id) {
-            // Si un des IDs parent est présent, niveau est requis mais peut être null ou vide
             $rules['niveau'] = 'required|integer|nullable';
         } else {
-            // Sinon, niveau est optionnel
             $rules['niveau'] = 'nullable';
         }
 
         return $rules;
     }
 
+    /**
+     * Get the validation error messages in French.
+     *
+     * @return array<string, string>
+     */
     public function messages(): array
     {
         $messages = [
-            // Messages pour le champ numero
-            'numero.string' => 'Le numéro du bien doit être une chaîne de caractères',
+            // Numero
+            'numero.string' => 'Le numéro du bien doit être une chaîne de caractères.',
 
-            // Messages pour le champ prix_unitaire
-            'prix_unitaire.numeric' => 'Le prix unitaire doit être un nombre',
+            // Prix unitaire
+            'prix_unitaire.numeric' => 'Le prix unitaire doit être un nombre.',
 
-            // Messages pour le champ avance_minimale
-            'avance_minimale.numeric' => 'L\'avance minimale doit être un nombre',
+            // Avance minimale
+            'avance_minimale.numeric' => 'L\'avance minimale doit être un nombre.',
 
-            // Messages pour le champ prix
-            'prix.numeric' => 'Le prix doit être un nombre',
+            // Prix
+            'prix.numeric' => 'Le prix doit être un nombre.',
 
-            // Messages pour le champ superficie_habitable
-            'superficie_habitable.numeric' => 'La superficie habitable doit être un nombre',
+            // Superficie habitable
+            'superficie_habitable.numeric' => 'La superficie habitable doit être un nombre.',
 
-            // Messages pour le champ nbre_facades
-            'nbre_facades.integer' => 'Le nombre de façades doit être un nombre entier',
+            // Nombre de façades
+            'nbre_facades.integer' => 'Le nombre de façades doit être un nombre entier.',
 
-            // Messages pour le champ superficie_parking
-            'superficie_parking.numeric' => 'La superficie du parking doit être un nombre',
+            // Superficie parking
+            'superficie_parking.numeric' => 'La superficie du parking doit être un nombre.',
 
-            // Messages pour le champ superficie_architecte
-            'superficie_architecte.numeric' => 'La superficie architecte doit être un nombre',
+            // Superficie architecte
+            'superficie_architecte.numeric' => 'La superficie architecte doit être un nombre.',
 
-            // Messages pour le champ superficie_box
-            'superficie_box.numeric' => 'La superficie du box doit être un nombre',
+            // Superficie box
+            'superficie_box.numeric' => 'La superficie du box doit être un nombre.',
 
-            // Messages pour le champ superficie_terrasse
-            'superficie_terrasse.numeric' => 'La superficie de la terrasse doit être un nombre',
+            // Superficie terrasse
+            'superficie_terrasse.numeric' => 'La superficie de la terrasse doit être un nombre.',
 
-            // Messages pour le champ superficie_jardin
-            'superficie_jardin.numeric' => 'La superficie du jardin doit être un nombre',
+            // Superficie jardin
+            'superficie_jardin.numeric' => 'La superficie du jardin doit être un nombre.',
 
-            // Messages pour le champ type_id
-            'type_id.integer' => 'Le type de bien doit être un identifiant valide',
+            // Type ID
+            'type_id.integer' => 'Le type de bien doit être un identifiant valide.',
 
-            // Messages pour le champ projet_id
-            'projet_id.integer' => 'Le projet doit être un identifiant valide',
+            // Projet ID
+            'projet_id.integer' => 'Le projet doit être un identifiant valide.',
 
-            // Messages pour le champ tranche_id
-            'tranche_id.integer' => 'La tranche doit être un identifiant valide',
+            // Tranche ID
+            'tranche_id.integer' => 'La tranche doit être un identifiant valide.',
 
-            // Messages pour le champ bloc_id
-            'bloc_id.integer' => 'Le bloc doit être un identifiant valide',
+            // Bloc ID
+            'bloc_id.integer' => 'Le bloc doit être un identifiant valide.',
 
-            // Messages pour le champ immeuble_id
-            'immeuble_id.integer' => 'L\'immeuble doit être un identifiant valide',
+            // Immeuble ID
+            'immeuble_id.integer' => 'L\'immeuble doit être un identifiant valide.',
 
-            // Messages pour le champ propriete_dite_bien
-            'propriete_dite_bien.string' => 'La propriété dite bien doit être une chaîne de caractères',
+            // Propriété dite bien
+            'propriete_dite_bien.string' => 'La désignation du bien doit être une chaîne de caractères.',
 
-            // Messages pour le champ vue_id
-            'vue_id.integer' => 'La vue doit être un identifiant valide',
+            // Vue ID
+            'vue_id.integer' => 'La vue doit être un identifiant valide.',
 
-            // Messages pour le champ typologie_id
-            'typologie_id.integer' => 'La typologie doit être un identifiant valide',
+            // Typologie ID
+            'typologie_id.integer' => 'La typologie doit être un identifiant valide.',
         ];
 
         // Messages conditionnels pour numero.unique selon le contexte
         if ($this->tranche_id == null && $this->bloc_id == null && $this->immeuble_id == null) {
-            $messages['numero.unique'] = 'Ce numéro de bien existe déjà dans ce projet';
+            $messages['numero.unique'] = 'Ce numéro de bien existe déjà dans ce projet.';
         } elseif ($this->immeuble_id == null && $this->bloc_id == null && $this->tranche_id != null) {
-            $messages['numero.unique'] = 'Ce numéro de bien existe déjà dans cette tranche';
+            $messages['numero.unique'] = 'Ce numéro de bien existe déjà dans cette tranche.';
         } elseif ($this->immeuble_id == null && $this->bloc_id != null) {
-            $messages['numero.unique'] = 'Ce numéro de bien existe déjà dans ce bloc';
+            $messages['numero.unique'] = 'Ce numéro de bien existe déjà dans ce bloc.';
         } elseif ($this->immeuble_id != null) {
-            $messages['numero.unique'] = 'Ce numéro de bien existe déjà dans cet immeuble';
+            $messages['numero.unique'] = 'Ce numéro de bien existe déjà dans cet immeuble.';
         }
 
         // Messages conditionnels pour propriete_dite_bien.unique selon le contexte
         if ($this->tranche_id == null && $this->bloc_id == null && $this->immeuble_id == null) {
-            $messages['propriete_dite_bien.unique'] = 'Cette propriété dite bien existe déjà dans ce projet';
+            $messages['propriete_dite_bien.unique'] = 'Cette désignation de bien existe déjà dans ce projet.';
         } elseif ($this->immeuble_id == null && $this->bloc_id == null && $this->tranche_id != null) {
-            $messages['propriete_dite_bien.unique'] = 'Cette propriété dite bien existe déjà dans cette tranche';
+            $messages['propriete_dite_bien.unique'] = 'Cette désignation de bien existe déjà dans cette tranche.';
         } elseif ($this->immeuble_id == null && $this->bloc_id != null) {
-            $messages['propriete_dite_bien.unique'] = 'Cette propriété dite bien existe déjà dans ce bloc';
+            $messages['propriete_dite_bien.unique'] = 'Cette désignation de bien existe déjà dans ce bloc.';
         } elseif ($this->immeuble_id != null) {
-            $messages['propriete_dite_bien.unique'] = 'Cette propriété dite bien existe déjà dans cet immeuble';
+            $messages['propriete_dite_bien.unique'] = 'Cette désignation de bien existe déjà dans cet immeuble.';
         }
 
         // Messages conditionnels pour le champ niveau
         if ($this->bloc_id || $this->tranche_id || $this->immeuble_id) {
-            $messages['niveau.required'] = 'Le niveau (étage) est requis pour ce type de bien';
-            $messages['niveau.integer'] = 'Le niveau doit être un nombre entier';
+            $messages['niveau.required'] = 'Le niveau (étage) est requis pour ce type de bien.';
+            $messages['niveau.integer'] = 'Le niveau (étage) doit être un nombre entier.';
         }
 
         return $messages;
+    }
+
+    /**
+     * Get custom attributes for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function attributes(): array
+    {
+        return [
+            'numero' => 'numéro du bien',
+            'prix_unitaire' => 'prix unitaire',
+            'avance_minimale' => 'avance minimale',
+            'prix' => 'prix',
+            'superficie_habitable' => 'superficie habitable',
+            'nbre_facades' => 'nombre de façades',
+            'superficie_parking' => 'superficie du parking',
+            'superficie_architecte' => 'superficie architecte',
+            'superficie_box' => 'superficie du box',
+            'superficie_terrasse' => 'superficie de la terrasse',
+            'superficie_jardin' => 'superficie du jardin',
+            'type_id' => 'type de bien',
+            'projet_id' => 'projet',
+            'tranche_id' => 'tranche',
+            'bloc_id' => 'bloc',
+            'immeuble_id' => 'immeuble',
+            'propriete_dite_bien' => 'désignation du bien',
+            'vue_id' => 'vue',
+            'typologie_id' => 'typologie',
+            'niveau' => 'niveau (étage)',
+        ];
     }
 }

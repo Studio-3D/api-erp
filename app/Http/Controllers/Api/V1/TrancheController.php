@@ -196,13 +196,17 @@ class TrancheController extends Controller
                                 $societe=Societe::findOrfail( $societe_id);
                                 $DatabaseName='Erp_'.$societe->raison_sociale_concatene.'_'.$societe_id;
                                 $request->validate([
-                                            'nom' => [
-                                                Rule::unique('temp.'.$DatabaseName.'.tranches')
-                                                ->where('projet_id',$tranche->projet_id)
-                                                ->ignore($tranche->id)
-                                                ->whereNull('deleted_at'),
-                                            ],
-                                        ]);
+                                    'nom' => [
+                                        'string',
+                                        Rule::unique('temp.' . $DatabaseName . '.tranches', 'nom')
+                                            ->where('projet_id', $tranche->projet_id)
+                                            ->ignore($tranche->id)
+                                            ->whereNull('deleted_at'),
+                                    ],
+                                ], [
+                                    'nom.required' => 'Le champ nom de la tranche est obligatoire.',
+                                    'nom.unique' => 'Cette tranche existe déjà dans ce projet.',
+                                ]);
 
 
             }

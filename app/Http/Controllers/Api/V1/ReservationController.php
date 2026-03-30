@@ -301,14 +301,17 @@ class ReservationController extends Controller
             }
 
             // Validate unique code if provided
-            if ($request->has('code_reservation')) {
-                $request->validate([
-                    'code_reservation' => [
-                        Rule::unique('temp.'.$DatabaseName.'.reservations')
-                                            ->where('etat', 1)->whereNull('deleted_at'),
-                    ],
-                ]);
-            }
+                if ($request->has('code_reservation')) {
+                    $request->validate([
+                        'code_reservation' => [
+                            Rule::unique('temp.' . $DatabaseName . '.reservations')
+                                ->where('etat', 1)
+                                ->whereNull('deleted_at'),
+                        ],
+                    ], [
+                        'code_reservation.unique' => 'Ce code de réservation existe déjà pour une réservation active.',
+                    ]);
+                }
 
             // Create temporary reservation with minimal data
             $reservation = $this->createTemporaryReservation($request, $userAuth);
@@ -1298,6 +1301,7 @@ private function getAllHistoriquesWithAncien($reservationId)
         $reservation = Reservation::on('temp')->findOrFail($id);
         $originalAttributes = $reservation->getOriginal();
 
+
         if ($request->has('code_reservation')) {
             $societe_id = Auth::guard('api')->user()->societe_id;
             $societe = Societe::findOrfail($societe_id);
@@ -1305,14 +1309,15 @@ private function getAllHistoriquesWithAncien($reservationId)
 
             $request->validate([
                 'code_reservation' => [
-                    Rule::unique('temp.' . $DatabaseName . '.reservations')
+                    Rule::unique('temp.' . $DatabaseName . '.reservations', 'code_reservation')
                         ->where('etat', 1)
                         ->whereNull('deleted_at')
                         ->ignore($id),
                 ],
+            ], [
+                'code_reservation.unique' => 'Ce code de réservation existe déjà pour une réservation active.',
             ]);
         }
-
         $user = Auth::user();
         $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
         $old_bien_id = $reservation->bien_id;

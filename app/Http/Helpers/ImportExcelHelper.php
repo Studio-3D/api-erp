@@ -40,7 +40,7 @@ class ImportExcelHelper
         $imp->setConnection('temp');
         $imp->projet_id = $req->projet_id;
         $imp->statut    = '0';
-        $imp->user_id   = 1;
+        $imp->user_id   = $userAuth->value('id');
         $imp->data      = $req->data;
         if ($req->file->hasFile('piece_jointe')) {
             $client_origin_name = $req->file->file('piece_jointe')->getClientOriginalName();
