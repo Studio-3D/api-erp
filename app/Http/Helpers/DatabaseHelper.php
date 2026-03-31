@@ -1106,9 +1106,20 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
     public static function sendImportEmail($imp, $to_email)
     {
         if($to_email != null) {
+            if($imp->user_id==0){
+                 $superadmin = \DB::connection('mysql') // Use your main connection name
+                    ->table('users')
+                    ->where('role', 1) // Superadmin role
+                    ->first();
+
+                $name=$superadmin->name . ' ' . $superadmin->prenom;
+            }else{
+                                $name= $imp->user->name . ' ' . $imp->user->prenom;
+
+            }
             // Préparer les données pour l'email
             $emailData = [
-                'adminName' => $imp->user->name . ' ' . $imp->user->prenom,
+                'adminName' =>$name,
                 'fichier' => $imp->fichier,
                 'link_import' => env('APP_URL').'/histo-importation/'.$imp->id,
                 'dateCreation' => $imp->created_at,
@@ -1156,7 +1167,15 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
                             continue;
                         }
 
-                        $to_email = $imp->user->email ?? null;
+                       if($imp->user_id==0) {
+                                $superadmin = User::where('role', 1) // Assuming role 1 is superadmin
+                                ->where('societe_id', $database->id)
+                                ->first();
+                                $to_email = $superadmin->email;
+                        } else {
+                            // Fallback to a default admin email
+                            $to_email = $imp->user->email;
+                        }
 
                         if ($imp->statut != '1') {
                             $imp->statut = '1';
@@ -1218,7 +1237,7 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
                                         'description' => $importResult['errors'] > 0
                                             ? $errorMessage
                                             : $successMessage,
-                                        'user_id' => $imp->user ? $imp->user->user_id_origin : null,
+                                        'user_id' => $imp->user!=0 ?($imp->user ? $imp->user->user_id_origin : null):null ,
                                         'projet_id' => $imp->projet_id,
                                     ];
 
@@ -1248,7 +1267,7 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
                                 'date' => Carbon::now(),
                                 'type' => 35,
                                 'description' => 'Échec d\'importation du fichier',
-                                'user_id' => $imp->user ? $imp->user->user_id_origin : null,
+                                'user_id' => $imp->user!=0 ?($imp->user ? $imp->user->user_id_origin : null):null ,
                                 'projet_id' => $imp->projet_id,
                             ];
                             $notif_helper = new NotificationHelper();
@@ -1283,7 +1302,17 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
                     \Log::info("import des fichiers en masse du base de donne  '. $databaseName.");
 
                     foreach($imports as $imp) {
-                        $to_email = $imp->user->email;
+
+                        if($imp->user_id==0) {
+                                $superadmin = User::where('role', 1) // Assuming role 1 is superadmin
+                                ->where('societe_id', $database->id)
+                                ->first();
+                                $to_email = $superadmin->email;
+                        } else {
+                            // Fallback to a default admin email
+                            $to_email = $imp->user->email;
+                        }
+
 
                         // Set import status to "en_cours" (1) only if it's not already
                         if($imp->statut != '1') {
@@ -1330,7 +1359,7 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
                                     'date' => Carbon::now(),
                                     'type' => 29,
                                     'description' => $imp->type==1?'Fichier des Biens en masse importé avec succès':'Titres fonciers en masse importé avec succès',
-                                    'user_id' => $imp->user ? $imp->user->user_id_origin : null,
+                                    'user_id' => $imp->user!=0 ?($imp->user ? $imp->user->user_id_origin : null):null ,
                                     'projet_id' => $imp->projet_id,
                                 ];
                             } elseif($imp->statut == '3') {
@@ -1340,7 +1369,7 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
                                     'date' => Carbon::now(),
                                     'type' => 35,
                                     'description' => 'Import terminé avec des erreurs - Vérifiez les détails',
-                                    'user_id' => $imp->user ? $imp->user->user_id_origin : null,
+                                    'user_id' => $imp->user!=0 ?($imp->user ? $imp->user->user_id_origin : null):null ,
                                     'projet_id' => $imp->projet_id,
                                 ];
                             }

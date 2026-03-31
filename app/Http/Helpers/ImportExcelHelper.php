@@ -18,6 +18,7 @@ use App\Models\Prospect;
 use App\Models\Source;
 use App\Models\StatutProspect;
 use App\Models\Partenaire;
+use stdClass;
 
 class ImportExcelHelper
 {
@@ -25,22 +26,44 @@ class ImportExcelHelper
     public static function store_fichier_import(Request $req)
     {
 
-        /*if (RoleHelper::SuperAdmin()) {
-                $societe = Societe::on('temp')->first();
-        }
-        else{*/
-         $user = Auth::user();
-        DatabaseHelper::Config();
-        $userAuth      = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-        $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
-        $societe       = Societe::findOrfail($user_societes->societe_id);
+    $user = Auth::user();
 
-        //}
+    // Check if user is superadmin BEFORE switching database
+    $isSuperAdmin = RoleHelper::SuperAdmin();
+
+    // Now switch to tenant database
+    DatabaseHelper::Config();
+
+    if ($isSuperAdmin) {
+        // For superadmin, we need to get the society from the main database
+        // Since we're already in tenant database, we need to use main connection
+        $mainUser = User::where('id', $user->getAuthIdentifier())->first();
+        $societe = Societe::findOrFail($mainUser->societe_id);
+
+        // For superadmin, we need to get the tenant user or create a default one
+        $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+        if (!$userAuth) {
+            // If no tenant user exists, use a default or create one
+            // You might need to handle this case based on your business logic
+            $useAuth_id = 0; // Or you might want to use the main user ID
+        } else {
+            $useAuth_id = $userAuth->id;
+        }
+    } else {
+        // For regular users
+        $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+        $useAuth_id = $userAuth->id;
+
+        // Get society from main database using the main user
+        $mainUser = User::where('id', $user->getAuthIdentifier())->first();
+        $societe = Societe::findOrFail($mainUser->societe_id);
+    }
+
         $imp           = new Import();
         $imp->setConnection('temp');
         $imp->projet_id = $req->projet_id;
         $imp->statut    = '0';
-        $imp->user_id   = $userAuth->value('id');
+        $imp->user_id   = $useAuth_id;
         $imp->data      = $req->data;
         if ($req->file->hasFile('piece_jointe')) {
             $client_origin_name = $req->file->file('piece_jointe')->getClientOriginalName();

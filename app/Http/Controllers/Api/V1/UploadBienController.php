@@ -81,23 +81,38 @@ class UploadBienController extends Controller
     public function upload_excel_bien_modif_en_masse(Request $request)
     {
         if (RoleHelper::ACSup()) {
+            $user = Auth::user();
+
+            // Get society information from main database BEFORE switching
+            $mainUser = User::where('id', $user->getAuthIdentifier())->first();
+            $societe = Societe::findOrFail($mainUser->societe_id);
+
+            // Check if user is superadmin
+            $isSuperAdmin = RoleHelper::SuperAdmin();
+
+            // Now switch to tenant database
             DatabaseHelper::Config();
+
             $projet_id = $request->projet_id;
             set_time_limit(0);
             ini_set('memory_limit', '-1');
             $data = json_decode($request->input('jsonData', '[]'), true);
 
-            $user = Auth::user();
-            DatabaseHelper::Config();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
-            $user_societes = User::where('id', $userAuth->user_id_origin)->first();
-            $societe = Societe::findOrfail($user_societes->societe_id);
+            // Set user_id based on user type
+            if ($isSuperAdmin) {
+                // For superadmin, set user_id to -1 or null
+                $useAuth_id = 0; // or null if you changed the column to allow NULL
+            } else {
+                // For regular users, get the tenant user
+                $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+                $useAuth_id = $userAuth->id;
+            }
 
             $imp = new Import();
             $imp->setConnection('temp');
             $imp->projet_id = $projet_id;
             $imp->statut = '0';
-            $imp->user_id = $userAuth->id;
+            $imp->user_id = $useAuth_id;
             $imp->data = $data;
             $imp->type = '1';
 
@@ -109,7 +124,11 @@ class UploadBienController extends Controller
                 $extension = pathinfo($client_origin_name, PATHINFO_EXTENSION);
                 $imp->fichier = $filename . '.' . $extension;
                 $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Edit_fichier_en_masse');
-                File::makeDirectory($directory, 0755, true, true);
+
+                if (!File::exists($directory)) {
+                    File::makeDirectory($directory, 0755, true, true);
+                }
+
                 $request->file('piece_jointe')->move($directory, $filename . '.' . $extension);
             }
 
@@ -119,47 +138,66 @@ class UploadBienController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-     public function upload_excel_titre_foncier_en_masse(Request $request)
-    {
-        if (RoleHelper::AdminSup()||RoleHelper::RespoLivraison()) {
-            DatabaseHelper::Config();
-            $projet_id = $request->projet_id;
-            set_time_limit(0);
-            ini_set('memory_limit', '-1');
-            $data = json_decode($request->input('jsonData', '[]'), true);
+    public function upload_excel_titre_foncier_en_masse(Request $request)
+{
+    if (RoleHelper::AdminSup() || RoleHelper::RespoLivraison()) {
+        $user = Auth::user();
 
-            $user = Auth::user();
-            DatabaseHelper::Config();
+        // Get society information from main database BEFORE switching
+        $mainUser = User::where('id', $user->getAuthIdentifier())->first();
+        $societe = Societe::findOrFail($mainUser->societe_id);
+
+        // Check if user is superadmin
+        $isSuperAdmin = RoleHelper::SuperAdmin();
+
+        // Now switch to tenant database
+        DatabaseHelper::Config();
+
+        $projet_id = $request->projet_id;
+        set_time_limit(0);
+        ini_set('memory_limit', '-1');
+        $data = json_decode($request->input('jsonData', '[]'), true);
+
+        // Set user_id based on user type
+        if ($isSuperAdmin) {
+            // For superadmin, set user_id to NULL or -1
+            $useAuth_id = 0; // or -1 if you haven't modified the column
+        } else {
+            // For regular users, get the tenant user
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
-            $user_societes = User::where('id', $userAuth->user_id_origin)->first();
-            $societe = Societe::findOrfail($user_societes->societe_id);
+            $useAuth_id = $userAuth->id;
+        }
 
-            $imp = new Import();
-            $imp->setConnection('temp');
-            $imp->projet_id = $projet_id;
-            $imp->statut = '0';
-            $imp->user_id = $userAuth->id;
-            $imp->data = $data;
-            $imp->type = '2';//titre foncier
+        $imp = new Import();
+        $imp->setConnection('temp');
+        $imp->projet_id = $projet_id;
+        $imp->statut = '0';
+        $imp->user_id = $useAuth_id;
+        $imp->data = $data;
+        $imp->type = '2'; // titre foncier
 
-            // Handle file upload only if file exists
-            if ($request->hasFile('piece_jointe')) {
-                $client_origin_name = $request->file('piece_jointe')->getClientOriginalName();
-                $date = str_replace(str_split('\\/:*?"<>|+-\s+'), '_', date("Y-m-d H:i:s"));
-                $filename = pathinfo($client_origin_name, PATHINFO_FILENAME) . '_' . $date;
-                $extension = pathinfo($client_origin_name, PATHINFO_EXTENSION);
-                $imp->fichier = $filename . '.' . $extension;
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Edit_titre_foncier');
+        // Handle file upload only if file exists
+        if ($request->hasFile('piece_jointe')) {
+            $client_origin_name = $request->file('piece_jointe')->getClientOriginalName();
+            $date = str_replace(str_split('\\/:*?"<>|+-\s+'), '_', date("Y-m-d H:i:s"));
+            $filename = pathinfo($client_origin_name, PATHINFO_FILENAME) . '_' . $date;
+            $extension = pathinfo($client_origin_name, PATHINFO_EXTENSION);
+            $imp->fichier = $filename . '.' . $extension;
+            $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Edit_titre_foncier');
+
+            if (!File::exists($directory)) {
                 File::makeDirectory($directory, 0755, true, true);
-                $request->file('piece_jointe')->move($directory, $filename . '.' . $extension);
             }
 
-            $imp->save();
-            return response()->json('done stock fichier');
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
+            $request->file('piece_jointe')->move($directory, $filename . '.' . $extension);
         }
+
+        $imp->save();
+        return response()->json('done stock fichier');
+    } else {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+}
     public function histo_importation(Request $request, $projet_id)
     {
         if (Auth::guard('api')->check()) {
