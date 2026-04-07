@@ -4,8 +4,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use App\Enum\RoleEnum;
-
-
 return new class extends Migration
 {
     /**
@@ -23,7 +21,6 @@ return new class extends Migration
             $table->enum('role',[RoleEnum::SUPERADMIN->value,
                 RoleEnum::ADMIN->value, // Add ADMIN to the enum list
                 RoleEnum::COMMERCIAL->value,
-<<<<<<< HEAD
                 RoleEnum::NOTAIRE->value,
                 RoleEnum::RESPO_LIVRAISON->value,
                 RoleEnum::COMPTABLE->value,
@@ -31,18 +28,8 @@ return new class extends Migration
                 RoleEnum::RESPO_COMMERCIAL->value,
                 RoleEnum::AGENT_ADMINISTRATIF->value
             ])->comment('1=>superadmin 2=>Admin 3=>Commercial 5=>Notaire 6=>RESPO LIVRAISON 7=>Comptable 8=>SAV 9==>RESPO_COMMERCIAL 10==>AGENT_ADMINISTRATIF');
-=======
-                RoleEnum::ADMIN_COMMERCIAL->value,
-                RoleEnum::NOTAIRE->value,
-                RoleEnum::RESPO_LIVRAISON->value,
-                RoleEnum::COMPTABLE->value,
-                RoleEnum::SAV->value, RoleEnum::RESPO_COMMERCIAL->value ,RoleEnum::AGENT_ADMINISTRATIF->value
-            ])->comment('1=>superadmin 2=>Admin 3=>Commercial 4=>admin_commercial 5=>Notaire 6=>RESPO LIVRAISON 7=>Comptable 8=>SAV 9==>RESPO_COMMERCIAL 10==>AGENT_ADMINISTRATIF');
->>>>>>> e2456cee4fa357cddb2557c98e07a44f6b145f69
 
-
-
-            $table->foreignId('user_id')->nullable()->references('user_id_origin')->on('users')->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade');
             $table->foreignId('visite_id')->nullable()->constrained('visites')->onDelete('cascade');
             $table->foreignId('projet_id')->nullable()->constrained('projets')->onDelete('cascade');
             $table->foreignId('prospect_id')->nullable()->constrained('prospects')->onDelete('cascade');
@@ -50,7 +37,6 @@ return new class extends Migration
             $table->foreignId('reservation_id')->nullable()->constrained('reservations')->onDelete('cascade');
             $table->foreignId('bien_id')->nullable()->constrained('biens')->onDelete('cascade');
             $table->foreignId('traite_appel_id')->nullable()->constrained('traitements_appels')->onDelete('cascade');
-            $table->json('seen')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
