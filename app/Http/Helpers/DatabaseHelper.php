@@ -1106,9 +1106,20 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
     public static function sendImportEmail($imp, $to_email)
     {
         if($to_email != null) {
+            if($imp->user_id==0){
+                 $superadmin = \DB::connection('mysql') // Use your main connection name
+                    ->table('users')
+                    ->where('role', 1) // Superadmin role
+                    ->first();
+
+                $name=$superadmin->name . ' ' . $superadmin->prenom;
+            }else{
+                                $name= $imp->user->name . ' ' . $imp->user->prenom;
+
+            }
             // Préparer les données pour l'email
             $emailData = [
-                'adminName' => $imp->user->name . ' ' . $imp->user->prenom,
+                'adminName' =>$name,
                 'fichier' => $imp->fichier,
                 'link_import' => env('APP_URL').'/histo-importation/'.$imp->id,
                 'dateCreation' => $imp->created_at,
@@ -1134,189 +1145,144 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
         }
     }
     public static function import_fichiers($databases)
-    {
+        {
+            foreach ($databases as $database) {
+                $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
 
-        foreach ($databases as $database) {
-            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+                $connection = DatabaseHelper::Connection_database($databaseName);
+                config(['database.connections.temp' => $connection]);
+                DB::connection('temp')->setDatabaseName($connection['database']);
+                DB::reconnect('temp');
 
-            // Switch to the temporary database
-            $connection = DatabaseHelper::Connection_database($databaseName);
-            config(['database.connections.temp' => $connection]);
-            DB::connection('temp')->setDatabaseName($connection['database']);
-            DB::reconnect('temp');
+                if (Schema::connection('temp')->hasTable('imports')) {
+                    $imports = Import::on('temp')->whereIn('type',['0','3'])->where('statut', '0')->get();
+                    \Log::info("import des fichiers de la base de données '{$databaseName}'");
 
-            //
+                    foreach ($imports as $imp) {
+                        $store = 0;
+                        $importResult = null;
 
-            if (Schema::connection('temp')->hasTable('imports')) {
-                $imports=Import::on('temp')->where('type','0')->where('statut','0')->get();
-                \Log::info("import des fichiers  de la base de données'. $databaseName.");
-                foreach($imports as $imp){
-
-
-                    $store=0;
-
-                    // Skip if already processed (status 2 or 3)
-                    if($imp->statut == 2 || $imp->statut == 3) {
-                        \Log::info("Skipping import {$imp->id} - already processed (status {$imp->statut})");
-                        continue;
-                    }
-                     $to_email=$imp->user->email;
-
-
-                    // Set import status to "en_cours" (1) only if it's not already
-                    if($imp->statut != '1') {
-                        $imp->statut = '1';
-                        $imp->save();
-                    }
-
-                    try {
-                        $projet = Projet::on('temp')->findOrfail($imp->projet_id);
-                        /*if($projet->nbre_tranches>0 && $projet->nbre_blocs>0 && $projet->nbre_immeubles>0){
-                            ImportExcelHelper::ImportStockByProjet(null,$imp->data,$imp->projet_id,1);
-                            $store=1;
-                            // Status is now managed by importerDonnees method
-
-                        }elseif($projet->nbre_tranches==0 && $projet->nbre_blocs==0 && $projet->nbre_immeubles==0){
-                            ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBlocAndImmeuble(null,$imp->data,$imp->projet_id,1);
-                            $store=1;
-                            // Status is now managed by importerDonnees method
-
-                        }elseif($projet->nbre_blocs==0 && $projet->nbre_tranches==0 && $projet->nbre_immeubles>0){
-                            ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBloc(null,$imp->data,$imp->projet_id,1);
-                            $store=1;
-                            // Status is now managed by importerDonnees method
-                        }
-                        elseif($projet->nbre_tranches==0 && $projet->nbre_immeubles==0 && $projet->nbre_blocs>0){
-                            ImportExcelHelper::ImportStockByProjetWithoutTrancheAndImmeuble(null,$imp->data,$imp->projet_id,1);
-                            $store=1;
-                            // Status is now managed by importerDonnees method
-                        }
-                        elseif($projet->nbre_tranches==0 && $projet->nbre_blocs>0 && $projet->nbre_immeubles>0){
-                            ImportExcelHelper::ImportStockByProjetWithoutTranche(null,$imp->data,$imp->projet_id,1);
-                            $store=1;
-                            // Status is now managed by importerDonnees method
+                        if ($imp->statut == 2 || $imp->statut == 3) {
+                            \Log::info("Skipping import {$imp->id} - already processed");
+                            continue;
                         }
 
-                        elseif($projet->nbre_blocs==0 && $projet->nbre_immeubles==0 && $projet->nbre_tranches>0){
-                            ImportExcelHelper::ImportStockByProjetWithoutBlocAndImmeuble(null,$imp->data,$imp->projet_id,1);
-                            $store=1;
-                            // Status is now managed by importerDonnees method
+                       if($imp->user_id==0) {
+                                $superadmin = User::where('role', 1) // Assuming role 1 is superadmin
+                                ->where('societe_id', $database->id)
+                                ->first();
+                                $to_email = $superadmin->email;
+                        } else {
+                            // Fallback to a default admin email
+                            $to_email = $imp->user->email;
                         }
-                        elseif($projet->nbre_blocs==0 && $projet->nbre_tranches>0 && $projet->nbre_immeubles>0){
-                            ImportExcelHelper::ImportStockByProjetWithoutBloc(null,$imp->data,$imp->projet_id,1);
-                            $store=1;
-                            // Status is now managed by importerDonnees method
+
+                        if ($imp->statut != '1') {
+                            $imp->statut = '1';
+                            $imp->save();
                         }
-                        elseif($projet->nbre_immeubles==0 && $projet->nbre_tranches>0 && $projet->nbre_blocs>0){
-                            ImportExcelHelper::ImportStockByProjetWithoutImmeuble(null,$imp->data,$imp->projet_id,1);
-                            $store=1;
-                            // Status is now managed by importerDonnees method
-                        }*/
 
-                        if($projet->nbre_blocs>0 && $projet->nbre_immeubles>0){
-                            ImportExcelHelper::ImportStockByProjetWithoutTranche(null,$imp->data,$imp->projet_id,1);
-                            $store=1;
-                            // Status is now managed by importerDonnees method
-                        } elseif($projet->nbre_immeubles==0 && $projet->nbre_blocs>0){
-                            ImportExcelHelper::ImportStockByProjetWithoutTrancheAndImmeuble(null,$imp->data,$imp->projet_id,1);
-                            $store=1;
-                            // Status is now managed by importerDonnees method
-                        }elseif($projet->nbre_blocs==0 && $projet->nbre_immeubles>0){
-                            ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBloc(null,$imp->data,$imp->projet_id,1);
-                            $store=1;
-                            // Status is now managed by importerDonnees method
-                        }elseif($projet->nbre_blocs==0 && $projet->nbre_immeubles==0){
-                            ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBlocAndImmeuble(null,$imp->data,$imp->projet_id,1);
-                            $store=1;
-                            // Status is now managed by importerDonnees method
+                        try {
+                            $projet = Projet::on('temp')->findOrFail($imp->projet_id);
+                                if($imp->type==0){
+                                            // Appeler la méthode d'import avec l'ID de l'import
+                                        if ($projet->nbre_blocs > 0 && $projet->nbre_immeubles > 0) {
+                                            $importResult = ImportExcelHelper::ImportStockByProjetWithoutTranche(
+                                                null, $imp->data, $imp->projet_id, 1, $imp->id
+                                            );
+                                            $store = 1;
+                                        } elseif ($projet->nbre_immeubles == 0 && $projet->nbre_blocs > 0) {
+                                            $importResult = ImportExcelHelper::ImportStockByProjetWithoutTrancheAndImmeuble(
+                                                null, $imp->data, $imp->projet_id, 1, $imp->id
+                                            );
+                                            $store = 1;
+                                        } elseif ($projet->nbre_blocs == 0 && $projet->nbre_immeubles > 0) {
+                                            $importResult = ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBloc(
+                                                null, $imp->data, $imp->projet_id, 1, $imp->id
+                                            );
+                                            $store = 1;
+                                        } elseif ($projet->nbre_blocs == 0 && $projet->nbre_immeubles == 0) {
+                                            $importResult = ImportExcelHelper::ImportStockByProjetWithoutTrancheAndBlocAndImmeuble(
+                                                null, $imp->data, $imp->projet_id, 1, $imp->id
+                                            );
+                                            $store = 1;
+                                        }
 
-                        }
-                        // Send notification based on actual import status
-                        if($store == 1) {
-                            // Refresh import to get the latest status set by importerDonnees
-                            $imp->refresh();
+                                }elseif($imp->type==3){
 
-                            \Log::info("Import completed for projet_id: {$imp->projet_id}, import_id: {$imp->id}, final_status: {$imp->statut}");
-                            Config::set('broadcasting.default', 'pusher_3');
+                                            $importResult = ImportExcelHelper::Import_Prospect($imp->data, $imp->projet_id, $imp->id);
+                                            $store = 1;
+                                }
 
-                            // Load user relationship to avoid undefined issues
-                            $imp->load('user');
+                            if ($store == 1 && $importResult) {
+                                $imp->refresh();
 
-                            // Send appropriate notification based on final status
-                            if($imp->statut == '2') {
-                                // Completely successful import
-                                $data_notif = [
-                                    'lien' => '/histo-importation/' . $imp->id,
-                                    'date' => Carbon::now(),
-                                    'type' => 29,
-                                    'description' => 'Fichier des Biens importé avec succès',
-                                    'user_id' => $imp->user ? $imp->user->user_id_origin : null,
-                                    'projet_id' => $imp->projet_id,
-                                ];
-                            } elseif($imp->statut == '3') {
-                                // Import with errors
-                                $data_notif = [
-                                    'lien' => '/histo-importation/' . $imp->id,
-                                    'date' => Carbon::now(),
-                                    'type' => 35,
-                                    'description' => 'Import terminé avec des erreurs - Vérifiez les détails',
-                                    'user_id' => $imp->user ? $imp->user->user_id_origin : null,
-                                    'projet_id' => $imp->projet_id,
-                                ];
-                            }
+                                \Log::info("Import {$imp->id} completed: {$importResult['success']} success, {$importResult['errors']} errors");
 
-                            if(isset($data_notif)) {
-                                 // Send notification for failed import
                                 Config::set('broadcasting.default', 'pusher_3');
+                                $imp->load('user');
+                                    // Déterminer le type d'import pour le message
+                                    $importTypeLabel = ($imp->type == 3) ? "des Prospects" : "des Biens";
+                                    $successMessage = ($imp->type == 3)
+                                        ? "Fichier des Prospects importé avec succès"
+                                        : "Fichier des Biens importé avec succès";
+                                    $errorMessage = ($imp->type == 3)
+                                        ? "Import des Prospects terminé avec {$importResult['errors']} erreur(s) - Vérifiez les détails"
+                                        : "Import des Biens terminé avec {$importResult['errors']} erreur(s) - Vérifiez les détails";
+
+                                    $data_notif = [
+                                        'lien' => '/histo-importation/' . $imp->id,
+                                        'date' => Carbon::now(),
+                                        'type' => $importResult['errors'] > 0 ? 35 : 29,
+                                        'description' => $importResult['errors'] > 0
+                                            ? $errorMessage
+                                            : $successMessage,
+                                        'user_id' => $imp->user!=0 ?($imp->user ? $imp->user->user_id_origin : null):null ,
+                                        'projet_id' => $imp->projet_id,
+                                    ];
+
+
                                 $notif_helper = new NotificationHelper();
-                                $req=new \Illuminate\Http\Request();
+                                $req = new \Illuminate\Http\Request();
                                 $notif_helper->storeNotification($req->merge($data_notif));
 
-                                    //send mail to user
-                                    // Dans votre fonction import_fichiers, modifiez la partie d'envoi d'email :
-                                    if($to_email!=null){
-                                        self::sendImportEmail($imp,$to_email);
-                                    }
+                                if ($to_email) {
+                                    self::sendImportEmail($imp, $to_email);
                                 }
                             }
 
-                    } catch (\Exception $e) {
-                        // If import failed, set status to "echoue" (3)
+                        } catch (\Exception $e) {
+                            $imp->statut = '3';
+                            $imp->message_echou = $e->getMessage();
+                            $imp->date_echou = now();
+                            $imp->save();
+                            \Log::error("Import failed for projet {$imp->projet_id}: " . $e->getMessage());
 
-                        $imp->statut = '3';
-                        $imp->message_echou = $e->getMessage();
-                        $imp->date_echou = now();
-                        $imp->save();
-                        \Log::error("Import failed for projet {$imp->projet_id}: " . $e->getMessage());
+                            // Envoyer notification d'échec
+                            Config::set('broadcasting.default', 'pusher_3');
+                            $imp->load('user');
 
-                        // Send notification for failed import
-                        Config::set('broadcasting.default', 'pusher_3');
+                            $data_notif = [
+                                'lien' => '/histo-importation/' . $imp->id,
+                                'date' => Carbon::now(),
+                                'type' => 35,
+                                'description' => 'Échec d\'importation du fichier',
+                                'user_id' => $imp->user!=0 ?($imp->user ? $imp->user->user_id_origin : null):null ,
+                                'projet_id' => $imp->projet_id,
+                            ];
+                            $notif_helper = new NotificationHelper();
+                            $req = new \Illuminate\Http\Request();
+                            $notif_helper->storeNotification($req->merge($data_notif));
 
-                        // Load user relationship to avoid undefined issues
-                        $imp->load('user');
-
-                        $data_notif = [
-                            'lien' => '/histo-importation/' . $imp->id,
-                            'date' => Carbon::now(),
-                            'type' => 35,
-                            'description' => 'Échec d\'importation du fichier',
-                            'user_id' => $imp->user ? $imp->user->user_id_origin : null,
-                            'projet_id' => $imp->projet_id,
-                        ];
-                        $notif_helper = new NotificationHelper();
-                        $req=new \Illuminate\Http\Request();
-                        $notif_helper->storeNotification($req->merge($data_notif));
-
-                         if($to_email!=null){
-                              self::sendImportEmail($imp,$to_email);
+                            if ($to_email) {
+                                self::sendImportEmail($imp, $to_email);
+                            }
                         }
                     }
                 }
             }
-
-
         }
-    }
+
 
     /*********en Masse*********** */
 
@@ -1336,7 +1302,17 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
                     \Log::info("import des fichiers en masse du base de donne  '. $databaseName.");
 
                     foreach($imports as $imp) {
-                        $to_email = $imp->user->email;
+
+                        if($imp->user_id==0) {
+                                $superadmin = User::where('role', 1) // Assuming role 1 is superadmin
+                                ->where('societe_id', $database->id)
+                                ->first();
+                                $to_email = $superadmin->email;
+                        } else {
+                            // Fallback to a default admin email
+                            $to_email = $imp->user->email;
+                        }
+
 
                         // Set import status to "en_cours" (1) only if it's not already
                         if($imp->statut != '1') {
@@ -1383,7 +1359,7 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
                                     'date' => Carbon::now(),
                                     'type' => 29,
                                     'description' => $imp->type==1?'Fichier des Biens en masse importé avec succès':'Titres fonciers en masse importé avec succès',
-                                    'user_id' => $imp->user ? $imp->user->user_id_origin : null,
+                                    'user_id' => $imp->user!=0 ?($imp->user ? $imp->user->user_id_origin : null):null ,
                                     'projet_id' => $imp->projet_id,
                                 ];
                             } elseif($imp->statut == '3') {
@@ -1393,7 +1369,7 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
                                     'date' => Carbon::now(),
                                     'type' => 35,
                                     'description' => 'Import terminé avec des erreurs - Vérifiez les détails',
-                                    'user_id' => $imp->user ? $imp->user->user_id_origin : null,
+                                    'user_id' => $imp->user!=0 ?($imp->user ? $imp->user->user_id_origin : null):null ,
                                     'projet_id' => $imp->projet_id,
                                 ];
                             }

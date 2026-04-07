@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('imports', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->integer('user_id');
             $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
             $table->enum('statut', [0, 1, 2])->comment('0=>en cours 1=>success 2=>echoué');
             $table->string('commentaire')->nullable();

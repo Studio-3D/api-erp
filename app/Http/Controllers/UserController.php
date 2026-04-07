@@ -284,25 +284,35 @@ class UserController extends Controller
         ], 200);
     }
 
-    public function update(UpdateUserRequest $request, $id)
+   public function update(UpdateUserRequest $request, $id)
     {
-        $user = User::findOrFail($id);
-        if ($request->has('cin')) {
-            $request->validate([
-                'cin' => [
-                    'string',
-                    Rule::unique('users')->ignore($user->id)->whereNull('deleted_at'),
-                ],
-            ]);
-        }
-        if ($request->has('email')) {
-            $request->validate([
-                'email' => [
-                    'string',
-                    Rule::unique('users')->ignore($user->id)->whereNull('deleted_at'),
-                ],
-            ]);
-        }
+    $user = User::findOrFail($id);
+    
+    if ($request->has('cin')) {
+        $request->validate([
+            'cin' => [
+                'string',
+                Rule::unique('users')->ignore($user->id)->whereNull('deleted_at'),
+            ],
+        ], [
+            'cin.string' => 'Le CIN doit être une chaîne de caractères.',
+            'cin.unique' => 'Ce CIN appartient déjà à un autre utilisateur.',
+        ]);
+    }
+
+    if ($request->has('email')) {
+        $request->validate([
+            'email' => [
+                'string',
+                'email',
+                Rule::unique('users')->ignore($user->id)->whereNull('deleted_at'),
+            ],
+        ], [
+            'email.string' => 'L\'email doit être une chaîne de caractères.',
+            'email.email' => 'Veuillez saisir une adresse email valide.',
+            'email.unique' => 'Cette adresse email est déjà utilisée par un autre utilisateur.',
+        ]);
+    }
         if ($request->is_profil) {
             $user = Auth::user();
             DatabaseHelper::Config();

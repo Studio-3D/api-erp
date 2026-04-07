@@ -151,6 +151,29 @@ class PartenaireController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+    public function store_multiple_partenaires (Request $request)
+        {
+            if (RoleHelper::AdminSup()) {
+                DatabaseHelper::Config();
+                $dataArray_donnees = json_decode($request->input('donneesPartenaire', '[]'), true);
+
+                if ($dataArray_donnees) {
+                    foreach ($dataArray_donnees as $Data) {  // Changed variable name
+                        $s = new Partenaire();  // Keep this as $typologie
+                        $s->setConnection('temp');
+                        $s->description = $Data['description'];  // Use $typologieData here
+                        $s->projet_id = $request->projet_id;
+                        $s->save();
+                    }
+                }
+
+                // Get all type biens created
+                $part = Partenaire::on('temp')->get();
+                return response()->json(['partenaires' => $part], 200);
+            } else {
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+        }
 
     /**
      * Display the specified resource.
