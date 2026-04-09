@@ -114,13 +114,13 @@ class UserController extends Controller
                 return response()->json(['users' => $users]);
             } else {
                 DatabaseHelper::Config();
-                $users = User::on('temp')->get();
+                $users = User::on('temp')->where('role', '!=', 1)->get();
                 return response()->json(['users' => $users]);
             }
 
         } else if (RoleHelper::Admin()) {
             DatabaseHelper::Config();
-            $users = User::on('temp')->get();
+            $users = User::on('temp')->where('role', '!=', 1)->get();
             return response()->json(['users' => $users], 200);
         }
 
@@ -131,8 +131,8 @@ class UserController extends Controller
     {
         if (RoleHelper::Admin()) {
             DatabaseHelper::Config();
-            //->where('role',3)
-            $users = User::on('temp')->get();
+
+            $users = User::on('temp')->where('role',3)->get();
             return response()->json(['users' => $users], 200);
         }
 
@@ -162,7 +162,7 @@ class UserController extends Controller
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
-            $users = User::on('temp')->orderBy('created_at', 'desc')
+            $users = User::on('temp')->where('role', '!=', 1)->orderBy('created_at', 'desc')
                 ->paginate($perPage, ['*'], 'page', $page);
 
             return response()->json(['users' => $users], 200);
@@ -287,7 +287,7 @@ class UserController extends Controller
    public function update(UpdateUserRequest $request, $id)
     {
     $user = User::findOrFail($id);
-    
+
     if ($request->has('cin')) {
         $request->validate([
             'cin' => [

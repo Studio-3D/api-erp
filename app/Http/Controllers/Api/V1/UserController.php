@@ -35,7 +35,7 @@ class UserController extends Controller
      */
     public function get_commerciaux($projet_id)
     {
-        if (RoleHelper::Admin()||RoleHelper::RespoCommercial()) {
+        if (RoleHelper::AdminSup()||RoleHelper::RespoCommercial()) {
             DatabaseHelper::Config();
             //->where('role',3)
             $users = UserProjet::on('temp')->with('user')
@@ -50,6 +50,26 @@ class UserController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
+    public function get_users()
+    {
+        if (RoleHelper::Superadmin()) {
+            if (Auth::guard('api')->user()->societe_id == 1) {
+                $users = User::all();
+                return response()->json(['users' => $users]);
+            } else {
+                DatabaseHelper::Config();
+                $users = User::on('temp')->where('role','>',1)->get();
+                return response()->json(['users' => $users]);
+            }
+
+        } else if (RoleHelper::Admin()) {
+            DatabaseHelper::Config();
+            $users = User::on('temp')->where('role','>',1)->get();
+            return response()->json(['users' => $users], 200);
+        }
+
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
     public function list_commerciaux_objectif($projet_id)
     {
 
