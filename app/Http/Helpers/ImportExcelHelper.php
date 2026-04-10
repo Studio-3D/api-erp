@@ -29,12 +29,16 @@ class ImportExcelHelper
     $user = Auth::user();
 
     // Check if user is superadmin BEFORE switching database
-    $isSuperAdmin = RoleHelper::SuperAdmin();
+   // $isSuperAdmin = RoleHelper::SuperAdmin();
 
     // Now switch to tenant database
     DatabaseHelper::Config();
-
-    if ($isSuperAdmin) {
+        $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+        $useAuth_id = $userAuth->id;
+        // Get society from main database using the main user
+        $mainUser = User::where('id', $user->getAuthIdentifier())->first();
+        $societe = Societe::findOrFail($mainUser->societe_id);
+    /*if ($isSuperAdmin) {
         // For superadmin, we need to get the society from the main database
         // Since we're already in tenant database, we need to use main connection
         $mainUser = User::where('id', $user->getAuthIdentifier())->first();
@@ -57,7 +61,7 @@ class ImportExcelHelper
         // Get society from main database using the main user
         $mainUser = User::where('id', $user->getAuthIdentifier())->first();
         $societe = Societe::findOrFail($mainUser->societe_id);
-    }
+    }*/
 
         $imp           = new Import();
         $imp->setConnection('temp');

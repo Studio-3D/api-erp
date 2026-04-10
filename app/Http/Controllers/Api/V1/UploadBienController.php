@@ -82,8 +82,11 @@ class UploadBienController extends Controller
     {
         if (RoleHelper::ACSup()) {
             $user = Auth::user();
-
-            // Get society information from main database BEFORE switching
+            // Now switch to tenant database
+            DatabaseHelper::Config();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+            $useAuth_id = $userAuth->id;
+          // Get society information from main database BEFORE switching
             $mainUser = User::where('id', $user->getAuthIdentifier())->first();
             $societe = Societe::findOrFail($mainUser->societe_id);
 
@@ -98,7 +101,7 @@ class UploadBienController extends Controller
             ini_set('memory_limit', '-1');
             $data = json_decode($request->input('jsonData', '[]'), true);
 
-            // Set user_id based on user type
+            /* // Set user_id based on user type
             if ($isSuperAdmin) {
                 // For superadmin, set user_id to -1 or null
                 $useAuth_id = 0; // or null if you changed the column to allow NULL
@@ -106,7 +109,7 @@ class UploadBienController extends Controller
                 // For regular users, get the tenant user
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
                 $useAuth_id = $userAuth->id;
-            }
+            }*/
 
             $imp = new Import();
             $imp->setConnection('temp');
@@ -157,8 +160,9 @@ class UploadBienController extends Controller
         set_time_limit(0);
         ini_set('memory_limit', '-1');
         $data = json_decode($request->input('jsonData', '[]'), true);
-
-        // Set user_id based on user type
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+            $useAuth_id = $userAuth->id;
+        /* Set user_id based on user type
         if ($isSuperAdmin) {
             // For superadmin, set user_id to NULL or -1
             $useAuth_id = 0; // or -1 if you haven't modified the column
@@ -166,7 +170,7 @@ class UploadBienController extends Controller
             // For regular users, get the tenant user
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
             $useAuth_id = $userAuth->id;
-        }
+        }*/
 
         $imp = new Import();
         $imp->setConnection('temp');

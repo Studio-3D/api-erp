@@ -223,11 +223,22 @@ class TypologieController extends Controller
     }
     public static function AjouterTypologie($typologie, $projet_id)
     {
+           // If $typeBien is an array, extract the type field
+            if (is_array($typologie)) {
+                $typeValue = $typologie['type'] ?? null;
+            } else {
+                $typeValue = $typologie;
+            }
+
+            if (empty($typeValue)) {
+                return; // Skip empty values
+            }
+
             $typologieController = new TypologieController();
             $typologieRequest = new StoreTypologieRequest();
 
                 $dataTypologie = [
-                'typologie' => $typologie,
+                'typologie' => $typeValue,
                 'projet_id' => $projet_id,
                 ];
             $typologieRequest->merge($dataTypologie);

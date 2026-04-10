@@ -229,11 +229,20 @@ class VueController extends Controller
     }
     public static function AjouterVue($vues, $projet_id)
     {
+        if (is_array($vues)) {
+                $typeValue = $vues['type'] ?? null;
+            } else {
+                $typeValue = $vues;
+            }
+
+            if (empty($typeValue)) {
+                return; // Skip empty values
+            }
             $vueController = new VueController();
             $vueRequest = new StoreVueRequest();
 
                 $datavue = [
-                'vue' => $vues,
+                'vue' => $typeValue,
                 'projet_id' => $projet_id,
                 ];
             $vueRequest->merge($datavue);

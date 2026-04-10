@@ -160,6 +160,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('commerciaux_objectif/{projet_id}', [V1UserController::class, 'list_commerciaux_objectif'])->name('');
         Route::get('commerciaux/{projet_id}', [V1UserController::class, 'list_commerciaux'])->name('');
         Route::get('get_commerciaux/{projet_id}', [V1UserController::class, 'get_commerciaux'])->name('get_commerciaux');
+        Route::get('get_users', [V1UserController::class, 'get_users'])->name('get_users');
         Route::post('/utilisateurs/{id}', [V1UserController::class, 'update']);
         Route::put('/update_personal_info/{id}', [V1UserController::class, 'update_personal_info']);
         Route::put('/update_password/{id}', [V1UserController::class, 'update_password']);
@@ -534,15 +535,13 @@ Route::middleware('auth:api')->group(function () {
     /*************************************User***************************** */
     Route::resource('user', UserController::class);
 
-    Route::get('getUsersBySocieteId/{id}', [UserController::class, 'getUsersBySocieteId'])->name('getUsersBySocieteId');
-    Route::put('activateUser/{id}', [UserController::class, 'activateUser'])->name('api.activateUser');
-    Route::post('restoreUser/{id}', [UserController::class, 'restoreUser'])->name('restoreUser');
-    Route::get('getTrashedUsers', [UserController::class, 'getTrashedUsers'])->name('getTrashedUsers');
+   // Route::get('getUsersBySocieteId/{id}', [UserController::class, 'getUsersBySocieteId'])->name('getUsersBySocieteId');
+  //  Route::post('restoreUser/{id}', [UserController::class, 'restoreUser'])->name('restoreUser');
+   // Route::get('getTrashedUsers', [UserController::class, 'getTrashedUsers'])->name('getTrashedUsers');
     Route::get('dashboard', [UserController::class, 'dashboard'])->name('dashboard');
-    Route::get('getTrashedUsersBySociete/{id}', [UserController::class, 'getTrashedUsersBySociete'])->name('getTrashedUsersBySociete');
+  //  Route::get('getTrashedUsersBySociete/{id}', [UserController::class, 'getTrashedUsersBySociete'])->name('getTrashedUsersBySociete');
     Route::post('logout', [UserController::class, 'logout'])->name('logout');
     Route::post('addUserProjet/{id}', [UserController::class, 'addUserProjet'])->name('addUserProjet');
-    Route::get('get_users', [UserController::class, 'get_users'])->name('get_users');
     /*  Route::post('sendEmail', [UserController::class, 'sendEmail']);
     Route::post('resendEmail', [UserController::class, 'resendEmail']);
      */
