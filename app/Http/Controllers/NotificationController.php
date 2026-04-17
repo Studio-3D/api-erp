@@ -667,7 +667,7 @@ public function get_notifications(Request $request, $projet_id) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        public function mark_all_notifications_seen(Request $request) {
+       public function mark_all_notifications_seen(Request $request) {
             if (Auth::guard('api')->check()) {
                 DatabaseHelper::Config();
                      // Debug: Log the received data
