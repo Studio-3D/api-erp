@@ -37,5 +37,8 @@ class AppServiceProvider extends ServiceProvider
                 base64_decode(env('PASSPORT_PUBLIC_KEY_BASE64'))
             );
         }
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
+        }
     }
 }
