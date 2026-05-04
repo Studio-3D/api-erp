@@ -443,7 +443,7 @@ class ClientController extends Controller
     /**
      * Display the specified resource.
      */
-   public function show(Request $request, $id)
+ public function show(Request $request, $id)
 {
     if (Auth::guard('api')->check()) {
         DatabaseHelper::Config();
@@ -453,19 +453,35 @@ class ClientController extends Controller
                 'prospect',
                 'prospect.appels',
                 'reservations' => function($resQuery) {
-                    $resQuery->select('reservations.id', 'reservations.code_reservation', 'reservations.prix')
+                    $resQuery->select('reservations.id', 'reservations.code_reservation', 'reservations.prix','reservations.date_reservation','reservations.mode_financement','reservations.statut', 'reservations.bien_id')
                         ->withSum('avances', 'montant')
+                        ->with([
+                                'bien' => function($query) {
+                                    $query->with([
+                                        'immeuble' => function($q) {
+                                            $q->select('id', 'nom')
+                                            ->without(['projet', 'tranche', 'bloc']);
+                                        },
+                                        'bloc' => function($q) {
+                                            $q->select('id', 'nom')
+                                            ->without(['projet', 'tranche']);
+                                        },
+                                        'tranche' => function($q) {
+                                            $q->select('id', 'nom')
+                                            ->without(['projet']);
+                                        }
+                                    ])->without('projet', 'typologie', 'vue', 'compositionBien', 'typeBien');
+                                }
+                            ])
                         ->where('etat', 1)
                         ->where('statut', 1)
-                        ->whereRaw('reservations.prix > COALESCE((SELECT SUM(montant) FROM avances WHERE reservation_id = reservations.id), 0)')
-                        ->without('user', 'projet', 'historiques', 'piece_jointe', 'bien', 'aquereurs', 'aquereurs_ancien');
+                        ->whereRaw('reservations.prix >= COALESCE((SELECT SUM(montant) FROM avances WHERE reservation_id = reservations.id), 0)')
+                        ->without('user', 'projet', 'historiques', 'piece_jointe', 'aquereurs', 'aquereurs_ancien');
                 }
             ])
             ->findOrFail($id);
 
-        $reservations = $client->reservations()->with([
-            'bien', 'user', 'projet', 'aquereurs.client'
-        ])->get();
+        // Use the reservations from the client relation
 
         $visites = Visite::on('temp')
             ->where('etat', 1)
@@ -490,7 +506,6 @@ class ClientController extends Controller
 
         return response()->json([
             'client'       => $client,
-            'reservations' => $reservations,
             'visites'      => $groupedVisites->values(),
         ], 200);
     }
