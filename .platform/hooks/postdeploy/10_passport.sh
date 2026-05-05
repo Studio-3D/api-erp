@@ -1,25 +1,21 @@
 #!/bin/bash
+set -e
 
-cd /var/app/current || exit
+CONTAINER_ID=$(docker ps -q | head -n 1)
 
-echo "🔑 Checking Passport keys..."
-
-# Générer les clés si absentes
-if [ ! -f storage/oauth-private.key ]; then
-    echo "⚠️ Generating Passport keys..."
-    php artisan passport:keys
-else
-    echo "✅ Passport keys already exist"
+if [ -z "$CONTAINER_ID" ]; then
+  echo "No running Docker container found"
+  exit 1
 fi
 
-# Vérifier si client existe
-CLIENT_COUNT=$(php artisan tinker --execute="echo \Laravel\Passport\Client::where('personal_access_client', 1)->count();")
+docker exec "$CONTAINER_ID" bash -lc '
+cd /var/www
 
-if [ "$CLIENT_COUNT" -eq "0" ]; then
-    echo "⚠️ Creating personal access client..."
-    php artisan passport:client --personal --name="Default Personal Access Client"
-else
-    echo "✅ Personal access client already exists"
+mkdir -p storage
+
+if [ ! -f storage/oauth-private.key ] || [ ! -f storage/oauth-public.key ]; then
+  php artisan passport:keys --force
 fi
 
-echo "✅ Passport setup complete"
+php artisan optimize:clear
+'
