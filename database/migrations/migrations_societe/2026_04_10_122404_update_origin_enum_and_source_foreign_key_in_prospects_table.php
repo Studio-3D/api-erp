@@ -20,10 +20,12 @@ return new class extends Migration
         // For MySQL - modify origin to enum with default value 'manuel' (NOT NULL)
         DB::statement("ALTER TABLE prospects MODIFY COLUMN origin ENUM('manuel', 'visite', 'whatsapp', 'facebook', 'landingPage', 'import', 'appel') NOT NULL DEFAULT 'manuel'");
 
-        // Modify source column and add new foreign key (NOT NULL)
+        // Make source column nullable and add foreign key
         Schema::table('prospects', function (Blueprint $table) {
-            // Change source to NOT NULL and add foreign key
-            $table->foreignId('source')->change();
+            // First, make sure source is nullable
+            $table->unsignedBigInteger('source')->nullable()->change();
+
+            // Then add foreign key constraint (this will work with nullable columns)
             $table->foreign('source')->references('id')->on('sources')->onDelete('cascade');
         });
     }
@@ -40,9 +42,9 @@ return new class extends Migration
         // Revert origin back to string (NOT NULL)
         DB::statement("ALTER TABLE prospects MODIFY COLUMN origin VARCHAR(255) NOT NULL");
 
-        // Revert source back to foreignId without constraint
+        // Revert source back to not nullable foreignId
         Schema::table('prospects', function (Blueprint $table) {
-            $table->foreignId('source')->change();
+            $table->foreignId('source')->nullable(false)->change();
         });
     }
 
