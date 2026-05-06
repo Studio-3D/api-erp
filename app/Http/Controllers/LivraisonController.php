@@ -848,48 +848,74 @@ public function updateReservationCreneau($reservation_id, Request $request)
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-
     public function scanner_compromis(Request $request)
     {
-        if (RoleHelper::ACSup_RC()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()) {
-            DatabaseHelper::Config();
-            $user = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get()->first();
-            if ($request->hasFile('fichier_scanner')) {
+        try {
+            if (RoleHelper::ACSup_RC()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()) {
+                DatabaseHelper::Config();
+                $user = Auth::user();
+                $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get()->first();
 
-                $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
-                $societe = Societe::findOrfail($user_societes->societe_id);
-                $comp = Compromis_vente::on('temp')->with('reservation')->findOrfail($request->input("comp_id"));
-                $comp->setConnection('temp');
+                if ($request->hasFile('fichier_scanner')) {
+                    $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+                    $societe = Societe::findOrfail($user_societes->societe_id);
+                    $comp = Compromis_vente::on('temp')->with('reservation')->findOrfail($request->input("comp_id"));
+                    $comp->setConnection('temp');
+                    $codeReservation = $comp->reservation->code_reservation;
 
-                // Récupérer le nom du fichier
-                $comp->compromis_signee = $request->file('fichier_scanner')->getClientOriginalName();
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/compromis_vente');
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('fichier_scanner')->move($directory, $request->file('fichier_scanner')->getClientOriginalName());
-                // Créer StatutClient après le scan
+                    // Get the file
+                    $file = $request->file('fichier_scanner');
+                    $originalName = $file->getClientOriginalName();
+
+                    // Create directory
+                    $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/compromis_vente/' . $codeReservation);
+
+                    if (!File::exists($directory)) {
+                        File::makeDirectory($directory, 0755, true, true);
+                    }
+
+                    // Move the file
+                    $file->move($directory, $originalName);
+
+                    // Verify file was moved
+                    if (!File::exists($directory . '/' . $originalName)) {
+                        return response()->json(['error' => 'Failed to move file'], 500);
+                    }
+
+                    // Store only the filename in database
+                    $comp->compromis_signee = $originalName;
+
+                    // Create StatutClient after the scan
                     $this->createStatutClientForScanner($comp->reservation_id, $userAuth, 'compromis');
-                     //store historique
+
+                    // Store historique
                     $histo = new HistoReservation();
                     $histo->setConnection('temp');
                     $histo->reservation_id = $comp->reservation_id;
                     $histo->user_id = $userAuth->id;
-                    $histo->action = 11;//Attesation de vente
-                    $histo->bien_id=$comp->reservation->bien_id;
+                    $histo->action = 11; // Attestation de vente
+                    $histo->bien_id = $comp->reservation->bien_id;
                     $histo->description = null;
                     $histo->save();
-                      //actualiser compromise de reservation
-                    Config::set('broadcasting.default', 'pusher_9');
-                    // Broadcast event to all users subscribed to this reservation
-                    broadcast(new AttestationVenteEvent($comp->reservation_id));
-                if (!$comp->save()) {
-                    return response()->json(['error' => 'Échec de scanner les fichiers'], 500);
-                }
-            }
 
-            return response()->json(['success' => 'Fichiers scannés avec succès'], 200);
+                    // Broadcast event
+                    Config::set('broadcasting.default', 'pusher_9');
+                    broadcast(new AttestationVenteEvent($comp->reservation_id));
+
+                    if (!$comp->save()) {
+                        return response()->json(['error' => 'Failed to save file name to database'], 500);
+                    }
+
+                    return response()->json(['success' => 'Fichier scanné avec succès'], 200);
+                }
+
+                return response()->json(['error' => 'No file uploaded'], 400);
+            }
+            return response()->json(['error' => 'Unauthorized'], 401);
+        } catch (\Exception $e) {
+            \Log::error('Scanner compromis error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-        return response()->json(['error' => 'Unauthorized'], 401);
     }
     /*************************************************Contrat de vente********************* */
 
