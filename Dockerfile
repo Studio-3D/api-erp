@@ -5,8 +5,8 @@ WORKDIR /var/www
 COPY . .
 
 RUN apt-get update && apt-get install -y \
-    git unzip libzip-dev \
-    && docker-php-ext-install pdo pdo_mysql zip \
+    git unzip libzip-dev libicu-dev \
+    && docker-php-ext-install pdo pdo_mysql zip intl \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && apt-get clean \
