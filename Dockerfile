@@ -5,7 +5,7 @@ WORKDIR /var/www
 COPY . .
 
 RUN apt-get update && apt-get install -y \
-    git unzip libzip-dev libicu-dev \
+    git unzip libzip-dev libicu-dev awscli \
     && docker-php-ext-install pdo pdo_mysql zip intl \
     && pecl install redis \
     && docker-php-ext-enable redis \
@@ -23,6 +23,10 @@ RUN mkdir -p storage/framework/sessions \
     bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
 EXPOSE 80
 
-CMD php artisan serve --host=0.0.0.0 --port=80
+ENTRYPOINT ["entrypoint.sh"]
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=80"]
