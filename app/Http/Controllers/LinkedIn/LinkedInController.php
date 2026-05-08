@@ -802,7 +802,7 @@ class LinkedInController extends Controller
                             'webhook_verify_token' => $config->webhook_verify_token,
                             'webhook_enabled' => $config->webhook_enabled ?? false,
                             'webhook_subscriptions' => json_decode($config->webhook_subscriptions ?? '[]'),
-                            'webhook_url' => env('APP_URL') . '/api/webhookLinkedIn',
+                            'webhook_url' => env('FRONTEND_URL') . '/api/webhookLinkedIn',
                             'created_at' => $config->created_at,
                             'projet' => $config->projet_nom ? ['nom' => $config->projet_nom] : null
                         ];

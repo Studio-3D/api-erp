@@ -54,6 +54,7 @@ use App\Http\Controllers\EnumController;
 use App\Http\Controllers\Facebook_Instagram\Facebook_InstagramController;
 use App\Http\Controllers\Landing_page\Landing_pageController;
 use App\Http\Controllers\LivraisonController;
+use App\Http\Controllers\PDFController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SocieteController;
 use App\Http\Controllers\TikTok\TikTokApiController;
@@ -599,7 +600,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('creneaux-occupes', [LivraisonController::class, 'getCreneauxOccupes']);
     Route::post('/update-reservation-creneau/{reservation_id}', [LivraisonController::class, 'updateReservationCreneau']);
     /************compromis vente******/
-
+    Route::post('/generate-compromis-pdf', [PDFController::class, 'generateCompromisPDF']);
     Route::post('store_compromis_vente/{rdv_id}', [LivraisonController::class, 'store_compromis_vente'])->name('');
     Route::get('show_compromis/{id}', [LivraisonController::class, 'show_compromis'])->name('');
     Route::put('update_compromis/{comp_id}', [LivraisonController::class, 'update_compromis'])->name('');
