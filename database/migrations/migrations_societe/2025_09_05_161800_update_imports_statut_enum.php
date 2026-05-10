@@ -11,16 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('imports', function (Blueprint $table) {
-            // Update the enum to include the new 'en_attente' status
-            $table->enum('statut', [0, 1, 2, 3])
-                  ->comment('0=>en_attente 1=>en_cours 2=>importe 3=>echoue')
-                  ->change();
+        // Use raw SQL to modify the enum column
+        DB::statement("ALTER TABLE imports MODIFY COLUMN statut ENUM('0', '1', '2', '3') NOT NULL COMMENT '0=>en_attente 1=>en_cours 2=>importe 3=>echoue'");
 
-            // Add type column
-            $table->enum('type', [0,1,2,3])
+        // Add type column using Schema builder since it's a new column
+        Schema::table('imports', function (Blueprint $table) {
+            $table->enum('type', ['0', '1', '2', '3'])
                   ->nullable()
-                  ->comment('0=>creer bien ,1=>modif en masse , 2 titre foncier ,3 propsects')
+                  ->comment('0=>creer bien, 1=>modif en masse, 2=>titre foncier, 3=>prospects')
                   ->default('0');
         });
     }
@@ -30,13 +28,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('imports', function (Blueprint $table) {
-            // Revert back to the original 3-status enum
-            $table->enum('statut', [0, 1, 2])
-                  ->comment('0=>en cours 1=>success 2=>echoué')
-                  ->change();
+        // Revert statut column back using raw SQL
+        DB::statement("ALTER TABLE imports MODIFY COLUMN statut ENUM('0', '1', '2') NOT NULL COMMENT '0=>en cours 1=>success 2=>echoué'");
 
-            // Remove the type column in rollback
+        // Drop the type column
+        Schema::table('imports', function (Blueprint $table) {
             $table->dropColumn('type');
         });
     }
