@@ -1,35 +1,18 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 cd /var/www
 
-echo "🚀 Initializing Laravel..."
+mkdir -p storage
 
-# Copier .env si absent
-if [ ! -f .env ]; then
-    echo "Creating .env from example"
-    cp .env.example .env
-fi
+echo "Loading Passport keys from S3..."
 
-# Générer APP_KEY si vide
-if ! grep -q "APP_KEY=base64:" .env; then
-    echo "Generating APP_KEY..."
-    php artisan key:generate --force
-fi
+aws s3 cp s3://erp-immo-prod-storage/private/passport/oauth-private.key storage/oauth-private.key
+aws s3 cp s3://erp-immo-prod-storage/private/passport/oauth-public.key storage/oauth-public.key
 
-# Générer clés Passport si absentes
-if [ ! -f storage/oauth-private.key ]; then
-    echo "Generating Passport keys..."
-    php artisan passport:keys --force
-fi
+chmod 600 storage/oauth-private.key
+chmod 644 storage/oauth-public.key
 
-# Créer le dossier logs s'il n'existe pas
-mkdir -p storage/logs
-chown -R www-data:www-data storage
-chmod -R 775 storage
+php artisan optimize:clear || true
 
-# Permissions runtime
-chown -R www-data:www-data storage bootstrap/cache
-
-# Lancer supervisord au premier plan
-exec /usr/bin/supervisord -n
+exec "$@"

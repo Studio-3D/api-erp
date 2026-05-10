@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,6 +37,9 @@ class AppServiceProvider extends ServiceProvider
                 storage_path('oauth-public.key'),
                 base64_decode(env('PASSPORT_PUBLIC_KEY_BASE64'))
             );
+        }
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
         }
     }
 }

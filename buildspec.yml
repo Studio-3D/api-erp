@@ -22,7 +22,8 @@ phases:
   post_build:
     commands:
       - echo Updating Dockerrun with image tag...
-      - sed -i "s|IMAGE_TAG_PLACEHOLDER|$IMAGE_TAG|g" Dockerrun.aws.json
+      - printf '{"AWSEBDockerrunVersion":"1","Image":{"Name":"%s:%s","Update":"true"},"Ports":[{"ContainerPort":80}]}' $REPOSITORY_URI $IMAGE_TAG > Dockerrun.aws.json
+      - cat Dockerrun.aws.json
       - echo Build completed on `date`
 
 artifacts:

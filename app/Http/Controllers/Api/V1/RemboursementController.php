@@ -381,7 +381,7 @@ class RemboursementController extends Controller
     {
 
 
-       if(RoleHelper::AdminSup()||RoleHelper::Comptable()) {
+       if(RoleHelper::ACSup()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
             Config::set('broadcasting.default', 'pusher_3');
             $user = Auth::user();
@@ -485,11 +485,11 @@ class RemboursementController extends Controller
             }
 
 
-         return response()->json(['message' => 'Le décaissement du remboursement a été effectué avec succès.'], 200);
-    } else {
-        return response()->json(['error' => 'Unauthorized'], 401);
+            return response()->json(['message' => 'Le décaissement du remboursement a été effectué avec succès.'], 200);
+        } else {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
     }
-}
 
 
 

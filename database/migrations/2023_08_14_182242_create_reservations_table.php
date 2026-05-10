@@ -40,6 +40,10 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('bien_id')->constrained('biens')->onDelete('cascade');
             $table->foreignId('projet_id')->constrained('projets')->onDelete('cascade');
+            $table->foreignId('notaire_id')->nullable()->constrained('users')->onDelete('cascade');
+            $table->date('date_affectation_notaire')->nullable();
+            $table->foreignId('user_id_affecte')->nullable()->constrained('users')->onDelete('cascade');
+
             $table->timestamps();
             $table->softDeletes();
         });
