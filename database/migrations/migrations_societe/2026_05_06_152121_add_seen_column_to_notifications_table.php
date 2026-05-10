@@ -3,35 +3,26 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     /**
      * Run the migrations.
      */
-    public function up(): void
+   public function up(): void
     {
-        Schema::table('notifications', function (Blueprint $table) {
-            // Check if column doesn't exist, then add it
-            if (!Schema::hasColumn('notifications', 'seen')) {
+        if (!Schema::hasColumn('notifications', 'seen')) {
+            Schema::table('notifications', function (Blueprint $table) {
                 $table->json('seen')->nullable();
-            } else {
-                // If column exists but is not JSON, change it
-                $table->json('seen')->nullable()->change();
-            }
-        });
+            });
+        } else {
+            DB::statement("ALTER TABLE notifications MODIFY seen JSON NULL");
+        }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::table('notifications', function (Blueprint $table) {
-            // Drop the column if needed
-            if (Schema::hasColumn('notifications', 'seen')) {
-                $table->dropColumn('seen');
-            }
-        });
+        DB::statement("ALTER TABLE notifications MODIFY seen TINYINT(1) NOT NULL DEFAULT 0");
     }
-};
+    };
