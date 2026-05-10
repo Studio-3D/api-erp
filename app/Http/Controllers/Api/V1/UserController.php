@@ -813,7 +813,7 @@ public function update_password(Request $request, $id)
         ]);
 
         // Construct the reset URL you can chenbge the url
-        $resetUrl = env('APP_URL').'/reset-password/' . $token;
+        $resetUrl = env('FRONTEND_URL').'/reset-password/' . $token;
 
         // Send an email to the user with the reset URL
         Mail::to($user->email)->send(new ResetPasswordMail($resetUrl, $confirmationCode));

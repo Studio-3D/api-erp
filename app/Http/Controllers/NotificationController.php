@@ -712,4 +712,5 @@ public function get_notifications(Request $request, $projet_id) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
+
 }

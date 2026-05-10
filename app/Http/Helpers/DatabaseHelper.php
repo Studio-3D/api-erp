@@ -1128,7 +1128,7 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
             $emailData = [
                 'adminName' =>$name,
                 'fichier' => $imp->fichier,
-                'link_import' => env('APP_URL').'/histo-importation/'.$imp->id,
+                'link_import' => env('FRONTEND_URL').'/histo-importation/'.$imp->id,
                 'dateCreation' => $imp->created_at,
                 'statut' => $imp->statut,
             ];
@@ -1308,7 +1308,7 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
 
                             // Fallback to a default admin email
                             $to_email = $imp->user->email;
-                        
+
 
 
                         // Set import status to "en_cours" (1) only if it's not already

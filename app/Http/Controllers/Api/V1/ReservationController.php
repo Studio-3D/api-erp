@@ -204,6 +204,7 @@ class ReservationController extends Controller
                 ->where('reservations.id', '!=', $dos_id)
                 ->orderBy('reservations.created_at', 'desc')
                 ->where('reservations.etat', 1)
+                ->where('reservations.statut', 1)
                 ->where('reservations.projet_id', $projet_id)
                 ->without( 'user', 'projet','historiques','piece_jointe','bien','aquereurs','aquereurs_ancien')
                 ->get();
@@ -324,7 +325,7 @@ class ReservationController extends Controller
             $this->processDependencies($reservation, $request, $userAuth);
 
             // Finalize the reservation
-            $this->finalizeReservation($reservation,$userAuth->name, $userAuth);
+            $this->finalizeReservation($reservation,$userAuth->name,$userAuth->prenom, $userAuth);
 
             // Commit transaction
             DB::connection('temp')->commit();
@@ -413,7 +414,7 @@ private function processReservationFiles($reservation, $request, $societe)
 }
 
 // Update finalizeReservation to remove file processing
- private function finalizeReservation($reservation,$userAuth_name,$userAuth)
+ private function finalizeReservation($reservation,$userAuth_name,$userAuth_prenom,$userAuth)
         {
              if (RoleHelper::Com()||RoleHelper::RespoCommercial()) {
             //create histo reservation en attente
@@ -478,9 +479,9 @@ private function processReservationFiles($reservation, $request, $societe)
                             $data = [
                                 'adminName' => $admin->name,
                                 'reservationCode' => $reservation->code_reservation,
-                                'validationLink' => env('APP_URL').'/ventes/reservations/'.$reservation->id,
+                                'validationLink' => env('FRONTEND_URL').'/ventes/reservations/'.$reservation->id,
                                 'dateCreation' => Carbon::now()->format('d/m/Y à H:i'),
-                                'createdBy' => $userAuth_name ?? 'Un commercial'
+                                'createdBy' => $userAuth_name.' '.$userAuth_prenom ?? 'Un commercial'
                             ];
 
                             Mail::send('emails.demande_validation_reservation', $data, function ($message) use ($to_email, $reservation) {

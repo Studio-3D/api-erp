@@ -95,7 +95,7 @@
             <div class="info-card">
                 <p><strong>Code Réservation :</strong> {{ $reservationCode }}</p>
                 <p><strong>Date de création :</strong> {{ $dateCreation }}</p>
-                <p><strong>Créée par :</strong> {{ $createdBy }}</p>
+                <p><strong>Crée par :</strong> {{ $createdBy }}</p>
             </div>
 
             <p>Merci de procéder à la validation de cette réservation en cliquant sur le lien ci-dessous :</p>
