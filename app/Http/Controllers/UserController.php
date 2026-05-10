@@ -602,7 +602,7 @@ class UserController extends Controller
             ]);
 
             // Construct the reset URL you can chenbge the url
-            $resetUrl = env('APP_URL').'/reset-password/' . $token;
+            $resetUrl = env('FRONTEND_URL').'/reset-password/' . $token;
 
             // Send an email to the user with the reset URL
             Mail::to($user)->send(new ResetPasswordMail($resetUrl, $confirmationCode));

@@ -58,13 +58,13 @@ class UserController extends Controller
                 return response()->json(['users' => $users]);
             } else {
                 DatabaseHelper::Config();
-                $users = User::on('temp')->where('role','>',1)->get();
+                $users = User::on('temp')->where('role','>',1)->where('is_actif',1)->get();
                 return response()->json(['users' => $users]);
             }
 
         } else if (RoleHelper::Admin()) {
             DatabaseHelper::Config();
-            $users = User::on('temp')->where('role','>',1)->get();
+            $users = User::on('temp')->where('role','>',1)->where('is_actif',1)->get();
             return response()->json(['users' => $users], 200);
         }
 
@@ -695,6 +695,10 @@ public function update_password(Request $request, $id)
   private function createSubUser($request, $user_id, $user_photo, $dataArray_projets)
     {
 
+    // Démarrer la transaction sur la connexion 'temp'
+    DB::connection('temp')->beginTransaction();
+
+    try {
         DatabaseHelper::Config($request->societe_id);
         $existingUser = User::on('temp')
         ->where('email', $request->email)
@@ -733,6 +737,17 @@ public function update_password(Request $request, $id)
                 UserProjetHelper::createUserProjet($valeur['id'], $user->id);
             }
         }
+          // Valider la transaction si tout est réussi
+        DB::connection('temp')->commit();
+
+    } catch (\Exception $e) {
+        // Annuler la transaction en cas d'erreur
+        DB::connection('temp')->rollBack();
+
+        // Re-lancer l'exception pour qu'elle soit capturée par le bloc catch du parent
+        throw new \Exception("Erreur lors de la création du sous-utilisateur: " . $e->getMessage());
+    }
+
     }
 
     public function activateUser($user_id)
@@ -798,7 +813,7 @@ public function update_password(Request $request, $id)
         ]);
 
         // Construct the reset URL you can chenbge the url
-        $resetUrl = env('APP_URL').'/reset-password/' . $token;
+        $resetUrl = env('FRONTEND_URL').'/reset-password/' . $token;
 
         // Send an email to the user with the reset URL
         Mail::to($user->email)->send(new ResetPasswordMail($resetUrl, $confirmationCode));

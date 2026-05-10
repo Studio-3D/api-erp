@@ -329,7 +329,7 @@ class ReclamationSavController extends Controller
                         ? date('d/m/Y', strtotime($rec->date_intervention))
                         : 'À planifier',
                 ],
-                'reclamationLink' => env('APP_URL') . '/sav/reclamations/show/' . $rec->id,
+                'reclamationLink' => env('FRONTEND_URL') . '/sav/reclamations/show/' . $rec->id,
             ];
 
             try {

@@ -14,12 +14,7 @@ RUN apt-get update && apt-get install -y \
     libfreetype6-dev \
     awscli \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install \
-        pdo \
-        pdo_mysql \
-        zip \
-        intl \
-        gd \
+    && docker-php-ext-install pdo pdo_mysql zip intl gd \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && apt-get clean \
@@ -36,10 +31,4 @@ RUN mkdir -p storage/framework/sessions \
     bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
-RUN chmod +x /usr/local/bin/entrypoint.sh
-
-EXPOSE 80
-
-ENTRYPOINT ["entrypoint.sh"]
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=80"]
+CMD ["php", "artisan", "queue:work", "redis", "--queue=default", "--sleep=3", "--tries=3", "--timeout=90"]

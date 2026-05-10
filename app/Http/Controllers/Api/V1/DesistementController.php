@@ -158,7 +158,6 @@ private function handleReimbursement($request, $desistement, $reservation, $user
                                                 $remboursement->statut = 1;
                                                 $remboursement->etat = 1;
                                                 $remboursement->user_id_valider = $userAuth->id;
-
                                             } else {
                                                 $type_remb_bien='transfert_rem_apres_vente';
                                                 $remboursement->mode_rembourse = 'transfert_rem_apres_vente';
@@ -298,8 +297,7 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
 
                 if ($cl_remb['type_remb'] == 'transfert' ||
                     ($cl_remb['type_remb'] == 'transfert_remb' &&
-                    isset($cl_remb['type_remb_transfere']) &&
-                    $cl_remb['type_remb_transfere'] == 'immediat')) {
+                    isset($cl_remb['type_remb_transfere']) && ($cl_remb['type_remb_transfere'] == 'immediat'||$cl_remb['type_remb_transfere'] == 'apres_vente'))) {
 
                     // FIX: Validate required fields for transfer
                     if (!isset($cl_remb['dossier_id']) || empty($cl_remb['dossier_id'])) {
@@ -895,8 +893,8 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
                                                 'adminName' => $admin->name,
                                                 'penaliteCode' => $pen->num_recu ?? '',
                                                 'reservationCode' => $reservation->code_reservation ?? '',
-                                                'montantPenalite' => number_format($pen->montant, 2, ',', ' ') . ' €',
-                                                'validationLink' =>env('APP_URL'). '/ventes/desistements/penalites/'.$pen->id,
+                                                'montantPenalite' => number_format($pen->montant, 2, ',', ' ') . ' MAD',
+                                                'validationLink' =>env('FRONTEND_URL'). '/ventes/desistements/penalites/'.$pen->id,
                                                 'dateCreation' => Carbon::now()->format('d/m/Y à H:i'),
                                                 'createdBy' => $userAuth->name ?? $userAuth->name ?? 'Un commercial',
                                                 'projetName' => $reservation->projet->nom ?? 'Non spécifié'
@@ -1715,7 +1713,7 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
                                 $data = [
                                     'adminName' => $admin->name,
                                     'reservationCode' => $code_res ?? '',
-                                    'validationLink' => env('APP_URL').'/ventes/desistements/show/'.$desistement->id,
+                                    'validationLink' => env('FRONTEND_URL').'/ventes/desistements/show/'.$desistement->id,
                                     'dateCreation' => Carbon::now()->format('d/m/Y à H:i'),
                                     'createdBy' => $userAuth->name ?? $userAuth->name ?? 'Un commercial',
                                     'projetName' => $reservation->projet->nom ?? 'Non spécifié',
@@ -3042,8 +3040,8 @@ public function validation_desitement($id,Request $request){
                                                     'adminName' => $admin->name,
                                                     'penaliteCode' => $pen->num_recu ?? '',
                                                     'reservationCode' => $code_res ?? '',
-                                                    'montantPenalite' => number_format($pen->montant, 2, ',', ' ') . ' €',
-                                                    'validationLink' => env('APP_URL').'/ventes/desistements/penalites/'.$pen->id,
+                                                    'montantPenalite' => number_format($pen->montant, 2, ',', ' ') . ' MAD',
+                                                    'validationLink' => env('FRONTEND_URL').'/ventes/desistements/penalites/'.$pen->id,
                                                     'dateCreation' => Carbon::now()->format('d/m/Y à H:i'),
                                                     'createdBy' => $userAuth->name ?? $userAuth->name ?? 'Un commercial',
                                                     'projetName' => $reservation->projet->nom ?? 'Non spécifié'
@@ -3648,8 +3646,8 @@ public function validation_desitement($id,Request $request){
                                         'adminName' => $admin->name,
                                         'penaliteCode' => $pen->num_recu ?? '',
                                         'reservationCode' => $code_res ?? '',
-                                        'montantPenalite' => number_format($pen->montant, 2, ',', ' ') . ' €',
-                                        'validationLink' => env('APP_URL').'/ventes/desistements/penalites/'.$pen->id,
+                                        'montantPenalite' => number_format($pen->montant, 2, ',', ' ') . ' MAD',
+                                        'validationLink' => env('FRONTEND_URL').'/ventes/desistements/penalites/'.$pen->id,
                                         'dateCreation' => Carbon::now()->format('d/m/Y à H:i'),
                                         'createdBy' => $userAuth->first()->name ?? $userAuth->name ?? 'Un commercial',
                                         'projetName' => $pen->desistement->projet->nom ?? 'Non spécifié'
