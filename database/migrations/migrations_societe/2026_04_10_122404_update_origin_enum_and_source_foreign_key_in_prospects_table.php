@@ -13,21 +13,16 @@ return new class extends Migration
     public function up(): void
     {
         // Drop the existing foreign key if exists
-        Schema::table('prospects', function (Blueprint $table) {
-            $this->dropForeignKeyIfExists('prospects', 'prospects_source_foreign');
-        });
+        $this->dropForeignKeyIfExists('prospects', 'prospects_source_foreign');
 
-        // For MySQL - modify origin to enum with default value 'manuel' (NOT NULL)
+        // Modify origin to enum with default value 'manuel'
         DB::statement("ALTER TABLE prospects MODIFY COLUMN origin ENUM('manuel', 'visite', 'whatsapp', 'facebook', 'landingPage', 'import', 'appel') NOT NULL DEFAULT 'manuel'");
 
-        // Make source column nullable and add foreign key
-        Schema::table('prospects', function (Blueprint $table) {
-            // First, make sure source is nullable
-            $table->unsignedBigInteger('source')->nullable()->change();
+        // Make source column nullable using raw SQL (NOT change())
+        DB::statement("ALTER TABLE prospects MODIFY COLUMN source BIGINT UNSIGNED NULL");
 
-            // Then add foreign key constraint (this will work with nullable columns)
-            $table->foreign('source')->references('id')->on('sources')->onDelete('cascade');
-        });
+        // Add foreign key constraint using raw SQL
+        DB::statement("ALTER TABLE prospects ADD CONSTRAINT prospects_source_foreign FOREIGN KEY (source) REFERENCES sources(id) ON DELETE CASCADE");
     }
 
     /**
@@ -35,17 +30,14 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('prospects', function (Blueprint $table) {
-            $this->dropForeignKeyIfExists('prospects', 'prospects_source_foreign');
-        });
+        // Drop foreign key
+        $this->dropForeignKeyIfExists('prospects', 'prospects_source_foreign');
 
-        // Revert origin back to string (NOT NULL)
+        // Revert origin back to string
         DB::statement("ALTER TABLE prospects MODIFY COLUMN origin VARCHAR(255) NOT NULL");
 
-        // Revert source back to not nullable foreignId
-        Schema::table('prospects', function (Blueprint $table) {
-            $table->foreignId('source')->nullable(false)->change();
-        });
+        // Revert source back to NOT NULL using raw SQL
+        DB::statement("ALTER TABLE prospects MODIFY COLUMN source BIGINT UNSIGNED NOT NULL");
     }
 
     private function dropForeignKeyIfExists($table, $foreignKeyName)
@@ -63,9 +55,7 @@ return new class extends Migration
         }, $foreignKeys);
 
         if (in_array($foreignKeyName, $foreignKeyNames)) {
-            Schema::table($table, function (Blueprint $table) use ($foreignKeyName) {
-                $table->dropForeign($foreignKeyName);
-            });
+            DB::statement("ALTER TABLE {$table} DROP FOREIGN KEY {$foreignKeyName}");
         }
     }
 };
