@@ -37,6 +37,7 @@ return new class extends Migration
             $table->foreignId('reservation_id')->nullable()->constrained('reservations')->onDelete('cascade');
             $table->foreignId('bien_id')->nullable()->constrained('biens')->onDelete('cascade');
             $table->foreignId('traite_appel_id')->nullable()->constrained('traitements_appels')->onDelete('cascade');
+            $table->longText('seen')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

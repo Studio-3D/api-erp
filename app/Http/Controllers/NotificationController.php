@@ -676,7 +676,7 @@ public function get_notifications(Request $request, $projet_id) {
                     'notification_ids' => 'required|array',
                     'projet_id' => 'required|integer'
                 ]);
-            // Debug: Log validated data
+                 // Debug: Log validated data
                \Log::info('Validated notification_ids:', ['ids' => $validated['notification_ids']]);
                 $userId = Auth::guard('api')->user()->id;
 
@@ -694,6 +694,9 @@ public function get_notifications(Request $request, $projet_id) {
                     // Get current seen array or initialize empty array
                     $seenArray = $notification->seen ?? [];
 
+                    if (!is_array($seenArray)) {
+                        $seenArray = [];
+                    }
                     // Add current user ID to seen array if not already there
                     if (!in_array($userId, $seenArray)) {
                         $seenArray[] = $userId;
@@ -707,8 +710,12 @@ public function get_notifications(Request $request, $projet_id) {
                 }
                  \Log::info('Updated notifications count:', ['count' => $updatedCount]);
 
-                return response()->json(['success' => true]);
-            }
+            return response()->json([
+                        'success' => true,
+                        'updated_count' => $updatedCount,
+                        'message' => "$updatedCount notification(s) marked as seen"
+                    ]);
+              }
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 

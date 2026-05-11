@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Helpers;
+use Twilio\Rest\Client as ClientTwilio;  // Add this with the other use statements
 
 use App\Http\Helpers\Bien_Helper;
 use App\Http\Helpers\NotificationHelper;
@@ -869,25 +870,77 @@ private static function envoyerEmailUserVisite($user, $relanceUserIds, $rdvUserI
 private static function envoyerEmailProspectAppel($data, $databaseName)
 {
     $prospect = $data['prospect'];
-    if (!$prospect->email) {
-        Log::warning("Aucun email associé au prospect ID {$prospect->id} dans la base de données {$databaseName}");
-        return;
-    }
 
     try {
         $projet = $data['traitements'][0]->appel->projet->nom ?? null;
 
-        if ($data['hasRelance']) {
-            Mail::to($prospect->email)->send(new ScheduledEmail(1, $prospect, $projet, null, null, null, 'appel'));
-            Log::info("Email de relance appel envoyé à {$prospect->email} (Prospect) dans la base de données {$databaseName}");
+        // Send emails if email exists
+        if ($prospect->email) {
+            if ($data['hasRelance']) {
+                Mail::to($prospect->email)->send(new ScheduledEmail(1, $prospect, $projet, null, null, null, 'appel'));
+                Log::info("Email de relance appel envoyé à {$prospect->email} (Prospect) dans la base de données {$databaseName}");
+            }
+
+            if ($data['hasRdv']) {
+                Mail::to($prospect->email)->send(new ScheduledEmail(2, $prospect, $projet, null, null, null, 'appel'));
+                Log::info("Email de RDV appel envoyé à {$prospect->email} (Prospect) dans la base de données {$databaseName}");
+            }
+        } else {
+            Log::warning("Aucun email associé au prospect ID {$prospect->id} dans la base de données {$databaseName}");
         }
 
-        if ($data['hasRdv']) {
-            Mail::to($prospect->email)->send(new ScheduledEmail(2, $prospect, $projet, null, null, null, 'appel'));
-            Log::info("Email de RDV appel envoyé à {$prospect->email} (Prospect) dans la base de données {$databaseName}");
-        }
+        // Send WhatsApp messages if telephone numbers exist
+        self::sendWhatsAppToProspectAppel($prospect, $data, $projet, $databaseName);
+
     } catch (\Exception $e) {
         Log::error("Échec de l'envoi de l'email au prospect appel {$prospect->email}: " . $e->getMessage());
+        // Continue with WhatsApp even if email fails
+        self::sendWhatsAppToProspectAppel($prospect, $data, $projet, $databaseName);
+    }
+}
+
+private static function sendWhatsAppToProspectAppel($prospect, $data, $projet, $databaseName)
+{
+    // Check primary telephone
+    if ($prospect->telephone && !empty($prospect->telephone)) {
+        try {
+            if ($data['hasRelance']) {
+                $message = "Bonjour {$prospect->nom} {$prospect->prenom}, nous vous rappelons qu'une relance est programmée concernant votre dossier pour le projet {$projet}. Nous restons à votre disposition.";
+                DatabaseHelper::sendWhatsAppMessage($prospect->telephone, $message);
+                Log::info("WhatsApp de relance appel envoyé à {$prospect->telephone} (Prospect) dans la base de données {$databaseName}");
+            }
+
+            if ($data['hasRdv']) {
+                $rdvDate = $data['traitements'][0]->rdv ?? null;
+                $rdvDateFormatted = $rdvDate ? Carbon::parse($rdvDate)->format('d/m/Y H:i') : '';
+                $message = "Bonjour {$prospect->nom} {$prospect->prenom}, nous vous rappelons votre rendez-vous prévu le {$rdvDateFormatted} pour le projet {$projet}. Nous restons à votre disposition.";
+                DatabaseHelper::sendWhatsAppMessage($prospect->telephone, $message);
+                Log::info("WhatsApp de RDV appel envoyé à {$prospect->telephone} (Prospect) dans la base de données {$databaseName}");
+            }
+        } catch (\Exception $e) {
+            Log::error("Échec de l'envoi WhatsApp au prospect {$prospect->telephone}: " . $e->getMessage());
+        }
+    }
+
+    // Check secondary telephone if different from primary
+    if ($prospect->telephone_num2 && !empty($prospect->telephone_num2) && $prospect->telephone_num2 != $prospect->telephone) {
+        try {
+            if ($data['hasRelance']) {
+                $message = "Bonjour {$prospect->nom} {$prospect->prenom}, nous vous rappelons qu'une relance est programmée concernant votre dossier pour le projet {$projet}. Nous restons à votre disposition.";
+                DatabaseHelper::sendWhatsAppMessage($prospect->telephone_num2, $message);
+                Log::info("WhatsApp de relance appel envoyé au second numéro {$prospect->telephone_num2} (Prospect) dans la base de données {$databaseName}");
+            }
+
+            if ($data['hasRdv']) {
+                $rdvDate = $data['traitements'][0]->rdv ?? null;
+                $rdvDateFormatted = $rdvDate ? Carbon::parse($rdvDate)->format('d/m/Y H:i') : '';
+                $message = "Bonjour {$prospect->nom} {$prospect->prenom}, nous vous rappelons votre rendez-vous prévu le {$rdvDateFormatted} pour le projet {$projet}. Nous restons à votre disposition.";
+                DatabaseHelper::sendWhatsAppMessage($prospect->telephone_num2, $message);
+                Log::info("WhatsApp de RDV appel envoyé au second numéro {$prospect->telephone_num2} (Prospect) dans la base de données {$databaseName}");
+            }
+        } catch (\Exception $e) {
+            Log::error("Échec de l'envoi WhatsApp au second numéro prospect {$prospect->telephone_num2}: " . $e->getMessage());
+        }
     }
 }
 
@@ -899,18 +952,68 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
 
         $projet = $traitement->appel->projet->nom ?? null;
         $prospectName = $traitement->appel->prospect->nom.' '.$traitement->appel->prospect->prenom ?? null;
+        $prospectPhone = $traitement->appel->prospect->telephone ?? null;
+        $prospectPhone2 = $traitement->appel->prospect->telephone_num2 ?? null;
 
+        // Send emails if email exists
+        if ($user->email) {
+            if ($relanceUserIds->contains($user->id)) {
+                Mail::to($user->email)->send(new ScheduledEmail(1, $user, $projet, null, $prospectName, null, 'appel'));
+                Log::info("Email de relance appel envoyé à {$user->email} (Utilisateur) dans la base de données {$databaseName}");
+            }
+
+            if ($rdvUserIds->contains($user->id)) {
+                Mail::to($user->email)->send(new ScheduledEmail(2, $user, $projet, null, $prospectName, null, 'appel'));
+                Log::info("Email de RDV appel envoyé à {$user->email} (Utilisateur) dans la base de données {$databaseName}");
+            }
+        }
+
+        // Send WhatsApp messages to user if phone number exists
+        self::sendWhatsAppToUserAppel($user, $relanceUserIds, $rdvUserIds, $projet, $prospectName, $prospectPhone, $prospectPhone2, $databaseName);
+
+    } catch (\Exception $e) {
+        Log::error("Échec de l'envoi de l'email appel à l'utilisateur {$user->email}: " . $e->getMessage());
+        // Continue with WhatsApp even if email fails
+        self::sendWhatsAppToUserAppel($user, $relanceUserIds, $rdvUserIds, $projet, $prospectName, $prospectPhone, $prospectPhone2, $databaseName);
+    }
+}
+
+private static function sendWhatsAppToUserAppel($user, $relanceUserIds, $rdvUserIds, $projet, $prospectName, $prospectPhone, $prospectPhone2, $databaseName)
+{
+    if (!$user->phone) {
+        Log::warning("Aucun numéro de téléphone associé à l'utilisateur ID {$user->id} dans la base de données {$databaseName}");
+        return;
+    }
+
+    try {
         if ($relanceUserIds->contains($user->id)) {
-            Mail::to($user->email)->send(new ScheduledEmail(1, $user, $projet, null, $prospectName, null, 'appel'));
-            Log::info("Email de relance appel envoyé à {$user->email} (Utilisateur) dans la base de données {$databaseName}");
+            $message = "Bonjour {$user->name} {$user->prenom}, vous avez une relance à effectuer pour le prospect {$prospectName}.";
+            if ($prospectPhone) {
+                $message .= " Numéro téléphone: {$prospectPhone}";
+                if ($prospectPhone2 && $prospectPhone2 != $prospectPhone) {
+                    $message .= " / {$prospectPhone2}";
+                }
+            }
+            DatabaseHelper::sendWhatsAppMessage($user->phone, $message);
+            Log::info("WhatsApp de relance appel envoyé à l'utilisateur {$user->phone} dans la base de données {$databaseName}");
         }
 
         if ($rdvUserIds->contains($user->id)) {
-            Mail::to($user->email)->send(new ScheduledEmail(2, $user, $projet, null, $prospectName, null, 'appel'));
-            Log::info("Email de RDV appel envoyé à {$user->email} (Utilisateur) dans la base de données {$databaseName}");
+            $rdvDate = $rdvUserIds->first() ? optional(Relance_Rdv_Appel::on('temp')->where('user_id', $user->id)->where('type', 2)->first())->rdv : null;
+            $rdvDateFormatted = $rdvDate ? Carbon::parse($rdvDate)->format('d/m/Y H:i') : '';
+
+            $message = "Bonjour {$user->name} {$user->prenom}, vous avez un rendez-vous prévu le {$rdvDateFormatted} avec le prospect {$prospectName} pour le projet {$projet}.";
+            if ($prospectPhone) {
+                $message .= " Numéro du prospect: {$prospectPhone}";
+                if ($prospectPhone2 && $prospectPhone2 != $prospectPhone) {
+                    $message .= " / {$prospectPhone2}";
+                }
+            }
+            DatabaseHelper::sendWhatsAppMessage($user->phone, $message);
+            Log::info("WhatsApp de RDV appel envoyé à l'utilisateur {$user->phone} dans la base de données {$databaseName}");
         }
     } catch (\Exception $e) {
-        Log::error("Échec de l'envoi de l'email appel à l'utilisateur {$user->email}: " . $e->getMessage());
+        Log::error("Échec de l'envoi WhatsApp à l'utilisateur {$user->phone}: " . $e->getMessage());
     }
 }
 
@@ -1097,7 +1200,7 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
     }
 
 
-    public static function sendWhatsAppMessage($phone, $message)
+    /*public static function sendWhatsAppMessage($phone, $message)
     {
         $instanceId =env('INSTANCE_ID_ULTRA_MSG');  // Replace with your instance ID
         $token = env('TOKEN_ULTRA_MSG');
@@ -1109,7 +1212,51 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
         ]);
 
         Log::info("WhatsApp message sent to $phone: " . $response->body());
-    }
+    }*/
+        public static function sendWhatsAppMessage($phone, $message)
+        {
+            try {
+                // Clean phone number: remove spaces, ensure correct format
+                $phone = preg_replace('/\s+/', '', $phone);
+
+                // Format phone number if it starts with 0 (Moroccan numbers)
+                if (preg_match('/^0(\d{9})$/', $phone, $matches)) {
+                    $phone = '+212' . $matches[1];
+                }
+
+                // If phone doesn't have country code and doesn't start with +, add +212
+                if (!preg_match('/^\+\d{10,15}$/', $phone) && !preg_match('/^0\d{9}$/', $phone)) {
+                    // Assume it's a Moroccan number without prefix
+                    $phone = '+212' . ltrim($phone, '0');
+                }
+
+                // Initialize Twilio client if configured
+                if (env('TWILIO_ACCOUNT_SID') && env('TWILIO_AUTH_TOKEN') && env('TWILIO_WHATSAPP_NUMBER')) {
+                    $twilio = new ClientTwilio(
+                        env('TWILIO_ACCOUNT_SID'),
+                        env('TWILIO_AUTH_TOKEN')
+                    );
+
+                    $sentMessage = $twilio->messages->create(
+                        "whatsapp:" . $phone,
+                        [
+                            'from' => env('TWILIO_WHATSAPP_NUMBER'),
+                            'body' => $message
+                        ]
+                    );
+
+                    Log::info("✅ WhatsApp message sent via Twilio to {$phone}, SID: " . $sentMessage->sid);
+                    return true;
+                }
+
+                Log::warning("No WhatsApp provider configured. Message not sent to {$phone}");
+                return false;
+
+            } catch (\Exception $e) {
+                Log::error("❌ WhatsApp send failed for {$phone}: " . $e->getMessage());
+                return false;
+            }
+        }
     public static function sendImportEmail($imp, $to_email)
     {
         if($to_email != null) {
