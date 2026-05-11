@@ -1,38 +1,44 @@
 <?php
-// app/Events/PropositionUpdated.php
 
 namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\InteractsWithBroadcasting;
+use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 class PropositionUpdated implements ShouldBroadcast
 {
-    use SerializesModels;
+    use Dispatchable, InteractsWithSockets, InteractsWithBroadcasting, SerializesModels;
 
     public $bienId;
     public $userId;
 
-    /**
-     * Create a new event instance.
-     *
-     * @param int $bienId
-     * @param int $userId
-     */
     public function __construct($bienId, $userId)
     {
         $this->bienId = $bienId;
         $this->userId = $userId;
+
+        $this->broadcastVia('pusher_4');
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return Channel|array
-     */
     public function broadcastOn()
     {
         return new Channel('proposition-updates');
+    }
+
+    public function broadcastAs()
+    {
+        return 'PropositionUpdated';
+    }
+
+    public function broadcastWith()
+    {
+        return [
+            'bienId' => $this->bienId,
+            'userId' => $this->userId,
+        ];
     }
 }

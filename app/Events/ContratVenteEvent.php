@@ -2,6 +2,7 @@
 namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\InteractsWithBroadcasting;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -9,7 +10,7 @@ use Illuminate\Queue\SerializesModels;
 
 class ContratVenteEvent implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+   use Dispatchable, InteractsWithSockets, InteractsWithBroadcasting, SerializesModels;
 
    // public $avanceData;
     public $reservationId;
@@ -17,7 +18,7 @@ class ContratVenteEvent implements ShouldBroadcast
     public function __construct($reservationId)
     {
         $this->reservationId = $reservationId;
-        config(['broadcasting.default' => 'pusher_10']);
+         $this->broadcastVia('pusher_10');
 
     }
 
@@ -27,11 +28,6 @@ class ContratVenteEvent implements ShouldBroadcast
         return new Channel('contrat-vente-updates-' . $this->reservationId);
     }
 
-    // Specify the connection to use
-    public function broadcastConnection()
-    {
-        return 'pusher_10';
-    }
 
     public function broadcastAs()
     {

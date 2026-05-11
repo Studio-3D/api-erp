@@ -1,7 +1,9 @@
 <?php
+
 namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\InteractsWithBroadcasting;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -9,7 +11,7 @@ use Illuminate\Queue\SerializesModels;
 
 class Rendez_vous_Prop implements ShouldBroadcast
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable, InteractsWithSockets, InteractsWithBroadcasting, SerializesModels;
 
     public $newDate;
     public $oldDate;
@@ -22,17 +24,13 @@ class Rendez_vous_Prop implements ShouldBroadcast
         $this->oldDate = $oldDate;
         $this->userId = $userId;
         $this->reservationId = $reservationId;
+
+        $this->broadcastVia('pusher_6');
     }
 
     public function broadcastOn()
     {
         return new Channel('rdv-updates');
-    }
-
-    // Specify the connection to use
-    public function broadcastConnection()
-    {
-        return 'pusher_6';
     }
 
     public function broadcastAs()
@@ -46,7 +44,7 @@ class Rendez_vous_Prop implements ShouldBroadcast
             'newDate' => $this->newDate,
             'oldDate' => $this->oldDate,
             'userId' => $this->userId,
-            'reservationId' => $this->reservationId
+            'reservationId' => $this->reservationId,
         ];
     }
 }
