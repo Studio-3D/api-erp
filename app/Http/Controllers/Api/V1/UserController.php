@@ -692,61 +692,65 @@ public function update_password(Request $request, $id)
     }
 
     // Methodes utilitaires (partie invisible a l'exterieur de la classe)
-  private function createSubUser($request, $user_id, $user_photo, $dataArray_projets)
+ private function createSubUser($request, $user_id, $user_photo, $dataArray_projets)
     {
 
-    // Démarrer la transaction sur la connexion 'temp'
-    DB::connection('temp')->beginTransaction();
+        // Démarrer la transaction sur la connexion 'temp'
+         DB::beginTransaction();
 
-    try {
-        DatabaseHelper::Config($request->societe_id);
-        $existingUser = User::on('temp')
-        ->where('email', $request->email)
-        ->first();
-
-        if ($existingUser) {
-            // L'email est déjà utilisé dans cette société
-            throw new \Exception("L'adresse email est déjà utilisée dans cette société.");
-        }
-        $user = new User();
-        $user->setConnection('temp');
-        $user->user_id_origin  = $user_id;
-        $user->name            = $request->name;
-        $user->prenom          = $request->prenom;
-        $user->email           = $request->email;
-        $user->password        = $request->password;
-        $user->gender          = $request->gender;
-        $user->role            = $request->role;
-        $user->phone           = $request->phone;
-        $user->cin             = $request->cin;
-        $user->fonction        = $request->fonction;
-        $user->date_embauche   = $request->date_embauche;
-        $user->niveau_etude    = $request->niveau_etude;
-        $user->adresse         = $request->adresse;
-        $user->cnss            = $request->cnss;
-        $user->is_actif        = $request->is_actif;
-        $user->nb_appel_recu   = $request->nb_appel_recu;
-        $user->nb_appel_traite = $request->nb_appel_traite;
-        $user->solde_conge     = $request->solde_conge;
-        if ($request->hasFile('photo')) {
-            $user->photo = $user_photo;
-        }
-
-        if ($user->save()) {
-            foreach ($dataArray_projets as $valeur) {
-                UserProjetHelper::createUserProjet($valeur['id'], $user->id);
+        try {
+            $societe = Societe::find($request->societe_id);
+            if (!$societe) {
+                throw new \Exception("Societe with ID {$request->societe_id} not found");
             }
+            DatabaseHelper::Config($request->societe_id);
+            $existingUser = User::on('temp')
+            ->where('email', $request->email)
+            ->first();
+
+            if ($existingUser) {
+                // L'email est déjà utilisé dans cette société
+                throw new \Exception("L'adresse email est déjà utilisée dans cette société.");
+            }
+            $user = new User();
+            $user->setConnection('temp');
+            $user->user_id_origin  = $user_id;
+            $user->name            = $request->name;
+            $user->prenom          = $request->prenom;
+            $user->email           = $request->email;
+            $user->password        = $request->password;
+            $user->gender          = $request->gender;
+            $user->role            = $request->role;
+            $user->phone           = $request->phone;
+            $user->cin             = $request->cin;
+            $user->fonction        = $request->fonction;
+            $user->date_embauche   = $request->date_embauche;
+            $user->niveau_etude    = $request->niveau_etude;
+            $user->adresse         = $request->adresse;
+            $user->cnss            = $request->cnss;
+            $user->is_actif        = $request->is_actif;
+            $user->nb_appel_recu   = $request->nb_appel_recu;
+            $user->nb_appel_traite = $request->nb_appel_traite;
+            $user->solde_conge     = $request->solde_conge;
+            if ($request->hasFile('photo')) {
+                $user->photo = $user_photo;
+            }
+
+            if ($user->save()) {
+                foreach ($dataArray_projets as $valeur) {
+                    UserProjetHelper::createUserProjet($valeur['id'], $user->id);
+                }
+            }
+            // Valider la transaction si tout est réussi
+        DB::commit();
+
+        } catch (\Exception $e) {
+            // Annuler la transaction en cas d'erreur
+            DB::rollBack();
+
+            // Re-lancer l'exception pour qu'elle soit capturée par le bloc catch du parent
+            throw new \Exception("Erreur lors de la création du sous-utilisateur: " . $e->getMessage());
         }
-          // Valider la transaction si tout est réussi
-        DB::connection('temp')->commit();
-
-    } catch (\Exception $e) {
-        // Annuler la transaction en cas d'erreur
-        DB::connection('temp')->rollBack();
-
-        // Re-lancer l'exception pour qu'elle soit capturée par le bloc catch du parent
-        throw new \Exception("Erreur lors de la création du sous-utilisateur: " . $e->getMessage());
-    }
 
     }
 

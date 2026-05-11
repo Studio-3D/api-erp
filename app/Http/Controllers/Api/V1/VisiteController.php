@@ -1,6 +1,6 @@
 <?php
 namespace App\Http\Controllers\Api\V1;
-
+use Twilio\Rest\Client as ClientTwilio;  // Add this with the other use statements
 use App\Enum\EtatBien;
 use App\Enum\InteretEnum;
 use App\Enum\StatutSuiviDossier;
@@ -417,7 +417,7 @@ class VisiteController extends Controller
                     }
                     return $number; // Retourne le numéro inchangé s'il ne commence pas par "0"
                 }
-                public function send_whatsapp($request)
+                /*public function send_whatsapp($request)
                 {
                     // Récupérer les identifiants UltraMsg depuis le fichier .env
                     $instanceId = env('INSTANCE_ID_ULTRA_MSG');
@@ -432,8 +432,36 @@ class VisiteController extends Controller
                     ]);
 
                     return $response->json(); // Retourne la réponse de l'API pour vérification
-                }
+                }*/
 
+                public function send_whatsapp($data)
+                        {
+                            try {
+                                $to = $data['to'];
+                                $body = $data['body'];
+
+                                $twilio = new ClientTwilio(
+                                    env('TWILIO_ACCOUNT_SID'),
+                                    env('TWILIO_AUTH_TOKEN')
+                                );
+
+                                $sentMessage = $twilio->messages->create(
+                                    "whatsapp:" . $to,
+                                    [
+                                        'from' => env('TWILIO_WHATSAPP_NUMBER'),
+                                        'body' => $body
+                                    ]
+                                );
+
+                                \Log::info("✅ WhatsApp message sent successfully! SID: " . $sentMessage->sid . ", Status: " . $sentMessage->status);
+
+                                return true;
+
+                            } catch (\Exception $e) {
+                                \Log::error("❌ WhatsApp send failed for {$data['to']}: " . $e->getMessage());
+                                return false;
+                            }
+                        }
                 public function store(StoreVisiteRequest $request)
                 {
                     /***liste des fonctions a ajouter
@@ -925,7 +953,7 @@ class VisiteController extends Controller
                                                             . 'N’hésitez pas à nous contacter si vous avez des questions d’ici là.',
                                                         ];
 
-                                                        $this->send_whatsapp($request->merge($data_whtsp));
+                                                        $this->send_whatsapp($data_whtsp);
                                                         $msg_sended = 1;
                                                     }
                                                 }
@@ -1120,7 +1148,7 @@ class VisiteController extends Controller
                                                             . 'N’hésitez pas à nous contacter si vous avez des questions d’ici là.',
                                                         ];
 
-                                                        $this->send_whatsapp($request->merge($data_whtsp));
+                                                        $this->send_whatsapp($data_whtsp);
                                                         $msg_sended = 1;
                                                     }
                                                 }
@@ -1413,7 +1441,7 @@ class VisiteController extends Controller
                                     . 'N’hésitez pas à nous contacter si vous avez des questions d’ici là.',
                                 ];
 
-                                $this->send_whatsapp($request->merge($data_whtsp));
+                               $this->send_whatsapp($data_whtsp);
                         }
 
 
