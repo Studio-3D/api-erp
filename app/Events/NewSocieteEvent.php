@@ -39,30 +39,24 @@ class NewSocieteEvent implements ShouldBroadcastNow  // CHANGE THIS
         return new Channel('societes');
     }
 
-<<<<<<< HEAD
-=======
+
     // Optional but recommended: Add broadcastAs method
->>>>>>> 8fb3d2b7e82dc4c416c603bc70ffa3b4bb6d1320
+
     public function broadcastAs()
     {
         return 'NewSocieteEvent';
     }
 
-<<<<<<< HEAD
-=======
+
     // Optional: Add data to broadcast
->>>>>>> 8fb3d2b7e82dc4c416c603bc70ffa3b4bb6d1320
+
     public function broadcastWith()
     {
         return [
             'societeData' => $this->societeData,
-<<<<<<< HEAD
-        ];
-    }
-}
-=======
+
             'timestamp' => now()->toISOString()
         ];
     }
 }
->>>>>>> 8fb3d2b7e82dc4c416c603bc70ffa3b4bb6d1320
+
