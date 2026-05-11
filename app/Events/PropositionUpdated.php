@@ -22,10 +22,20 @@ class PropositionUpdated implements ShouldBroadcast
         $this->userId = $userId;
 
         $this->broadcastVia('pusher_4');
+
+        \Log::info('PropositionUpdated event constructed', [
+            'bienId' => $bienId,
+            'userId' => $userId
+        ]);
+
     }
 
     public function broadcastOn()
     {
+        \Log::info('PropositionUpdated broadcastOn called', [
+            'channel' => 'proposition-updates'
+        ]);
+
         return new Channel('proposition-updates');
     }
 
