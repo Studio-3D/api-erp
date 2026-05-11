@@ -3,7 +3,6 @@
 namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
-use Illuminate\Broadcasting\InteractsWithBroadcasting;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;  // CHANGE THIS
 use Illuminate\Foundation\Events\Dispatchable;
@@ -11,7 +10,7 @@ use Illuminate\Queue\SerializesModels;
 
 class NewProjectEvent implements ShouldBroadcastNow  // CHANGE THIS
 {
-    use Dispatchable, InteractsWithSockets, InteractsWithBroadcasting, SerializesModels;
+    use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $projetData;
 
@@ -19,15 +18,10 @@ class NewProjectEvent implements ShouldBroadcastNow  // CHANGE THIS
     {
         $this->projetData = $projetData;
 
-
-        // connexion Pusher par défaut
-        $this->broadcastVia('pusher');
-
         // Optional: Add logging for debugging
         \Log::info('NewProjectEvent constructed', [
             'projetData' => $projetData
         ]);
-
     }
 
     public function broadcastOn()
@@ -39,17 +33,13 @@ class NewProjectEvent implements ShouldBroadcastNow  // CHANGE THIS
         return new Channel('projets');
     }
 
-
     // Optional but recommended: Add broadcastAs method
-
     public function broadcastAs()
     {
         return 'NewProjectEvent';
     }
 
-
     // Optional: Add data to broadcast
-
     public function broadcastWith()
     {
         return [
@@ -58,4 +48,3 @@ class NewProjectEvent implements ShouldBroadcastNow  // CHANGE THIS
         ];
     }
 }
-

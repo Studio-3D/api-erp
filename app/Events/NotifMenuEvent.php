@@ -3,20 +3,16 @@
 namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
-use Illuminate\Broadcasting\InteractsWithBroadcasting;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;  // CHANGE THIS LINE
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;  // CHANGE THIS
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NotifMenuEvent implements ShouldBroadcastNow  // CHANGE THIS INTERFACE
+class NotifMenuEvent implements ShouldBroadcastNow  // CHANGE THIS
 {
-
-    use Dispatchable, InteractsWithSockets, InteractsWithBroadcasting, SerializesModels;
-
+    use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $NotifMenuId;
 
@@ -24,13 +20,10 @@ class NotifMenuEvent implements ShouldBroadcastNow  // CHANGE THIS INTERFACE
     {
         $this->NotifMenuId = $NotifMenuId;
 
-
-        $this->broadcastVia('pusher_5');
-
+        // Optional: Add logging for debugging
         \Log::info('NotifMenuEvent constructed', [
             'NotifMenuId' => $NotifMenuId
         ]);
-
     }
 
     public function broadcastOn()
@@ -42,23 +35,18 @@ class NotifMenuEvent implements ShouldBroadcastNow  // CHANGE THIS INTERFACE
         return new Channel('NotifMenu');
     }
 
-
     // Optional but recommended: Add broadcastAs method
-
     public function broadcastAs()
     {
         return 'NotifMenuEvent';
     }
 
-
     // Optional: Add data to broadcast
-
     public function broadcastWith()
     {
         return [
             'NotifMenuId' => $this->NotifMenuId,
-            'timestamp' => now()->toDateTimeString()
+            'timestamp' => now()->toISOString()
         ];
     }
 }
-
