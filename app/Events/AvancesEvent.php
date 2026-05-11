@@ -38,6 +38,7 @@ class AvancesEvent implements ShouldBroadcast
         return 'AvancesEvent';
     }
 
+    
     public function broadcastWith()
     {
         return [
