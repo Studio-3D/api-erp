@@ -3,41 +3,30 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;  // CHANGE THIS
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class AvancesEvent implements ShouldBroadcastNow  // CHANGE THIS
+class AvancesEvent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
+   // public $avanceData;
     public $reservationId;
     public $userId;
 
-    public function __construct($reservationId, $userId = null)
+    public function __construct($reservationId,$userId=null)
     {
         $this->reservationId = $reservationId;
         $this->userId = $userId;
+               config(['broadcasting.default' => 'pusher_7']);
 
-        // Remove the config line below - it's not needed with broadcastConnection()
-        // config(['broadcasting.default' => 'pusher_7']);
-
-        // Optional: Add logging for debugging
-        \Log::info('AvancesEvent constructed', [
-            'reservationId' => $reservationId,
-            'userId' => $userId
-        ]);
     }
 
     public function broadcastOn()
     {
-        \Log::info('AvancesEvent broadcastOn called', [
-            'reservationId' => $this->reservationId,
-            'userId' => $this->userId
-        ]);
-
         // Broadcast to reservation-specific channel
-        if ($this->userId) {
+       if ($this->userId) {
             // User-specific channel
             return new Channel("res-show-user-{$this->userId}");
         } else {
@@ -59,6 +48,7 @@ class AvancesEvent implements ShouldBroadcastNow  // CHANGE THIS
 
     public function broadcastWith()
     {
+        // Fix: Access specific array elements, not the entire array
         return [
             'reservationId' => $this->reservationId,
             'userId' => $this->userId,

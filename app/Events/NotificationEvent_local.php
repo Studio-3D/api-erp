@@ -4,11 +4,11 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;  // CHANGE THIS
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NotificationEvent implements ShouldBroadcastNow  // CHANGE THIS
+class NotificationEvent implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
@@ -17,11 +17,6 @@ class NotificationEvent implements ShouldBroadcastNow  // CHANGE THIS
     public function __construct($NotificationId)
     {
         $this->NotificationId = $NotificationId;
-
-        // Optional: Add logging for debugging
-        \Log::info('NotificationEvent constructed', [
-            'NotificationId' => $NotificationId
-        ]);
     }
 
     /**
@@ -29,11 +24,6 @@ class NotificationEvent implements ShouldBroadcastNow  // CHANGE THIS
      */
     public function broadcastOn(): Channel
     {
-        \Log::info('NotificationEvent broadcastOn called', [
-            'channel' => 'Notifications',
-            'NotificationId' => $this->NotificationId
-        ]);
-
         return new Channel('Notifications');
     }
 
@@ -52,7 +42,6 @@ class NotificationEvent implements ShouldBroadcastNow  // CHANGE THIS
     {
         return [
             'NotificationId' => $this->NotificationId,
-            'timestamp' => now()->toISOString()  // Added timestamp for better tracking
         ];
     }
 }
