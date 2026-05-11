@@ -5,11 +5,11 @@ namespace App\Events;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithBroadcasting;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;  // CHANGE THIS
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class Rendez_vous_Prop implements ShouldBroadcast
+class Rendez_vous_Prop implements ShouldBroadcastNow  // CHANGE THIS
 {
     use Dispatchable, InteractsWithSockets, InteractsWithBroadcasting, SerializesModels;
 
@@ -25,11 +25,26 @@ class Rendez_vous_Prop implements ShouldBroadcast
         $this->userId = $userId;
         $this->reservationId = $reservationId;
 
+
         $this->broadcastVia('pusher_6');
+
+        // Optional: Add logging for debugging
+        \Log::info('Rendez_vous_Prop event constructed', [
+            'newDate' => $newDate,
+            'oldDate' => $oldDate,
+            'userId' => $userId,
+            'reservationId' => $reservationId,
+            'connection' => 'pusher_6'
+        ]);
+
     }
 
     public function broadcastOn()
     {
+        \Log::info('Rendez_vous_Prop broadcastOn called', [
+            'channel' => 'rdv-updates'
+        ]);
+
         return new Channel('rdv-updates');
     }
 
@@ -45,6 +60,10 @@ class Rendez_vous_Prop implements ShouldBroadcast
             'oldDate' => $this->oldDate,
             'userId' => $this->userId,
             'reservationId' => $this->reservationId,
+<<<<<<< HEAD
+=======
+            'timestamp' => now()->toISOString()  // Added timestamp for better tracking
+>>>>>>> 8fb3d2b7e82dc4c416c603bc70ffa3b4bb6d1320
         ];
     }
 }

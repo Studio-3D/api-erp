@@ -5,11 +5,11 @@ namespace App\Events;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithBroadcasting;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;  // CHANGE THIS LINE
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class AttestationVenteEvent implements ShouldBroadcast
+class AttestationVenteEvent implements ShouldBroadcastNow  // CHANGE THIS INTERFACE
 {
     use Dispatchable, InteractsWithSockets, InteractsWithBroadcasting, SerializesModels;
 
@@ -19,11 +19,26 @@ class AttestationVenteEvent implements ShouldBroadcast
     {
         $this->reservationId = $reservationId;
 
+
         $this->broadcastVia('pusher_9');
+
+        // Log the event creation (optional but helpful for debugging)
+        \Log::info('AttestationVenteEvent constructed', [
+            'reservationId' => $reservationId,
+            'connection' => 'pusher_9'
+        ]);
+
     }
 
     public function broadcastOn()
     {
+
+        \Log::info('AttestationVenteEvent broadcastOn called', [
+            'channel' => 'attestation-vente-updates-' . $this->reservationId
+        ]);
+
+        // Broadcast to reservation-specific channel
+
         return new Channel('attestation-vente-updates-' . $this->reservationId);
     }
 
