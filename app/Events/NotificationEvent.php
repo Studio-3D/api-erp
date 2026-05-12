@@ -7,16 +7,20 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;  // CHANGE THIS
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-
+use Illuminate\Broadcasting\InteractsWithBroadcasting;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Broadcasting\PrivateChannel;
 class NotificationEvent implements ShouldBroadcastNow  // CHANGE THIS
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable, InteractsWithSockets, InteractsWithBroadcasting, SerializesModels;
 
     public $NotificationId;
 
     public function __construct($NotificationId)
     {
         $this->NotificationId = $NotificationId;
+        $this->broadcastVia('pusher_3');
 
         // Optional: Add logging for debugging
         \Log::info('NotificationEvent constructed', [
@@ -56,8 +60,5 @@ class NotificationEvent implements ShouldBroadcastNow  // CHANGE THIS
             'timestamp' => now()->toISOString()  // Added timestamp for better tracking
         ];
     }
-      public function broadcastConnection()
-            {
-                return 'pusher_3'; // Use the connection that works on AWS
-            }
+
 }

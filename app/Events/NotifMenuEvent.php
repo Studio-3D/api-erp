@@ -3,16 +3,20 @@
 namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
+use Illuminate\Broadcasting\InteractsWithBroadcasting;
 use Illuminate\Broadcasting\InteractsWithSockets;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;  // CHANGE THIS
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;  // CHANGE THIS LINE
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class NotifMenuEvent implements ShouldBroadcastNow  // CHANGE THIS
+class NotifMenuEvent implements ShouldBroadcastNow  // CHANGE THIS INTERFACE
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    use Dispatchable, InteractsWithSockets, InteractsWithBroadcasting, SerializesModels;
+
 
     public $NotifMenuId;
 
@@ -20,10 +24,13 @@ class NotifMenuEvent implements ShouldBroadcastNow  // CHANGE THIS
     {
         $this->NotifMenuId = $NotifMenuId;
 
-        // Optional: Add logging for debugging
+
+        $this->broadcastVia('pusher_5');
+
         \Log::info('NotifMenuEvent constructed', [
             'NotifMenuId' => $NotifMenuId
         ]);
+
     }
 
     public function broadcastOn()
@@ -32,12 +39,25 @@ class NotifMenuEvent implements ShouldBroadcastNow  // CHANGE THIS
             'channel' => 'NotifMenu'
         ]);
 
-
         return new Channel('NotifMenu');
     }
-        public function broadcastConnection()
-            {
-                return 'pusher_5'; // Use the connection that works on AWS
-            }
 
+
+    // Optional but recommended: Add broadcastAs method
+
+    public function broadcastAs()
+    {
+        return 'NotifMenuEvent';
+    }
+
+
+    // Optional: Add data to broadcast
+
+    public function broadcastWith()
+    {
+        return [
+            'NotifMenuId' => $this->NotifMenuId,
+            'timestamp' => now()->toDateTimeString()
+        ];
+    }
 }
