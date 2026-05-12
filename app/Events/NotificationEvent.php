@@ -55,4 +55,8 @@ class NotificationEvent implements ShouldBroadcastNow  // CHANGE THIS
             'timestamp' => now()->toISOString()  // Added timestamp for better tracking
         ];
     }
+      public function broadcastConnection()
+            {
+                return 'pusher_3'; // Use the connection that works on AWS
+            }
 }

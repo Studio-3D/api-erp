@@ -47,4 +47,9 @@ class NewSocieteEvent implements ShouldBroadcastNow  // CHANGE THIS
             'timestamp' => now()->toISOString()
         ];
     }
+     public function broadcastConnection()
+    {
+        return 'pusher_1';
+    }
 }
+

@@ -44,23 +44,6 @@ class PropositionUpdated implements ShouldBroadcastNow  // CHANGE THIS INTERFACE
     }
 
 
-    // Optional but recommended: Add broadcastAs method
 
-    public function broadcastAs()
-    {
-        return 'PropositionUpdated';
-    }
-
-    // Optional: Add data to broadcast
-
-    public function broadcastWith()
-    {
-        return [
-            'bienId' => $this->bienId,
-            'userId' => $this->userId,
-
-            'timestamp' => now()->toDateTimeString()
-        ];
-    }
 }
 

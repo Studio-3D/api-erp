@@ -34,19 +34,9 @@ class NotifMenuEvent implements ShouldBroadcastNow  // CHANGE THIS
 
         return new Channel('NotifMenu');
     }
+        public function broadcastConnection()
+            {
+                return 'pusher_5'; // Use the connection that works on AWS
+            }
 
-    // Optional but recommended: Add broadcastAs method
-    public function broadcastAs()
-    {
-        return 'NotifMenuEvent';
-    }
-
-    // Optional: Add data to broadcast
-    public function broadcastWith()
-    {
-        return [
-            'NotifMenuId' => $this->NotifMenuId,
-            'timestamp' => now()->toISOString()
-        ];
-    }
 }
