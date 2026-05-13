@@ -4,33 +4,25 @@ namespace App\Events;
 
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;  // CHANGE THIS
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Broadcasting\InteractsWithBroadcasting;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel;
-class NotificationEvent implements ShouldBroadcastNow  // CHANGE THIS
+
+class NotificationEvent implements ShouldBroadcastNow
 {
-    use Dispatchable, InteractsWithSockets, InteractsWithBroadcasting, SerializesModels;
+    use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $NotificationId;
 
     public function __construct($NotificationId)
     {
         $this->NotificationId = $NotificationId;
-        $this->broadcastVia('pusher_3');
 
-        // Optional: Add logging for debugging
         \Log::info('NotificationEvent constructed', [
             'NotificationId' => $NotificationId
         ]);
     }
 
-    /**
-     * Channel diffusé
-     */
     public function broadcastOn(): Channel
     {
         \Log::info('NotificationEvent broadcastOn called', [
@@ -41,24 +33,22 @@ class NotificationEvent implements ShouldBroadcastNow  // CHANGE THIS
         return new Channel('Notifications');
     }
 
-    /**
-     * Nom exact de l'event côté frontend
-     */
     public function broadcastAs(): string
     {
         return 'NotificationEvent';
     }
 
-    /**
-     *
-     * Données envoyées au frontend
-     */
     public function broadcastWith(): array
     {
         return [
             'NotificationId' => $this->NotificationId,
-            'timestamp' => now()->toISOString()  // Added timestamp for better tracking
+            'timestamp' => now()->toISOString()
         ];
     }
 
+    // This is the CORRECT way to specify the connection
+    public function broadcastConnection()
+    {
+        return 'pusher_notify';
+    }
 }

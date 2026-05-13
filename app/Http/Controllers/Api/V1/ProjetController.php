@@ -40,7 +40,7 @@ class ProjetController extends Controller
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            Config::set('broadcasting.default', 'pusher_2');
+            //Config::set('broadcasting.default', 'pusher_2');
             $projets = Projet::on('temp')->with('typesBien')->orderBy('created_at', 'asc')->get();
             // broadcast(new NewProjectEvent($projets->id));
             return response()->json(['projets' => $projets]);
@@ -48,7 +48,7 @@ class ProjetController extends Controller
             DatabaseHelper::Config();
             $id_auth = Auth::guard('api')->user()->id;
             $user_id = User::on('temp')->where('user_id_origin', $id_auth)->pluck('id');
-            Config::set('broadcasting.default', 'pusher_2');
+            ////Config::set('broadcasting.default', 'pusher_2');
             $projets = Projet::on('temp')->with('typesBien')
                 ->join('user_projets', 'user_projets.projet_id', '=', 'projets.id')
                 ->where('user_projets.user_id', $user_id)
@@ -186,7 +186,7 @@ class ProjetController extends Controller
     {
         if (RoleHelper::AdminSup()) {
             DatabaseHelper::Config();
-            Config::set('broadcasting.default', 'pusher_2');
+            //Config::set('broadcasting.default', 'pusher_2');
 
             $projet = new Projet();
             $projet->setConnection('temp');
@@ -260,7 +260,7 @@ class ProjetController extends Controller
                                 UserProjetHelper::createUserProjet($projet->id, $userId);
                             }
                         }
-                        broadcast(new NewProjectEvent($projet->id));
+                        ////broadcast(new NewProjectEvent($projet->id));
                         return response()->json(['projet' => $projet], 200);
                     }
                 }
@@ -306,7 +306,7 @@ class ProjetController extends Controller
 {
     if (RoleHelper::AdminSup()) {
         DatabaseHelper::Config();
-        Config::set('broadcasting.default', 'pusher_2');
+        //Config::set('broadcasting.default', 'pusher_2');
 
         $projet = Projet::on('temp')->findOrfail($id);
         $projet->nom = $request->nom;
@@ -339,7 +339,7 @@ class ProjetController extends Controller
                 }
             }
 
-            broadcast(new NewProjectEvent($projet->id));
+           /* ////broadcast(new NewProjectEvent($projet->id));
 
             // Decode the data
             $dataArray_donneesTypeBien = json_decode($request->input('donneesTypeBien', '[]'), true);
@@ -411,7 +411,7 @@ class ProjetController extends Controller
                 foreach ($dataArray_partenaires as $partenaire) {
                     PartenaireController::AjouterPartenaire($partenaire, $projet->id);
                 }
-            }
+            }*/
 
             return response()->json(['message' => 'Projet updated successfully', 'projet' => $projet], 200);
         }
@@ -433,7 +433,7 @@ class ProjetController extends Controller
         }
 
         DatabaseHelper::Config();
-        Config::set('broadcasting.default', 'pusher_2');
+       // Config::set('broadcasting.default', 'pusher_2');
 
         $projet = Projet::on('temp')->findOrFail($id);
         $projet->setConnection('temp');

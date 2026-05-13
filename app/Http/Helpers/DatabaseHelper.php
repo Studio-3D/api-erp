@@ -1368,7 +1368,7 @@ private static function sendWhatsAppToUserAppel($user, $relanceUserIds, $rdvUser
 
                                 \Log::info("Import {$imp->id} completed: {$importResult['success']} success, {$importResult['errors']} errors");
 
-                                Config::set('broadcasting.default', 'pusher_3');
+                                Config::set('broadcasting.default', 'pusher_notify');
                                 $imp->load('user');
                                     // Déterminer le type d'import pour le message
                                     $importTypeLabel = ($imp->type == 3) ? "des Prospects" : "des Biens";
@@ -1408,7 +1408,7 @@ private static function sendWhatsAppToUserAppel($user, $relanceUserIds, $rdvUser
                             \Log::error("Import failed for projet {$imp->projet_id}: " . $e->getMessage());
 
                             // Envoyer notification d'échec
-                            Config::set('broadcasting.default', 'pusher_3');
+                            Config::set('broadcasting.default', 'pusher_notify');
                             $imp->load('user');
 
                             $data_notif = [
@@ -1493,7 +1493,7 @@ private static function sendWhatsAppToUserAppel($user, $relanceUserIds, $rdvUser
                             $imp->save();
 
                             // Send notification
-                            Config::set('broadcasting.default', 'pusher_3');
+                            Config::set('broadcasting.default', 'pusher_notify');
                             $imp->load('user');
 
                             if($imp->statut == '2') {
@@ -1540,7 +1540,7 @@ private static function sendWhatsAppToUserAppel($user, $relanceUserIds, $rdvUser
                             \Log::error("Import failed for projet {$imp->projet_id}: " . $e->getMessage());
 
                             // Send notification for failed import
-                            Config::set('broadcasting.default', 'pusher_3');
+                            Config::set('broadcasting.default', 'pusher_notify');
                             $imp->load('user');
 
                             $data_notif = [
@@ -1567,7 +1567,7 @@ private static function sendWhatsAppToUserAppel($user, $relanceUserIds, $rdvUser
 
         public static function liberer_bien_pre_reserve($databases)
         {
-            Config::set('broadcasting.default', 'pusher_3');
+            Config::set('broadcasting.default', 'pusher_notify');
 
             foreach ($databases as $database) {
                 $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;

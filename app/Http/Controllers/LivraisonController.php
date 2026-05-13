@@ -170,7 +170,7 @@ public function store_rdv_reservation($id, Request $request)
 
         });
                 //actualiser avances
-                Config::set('broadcasting.default', 'pusher_8');
+                Config::set('broadcasting.default', 'pusher_list');
                 // Broadcast event to all users subscribed to this reservation
                 broadcast(new RdvEvent($id));
                   // send notif to notaire
@@ -188,7 +188,7 @@ public function store_rdv_reservation($id, Request $request)
                             'bien_id' => $res->bien_id,
                             'role' => RoleEnum::NOTAIRE->value,
                             ];
-                            Config::set('broadcasting.default', 'pusher_3');
+                            Config::set('broadcasting.default', 'pusher_notify');
                             $notif_helper = new NotificationHelper();
                             $notif_helper->storeNotification($request->merge($data_notif));
                             broadcast(new NotificationEvent($id));
@@ -429,7 +429,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
                     $notification = Notification::on('temp')->where('reservation_id', $rdv->reservation_id)->where('type', 22)->orderBy('created_at', 'DESC')->first();
                     if ($notification != null) {
                         $notification->delete();
-                        Config::set('broadcasting.default', 'pusher_5');
+                        Config::set('broadcasting.default', 'pusher_notify');
                         //6 MODification rdv
                         broadcast(new NotifMenuEvent(6));
                         //store new notification a validé
@@ -442,7 +442,6 @@ public function updateReservationCreneau($reservation_id, Request $request)
                             'reservation_id' => $rdv->reservation_id,
                             'role' => RoleEnum::ADMIN->value,
                         ];
-                        Config::set('broadcasting.default', 'pusher_3');
                         $notif_helper = new NotificationHelper();
                         $notif_helper->storeNotification($request->merge($data_notif));
                         broadcast(new NotificationEvent($id));
@@ -516,7 +515,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
                     }
                 }
                   //actualiser avances
-                Config::set('broadcasting.default', 'pusher_8');
+                Config::set('broadcasting.default', 'pusher_list');
                 // Broadcast event to all users subscribed to this reservation
                 broadcast(new RdvEvent($res_id));
             }
@@ -543,7 +542,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
             if ($rdv->save()) {
                /*** if ($request->statut == 2) {
                     //store new notification validé
-                    Config::set('broadcasting.default', 'pusher_3');
+                    Config::set('broadcasting.default', 'pusher_notify');
                     $data_notif = [
                         'lien' => '/ventes/reservations/' . $rdv->reservation_id,
                         'date' => Carbon::now(),
@@ -558,13 +557,13 @@ public function updateReservationCreneau($reservation_id, Request $request)
                     $notif_helper->storeNotification($request->merge($data_notif));
 
                     broadcast(new NotificationEvent($id));
-                    Config::set('broadcasting.default', 'pusher_5');
+                    Config::set('broadcasting.default', 'pusher_notify');
                     //6 rdv notaire
                     broadcast(new NotifMenuEvent(6));
 
                 } else {
                     //store new notification rejeté
-                    Config::set('broadcasting.default', 'pusher_3');
+                    Config::set('broadcasting.default', 'pusher_notify');
                     $data_notif = [
                         'lien' => '/ventes/reservations/' . $rdv->reservation_id,
                         'date' => Carbon::now(),
@@ -578,7 +577,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
                     $notif_helper = new NotificationHelper();
                     $notif_helper->storeNotification($request->merge($data_notif));
                     broadcast(new NotificationEvent($id));
-                    Config::set('broadcasting.default', 'pusher_5');
+                    Config::set('broadcasting.default', 'pusher_notify');
                     //6 rdv notaire
                     broadcast(new NotifMenuEvent(6));
 
@@ -634,7 +633,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
 
                 if ($comp->date_echeance != null) {
                     //msg compromis bientot s'exprimer
-                    Config::set('broadcasting.default', 'pusher_3');
+                    Config::set('broadcasting.default', 'pusher_notify');
 
                     $data_notif = [
                         'lien' => '/ventes/reservations/' . $id,
@@ -672,7 +671,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
                  //pusher attestation de vente
 
                        /* //actualiser compromise de reservation
-                    Config::set('broadcasting.default', 'pusher_9');
+                    Config::set('broadcasting.default', 'pusher_document');
                     // Broadcast event to all users subscribed to this reservation
                     broadcast(new AttestationVenteEvent($id));*/
                 return response()->json(['comp_id' => $comp->id], 200);
@@ -760,7 +759,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
                 $xx = $this->store_compromis_vente($comp->reservation_id, $request->merge($data));
                 $comp->delete();
                 /* // Set the correct broadcasting connection for comporomis de vente
-                config(['broadcasting.default' => 'pusher_9']);
+                config(['broadcasting.default' => 'pusher_document']);
                 // Broadcast event
                 broadcast(new AttestationVenteEvent($comp->reservation_id));*/
                 return response()->json($xx);
@@ -785,7 +784,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
                     $notification->delete();
                     }
                     //msg compromis bientot s'exprimer
-                    Config::set('broadcasting.default', 'pusher_3');
+                    Config::set('broadcasting.default', 'pusher_notify');
 
                     $data_notif = [
                     'lien' => '/reservations/show/'.$id,
@@ -801,7 +800,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
                     $notif_helper->storeNotification($request->merge($data_notif));
                     broadcast(new NotificationEvent($comp->id));
                     }*/
-                   /* config(['broadcasting.default' => 'pusher_9']);
+                   /* config(['broadcasting.default' => 'pusher_document']);
                     // Broadcast event
                     broadcast(new AttestationVenteEvent($comp->reservation_id));*/
                     return response()->json(['comp_id' => $comp->id], 200);
@@ -899,7 +898,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
                     $histo->save();
 
                     // Broadcast event
-                    Config::set('broadcasting.default', 'pusher_9');
+                    Config::set('broadcasting.default', 'pusher_document');
                     broadcast(new AttestationVenteEvent($comp->reservation_id));
 
                     if (!$comp->save()) {
@@ -961,7 +960,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
             }
             if ($cont->save()) {
                  /*/actualiser contrat de vente
-                    Config::set('broadcasting.default', 'pusher_10');
+                    Config::set('broadcasting.default', 'pusher_document');
                     // Broadcast event to all users subscribed to this reservation
                     broadcast(new ContratVenteEvent($id));*/
                 return response()->json(['contrat' => $cont], 200);
@@ -1022,7 +1021,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
             $comp->user_id = $userAuth->value('id');
             if ($comp->save()) {
        /*//actualiser contrat de vente
-                    Config::set('broadcasting.default', 'pusher_10');
+                    Config::set('broadcasting.default', 'pusher_document');
                     // Broadcast event to all users subscribed to this reservation
                     broadcast(new ContratVenteEvent($comp->reservation_id));*/
                 return response()->json(['contrar_id' => $comp->id], 200);
@@ -1066,7 +1065,7 @@ public function updateReservationCreneau($reservation_id, Request $request)
                     $histo->description = null;
                     $histo->save();
                 //actualiser contrat de vente
-                    Config::set('broadcasting.default', 'pusher_10');
+                    Config::set('broadcasting.default', 'pusher_document');
                     // Broadcast event to all users subscribed to this reservation
                     broadcast(new ContratVenteEvent($comp->reservation_id));
                 if (!$comp->save()) {

@@ -469,7 +469,7 @@ class AvanceController extends Controller
                 $st_av->date_validation = Carbon::now();
                 $st_av->save();
 
-                Config::set('broadcasting.default', 'pusher_7');
+                Config::set('broadcasting.default', 'pusher_list');
                 $reservationId = $avance->reservation_id;
                 $projet_id= $avance->reservation->projet_id;
                 // Broadcast event to all users subscribed to this reservation
@@ -491,14 +491,14 @@ class AvanceController extends Controller
             if ($request->etat == 1) {
 
                 //2 traitement avance
-                Config::set('broadcasting.default', 'pusher_5');
+                Config::set('broadcasting.default', 'pusher_notify');
                 broadcast(new NotifMenuEvent(2));
                 if($avance->echeance<=Carbon::now()){
                     //5 echeances
                     broadcast(new NotifMenuEvent(5));
                 }
                 if ($avance->user->role == RoleEnum::COMMERCIAL->value) {
-                    Config::set('broadcasting.default', 'pusher_3');
+                    Config::set('broadcasting.default', 'pusher_notify');
 
                     $data_notif = [
                         'lien' => '/ventes/reservations/' . $avance->reservation_id,
@@ -548,12 +548,12 @@ class AvanceController extends Controller
 
             } else {
                 //2 traitement avance
-                Config::set('broadcasting.default', 'pusher_5');
+                Config::set('broadcasting.default', 'pusher_notify');
                 broadcast(new NotifMenuEvent(2));
                 if ($avance->user->role == RoleEnum::COMMERCIAL->value) {
 
                     //store new notification rejeté
-                    Config::set('broadcasting.default', 'pusher_3');
+                    //Config::set('broadcasting.default', 'pusher_notify');
                     $data_notif = [
                         'lien' => '/ventes/reservations/' . $avance->reservation_id,
                         'date' => Carbon::now(),
@@ -744,7 +744,7 @@ class AvanceController extends Controller
                                     }
                         //send notification d'echeance
                         if ($avance->echeance != null) {
-                            Config::set('broadcasting.default', 'pusher_3');
+                            Config::set('broadcasting.default', 'pusher_notify');
                             $data_notif = [
                                 'lien' => '/ventes/reservations/'.$avance->reservation_id,
                                 'date' => $avance->echeance,
@@ -761,7 +761,6 @@ class AvanceController extends Controller
                             $notif_helper->storeNotification($request->merge($data_notif));
                             broadcast(new NotificationEvent(0));
                             if($avance->echeance<=Carbon::now()){
-                                Config::set('broadcasting.default', 'pusher_5');
                                 //5 echeances
                                 broadcast(new NotifMenuEvent(5));
                             }
@@ -821,7 +820,7 @@ class AvanceController extends Controller
                             }
 
                             // Create notifications for each admin and comptable user
-                            Config::set('broadcasting.default', 'pusher_3');
+                            Config::set('broadcasting.default', 'pusher_notify');
 
                             foreach($admins as $admin) {
                                 // Set role based on user type
@@ -852,7 +851,7 @@ class AvanceController extends Controller
                                 broadcast(new NotificationEvent($admin->user_id_origin));
                             }
 
-                            Config::set('broadcasting.default', 'pusher_5');
+                            Config::set('broadcasting.default', 'pusher_notify');
                             //2 traitement avance (update menu counter for pending validations)
                             broadcast(new NotifMenuEvent(2));
                         }
@@ -930,7 +929,7 @@ class AvanceController extends Controller
                         }
                     }
                         //actualiser avances
-                        Config::set('broadcasting.default', 'pusher_7');
+                        Config::set('broadcasting.default', 'pusher_list');
                         $reservationId = $request->reservation_id;
 
                         // Broadcast event to all users subscribed to this reservation
@@ -949,7 +948,7 @@ class AvanceController extends Controller
 
 
                         //actualiser menu validation avance
-                        Config::set('broadcasting.default', 'pusher_5');
+                        Config::set('broadcasting.default', 'pusher_notify');
                         broadcast(new NotifMenuEvent(2));
 
                     return response()->json(['avance' => $avance], 200);
@@ -1397,7 +1396,7 @@ class AvanceController extends Controller
                         }
                     }
                     //notif echeance
-                    Config::set('broadcasting.default', 'pusher_3');
+                    Config::set('broadcasting.default', 'pusher_notify');
                     if ($avance->echeance != null) {
                         $data_notif = [
                             'lien' => '/ventes/reservations/' . $avance->reservation_id,
@@ -1415,7 +1414,6 @@ class AvanceController extends Controller
                         $notif_helper->storeNotification($request->merge($data_notif));
                         broadcast(new NotificationEvent($id));
                         if($avance->echeance<=Carbon::now()){
-                            Config::set('broadcasting.default', 'pusher_5');
                             broadcast(new NotifMenuEvent(5));
                         }
 
@@ -1469,7 +1467,7 @@ class AvanceController extends Controller
                                 }
 
                                 // Create notifications for each admin and comptable user
-                                Config::set('broadcasting.default', 'pusher_3');
+                                Config::set('broadcasting.default', 'pusher_notify');
 
                                 foreach($admins as $admin) {
                                     // Set role based on user type
@@ -1499,15 +1497,13 @@ class AvanceController extends Controller
                                     // Broadcast to specific user's channel
                                     broadcast(new NotificationEvent($admin->user_id_origin));
                                 }
-
-                                Config::set('broadcasting.default', 'pusher_5');
                                 //2 traitement avance (update menu counter for pending validations)
                                 broadcast(new NotifMenuEvent(2));
                             }
                       //  }
 
                             //actualiser avances
-                         Config::set('broadcasting.default', 'pusher_7');
+                         Config::set('broadcasting.default', 'pusher_list');
                             $reservationId = $request->reservation_id;
                             // Broadcast event to all users subscribed to this reservation
                             broadcast(new AvancesEvent($reservationId,null));
@@ -1577,7 +1573,7 @@ class AvanceController extends Controller
             $notif->destory_force_by_column_id('avance', $id);
 
             if ($avance->forceDelete()) {
-            Config::set('broadcasting.default', 'pusher_7');
+            Config::set('broadcasting.default', 'pusher_list');
                 $reservationId = $avance->reservation_id;
                 // Broadcast event to all users subscribed to this reservation
                 broadcast(new AvancesEvent($reservationId,null));

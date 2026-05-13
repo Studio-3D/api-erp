@@ -362,7 +362,7 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
     {
 
         $user = Auth::user();
-        Config::set('broadcasting.default', 'pusher_3');
+        Config::set('broadcasting.default', 'pusher_notify');
         if (RoleHelper::ACSup_RC()) {
             DatabaseHelper::Config();
             DB::connection('temp')->beginTransaction();
@@ -857,6 +857,7 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
                        // $fiche->save();
                         if ($fiche->save()) {
                           if (RoleHelper::Com()||RoleHelper::RespoCommercial()) {
+                             Config::set('broadcasting.default', 'pusher_notify');
 
                                 //notification to admin de valider penalite
                                 $data_notif = [
@@ -874,7 +875,6 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
                                 broadcast(new NotificationEvent($pen->id));
 
                                 // Configuration broadcasting pour notification menu
-                                Config::set('broadcasting.default', 'pusher_5');
                                 broadcast(new NotifMenuEvent(22));
 
                                 //send mail to admin pour validation pénalité
@@ -1681,11 +1681,10 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
                     }
 
                 } else {
-                    Config::set('broadcasting.default', 'pusher_5');
+                    Config::set('broadcasting.default', 'pusher_notify');
                     //6 dst att validation
                     broadcast(new NotifMenuEvent(6));
                     //notif to admin pour valider desistement
-                    Config::set('broadcasting.default', 'pusher_3');
                     $data_notif = [
                         'lien' => '/ventes/desistements/show/' . $desistement->id,
                         'date' => Carbon::now(),
@@ -2190,7 +2189,7 @@ private function createStatutClientForDesistement($desistementId, $userAuth, $aq
     public function show($id)
     {
         if (Auth::guard('api')->check()) {
-            Config::set('broadcasting.default', 'pusher_3');
+            Config::set('broadcasting.default', 'pusher_notify');
             DatabaseHelper::Config();
             $desistement = Desistement::on('temp')->with('aquereurs_desisteurs', 'aquereurs_non_desisteurs', 'aquereurs_profits', 'remboursement', 'nouvel_aquereurs_desistements', 'aquereurs_partiel', 'Bien_nouveau', 'banque', 'penalite_desistement', 'Piece_jointes', 'Avance', 'Piece_jointes_des_montant_a_ajouter')->findOrFail($id);
             $reservation_ancien = Reservation::on('temp')->findorfail($desistement->reservation_id);
@@ -2992,11 +2991,10 @@ public function validation_desitement($id,Request $request){
 
                     if( $desistement->save()){
                           DB::connection('temp')->commit();
-                        Config::set('broadcasting.default', 'pusher_5');
+                        Config::set('broadcasting.default', 'pusher_notify');
                         //6 dst att validation
                         broadcast(new NotifMenuEvent(6));
                             //desistement validé
-                            Config::set('broadcasting.default', 'pusher_3');
                             $data_notif = [
                                 'lien' => '/ventes/desistements/show/'.$desistement->id,
                                 'date' => Carbon::now(),
@@ -3062,7 +3060,7 @@ public function validation_desitement($id,Request $request){
                                     }
 
                                     // Create notifications for each admin and comptable user
-                                    Config::set('broadcasting.default', 'pusher_3');
+                                    Config::set('broadcasting.default', 'pusher_notify');
 
                                     foreach($admins as $admin) {
                                         // Set role based on user type
@@ -3094,7 +3092,6 @@ public function validation_desitement($id,Request $request){
                                     }
 
                                     // Configuration broadcasting pour notification menu
-                                    Config::set('broadcasting.default', 'pusher_5');
                                     broadcast(new NotifMenuEvent(22));
                                 }
                             }
@@ -3117,11 +3114,10 @@ public function validation_desitement($id,Request $request){
 
                 if($desistement->save()){
                      DB::connection('temp')->commit();
-                    Config::set('broadcasting.default', 'pusher_5');
+                    Config::set('broadcasting.default', 'pusher_notify');
                     //6 dst att validation
                     broadcast(new NotifMenuEvent(6));
                      //desistement rejete
-                     Config::set('broadcasting.default', 'pusher_3');
                      $data_notif = [
                         'lien' => '/ventes/desistements/corriger_desistement/'.$desistement->id,
                         'date' => Carbon::now(),
@@ -3490,7 +3486,7 @@ public function validation_desitement($id,Request $request){
     {
 
         $user = Auth::user();
-        Config::set('broadcasting.default', 'pusher_3');
+        Config::set('broadcasting.default', 'pusher_notify');
         if (RoleHelper::AC()||RoleHelper::RespoCommercial()) {
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -3668,7 +3664,7 @@ public function validation_desitement($id,Request $request){
                         }
 
                         // Create notifications for each admin and comptable user
-                        Config::set('broadcasting.default', 'pusher_3');
+                        Config::set('broadcasting.default', 'pusher_notify');
 
                         foreach($admins as $admin) {
                             // Set role based on user type
@@ -3700,7 +3696,6 @@ public function validation_desitement($id,Request $request){
                         }
 
                         // Configuration broadcasting pour notification menu
-                        Config::set('broadcasting.default', 'pusher_5');
                         broadcast(new NotifMenuEvent(22));
                     }
                 }
@@ -3978,11 +3973,10 @@ public function validation_desitement($id,Request $request){
                 if($request->etat==1){
                     //new statut Client
 
-                 Config::set('broadcasting.default', 'pusher_5');
+                 Config::set('broadcasting.default', 'pusher_notify');
                  //3 traitement  penalite
                  broadcast(new NotifMenuEvent(3));
                  if($penalite->desistement->user->role==RoleEnum::COMMERCIAL->value){
-                    Config::set('broadcasting.default', 'pusher_3');
                     $data_notif = [
                        'lien' => '/ventes/desistements/penalites/'.$penalite->id,
                        'date' => Carbon::now(),
@@ -4016,7 +4010,7 @@ public function validation_desitement($id,Request $request){
 
                 }else{
                         //store new notification rejeté
-                        Config::set('broadcasting.default', 'pusher_5');
+                        Config::set('broadcasting.default', 'pusher_notify');
                         //3 traitement  penalite
                         broadcast(new NotifMenuEvent(3));
                         if($penalite->desistement->user->role==RoleEnum::COMMERCIAL->value){
@@ -4033,7 +4027,6 @@ public function validation_desitement($id,Request $request){
                             $notif_helper = new NotificationHelper();
                             $notif_helper->storeNotification($request->merge($data_notif));
                             //3 traitement  penalite
-                            Config::set('broadcasting.default', 'pusher_3');
 
                             broadcast(new NotificationEvent($id));
                         }

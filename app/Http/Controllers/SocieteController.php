@@ -96,9 +96,9 @@ class SocieteController extends Controller
 
             $databaseSociete = new DatabaseHelper();
             $response = $databaseSociete->createNewClientDatabase($raison_sociale_concatene, $societe->id);
-            Config::set('broadcasting.default', 'pusher_1');
+           // Config::set('broadcasting.default', 'pusher_1');
             // $societes = Societe::all();
-            broadcast(new NewSocieteEvent($societe->id));
+            //broadcast(new NewSocieteEvent($societe->id));
             if ($response->getStatusCode() == 200) {
                 return response()->json(['message' => $response->getOriginalContent()['message']]);
             } else {
@@ -175,9 +175,9 @@ class SocieteController extends Controller
                 }
             }
 
-            Config::set('broadcasting.default', 'pusher_1');
+          //  Config::set('broadcasting.default', 'pusher_1');
             // $societes = Societe::all();
-            broadcast(new NewSocieteEvent($societe->id));
+           // broadcast(new NewSocieteEvent($societe->id));
             return response()->json(['message' => $societe], 200);
 
         } else {
@@ -198,10 +198,10 @@ class SocieteController extends Controller
             }
             if ($societe->delete()) {
 
-                Config::set('broadcasting.default', 'pusher_1');
+             //   Config::set('broadcasting.default', 'pusher_1');
                 $societes = Societe::all();
 
-                broadcast(new NewSocieteEvent($societe->id));
+             //   broadcast(new NewSocieteEvent($societe->id));
                 return response()->json(['message' => 'societe supprimé avec succes'], 200);
 
             } else {

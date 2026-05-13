@@ -36,7 +36,7 @@ class FreinBienHelper
                 $notifications_bien_count=Notification::on('temp')->where('visite_id',$frein->visite_id)->where('type',3)->count();
                 if($notifications_bien_count==0){
 
-                Config::set('broadcasting.default', 'pusher_3');
+                Config::set('broadcasting.default', 'pusher_notify');
                 $data_notif = [
                     'lien' =>  '/crm?tab=freins',
                     'date' => Carbon::now(),
@@ -53,7 +53,6 @@ class FreinBienHelper
                 $request = new \Illuminate\Http\Request();
                 $notif_helper->storeNotification($request->merge($data_notif));
                 broadcast(new NotificationEvent($frein_id));
-                    Config::set('broadcasting.default', 'pusher_5');
                          //1 traitement reservation
                 broadcast(new NotifMenuEvent('C'));
                 }

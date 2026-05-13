@@ -853,7 +853,7 @@ class Facebook_InstagramController extends Controller
             Log::info("Processing Event - Platform: $platform, Type: $type, Field: $field, Société: $societeId,pageId: $pageId");
 
             // Store event in database for the specific société
-            Config::set('broadcasting.default', 'pusher_3');
+            Config::set('broadcasting.default', 'pusher_notify');
 
             try {
                 $web = new WebhookEvent();
@@ -1079,7 +1079,7 @@ class Facebook_InstagramController extends Controller
                 $notification->save();
 
                 // Broadcast the notification
-                Config::set('broadcasting.default', 'pusher_3');
+                Config::set('broadcasting.default', 'pusher_notify');
                 broadcast(new \App\Events\NotificationEvent($notification->id));
 
                 Log::info('Facebook reaction notification created successfully', [
@@ -1617,7 +1617,7 @@ class Facebook_InstagramController extends Controller
                                 $notification->save();
 
                                 // Broadcast the notification
-                                Config::set('broadcasting.default', 'pusher_3');
+                                Config::set('broadcasting.default', 'pusher_notify');
                                 broadcast(new \App\Events\NotificationEvent($notification->id));
                                 Log::info("Asked user {$senderId} for phone number");
                             } else {

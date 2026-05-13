@@ -21,7 +21,7 @@ class WhatsAppController extends Controller
           // Log incoming messages for debugging
          Log::info('UltraMsg Webhook Received:', $request->all());
          DatabaseHelper::Config(44);
-         Config::set('broadcasting.default', 'pusher_3');
+         Config::set('broadcasting.default', 'pusher_notify');
          // Extraire les données du webhook
          $data = $request->input('data');
 

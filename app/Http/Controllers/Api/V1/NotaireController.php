@@ -86,7 +86,7 @@ public function get_notaires(Request $request, $projet_id)
                                 'bien_id' => $res->bien_id,
                                 'role' => RoleEnum::NOTAIRE->value,
                             ];
-                            Config::set('broadcasting.default', 'pusher_3');
+                            Config::set('broadcasting.default', 'pusher_notify');
                             $notif_helper = new NotificationHelper();
                             $notif_helper->storeNotification($request->merge($data_notif));
                             broadcast(new NotificationEvent($id));
@@ -490,7 +490,7 @@ public function get_notaires(Request $request, $projet_id)
                     'role' => RoleEnum::NOTAIRE->value,
                 ];
 
-                Config::set('broadcasting.default', 'pusher_3');
+                Config::set('broadcasting.default', 'pusher_notify');
                 $notif_helper = new NotificationHelper();
                 $notif_helper->storeNotification($request->merge($data_notif));
                 broadcast(new NotificationEvent($id));

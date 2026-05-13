@@ -18,12 +18,12 @@ class RdvEvent implements ShouldBroadcastNow  // CHANGE THIS
         $this->reservationId = $reservationId;
 
         // Remove the config line below - not needed with broadcastConnection()
-        // config(['broadcasting.default' => 'pusher_8']);
+        // config(['broadcasting.default' => 'pusher_list']);
 
         // Optional: Add logging for debugging
         \Log::info('RdvEvent constructed', [
             'reservationId' => $reservationId,
-            'connection' => 'pusher_8'
+            'connection' => 'pusher_list'
         ]);
     }
 
@@ -41,7 +41,7 @@ class RdvEvent implements ShouldBroadcastNow  // CHANGE THIS
     // Specify the connection to use
     public function broadcastConnection()
     {
-        return 'pusher_8';
+        return 'pusher_list';
     }
 
     public function broadcastAs()

@@ -452,7 +452,7 @@ private function processReservationFiles($reservation, $request, $societe)
 
             // Send notifications if needed
             if (RoleHelper::Com()||RoleHelper::RespoCommercial()) {
-                Config::set('broadcasting.default', 'pusher_3');
+                Config::set('broadcasting.default', 'pusher_notify');
 
                 $data_notif = [
                     'lien' => '/ventes/reservations/'.$reservation->id,
@@ -467,7 +467,6 @@ private function processReservationFiles($reservation, $request, $societe)
                 (new NotificationHelper())->storeNotification(request()->merge($data_notif));
                 broadcast(new NotificationEvent($reservation->id));
 
-                Config::set('broadcasting.default', 'pusher_5');
                 broadcast(new NotifMenuEvent(1));
 
                 //send mail to admin avec etat
@@ -1450,7 +1449,7 @@ private function getAllHistoriquesWithAncien($reservationId)
                     // Store notification to all commercial users
                     $commerciaux = User::on('temp')->where('role', 3)->get();
                     foreach ($commerciaux as $comm) {
-                        Config::set('broadcasting.default', 'pusher_3');
+                        Config::set('broadcasting.default', 'pusher_notify');
                         $data_notif = [
                             'lien' => '/ventes/reservations/' . $id,
                             'date' => Carbon::now(),
@@ -1652,7 +1651,7 @@ private function getAllHistoriquesWithAncien($reservationId)
                 $histo->action = 5;//REJET-RELANCE EN COURS
                 $histo->description = null;
                 $histo->save();
-            Config::set('broadcasting.default', 'pusher_3');
+            Config::set('broadcasting.default', 'pusher_notify');
             //notifiction to admin de valider dossier d reservation user_id=>null
             $data_notif = [
                 'lien' => '/ventes/reservations/'.$id,
@@ -1667,7 +1666,6 @@ private function getAllHistoriquesWithAncien($reservationId)
             $notif_helper = new NotificationHelper();
             $notif_helper->storeNotification($request->merge($data_notif));
             broadcast(new NotificationEvent($reservation->id));
-            Config::set('broadcasting.default', 'pusher_5');
             //1 traitement reservation
             broadcast(new NotifMenuEvent(1));
             return response()->json(['message' => 'reservation relancé avec succès.'], 200);
@@ -2064,7 +2062,7 @@ private function getAllHistoriquesWithAncien($reservationId)
                 $histo->description = null;
                 $histo->save();
                 //store new notification validé
-                Config::set('broadcasting.default', 'pusher_3');
+                Config::set('broadcasting.default', 'pusher_notify');
                 $data_notif = [
                     'lien' => '/ventes/reservations/' . $id,
                     'date' => Carbon::now(),
@@ -2079,7 +2077,6 @@ private function getAllHistoriquesWithAncien($reservationId)
                 $notif_helper->storeNotification($request->merge($data_notif));
 
                 broadcast(new NotificationEvent($id));
-                Config::set('broadcasting.default', 'pusher_5');
                 //1 traitement reservation
                 broadcast(new NotifMenuEvent(1));
 
@@ -2095,7 +2092,7 @@ private function getAllHistoriquesWithAncien($reservationId)
                 $histo->description = null;
                 $histo->save();
 
-                Config::set('broadcasting.default', 'pusher_3');
+                Config::set('broadcasting.default', 'pusher_notify');
                 $data_notif = [
                     'lien' => '/ventes/reservations/' . $id,
                     'date' => Carbon::now(),
@@ -2109,7 +2106,6 @@ private function getAllHistoriquesWithAncien($reservationId)
                 $notif_helper = new NotificationHelper();
                 $notif_helper->storeNotification($request->merge($data_notif));
                 broadcast(new NotificationEvent($id));
-                Config::set('broadcasting.default', 'pusher_5');
                 //1 traitement reservation
                 broadcast(new NotifMenuEvent(1));
 

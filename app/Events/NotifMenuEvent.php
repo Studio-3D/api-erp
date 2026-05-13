@@ -25,7 +25,7 @@ class NotifMenuEvent implements ShouldBroadcastNow  // CHANGE THIS INTERFACE
         $this->NotifMenuId = $NotifMenuId;
 
 
-        $this->broadcastVia('pusher_5');
+        $this->broadcastVia('pusher_notify');
 
         \Log::info('NotifMenuEvent constructed', [
             'NotifMenuId' => $NotifMenuId

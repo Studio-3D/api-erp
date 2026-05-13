@@ -23,7 +23,7 @@ class AvancesEvent implements ShouldBroadcastNow  // CHANGE THIS INTERFACE
         \Log::info('AvancesEvent constructed', [
             'reservationId' => $reservationId,
             'userId' => $userId,
-            'connection' => 'pusher_7'
+            'connection' => 'pusher_list'
         ]);
     }
 
@@ -47,7 +47,7 @@ class AvancesEvent implements ShouldBroadcastNow  // CHANGE THIS INTERFACE
     // Specify the connection to use
     public function broadcastConnection()
     {
-        return 'pusher_7';
+        return 'pusher_list';
     }
 
     public function broadcastAs()

@@ -18,12 +18,11 @@ class ContratVenteEvent implements ShouldBroadcastNow  // CHANGE THIS
         $this->reservationId = $reservationId;
 
         // Remove the config line below - not needed with broadcastConnection()
-        // config(['broadcasting.default' => 'pusher_10']);
 
         // Optional: Add logging for debugging
         \Log::info('ContratVenteEvent constructed', [
             'reservationId' => $reservationId,
-            'connection' => 'pusher_10'
+            'connection' => 'pusher_document'
         ]);
     }
 
@@ -41,7 +40,7 @@ class ContratVenteEvent implements ShouldBroadcastNow  // CHANGE THIS
     // Specify the connection to use
     public function broadcastConnection()
     {
-        return 'pusher_10';
+        return 'pusher_document';
     }
 
 

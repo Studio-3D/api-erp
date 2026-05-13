@@ -24,7 +24,7 @@ public function webhook_whatsapp_business(Request $request)
       $mode = $request->query('hub_mode', $request->query('hub.mode'));
         $verifyToken = $request->query('hub_verify_token', $request->query('hub.verify_token'));
         $challenge = $request->query('hub_challenge', $request->query('hub.challenge'));
-     
+
     // Alternative method if Input facade doesn't work:
     // $mode = $request->input('hub.mode');
     // $verifyToken = $request->input('hub.verify_token');
@@ -98,7 +98,7 @@ public function webhook_whatsapp_business(Request $request)
             }
 
             DatabaseHelper::Config($societeId);
-            Config::set('broadcasting.default', 'pusher_3');
+            Config::set('broadcasting.default', 'pusher_notify');
 
             // Check if webhooks are enabled for this configuration
             $webhookEnabled = $this->isWhatsAppWebhookEnabledForPhone($phoneNumberId);

@@ -37,7 +37,7 @@ class AttestationVenteEvent implements ShouldBroadcastNow  // CHANGE THIS INTERF
     // Specify the connection to use
     public function broadcastConnection()
     {
-        return 'pusher_9';
+        return 'pusher_document';
     }
 
     public function broadcastAs()

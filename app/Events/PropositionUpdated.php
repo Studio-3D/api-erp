@@ -20,6 +20,7 @@ class PropositionUpdated implements ShouldBroadcastNow  // CHANGE THIS INTERFACE
      * @param int $bienId
      * @param int $userId
      */
+    //pusher_realtime
     public function __construct($bienId, $userId)
     {
         $this->bienId = $bienId;
