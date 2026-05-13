@@ -176,8 +176,8 @@ class SocieteController extends Controller
             }
         }
 
-        Config::set('broadcasting.default', 'pusher_1');
-        broadcast(new NewSocieteEvent($societe->id));
+        //Config::set('broadcasting.default', 'pusher_1');
+       // broadcast(new NewSocieteEvent($societe->id));
         return response()->json(['societe' => $societe], 200);
 
     } else {

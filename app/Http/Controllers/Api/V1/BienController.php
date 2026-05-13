@@ -569,7 +569,7 @@ class BienController extends Controller
     {
         if (RoleHelper::ACSup()) {
             DatabaseHelper::Config();
-            Config::set('broadcasting.default', 'pusher_4');
+            Config::set('broadcasting.default', 'pusher_realtime');
             Bien_Helper::libererBien($id, null, null,false);
             event(new PropositionUpdated($id, null));
             return response()->json('le bien est liberé');
@@ -888,11 +888,10 @@ class BienController extends Controller
                         $action = 1;
                     }
                     //notif menu demande pre remboursement
-                    Config::set('broadcasting.default', 'pusher_5');
+                    Config::set('broadcasting.default', 'pusher_notify');
                     broadcast(new NotifMenuEvent(4));
                     if ($action == 1) {
                         //to admin et commerciaux
-                        Config::set('broadcasting.default', 'pusher_3');
                         $data_notif = [
                             'lien'           => '/ventes?tab=remboursements&subtab=apres-ventes',
                             'date'           => Carbon::now(),
@@ -1109,7 +1108,7 @@ class BienController extends Controller
 {
     if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
         DatabaseHelper::Config();
-        Config::set('broadcasting.default', 'pusher_4');
+        Config::set('broadcasting.default', 'pusher_realtime');
 
         \Log::info('setPropostionBien called', [
             'bien_id' => $bien_id,

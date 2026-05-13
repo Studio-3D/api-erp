@@ -18,6 +18,7 @@ class Kernel extends ConsoleKernel
             ->everyTenMinutes()
             ->withoutOverlapping(300)
             ->runInBackground();
+         $schedule->command('app:clear-proposition-table')->everyMinute();
          $schedule->command('app:liberer_bien_pre_reserve')->everyMinute();
         $schedule->command('app:destroy_notif')->dailyAt('00:00');
         $schedule->command(command: 'emails:send-scheduled')->dailyAt('07:00'); // Exécute tous les jours à minuit

@@ -669,7 +669,6 @@ class FreinController extends Controller
                         //receptif
                         if ($request->interet == InteretEnum::Réceptif->value) {
                             if ($request->date_relance != null) {
-                              //  Config::set('broadcasting.default', 'pusher_3');
                                 $data_notif = [
                                     'lien' => '/crm/visites/' . $frein->visite->origin_id,
                                     'date' => $request->date_relance,
@@ -787,7 +786,6 @@ class FreinController extends Controller
                     else{
                             //interesse
                             if ($request->rdv != null) {
-                                //Config::set('broadcasting.default', 'pusher_3');
 
                                 $data_notif = [
                                     'lien' => '/crm/visites/' . $frein->visite->origin_id,
@@ -911,7 +909,7 @@ class FreinController extends Controller
                 }
             }
             if($exit==1){
-                Config::set('broadcasting.default', 'pusher_5');
+                Config::set('broadcasting.default', 'pusher_notify');
                 broadcast(new NotifMenuEvent('C'));
             }
 

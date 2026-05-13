@@ -126,8 +126,8 @@ class SocieteServiceDefault implements SocieteService
 
         // Émettre un événement
         try {
-            Config::set('broadcasting.default', 'pusher_1');
-            broadcast(new NewSocieteEvent($societe->id));
+           // Config::set('broadcasting.default', 'pusher_1');
+           // broadcast(new NewSocieteEvent($societe->id));
             Log::info('Broadcast event emitted', ['societe_id' => $societe->id]);
         } catch (\Exception $e) {
             Log::error('Failed to broadcast event', [

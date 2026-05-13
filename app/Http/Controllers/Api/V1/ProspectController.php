@@ -262,7 +262,7 @@ class ProspectController extends Controller
             if ($ps_statut->save()) {
                 if ($request->statut == 2) {
                     //rappel
-                    Config::set('broadcasting.default', 'pusher_3');
+                    Config::set('broadcasting.default', 'pusher_notify');
                     $data_notif = [
                         'lien'        => '/crm/prospects/' . $id,
                         'date'        => $request->date_rappel,
@@ -280,7 +280,7 @@ class ProspectController extends Controller
                 }
                 if ($request->statut == 1) {
                     //rdv
-                    Config::set('broadcasting.default', 'pusher_3');
+                    Config::set('broadcasting.default', 'pusher_notify');
                     $data_notif = [
                         'lien'        => '/crm/prospects/' . $id,
                         'date'        => $request->rdv,
@@ -999,7 +999,7 @@ class ProspectController extends Controller
         DatabaseHelper::Config();
         $user_id_origin  = User::on('temp')->find($commercialId);
         try {
-            Config::set('broadcasting.default', 'pusher_3');
+            Config::set('broadcasting.default', 'pusher_notify');
 
             $data_notif = [
                 'lien'        => '/crm/prospects/' . $prospectId,

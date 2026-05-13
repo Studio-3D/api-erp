@@ -221,7 +221,7 @@ class AppelController extends Controller
     }
     public function store_relance_rdv(Request $request){
                 DatabaseHelper::Config();
-                Config::set('broadcasting.default', 'pusher_3');
+                Config::set('broadcasting.default', 'pusher_notify');
                 if ($request->date_relance != null) {
                     $data_notif = [
                         'lien' => '/crm/appels/'.$request->appel_id,
@@ -248,7 +248,6 @@ class AppelController extends Controller
                     $relance->type_traitement=0;//0 non_traite 1//mnuelle 2// auto //3 nouvel relance_rdv
                     $relance->traite_appel_id=$request->traite_appel_id;
                     $relance->save();
-                    Config::set('broadcasting.default', 'pusher_5');
                     broadcast(new NotifMenuEvent('F'));
                 }
                 if ($request->rdv != null) {
@@ -276,7 +275,6 @@ class AppelController extends Controller
                     $rdv->type_traitement=0;//0 non_traite 1//mnuelle 2// auto //3 nouvel relance_rdv
                     $rdv->traite_appel_id=$request->traite_appel_id;
                     $rdv->save();
-                    Config::set('broadcasting.default', 'pusher_5');
                     broadcast(new NotifMenuEvent('E'));
                 }
                 return response()->json('success');
@@ -572,7 +570,7 @@ class AppelController extends Controller
                                   }
                                   //update t_appel
                                    // $this->store_relance_rdv($request->merge($data));
-                                   Config::set('broadcasting.default', 'pusher_3');
+                                   Config::set('broadcasting.default', 'pusher_notify');
                                    if ($request->date_relance != null) {
 
                                     $data_not = [
@@ -601,7 +599,6 @@ class AppelController extends Controller
                                     $relance->type_traitement=0;//0 non_traite 1//mnuelle 2// auto //3 nouvel relance_rdv
                                     $relance->traite_appel_id=$id;
                                     $relance->save();
-                                    Config::set('broadcasting.default', 'pusher_5');
                                     broadcast(new NotifMenuEvent('F'));
                                 }
                                 if ($request->rdv != null) {
@@ -629,7 +626,6 @@ class AppelController extends Controller
                                     $rdv->type_traitement=0;//0 non_traite 1//mnuelle 2// auto //3 nouvel relance_rdv
                                     $rdv->traite_appel_id=$id;
                                     $rdv->save();
-                                    Config::set('broadcasting.default', 'pusher_5');
                                     broadcast(new NotifMenuEvent('E'));
                                 }
 
@@ -1045,7 +1041,6 @@ class AppelController extends Controller
     public  function traiter_relance_rdv_appel($id,UpdateDate_relance_Rdv $request)
     {
         if(RoleHelper::ACSup()||RoleHelper::RespoCommercial()) {
-           // Config::set('broadcasting.default', 'pusher_5');
             DatabaseHelper::Config();
             $user = Auth::user();
           //  $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -1095,7 +1090,7 @@ class AppelController extends Controller
 
                             if($relance->type==1){
                             //store new notification
-                            Config::set('broadcasting.default', 'pusher_3');
+                            Config::set('broadcasting.default', 'pusher_notify');
 
                             $data_notif = [
                                 'lien' => '/crm/appels/'.$new_relance->traite_appel->appel->id,
@@ -1112,12 +1107,11 @@ class AppelController extends Controller
                             $notif_helper = new NotificationHelper();
                             $notif_helper->storeNotification($request->merge($data_notif));
                             broadcast(new NotificationEvent($new_relance->id));
-                           Config::set('broadcasting.default', 'pusher_5');
-                             broadcast(new NotifMenuEvent('F'));
+                            broadcast(new NotifMenuEvent('F'));
                             }
                             else{
                                 //store new notification
-                                Config::set('broadcasting.default', 'pusher_3');
+                                Config::set('broadcasting.default', 'pusher_notify');
                                 $data_notif = [
                                     'lien' => '/crm/appels/'.$new_relance->traite_appel->appel->id,
                                     'date' => $request->date,
@@ -1133,7 +1127,6 @@ class AppelController extends Controller
                             $notif_helper = new NotificationHelper();
                             $notif_helper->storeNotification($request->merge($data_notif));
                             broadcast(new NotificationEvent($new_relance->id));
-                            Config::set('broadcasting.default', 'pusher_5');
                             broadcast(new NotifMenuEvent('E'));
 
                             }
@@ -1163,7 +1156,7 @@ class AppelController extends Controller
                                 }
                             }
 
-                           Config::set('broadcasting.default', 'pusher_5');
+                           Config::set('broadcasting.default', 'pusher_notify');
                            if($relance->type==1){
                             //relance
                            broadcast(new NotifMenuEvent('F'));

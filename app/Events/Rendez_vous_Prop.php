@@ -29,7 +29,7 @@ class Rendez_vous_Prop implements ShouldBroadcastNow  // CHANGE THIS
             'oldDate' => $oldDate,
             'userId' => $userId,
             'reservationId' => $reservationId,
-            'connection' => 'pusher_6'
+            'connection' => 'pusher_realtime'
         ]);
     }
 
@@ -45,7 +45,7 @@ class Rendez_vous_Prop implements ShouldBroadcastNow  // CHANGE THIS
     // Specify the connection to use
     public function broadcastConnection()
     {
-        return 'pusher_6';
+        return 'pusher_realtime';
     }
 
     public function broadcastAs()

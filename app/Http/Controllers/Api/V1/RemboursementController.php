@@ -204,8 +204,7 @@ class RemboursementController extends Controller
 
         if(RoleHelper::AdminSup()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
-           // Config::set('broadcasting.default', 'pusher_3');
-           Config::set('broadcasting.default', 'pusher_5');
+           Config::set('broadcasting.default', 'pusher_notify');
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
@@ -262,7 +261,7 @@ class RemboursementController extends Controller
     {
        if(RoleHelper::AdminSup()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
-            Config::set('broadcasting.default', 'pusher_3');
+            Config::set('broadcasting.default', 'pusher_notify');
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
             $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
@@ -383,7 +382,7 @@ class RemboursementController extends Controller
 
        if(RoleHelper::ACSup()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
-            Config::set('broadcasting.default', 'pusher_3');
+            Config::set('broadcasting.default', 'pusher_notify');
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
             if (!$userAuth) {

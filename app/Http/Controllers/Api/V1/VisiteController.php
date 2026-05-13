@@ -470,7 +470,7 @@ class VisiteController extends Controller
                     lead to visite
                     ****/
                     DatabaseHelper::Config();
-                    Config::set('broadcasting.default', 'pusher_3');
+                    Config::set('broadcasting.default', 'pusher_notify');
                     // Start database transaction
                     DB::connection('temp')->beginTransaction();
                     $avance_id=null;
@@ -1599,7 +1599,6 @@ class VisiteController extends Controller
     public static function traiter_relance_rdv_visite($id, UpdateDate_relance_Rdv $request)
     {
         if (RoleHelper::ACSup()||RoleHelper::RespoCommercial()) {
-            // Config::set('broadcasting.default', 'pusher_5');
             DatabaseHelper::Config();
             $user     = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -1642,7 +1641,7 @@ class VisiteController extends Controller
 
                     if ($relance->type == 1) {
                         //store new notification
-                        Config::set('broadcasting.default', 'pusher_3');
+                        Config::set('broadcasting.default', 'pusher_notify');
 
                         $data_notif = [
                             'lien'        => '/crm/visites/'. $new_relance->visite->origin_id,
@@ -1659,11 +1658,10 @@ class VisiteController extends Controller
                         $notif_helper = new NotificationHelper();
                         $notif_helper->storeNotification($request->merge($data_notif));
                         broadcast(new NotificationEvent($new_relance->id));
-                        Config::set('broadcasting.default', 'pusher_5');
                         broadcast(new NotifMenuEvent('A'));
                     } else {
                         //store new notification
-                        Config::set('broadcasting.default', 'pusher_3');
+                        Config::set('broadcasting.default', 'pusher_notify');
 
                         $data_notif = [
                             'lien'        => '/crm/visites/' . $new_relance->visite->origin_id,
@@ -1680,7 +1678,6 @@ class VisiteController extends Controller
                         $notif_helper = new NotificationHelper();
                         $notif_helper->storeNotification($request->merge($data_notif));
                         broadcast(new NotificationEvent($new_relance->id));
-                        Config::set('broadcasting.default', 'pusher_5');
                         broadcast(new NotifMenuEvent('B'));
 
                     }
@@ -1702,7 +1699,7 @@ class VisiteController extends Controller
                         }
                     }
                     // broadcast(new NotificationEvent($relance->id));
-                    Config::set('broadcasting.default', 'pusher_5');
+                    Config::set('broadcasting.default', 'pusher_notify');
                     if ($relance->type == 1) {
                         //relance
                         broadcast(new NotifMenuEvent('A'));
@@ -1767,7 +1764,7 @@ public function edit_visite($id)
         $user = Auth::user();
         if (RoleHelper::ACSup()||RoleHelper::RespoCommercial()) {
                 DatabaseHelper::Config();
-                Config::set('broadcasting.default', 'pusher_3');
+                Config::set('broadcasting.default', 'pusher_notify');
                      // Start database transaction
                 DB::connection('temp')->beginTransaction();
 
@@ -2446,7 +2443,7 @@ public function edit_visite($id)
     public function store_n_visite($id, Store_n_VisiteRequest $request)
     {
         DatabaseHelper::Config();
-        Config::set('broadcasting.default', 'pusher_3');
+        Config::set('broadcasting.default', 'pusher_notify');
 
         $originalVisite = Visite::on('temp')->find($id);
         if (! $originalVisite) {return response()->json(['error' => "L'original de la visite n'a pas été trouvé."]);}
