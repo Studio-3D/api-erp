@@ -21,6 +21,7 @@ use App\Models\Prestataire;
 use Carbon\Carbon;
 use Mail;
 use Illuminate\Support\Facades\Log;
+use App\Http\Helpers\FichierHelper;  // AJOUTER CETTE LIGNE
 
 class ReclamationSavController extends Controller
 {
@@ -179,10 +180,16 @@ class ReclamationSavController extends Controller
                     $user_societes = User::where('id', $user_connecter)->first();
                     $societe = Societe::findOrfail($user_societes->societe_id);
 
-                    $fileName = $file->getClientOriginalName();
-                    $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reclamations');
-                    File::makeDirectory($directory, 0755, true, true);
-                    $file->move($directory, $fileName);
+                   $fileName = $file->getClientOriginalName();
+
+                    // Utiliser FichierHelper
+                    FichierHelper::ajouter_fichier(
+                        $file,
+                        $societe->raison_sociale_concatene,
+                        $societe->id,
+                        'reclamations',
+                        $fileName
+                    );
                     $fileType = $file->getClientOriginalExtension();
 
                     $datapieceJointe = [
@@ -429,9 +436,15 @@ class ReclamationSavController extends Controller
 
                         // Récupérer le nom du fichier
                         $fileName = $file->getClientOriginalName();
-                        $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reclamations');
-                        File::makeDirectory($directory, 0755, true, true);
-                        $file->move($directory, $fileName);
+
+                       // Utiliser FichierHelper
+                        FichierHelper::ajouter_fichier(
+                            $file,
+                            $societe->raison_sociale_concatene,
+                            $societe->id,
+                            'reclamations',
+                            $fileName
+                        );
                         $fileType = $file->getClientOriginalExtension();
                         $datapieceJointe = [
                             'fichier' => $fileName,

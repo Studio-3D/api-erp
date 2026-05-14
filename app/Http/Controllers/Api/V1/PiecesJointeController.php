@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use App\Http\Requests\StorePiecesJointeRequest;
 use App\Http\Requests\UpdatePiecesJointeRequest;
+use App\Http\Helpers\FichierHelper;  // AJOUTER CETTE LIGNE
 
 class PiecesJointeController extends Controller
 {
@@ -213,9 +214,13 @@ class PiecesJointeController extends Controller
             $pj = PiecesJointe::on('temp')->where('reservation_id', $reservation_id)->get();
             foreach ($pj as $p) {
 
-                if (File::exists(public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations'.'/'.$code_reservation.'/'.$p->fichier))) {
-                    File::delete(public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reservations'.'/'.$code_reservation.'/'.$p->fichier));
-                }
+                // MODIFICATION: Utiliser FichierHelper
+                FichierHelper::supprimer_fichier(
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'reservations/' . $code_reservation,
+                    $p->fichier
+                );
                 $p->delete();
             }
             return response()->json(['message' => 'PJ deleted successfully'], 200);
@@ -231,9 +236,13 @@ class PiecesJointeController extends Controller
             $pj = PiecesJointe::on('temp')->where('avance_id', $avance_id)->get();
             foreach ($pj as $p) {
 
-                if (File::exists(public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements'.'/'.$avance->reservation->code_reservation.'/'.$p->fichier))) {
-                    File::delete(public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements'.'/'.$avance->reservation->code_reservation.'/'.$p->fichier));
-                }
+                // MODIFICATION: Utiliser FichierHelper
+                FichierHelper::supprimer_fichier(
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'paiements/' . $avance->reservation->code_reservation,
+                    $p->fichier
+                );
                 $p->delete();
             }
             return response()->json(['message' => 'PJ deleted successfully'], 200);
@@ -248,10 +257,14 @@ class PiecesJointeController extends Controller
             $pj = PiecesJointe::on('temp')->where('reclamation_id', $rec_id)->get();
             foreach ($pj as $p) {
 
-                if (File::exists(public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reclamations'.'/'.$p->fichier))) {
-                    File::delete(public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/reclamations'.'/'.$p->fichier));
-                }
-                $p->delete();
+                 // MODIFICATION: Utiliser FichierHelper
+            FichierHelper::supprimer_fichier(
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                'reclamations',
+                $p->fichier
+            );
+            $p->delete();
             }
             return response()->json(['message' => 'PJ deleted successfully'], 200);
 
@@ -273,11 +286,19 @@ class PiecesJointeController extends Controller
                     $avance->setConnection('temp');
 
                     // Récupérer le nom du fichier
-                    $avance->recu_scanne = $request->file('fichier_scanner')->getClientOriginalName();
-                    $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements/'.$avance->reservation->code_reservation);
-                    File::makeDirectory($directory, 0755, true, true);
-                    $request->file('fichier_scanner')->move($directory, $request->file('fichier_scanner')->getClientOriginalName());
+                    $file = $request->file('fichier_scanner');
+                    $fileName = $file->getClientOriginalName();
 
+                    // MODIFICATION: Utiliser FichierHelper
+                    FichierHelper::ajouter_fichier(
+                        $file,
+                        $societe->raison_sociale_concatene,
+                        $societe->id,
+                        'paiements/' . $avance->reservation->code_reservation,
+                        $fileName
+                    );
+
+                    $avance->recu_scanne = $fileName;
 
                     if (!$avance->save()) {
                         return response()->json(['error' => 'Échec de scanner les fichiers'], 500);
@@ -288,67 +309,71 @@ class PiecesJointeController extends Controller
             }
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-    public function files_docs($doss)
-    {
-        $user = Auth::user();
-        DatabaseHelper::Config();
-        $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-        $user_connecter = $userAuth->value('user_id_origin');
-        $user_societes = User::where('id', $user_connecter)->first();
-        $societe = Societe::findOrfail($user_societes->societe_id);
-        // Récupérer le chemin vers le dossier public
-        $publicPath = public_path();
+   public function files_docs($doss)
+        {
+            $user = Auth::user();
+            DatabaseHelper::Config();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $user_connecter = $userAuth->value('user_id_origin');
+            $user_societes = User::where('id', $user_connecter)->first();
+            $societe = Societe::findOrfail($user_societes->societe_id);
 
-        // Déterminer le sous-dossier en fonction de la variable $doss
-        $subdirectory = $doss == 'rsv' ? 'reservations' : ($doss == 'avc' ? 'paiements' : ($doss == 'plt' ? 'penalites' : 'desistement'));
+            // Déterminer le sous-dossier en fonction de la variable $doss
+            $subdirectory = $doss == 'rsv' ? 'reservations' : ($doss == 'avc' ? 'paiements' : ($doss == 'plt' ? 'penalites' : 'desistement'));
 
-        // Chemin complet vers le dossier
-        $directory = $publicPath . '/docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/' . $subdirectory;
+            // Chemin relatif
+            $relativePath = $societe->raison_sociale_concatene . '_' . $societe->id . '/' . $subdirectory;
 
-        // Vérifier si le dossier existe
+            if (app()->environment('production')) {
+                // Pour S3
+                $files = Storage::disk('s3')->files($relativePath);
+                $files = array_map(function($file) {
+                    return basename($file);
+                }, $files);
+            } else {
+                // Pour local
+                $directory = public_path('docs/' . $relativePath);
+                if (!is_dir($directory)) {
+                    return response()->json([]);
+                }
+                $files = scandir($directory);
+                $files = array_diff($files, ['.', '..']);
+            }
+
+            return response()->json(array_values($files));
+        }
+
+    public function files_docs_by_code($doss, $code)
+{
+    $user = Auth::user();
+    DatabaseHelper::Config();
+    $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+    $user_connecter = $userAuth->value('user_id_origin');
+    $user_societes = User::where('id', $user_connecter)->first();
+    $societe = Societe::findOrfail($user_societes->societe_id);
+
+    // Déterminer le sous-dossier en fonction de la variable $doss
+    $subdirectory = $doss == 'rsv' ? 'reservations' : ($doss == 'avc' ? 'paiements' : ($doss == 'plt' ? 'penalites' : 'desistement'));
+
+    // Chemin relatif
+    $relativePath = $societe->raison_sociale_concatene . '_' . $societe->id . '/' . $subdirectory . '/' . $code;
+
+    if (app()->environment('production')) {
+        // Pour S3
+        $files = Storage::disk('s3')->files($relativePath);
+        $files = array_map(function($file) {
+            return basename($file);
+        }, $files);
+    } else {
+        // Pour local
+        $directory = public_path('docs/' . $relativePath);
         if (!is_dir($directory)) {
             return response()->json([]);
         }
-
-        // Obtenir la liste des fichiers dans le dossier
         $files = scandir($directory);
-
-        // Supprimer les entrées représentant les répertoires . et ..
         $files = array_diff($files, ['.', '..']);
-
-        // Retourner la liste des fichiers en tant que JSON
-        return response()->json($files);
     }
 
-    public function files_docs_by_code($doss,$code)
-    {
-        $user = Auth::user();
-        DatabaseHelper::Config();
-        $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-        $user_connecter = $userAuth->value('user_id_origin');
-        $user_societes = User::where('id', $user_connecter)->first();
-        $societe = Societe::findOrfail($user_societes->societe_id);
-        // Récupérer le chemin vers le dossier public
-        $publicPath = public_path();
-
-        // Déterminer le sous-dossier en fonction de la variable $doss
-        $subdirectory = $doss == 'rsv' ? 'reservations' : ($doss == 'avc' ? 'paiements' : ($doss == 'plt' ? 'penalites' : 'desistement'));
-
-        // Chemin complet vers le dossier
-        $directory = $publicPath . '/docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/' . $subdirectory.'/'.$code;
-
-        // Vérifier si le dossier existe
-        if (!is_dir($directory)) {
-            return response()->json([]);
-        }
-
-        // Obtenir la liste des fichiers dans le dossier
-        $files = scandir($directory);
-
-        // Supprimer les entrées représentant les répertoires . et ..
-        $files = array_diff($files, ['.', '..']);
-
-        // Retourner la liste des fichiers en tant que JSON
-        return response()->json($files);
-    }
+    return response()->json(array_values($files));
+}
 }

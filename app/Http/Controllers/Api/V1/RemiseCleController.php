@@ -8,6 +8,7 @@ use App\Models\RemiseCle;
 use App\Models\Societe;
 use App\Models\Bien;
 use App\Models\StatutClient;
+use App\Http\Helpers\FichierHelper;  // AJOUTER CETTE LIGNE
 
 use App\Models\User;
 use Carbon\Carbon;
@@ -146,10 +147,18 @@ class RemiseCleController extends Controller
 
                 // Gestion du fichier uploadé
                 if ($request->hasFile('fichier')) {
-                    $rec->fichier = $request->file('fichier')->getClientOriginalName();
-                    $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remise_cles');
-                    File::makeDirectory($directory, 0755, true, true);
-                    $request->file('fichier')->move($directory, $request->file('fichier')->getClientOriginalName());
+                    $file = $request->file('fichier');
+                    $fileName = $file->getClientOriginalName();
+
+                    // MODIFICATION: Utiliser FichierHelper
+                    FichierHelper::ajouter_fichier(
+                        $file,
+                        $societe->raison_sociale_concatene,
+                        $societe->id,
+                        'remise_cles',
+                        $fileName
+                    );
+                    $rec->fichier = $fileName;
                 }
 
                 $rec->save();
@@ -283,18 +292,29 @@ class RemiseCleController extends Controller
             $rec->bien_id       = $request->bien_id;
             $fich               = $rec->fichier;
             if ($request->hasFile('fichier')) {
-
-                if ($fich != null) {
-                    if (File::exists(public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remise_cles' . '/' . $fich))) {
-                        File::delete(public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remise_cles' . '/' . $fich));
-                    }
-                }
-
-                $rec->fichier = $request->file('fichier')->getClientOriginalName();
-                $directory    = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remise_cles');
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('fichier')->move($directory, $request->file('fichier')->getClientOriginalName());
+            // Supprimer l'ancien fichier s'il existe
+            if ($fich != null) {
+                FichierHelper::supprimer_fichier(
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'remise_cles',
+                    $fich
+                );
             }
+
+            $file = $request->file('fichier');
+            $fileName = $file->getClientOriginalName();
+
+            // MODIFICATION: Utiliser FichierHelper
+            FichierHelper::ajouter_fichier(
+                $file,
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                'remise_cles',
+                $fileName
+            );
+            $rec->fichier = $fileName;
+        }
             $rec->save();
             return response()->json(['remise' => $rec], 200);
         } else {
@@ -317,12 +337,15 @@ class RemiseCleController extends Controller
             $fich          = $rem->fichier;
             if ($rem->delete()) {
 
-                if ($fich != null) {
-                    if (File::exists(public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remise_cles' . '/' . $fich))) {
-                        File::delete(public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remise_cles' . '/' . $fich));
-                    }
-                }
-
+               // MODIFICATION: Supprimer le fichier avec FichierHelper
+            if ($fich != null) {
+                FichierHelper::supprimer_fichier(
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'remise_cles',
+                    $fich
+                );
+            }
                 return response()->json(['message' => 'Remise supprimée avec succès.'], 200);
             } else {
                 return response()->json(['error' => "La Remise n'a pas été supprimée."], 404);

@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Societe;
 use Illuminate\Support\Facades\File;
+use App\Http\Helpers\FichierHelper;  // AJOUTER CETTE LIGNE
 
 
 use App\Http\Helpers\ImportExcelHelper;
@@ -120,20 +121,23 @@ class UploadBienController extends Controller
             $imp->type = '1';
 
             // Handle file upload only if file exists
-            if ($request->hasFile('piece_jointe')) {
-                $client_origin_name = $request->file('piece_jointe')->getClientOriginalName();
-                $date = str_replace(str_split('\\/:*?"<>|+-\s+'), '_', date("Y-m-d H:i:s"));
-                $filename = pathinfo($client_origin_name, PATHINFO_FILENAME) . '_' . $date;
-                $extension = pathinfo($client_origin_name, PATHINFO_EXTENSION);
-                $imp->fichier = $filename . '.' . $extension;
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Edit_fichier_en_masse');
+           if ($request->hasFile('piece_jointe')) {
+            $file = $request->file('piece_jointe');
+            $client_origin_name = $file->getClientOriginalName();
+            $date = str_replace(str_split('\\/:*?"<>|+-\s+'), '_', date("Y-m-d H:i:s"));
+            $filename = pathinfo($client_origin_name, PATHINFO_FILENAME) . '_' . $date;
+            $extension = pathinfo($client_origin_name, PATHINFO_EXTENSION);
+            $fullFilename = $filename . '.' . $extension;
 
-                if (!File::exists($directory)) {
-                    File::makeDirectory($directory, 0755, true, true);
-                }
-
-                $request->file('piece_jointe')->move($directory, $filename . '.' . $extension);
-            }
+            FichierHelper::ajouter_fichier(
+                $file,
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                'Edit_fichier_en_masse',
+                $fullFilename
+            );
+            $imp->fichier = $fullFilename;
+        }
 
             $imp->save();
             return response()->json('done stock fichier');
@@ -181,19 +185,23 @@ class UploadBienController extends Controller
         $imp->type = '2'; // titre foncier
 
         // Handle file upload only if file exists
+       // MODIFICATION: Utiliser FichierHelper
         if ($request->hasFile('piece_jointe')) {
-            $client_origin_name = $request->file('piece_jointe')->getClientOriginalName();
+            $file = $request->file('piece_jointe');
+            $client_origin_name = $file->getClientOriginalName();
             $date = str_replace(str_split('\\/:*?"<>|+-\s+'), '_', date("Y-m-d H:i:s"));
             $filename = pathinfo($client_origin_name, PATHINFO_FILENAME) . '_' . $date;
             $extension = pathinfo($client_origin_name, PATHINFO_EXTENSION);
-            $imp->fichier = $filename . '.' . $extension;
-            $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Edit_titre_foncier');
+            $fullFilename = $filename . '.' . $extension;
 
-            if (!File::exists($directory)) {
-                File::makeDirectory($directory, 0755, true, true);
-            }
-
-            $request->file('piece_jointe')->move($directory, $filename . '.' . $extension);
+            FichierHelper::ajouter_fichier(
+                $file,
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                'Edit_titre_foncier',
+                $fullFilename
+            );
+            $imp->fichier = $fullFilename;
         }
 
         $imp->save();

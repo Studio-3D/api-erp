@@ -233,18 +233,23 @@ class UserController extends Controller
                 $user->nb_appel_traite = $request->nb_appel_traite;
                 $user->solde_conge     = $request->solde_conge;
 
-                if ($request->hasFile('photo')) {
-                    $photo       = time() . '.' . $request->name . '_' . $request->prenom . '.' . $request->photo->extension();
-                    $user->photo = $photo;
-
-                }
-                if ($user->save()) {
                     if ($request->hasFile('photo')) {
-                        $societe = Societe::findOrfail($user->societe_id);
-                        //$request->photo->move(public_path('img/' . $societe->raison_sociale_concatene . '_' . $user->societe_id . '/users'), $photo);
-                        FichierHelper::ajouter_fichier($request->photo, $societe->raison_sociale_concatene, $user->societe_id, 'users', $photo);
+                        $societe = Societe::findOrFail($request->societe_id);
+                        $filename = time() . '.' . $request->name . '_' . $request->prenom . '.' . $request->photo->extension();
 
+                        // Utiliser FichierHelper au lieu de move directement
+                        FichierHelper::ajouter_fichier(
+                            $request->photo,
+                            $societe->raison_sociale_concatene,
+                            $user->societe_id,
+                            'users',
+                            $filename
+                        );
+                        $user->photo = $filename;
                     }
+
+                 if ($user->save()) {
+
                     $dataArray_projets = json_decode($request->input('selectedProjets', '[]'), true);
 
                     $this->createSubUser($request, $user->id, $user->photo, $dataArray_projets == null ? [] : $dataArray_projets);
@@ -373,16 +378,25 @@ class UserController extends Controller
                 $societe             = Societe::findOrfail($user_origin->societe_id);
                 $photo               = '';
                 if ($request->hasFile('photo')) {
-                    if ($user->photo != null) {
-                        $image_path = asset('img/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/users' . $user_origin->photo);
-                        //$image_path = public_path('img/users/' . $user->photo);
-                        if (file_exists($image_path)) {
-                            unlink($image_path);
+                     // Supprimer l'ancienne photo
+                        if ($user->photo) {
+                            FichierHelper::supprimer_fichier(
+                                $societe->raison_sociale_concatene,
+                                $user->societe_id,
+                                'users',
+                                $user->photo
+                            );
                         }
-                    }
-                    $photo = time() . '.' . $request->name . '_' . $request->prenom . '.' . $request->photo->extension();
-                    FichierHelper::ajouter_fichier($request->photo, $societe->raison_sociale_concatene, $societe->id, 'users', $photo);
-                    $user->photo = $photo;
+                    // Upload nouvelle photo
+                    $filename = time() . '.' . $request->name . '_' . $request->prenom . '.' . $request->photo->extension();
+                    FichierHelper::ajouter_fichier(
+                        $request->photo,
+                        $societe->raison_sociale_concatene,
+                        $user->societe_id,
+                        'users',
+                        $filename
+                    );
+                    $user->photo = $filename;
                 }
 
                 if ($user->save()) {
@@ -438,16 +452,26 @@ class UserController extends Controller
                 $user->solde_conge   = $request->input('solde_conge');
                 $photo               = '';
                 if ($request->hasFile('photo')) {
-                    if ($user->photo != null) {
-                        $image_path = public_path('img/users/' . $user->photo);
-                        if (file_exists($image_path)) {
-                            unlink($image_path);
+                     // Supprimer l'ancienne photo avec FichierHelper
+                        if ($user->photo != null) {
+                            $societe = Societe::findOrFail($user->societe_id);
+                            FichierHelper::supprimer_fichier(
+                                $societe->raison_sociale_concatene,
+                                $user->societe_id,
+                                'users',
+                                $user->photo
+                            );
                         }
-                    }
                     $photo   = time() . '.' . $request->name . '_' . $request->prenom . '.' . $request->photo->extension();
                     $societe = Societe::findOrfail($user->societe_id);
-                    //$request->photo->move(public_path('img/' . $societe->raison_sociale_concatene . '_' . $user->societe_id . '/users'), $photo);
-                    FichierHelper::ajouter_fichier($request->photo, $societe->raison_sociale_concatene, $user->societe_id, 'users', $photo);
+                    // Utiliser FichierHelper au lieu de move
+                    FichierHelper::ajouter_fichier(
+                        $request->photo,
+                        $societe->raison_sociale_concatene,
+                        $user->societe_id,
+                        'users',
+                        $photo
+                    );
                     $user->photo = $photo;
                 }
                 if ($user->save()) {
@@ -558,10 +582,16 @@ class UserController extends Controller
 
             // Delete old photo if exists
             if ($user->photo != null) {
-                $old_photo_path = public_path('docs/'. $societe->raison_sociale_concatene . '_' . $user->societe_id . '/users/' . $user->photo);
+                /*$old_photo_path = public_path('docs/'. $societe->raison_sociale_concatene . '_' . $user->societe_id . '/users/' . $user->photo);
                 if (file_exists($old_photo_path)) {
                     unlink($old_photo_path);
-                }
+                }*/
+                    FichierHelper::supprimer_fichier(
+                    $societe->raison_sociale_concatene,
+                    $user->societe_id,
+                    'users',
+                    $user->photo
+                );
             }
 
             // Get the file extension
@@ -577,8 +607,14 @@ class UserController extends Controller
 
             $photo = time() . '.' . $safeName . '_' . $safePrenom . '.' . $extension;
 
-            // Upload new photo
-            FichierHelper::ajouter_fichier($request->photo, $societe->raison_sociale_concatene, $user->societe_id, 'users', $photo);
+           // Upload new photo - UTILISER FichierHelper
+            FichierHelper::ajouter_fichier(
+                $request->photo,
+                $societe->raison_sociale_concatene,
+                $user->societe_id,
+                'users',
+                $photo
+            );
             $user->photo = $photo;
         }
 

@@ -13,7 +13,7 @@ use App\Models\User;
 use App\Models\Bien;
 use App\Models\StatutClient;
 use App\Models\Banque;
-
+use App\Http\Helpers\FichierHelper;  // AJOUTER CETTE LIGNE
 use App\Http\Controllers\Controller;
 use App\Models\Societe;
 use Illuminate\Support\Facades\File;
@@ -223,18 +223,34 @@ class RemboursementController extends Controller
             $remboursement->num_paiement=$request->num_paiement;
             $codeReservation = $remboursement->reservation->code_reservation;
 
+            // MODIFICATION: Utiliser FichierHelper pour fichier_autorisation
             if ($request->hasFile('fichier_autorisation')) {
-                $remboursement->fichier_autorisation =$request->file('fichier_autorisation')->getClientOriginalName();
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements/fichiers_autorisations/' .$codeReservation);
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('fichier_autorisation')->move($directory,$request->file('fichier_autorisation')->getClientOriginalName());
+                $file = $request->file('fichier_autorisation');
+                $fileName = $file->getClientOriginalName();
+
+                FichierHelper::ajouter_fichier(
+                    $file,
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'remboursements/fichiers_autorisations/' . $codeReservation,
+                    $fileName
+                );
+                $remboursement->fichier_autorisation = $fileName;
             }
+            // MODIFICATION: Utiliser FichierHelper pour cheque_recu
             if ($request->hasFile('cheque_recu')) {
-                $remboursement->cheque =$request->file('cheque_recu')->getClientOriginalName();
-                $remboursement->cheque_client_signe =$request->file('cheque_recu')->getClientOriginalName();
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements/cheques_reçus/'.$codeReservation);
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('cheque_recu')->move($directory,$request->file('cheque_recu')->getClientOriginalName());
+                $file = $request->file('cheque_recu');
+                $fileName = $file->getClientOriginalName();
+
+                FichierHelper::ajouter_fichier(
+                    $file,
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'remboursements/cheques_recus/' . $codeReservation,
+                    $fileName
+                );
+                $remboursement->cheque = $fileName;
+                $remboursement->cheque_client_signe = $fileName;
             }
             $remboursement->save();
             //4 demande pre rembourse
@@ -272,13 +288,19 @@ class RemboursementController extends Controller
             $codeReservation = $remboursement->reservation->code_reservation;
 
            // $remboursement->remis_le=$request->remis_le;
-            $remboursement->user_id_remis=$userAuth->value('id');
             if ($request->hasFile('cheque_client_signe')) {
-                $remboursement->cheque_client_signe=$request->file('cheque_client_signe')->getClientOriginalName();
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements/cheques_reçus/' .$codeReservation);
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('cheque_client_signe')->move($directory,$request->file('cheque_client_signe')->getClientOriginalName());
-            }
+            $file = $request->file('cheque_client_signe');
+            $fileName = $file->getClientOriginalName();
+
+            FichierHelper::ajouter_fichier(
+                $file,
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                'remboursements/cheques_recus/' . $codeReservation,
+                $fileName
+            );
+            $remboursement->cheque_client_signe = $fileName;
+        }
             if($remboursement->save()){
                 if(RoleHelper::Com()){
                     //si commercial ==> envoi notif au admin que client a pris le cheque de remboursement

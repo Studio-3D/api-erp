@@ -14,6 +14,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\File;
+use App\Http\Helpers\FichierHelper;  // AJOUTER CETTE LIGNE
 
 class CreditsController extends Controller
 {
@@ -106,12 +107,20 @@ class CreditsController extends Controller
             $cr->banque_id = $request->banque_id;
             $cr->num_contrat = $request->num_contrat;
 
-           if ($request->hasFile('piece_jointe')) {
-                $cr->piece_jointe = $request->file('piece_jointe')->getClientOriginalName();;
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/credits');
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('piece_jointe')->move($directory,$request->file('piece_jointe')->getClientOriginalName());
-            }
+          if ($request->hasFile('piece_jointe')) {
+            $file = $request->file('piece_jointe');
+            $fileName = $file->getClientOriginalName();
+
+            FichierHelper::ajouter_fichier(
+                $file,
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                'credits',
+                $fileName
+            );
+
+            $cr->piece_jointe = $fileName;
+        }
 
             $cr->date = $request->date;
             $cr->montant_capital = $request->montant_capital;
@@ -168,12 +177,32 @@ class CreditsController extends Controller
             $cr->banque_id = $request->banque_id;
             $cr->num_contrat = $request->num_contrat;
 
-           if ($request->hasFile('piece_jointe')) {
-                $cr->piece_jointe = $request->file('piece_jointe')->getClientOriginalName();;
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/credits');
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('piece_jointe')->move($directory,$request->file('piece_jointe')->getClientOriginalName());
+            if ($request->hasFile('piece_jointe')) {
+            // Supprimer l'ancien fichier s'il existe
+            if ($cr->piece_jointe) {
+                FichierHelper::supprimer_fichier(
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'credits',
+                    $cr->piece_jointe
+                );
             }
+
+            $file = $request->file('piece_jointe');
+            $fileName = $file->getClientOriginalName();
+
+            // Utiliser FichierHelper
+            FichierHelper::ajouter_fichier(
+                $file,
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                'credits',
+                $fileName
+            );
+
+            $cr->piece_jointe = $fileName;
+            }
+
 
             $cr->date = $request->date;
             $cr->montant_capital = $request->montant_capital;
@@ -194,15 +223,35 @@ class CreditsController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    /**
+ * Remove the specified resource from storage.
+ */
     public function destroy(string $id)
     {
-        if (RoleHelper::AdminSup() ||RoleHelper::Comptable()) {
+        if (RoleHelper::AdminSup() || RoleHelper::Comptable()) {
             DatabaseHelper::Config();
+
             $cr = Credit::on('temp')->findOrFail($id);
+
+            // Supprimer le fichier associé s'il existe
+            if ($cr->piece_jointe) {
+                $user = Auth::user();
+                $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+                $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+                $societe = Societe::findOrfail($user_societes->societe_id);
+
+                FichierHelper::supprimer_fichier(
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'credits',
+                    $cr->piece_jointe
+                );
+            }
+
             if ($cr->delete()) {
-                return response()->json(['message' => 'Credit Supprimé avec succés'], 200);
+                return response()->json(['message' => 'Credit Supprimé avec succès'], 200);
             } else {
-                return response()->json(['message' => 'Credit Non Suprimé'], 400);
+                return response()->json(['message' => 'Credit Non Supprimé'], 400);
             }
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);

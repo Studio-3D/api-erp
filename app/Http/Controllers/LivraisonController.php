@@ -2,6 +2,7 @@
 
 
 namespace App\Http\Controllers;
+use App\Http\Helpers\FichierHelper;  // AJOUTER CETTE LIGNE
 
 use App\Events\Rendez_vous_Prop;
 use App\Enum\RoleEnum;
@@ -866,20 +867,13 @@ public function updateReservationCreneau($reservation_id, Request $request)
                     $file = $request->file('fichier_scanner');
                     $originalName = $file->getClientOriginalName();
 
-                    // Create directory
-                    $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/compromis_vente/' . $codeReservation);
-
-                    if (!File::exists($directory)) {
-                        File::makeDirectory($directory, 0755, true, true);
-                    }
-
-                    // Move the file
-                    $file->move($directory, $originalName);
-
-                    // Verify file was moved
-                    if (!File::exists($directory . '/' . $originalName)) {
-                        return response()->json(['error' => 'Failed to move file'], 500);
-                    }
+                        FichierHelper::ajouter_fichier(
+                            $file,
+                            $societe->raison_sociale_concatene,
+                            $societe->id,
+                            'compromis_vente/' . $codeReservation,
+                            $originalName
+                        );
 
                     // Store only the filename in database
                     $comp->compromis_signee = $originalName;
@@ -1049,11 +1043,19 @@ public function updateReservationCreneau($reservation_id, Request $request)
                 $codeReservation = $comp->reservation->code_reservation;
 
                 // Récupérer le nom du fichier
-                $comp->piece_jointe = $request->file('fichier_scanner')->getClientOriginalName();
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/contrat_vente' . '/' . $codeReservation);
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('fichier_scanner')->move($directory, $request->file('fichier_scanner')->getClientOriginalName());
-                 // Créer StatutClient après le scan
+                // Récupérer le nom du fichier
+                $fileName = $request->file('fichier_scanner')->getClientOriginalName();
+
+                FichierHelper::ajouter_fichier(
+                    $request->file('fichier_scanner'),
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'contrat_vente/' . $codeReservation,
+                    $fileName
+                );
+
+                $comp->piece_jointe = $fileName;
+               // Créer StatutClient après le scan
                 $this->createStatutClientForScanner($comp->reservation_id, $userAuth, 'contrat');
                  //store historique
                     $histo = new HistoReservation();
