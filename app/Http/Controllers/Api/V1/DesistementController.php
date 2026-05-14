@@ -51,6 +51,8 @@ use App\Models\StatutReservation;
 use Illuminate\Support\Facades\DB;
 use Mail;
 use Illuminate\Support\Facades\Log;
+use App\Http\Helpers\FichierHelper;  // AJOUTER CETTE LIGNE
+
 class DesistementController extends Controller
 {
     public function create()
@@ -89,11 +91,13 @@ private function handleReimbursement($request, $desistement, $reservation, $user
                                                         $fileName = $file->getClientOriginalName();
 
                                                         $remboursement->fichier_autorisation = $fileName;
-
-                                                        $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements/fichier_autorisations/' . $reservation->code_reservation);
-                                                        File::makeDirectory($directory, 0755, true, true);
-
-                                                        $file->move($directory, $fileName);
+                                                        FichierHelper::ajouter_fichier(
+                                                                                    $file,
+                                                                                    $societe->raison_sociale_concatene,
+                                                                                    $societe->id,
+                                                                                    'remboursements/fichier_autorisations/' . $reservation->code_reservation,
+                                                                                    $fileName
+                                                                                );
 
                                                     } elseif ($request->has('fichier_autorisation_' . $index) &&
                                                             $request->input('fichier_autorisation_' . $index) !== "" &&
@@ -108,10 +112,13 @@ private function handleReimbursement($request, $desistement, $reservation, $user
 
                                                             $remboursement->cheque = $fileName;
 
-                                                            $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/remboursements/cheques_reçus/' . $reservation->code_reservation);
-                                                            File::makeDirectory($directory, 0755, true, true);
-
-                                                            $file->move($directory, $fileName);
+                                                            FichierHelper::ajouter_fichier(
+                                                                    $file,
+                                                                    $societe->raison_sociale_concatene,
+                                                                    $societe->id,
+                                                                    'remboursements/cheques_reçus/' . $reservation->code_reservation,
+                                                                    $fileName
+                                                                );
 
                                                         } elseif ($request->has('cheque_recu_' . $index) &&
                                                                 $request->input('cheque_recu_' . $index) !== "" &&
@@ -648,13 +655,16 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
                                                         $piecesJointeController = new PiecesJointeController();
                                                         $pieceJointeRequest = new StorePiecesJointeRequest();
 
-                                                        // Récupérer le nom du fichier
-                                                        $fileName = $file->getClientOriginalName();
-                                                        $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id  . '/paiements' . '/' . $reservation->code_reservation);
-                                                        if (!File::exists($directory)) {
-                                                            File::makeDirectory($directory, 0755, true, true);
-                                                        }
-                                                        $file->move($directory, $fileName);
+                                                         $fileName = $file->getClientOriginalName();
+
+                                                        FichierHelper::ajouter_fichier(
+                                                            $file,
+                                                            $societe->raison_sociale_concatene,
+                                                            $societe->id,
+                                                            'paiements/' . $reservation->code_reservation,
+                                                            $fileName
+                                                        );
+
                                                         $fileType = $file->getClientOriginalExtension();
                                                         $datapieceJointe = [
                                                             'fichier' => $fileName,
@@ -780,19 +790,24 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
                         if ($request->hasFile('new_files_penalite')) {
                             foreach ($request->file('new_files_penalite') as $file) {
 
-                                // Récupérer le nom du fichier
-                                $fileName = $file->getClientOriginalName();
-                                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/penalites' . '/' . $reservation->code_reservation);
-                                File::makeDirectory($directory, 0755, true, true);
-                                $file->move($directory, $fileName);
-                                $fileType = $file->getClientOriginalExtension();
-                                $datapieceJointe = [
-                                    'fichier' => $fileName,
-                                    'type' => $fileType,
-                                    'penalite_id' => $pen->id,
-                                    'active' => 1,
-                                ];
+                            $fileName = $file->getClientOriginalName();
 
+                            // Utiliser FichierHelper
+                            FichierHelper::ajouter_fichier(
+                                $file,
+                                $societe->raison_sociale_concatene,
+                                $societe->id,
+                                'penalites/' . $reservation->code_reservation,
+                                $fileName
+                            );
+
+                            $fileType = $file->getClientOriginalExtension();
+                            $datapieceJointe = [
+                                'fichier' => $fileName,
+                                'type' => $fileType,
+                                'penalite_id' => $pen->id,
+                                'active' => 1,
+                            ];
                                 $pieceJointeRequest->merge($datapieceJointe);
                                 $piecesJointeController->store($pieceJointeRequest);
                             }
@@ -808,9 +823,16 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
                                 $piecesJointeController = new PiecesJointeController();
                                 $pieceJointeRequest = new StorePiecesJointeRequest();
                                 $fileName = $file->getClientOriginalName();
-                                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/penalites' . '/' . $reservation->code_reservation);
-                                File::makeDirectory($directory, 0755, true, true);
-                                $file->move($directory, $fileName);
+
+
+                                    // Utiliser FichierHelper
+                                    FichierHelper::ajouter_fichier(
+                                        $file,
+                                        $societe->raison_sociale_concatene,
+                                        $societe->id,
+                                        'penalites/' . $reservation->code_reservation,
+                                        $fileName
+                                    );
                                 $fileType = $file->getClientOriginalExtension();
                                 $datapieceJointe = [
                                     'fichier' => $fileName,
@@ -951,12 +973,16 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
                         if ($request->hasFile('new_files_desistement')) {
                             foreach ($request->file('new_files_desistement') as $file) {
                                 $fileName = $file->getClientOriginalName();
-                                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/desistements' . '/' . $reservation->code_reservation);
+                           // Utiliser FichierHelper
+                                FichierHelper::ajouter_fichier(
+                                    $file,
+                                    $societe->raison_sociale_concatene,
+                                    $societe->id,
+                                    'desistements/' . $reservation->code_reservation,
+                                    $fileName
+                                );
 
-                                File::makeDirectory($directory, 0755, true, true);
-                                $file->move($directory, $fileName);
                                 $fileType = $file->getClientOriginalExtension();
-
                                 $datapieceJointe = [
                                     'fichier' => $fileName,
                                     'type' => $fileType,
@@ -975,10 +1001,13 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
                             foreach ($request->file('files_desistement') as $file) {
                                 // This will only contain new files as File objects
                                 $fileName = $file->getClientOriginalName();
-                                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/desistements' . '/' . $reservation->code_reservation);
-
-                                File::makeDirectory($directory, 0755, true, true);
-                                $file->move($directory, $fileName);
+                                    FichierHelper::ajouter_fichier(
+                                    $file,
+                                    $societe->raison_sociale_concatene,
+                                    $societe->id,
+                                    'desistements/' . $reservation->code_reservation,
+                                    $fileName
+                                );
                                 $fileType = $file->getClientOriginalExtension();
 
                                 $datapieceJointe = [
@@ -3550,16 +3579,22 @@ public function validation_desitement($id,Request $request){
 
                                 // Récupérer le nom du fichier
                                 $fileName = $file->getClientOriginalName();
-                                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/penalites' . '/' . $pen->desistement->reservation_ancien->code_reservation);
-                                File::makeDirectory($directory, 0755, true, true);
-                                $file->move($directory, $fileName);
+
+                                // Utiliser FichierHelper
+                                FichierHelper::ajouter_fichier(
+                                    $file,
+                                    $societe->raison_sociale_concatene,
+                                    $societe->id,
+                                    'penalites/' . $pen->desistement->reservation_ancien->code_reservation,
+                                    $fileName
+                                );
+
                                 $fileType = $file->getClientOriginalExtension();
                                 $datapieceJointe = [
                                     'fichier' => $fileName,
                                     'type' => $fileType,
                                     'penalite_id' => $pen->id,
                                     'active' => 1,
-
                                 ];
 
                                 $pieceJointeRequest->merge($datapieceJointe);

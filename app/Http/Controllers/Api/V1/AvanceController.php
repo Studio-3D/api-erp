@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api\V1;
+use App\Http\Helpers\FichierHelper;  // AJOUTER CETTE LIGNE
 
 use App\Enum\RoleEnum;
 use App\Enum\StatutReservationEnum;
@@ -727,9 +728,15 @@ class AvanceController extends Controller
 
                                             // Récupérer le nom du fichier
                                             $fileName = $file->getClientOriginalName();
-                                            $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/paiements' . '/' . $reservation->code_reservation);
-                                            File::makeDirectory($directory, 0755, true, true);
-                                            $file->move($directory, $fileName);
+
+                                            FichierHelper::ajouter_fichier(
+                                                $file,
+                                                $societe->raison_sociale_concatene,
+                                                $societe->id,
+                                                'paiements/' . $reservation->code_reservation,
+                                                $fileName
+                                            );
+
                                             $fileType = $file->getClientOriginalExtension();
                                             $datapieceJointe = [
                                                 'fichier' => $fileName,
@@ -1201,16 +1208,21 @@ class AvanceController extends Controller
                                     // Récupérer le nom du fichier
                                     $Myfile = $file->getClientOriginalName();
 
-                                    $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id  . '/paiements' . '/' . $reservation->code_reservation);
-                                    File::makeDirectory($directory, 0755, true, true);
-                                    $file->move($directory, $Myfile);
+                                       // Utiliser FichierHelper
+                                    FichierHelper::ajouter_fichier(
+                                        $file,
+                                        $societe->raison_sociale_concatene,
+                                        $societe->id,
+                                        'paiements/' . $reservation->code_reservation,
+                                        $Myfile
+                                    );
+
                                     $fileType = $file->getClientOriginalExtension();
                                     $datapieceJointe = [
                                         'fichier' => $Myfile,
                                         'type' => $fileType,
                                         'avance_id' => $avance->id,
                                         'active' => 1,
-
                                     ];
 
                                     $pieceJointeRequest->merge($datapieceJointe);

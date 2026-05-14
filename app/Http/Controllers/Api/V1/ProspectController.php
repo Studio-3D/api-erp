@@ -24,6 +24,7 @@ use App\Models\Societe;
 use Illuminate\Support\Facades\File;
 use App\Models\StatutClient;
 use App\Models\Import;
+use App\Http\Helpers\FichierHelper;  // AJOUTER CETTE LIGNE
 
 use App\Models\TraitementAppel;
 
@@ -1215,16 +1216,24 @@ class ProspectController extends Controller
             $imp->type = '3';//prospects
 
             // Handle file upload only if file exists
-            if ($request->hasFile('piece_jointe')) {
-                $client_origin_name = $request->file('piece_jointe')->getClientOriginalName();
-                $date = str_replace(str_split('\\/:*?"<>|+-\s+'), '_', date("Y-m-d H:i:s"));
-                $filename = pathinfo($client_origin_name, PATHINFO_FILENAME) . '_' . $date;
-                $extension = pathinfo($client_origin_name, PATHINFO_EXTENSION);
-                $imp->fichier = $filename . '.' . $extension;
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Import_prospects');
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('piece_jointe')->move($directory, $filename . '.' . $extension);
-            }
+             // MODIFICATION: Utiliser FichierHelper
+        if ($request->hasFile('piece_jointe')) {
+            $file = $request->file('piece_jointe');
+            $client_origin_name = $file->getClientOriginalName();
+            $date = str_replace(str_split('\\/:*?"<>|+-\s+'), '_', date("Y-m-d H:i:s"));
+            $filename = pathinfo($client_origin_name, PATHINFO_FILENAME) . '_' . $date;
+            $extension = pathinfo($client_origin_name, PATHINFO_EXTENSION);
+            $fullFilename = $filename . '.' . $extension;
+
+            FichierHelper::ajouter_fichier(
+                $file,
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                'Import_prospects',
+                $fullFilename
+            );
+            $imp->fichier = $fullFilename;
+        }
 
             $imp->save();
             return response()->json('done stock fichier');

@@ -16,6 +16,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use App\Models\Societe;
 use Illuminate\Support\Facades\File;
+use App\Http\Helpers\FichierHelper;  // AJOUTER CETTE LIGNE
 
 class FactureController extends Controller
 {
@@ -120,35 +121,56 @@ class FactureController extends Controller
             $fact->projet_id = $request->projet_id;
             $fact->date_paiement = $request->date_paiement;
             $fact->mode_paiement =$request->mode_paiement;
+
             if ($request->hasFile('piece_jointe')) {
-                $fact->piece_jointe = $request->file('piece_jointe')->getClientOriginalName();;
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/factures');
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('piece_jointe')->move($directory,$request->file('piece_jointe')->getClientOriginalName());
+                    $file = $request->file('piece_jointe');
+                    $fileName = $file->getClientOriginalName();
+
+                    FichierHelper::ajouter_fichier(
+                        $file,
+                        $societe->raison_sociale_concatene,
+                        $societe->id,
+                        'factures',
+                        $fileName
+                    );
+                    $fact->piece_jointe = $fileName;
             }
             //cheque cheque-banque cheque cetifice
             if ($request->mode_paiement == 2 || $request->mode_paiement == 3 || $request->mode_paiement == 4) {
                 $fact->numero_paiement = $request->numero_paiement;
                 $fact->banque_id = $request->banque_id;
                 $fact->echeance = $request->date_echeance;
-                if ($request->hasFile('pj_paiement')) {
-                    $fact->pj_paiement = $request->file('pj_paiement')->getClientOriginalName();;
-                    $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/factures/paiements');
-                    File::makeDirectory($directory, 0755, true, true);
-                    $request->file('pj_paiement')->move($directory,$request->file('pj_paiement')->getClientOriginalName());
-                }
+               if ($request->hasFile('pj_paiement')) {
+                $file = $request->file('pj_paiement');
+                $fileName = $file->getClientOriginalName();
 
+                FichierHelper::ajouter_fichier(
+                    $file,
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'factures/paiements',
+                    $fileName
+                );
+                $fact->pj_paiement = $fileName;
+            }
             }
             //virement versement
             elseif ($request->mode_paiement == 5 || $request->mode_paiement == 6) {
                 $fact->numero_paiement = $request->numero_paiement;
                 $fact->banque_id = $request->banque_id;
                 if ($request->hasFile('pj_paiement')) {
-                    $fact->pj_paiement = $request->file('pj_paiement')->getClientOriginalName();;
-                    $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/factures/paiements');
-                    File::makeDirectory($directory, 0755, true, true);
-                    $request->file('pj_paiement')->move($directory,$request->file('pj_paiement')->getClientOriginalName());
-                }
+                $file = $request->file('pj_paiement');
+                $fileName = $file->getClientOriginalName();
+
+                FichierHelper::ajouter_fichier(
+                    $file,
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'factures/paiements',
+                    $fileName
+                );
+                $fact->pj_paiement = $fileName;
+            }
             }
             $fact->user_id=$userAuth->value('id');
             $fact->save();
@@ -188,12 +210,31 @@ class FactureController extends Controller
             $fact->decompte_id = $request->decompte_id;
             $fact->date_facture = $request->date_facture;
             $fact->num_facture = $request->num_facture;
-            if ($request->hasFile('piece_jointe')) {
-                $fact->piece_jointe = $request->file('piece_jointe')->getClientOriginalName();;
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/factures');
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('piece_jointe')->move($directory,$request->file('piece_jointe')->getClientOriginalName());
-            }            $fact->montant = $request->montant;
+            // MODIFICATION: Utiliser FichierHelper pour piece_jointe
+        if ($request->hasFile('piece_jointe')) {
+            // Supprimer l'ancien fichier s'il existe
+            if ($fact->piece_jointe) {
+                FichierHelper::supprimer_fichier(
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'factures',
+                    $fact->piece_jointe
+                );
+            }
+
+            $file = $request->file('piece_jointe');
+            $fileName = $file->getClientOriginalName();
+
+            FichierHelper::ajouter_fichier(
+                $file,
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                'factures',
+                $fileName
+            );
+            $fact->piece_jointe = $fileName;
+        }
+            $fact->montant = $request->montant;
             $fact->ht = $request->ht;
             $fact->taux_tva = $request->taux_tva;
             $fact->tva = $request->tva;
@@ -207,24 +248,58 @@ class FactureController extends Controller
                 $fact->numero_paiement = $request->numero_paiement;
                 $fact->banque_id = $request->banque_id;
                 $fact->echeance = $request->date_echeance;
+            // MODIFICATION: Utiliser FichierHelper pour pj_paiement
                 if ($request->hasFile('pj_paiement')) {
-                    $fact->pj_paiement = $request->file('pj_paiement')->getClientOriginalName();;
-                    $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/factures/paiements');
-                    File::makeDirectory($directory, 0755, true, true);
-                    $request->file('pj_paiement')->move($directory,$request->file('pj_paiement')->getClientOriginalName());
-                }
+                    // Supprimer l'ancien fichier s'il existe
+                    if ($fact->pj_paiement) {
+                        FichierHelper::supprimer_fichier(
+                            $societe->raison_sociale_concatene,
+                            $societe->id,
+                            'factures/paiements',
+                            $fact->pj_paiement
+                        );
+                    }
 
+                    $file = $request->file('pj_paiement');
+                    $fileName = $file->getClientOriginalName();
+
+                    FichierHelper::ajouter_fichier(
+                        $file,
+                        $societe->raison_sociale_concatene,
+                        $societe->id,
+                        'factures/paiements',
+                        $fileName
+                    );
+                    $fact->pj_paiement = $fileName;
+                }
             }
             //virement versement
             elseif ($request->mode_paiement == 5 || $request->mode_paiement == 6) {
                 $fact->numero_paiement = $request->numero_paiement;
                 $fact->banque_id = $request->banque_id;
-                if ($request->hasFile('pj_paiement')) {
-                    $fact->pj_paiement = $request->file('pj_paiement')->getClientOriginalName();;
-                    $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/factures/paiements');
-                    File::makeDirectory($directory, 0755, true, true);
-                    $request->file('pj_paiement')->move($directory,$request->file('pj_paiement')->getClientOriginalName());
+                 if ($request->hasFile('pj_paiement')) {
+                // Supprimer l'ancien fichier s'il existe
+                if ($fact->pj_paiement) {
+                    FichierHelper::supprimer_fichier(
+                        $societe->raison_sociale_concatene,
+                        $societe->id,
+                        'factures/paiements',
+                        $fact->pj_paiement
+                    );
                 }
+
+                $file = $request->file('pj_paiement');
+                $fileName = $file->getClientOriginalName();
+
+                FichierHelper::ajouter_fichier(
+                    $file,
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'factures/paiements',
+                    $fileName
+                );
+                $fact->pj_paiement = $fileName;
+            }
             }
             else{
                 $fact->pj_paiement =null;
@@ -261,20 +336,48 @@ class FactureController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
-    {
-        if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable()) {
-            DatabaseHelper::Config();
-            $fac = Facture::on('temp')->findOrFail($id);
-            if ($fac->delete()) {
-                return response()->json(['message' => 'Facture supprimé avec succès'], 200);
-            } else {
-                return response()->json(['message' => 'Facture non Supprimé'], 400);
-            }
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
+   public function destroy(string $id)
+{
+    if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable()) {
+        DatabaseHelper::Config();
+
+        $fac = Facture::on('temp')->findOrFail($id);
+
+        // MODIFICATION: Supprimer les fichiers associés
+        $user = Auth::user();
+        $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+        $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+        $societe = Societe::findOrfail($user_societes->societe_id);
+
+        // Supprimer la piece_jointe
+        if ($fac->piece_jointe) {
+            FichierHelper::supprimer_fichier(
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                'factures',
+                $fac->piece_jointe
+            );
         }
+
+        // Supprimer la pj_paiement
+        if ($fac->pj_paiement) {
+            FichierHelper::supprimer_fichier(
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                'factures/paiements',
+                $fac->pj_paiement
+            );
+        }
+
+        if ($fac->delete()) {
+            return response()->json(['message' => 'Facture supprimé avec succès'], 200);
+        } else {
+            return response()->json(['message' => 'Facture non Supprimé'], 400);
+        }
+    } else {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+}
 
 
     public function get_info_numero_facture_unique($id,$num)

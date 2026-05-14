@@ -71,56 +71,7 @@ class SocieteController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-    /*public function update(UpdateSocieteRequest $request, $id)
-    {
-        if (RoleHelper::Superadmin()) {
-            $societe                           = Societe::findOrfail($id);
-            $originalRaisonSociale             = $societe->raison_sociale_concatene;
-            $societe->raison_sociale           = $request->raison_sociale;
-            $raison_sociale_concatene          = str_replace(' ', '', $request->raison_sociale);
-            $societe->raison_sociale_concatene = $raison_sociale_concatene;
-            $societe->adresse                  = $request->adresse;
-            $societe->nom_contact              = $request->nom_contact;
-            $societe->prenom_contact           = $request->prenom_contact;
-            $societe->tel                      = $request->tel;
-            $societe->email                    = $request->email;
-            $societe->id_fiscal                = $request->id_fiscal;
-            $societe->registre_commerce        = $request->registre_commerce;
-            $societe->capital                  = $request->capital;
-            if ($request->hasFile('logo')) {
 
-                if ($societe->logo != null) {
-                    $image_path = public_path('img/' . $societe->raison_sociale_concatene . '_' . $id . '/logos' . $societe->logo);
-                    if (file_exists($image_path)) {
-                        //unlink(C:\Users\HP\Desktop\20190513_174204.jpg);
-                        File::delete('C:\Users\HP\Desktop\20190513_174204.jpg');
-                    }
-                }
-                $logo = time() . '.' . $raison_sociale_concatene . '.' . $request->logo->extension();
-                FichierHelper::ajouter_fichier($request->logo, $raison_sociale_concatene, $societe->id, 'logos', $logo);
-                $societe->logo = $logo;
-            }
-            $societe->save();
-            if ($request->has('raison_sociale')) {
-                $newRaisonSociale = $societe->raison_sociale_concatene;
-                if ($originalRaisonSociale !== $newRaisonSociale) {
-                    $newDatabaseName = 'Erp_' . $newRaisonSociale . '_' . $id;
-                    $oldDatabaseName = 'Erp_' . $originalRaisonSociale . '_' . $id;
-
-                    $databaseHelper = new DatabaseHelper();
-                    $databaseHelper->renameDatabase($oldDatabaseName, $newDatabaseName);
-                }
-            }
-
-            Config::set('broadcasting.default', 'pusher_1');
-            // $societes = Societe::all();
-            broadcast(new NewSocieteEvent($societe->id));
-            return response()->json(['societe' => $societe], 200);
-
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-    }*/
         public function update(UpdateSocieteRequest $request, $id)
 {
     if (RoleHelper::Superadmin()) {
@@ -144,15 +95,26 @@ class SocieteController extends Controller
         $societe->capital = $request->capital;
 
         // Handle logo update
+         // Handle logo update - UTILISER FichierHelper
         if ($request->hasFile('logo')) {
+            // Supprimer l'ancien logo avec FichierHelper
             if ($societe->logo != null) {
-                $image_path = public_path('img/' . $societe->raison_sociale_concatene . '_' . $id . '/logos/' . $societe->logo);
-                if (file_exists($image_path)) {
-                    File::delete($image_path);
-                }
+                FichierHelper::supprimer_fichier(
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'logos',
+                    $societe->logo
+                );
             }
+
             $logo = time() . '.' . $raison_sociale_concatene . '.' . $request->logo->extension();
-            FichierHelper::ajouter_fichier($request->logo, $raison_sociale_concatene, $societe->id, 'logos', $logo);
+            FichierHelper::ajouter_fichier(
+                $request->logo,
+                $raison_sociale_concatene,
+                $societe->id,
+                'logos',
+                $logo
+            );
             $societe->logo = $logo;
         }
 
@@ -188,14 +150,45 @@ class SocieteController extends Controller
 /**
  * Rename all folders related to a societe
  */
+/**
+ * Rename all folders related to a societe
+ */
 private function renameSocieteFolders($oldName, $newName, $societeId)
 {
     $oldBaseFolder = $oldName . '_' . $societeId;
     $newBaseFolder = $newName . '_' . $societeId;
 
     // List of directory types that need renaming
-    $directoryTypes = ['img', 'docs'];
+    $directoryTypes = ['docs'];
 
+    // En production (S3), on doit copier les fichiers vers le nouveau préfixe
+    if (app()->environment('production')) {
+        foreach ($directoryTypes as $dirType) {
+            $oldPrefix = $dirType . '/' . $oldBaseFolder . '/';
+            $newPrefix = $dirType . '/' . $newBaseFolder . '/';
+
+            // Récupérer tous les fichiers dans l'ancien préfixe
+            $files = Storage::disk('s3')->files($oldPrefix);
+
+            foreach ($files as $file) {
+                // Nouveau chemin
+                $newFile = str_replace($oldPrefix, $newPrefix, $file);
+
+                // Copier le fichier vers le nouveau chemin
+                Storage::disk('s3')->copy($file, $newFile);
+
+                // Supprimer l'ancien fichier
+                Storage::disk('s3')->delete($file);
+
+                \Log::info("Renamed S3 file: {$file} -> {$newFile}");
+            }
+
+            // Note: Les "dossiers" vides sur S3 n'existent pas vraiment, donc rien à supprimer
+        }
+        return;
+    }
+
+    // En local, on peut renommer les dossiers directement
     foreach ($directoryTypes as $dirType) {
         $oldPath = public_path($dirType . '/' . $oldBaseFolder);
         $newPath = public_path($dirType . '/' . $newBaseFolder);
@@ -210,9 +203,6 @@ private function renameSocieteFolders($oldName, $newName, $societeId)
             File::move($oldPath, $newPath);
         }
     }
-
-    // Also handle the case where files are in public root with old naming pattern
-    $this->renameRootFiles($oldName, $newName, $societeId);
 }
 
 /**

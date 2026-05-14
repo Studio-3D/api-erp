@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers\Api\V1;
+use App\Http\Helpers\FichierHelper;  // AJOUTER CETTE LIGNE
 
 use App\Http\Helpers\DatabaseHelper;
 use App\Http\Helpers\RoleHelper;
@@ -98,12 +99,20 @@ class CpsController extends Controller
             $cps->date_validation = $request->date_validation;
             $cps->projet_id = $request->projet_id;
             $cps->user_id=$userAuth->value('id');
-            if ($request->hasFile('piece_jointe')) {
-                $cps->piece_jointe = $request->file('piece_jointe')->getClientOriginalName();;
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/cps');
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('piece_jointe')->move($directory,$request->file('piece_jointe')->getClientOriginalName());
-            }
+           if ($request->hasFile('piece_jointe')) {
+            $file = $request->file('piece_jointe');
+            $fileName = $file->getClientOriginalName();
+
+            FichierHelper::ajouter_fichier(
+                $file,
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                'cps',
+                $fileName
+            );
+
+            $cps->piece_jointe = $fileName;
+        }
             if ($cps->save()) {
                 return response()->json(['cps' => $cps], 200);
             }
@@ -153,11 +162,30 @@ class CpsController extends Controller
             $cps->projet_id = $request->projet_id;
             $cps->user_id=$userAuth->value('id');
             if ($request->hasFile('piece_jointe')) {
-                $cps->piece_jointe = $request->file('piece_jointe')->getClientOriginalName();;
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/cps');
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('piece_jointe')->move($directory,$request->file('piece_jointe')->getClientOriginalName());
+            // Supprimer l'ancien fichier s'il existe
+            if ($cps->piece_jointe) {
+                FichierHelper::supprimer_fichier(
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'cps',
+                    $cps->piece_jointe
+                );
             }
+
+            $file = $request->file('piece_jointe');
+            $fileName = $file->getClientOriginalName();
+
+            // Utiliser FichierHelper
+            FichierHelper::ajouter_fichier(
+                $file,
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                'cps',
+                $fileName
+            );
+
+            $cps->piece_jointe = $fileName;
+        }
             if ($cps->save()) {
                 return response()->json(['cps' => $cps], 200);
             }
@@ -168,18 +196,38 @@ class CpsController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
-    {
-        if (RoleHelper::AdminSup() ||RoleHelper::Comptable()) {
-            DatabaseHelper::Config();
-            $cps = Cps::on('temp')->findOrFail($id);
-            if ($cps->delete()) {
-                return response()->json(['message' => 'Cps Supprimé avec succés'], 200);
-            } else {
-                return response()->json(['message' => 'Cps Non Suprimé'], 400);
-            }
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
+   /**
+ * Remove the specified resource from storage.
+ */
+public function destroy(string $id)
+{
+    if (RoleHelper::AdminSup() || RoleHelper::Comptable()) {
+        DatabaseHelper::Config();
+
+        $cps = Cps::on('temp')->findOrFail($id);
+
+        // Supprimer le fichier associé s'il existe
+        if ($cps->piece_jointe) {
+            $user = Auth::user();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+            $societe = Societe::findOrfail($user_societes->societe_id);
+
+            FichierHelper::supprimer_fichier(
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                'cps',
+                $cps->piece_jointe
+            );
         }
+
+        if ($cps->delete()) {
+            return response()->json(['message' => 'Cps Supprimé avec succès'], 200);
+        } else {
+            return response()->json(['message' => 'Cps Non Supprimé'], 400);
+        }
+    } else {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+}
 }

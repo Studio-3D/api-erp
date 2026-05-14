@@ -14,6 +14,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\File;
 use App\Models\Societe;
 use App\Models\Facture;
+use App\Http\Helpers\FichierHelper;  // AJOUTER CETTE LIGNE
 
 
 class FournisseurController extends Controller
@@ -94,11 +95,19 @@ class FournisseurController extends Controller
             $four->rc = $request->rc;
             $four->projet_id = $request->projet_id;
             $four->user_id=$userAuth->value('id');
+           // MODIFICATION: Utiliser FichierHelper
             if ($request->hasFile('fichier_rc')) {
-                $four->fichier_rc = $request->file('fichier_rc')->getClientOriginalName();;
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/Fournisseurs');
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('fichier_rc')->move($directory,$request->file('fichier_rc')->getClientOriginalName());
+                $file = $request->file('fichier_rc');
+                $fileName = $file->getClientOriginalName();
+
+                FichierHelper::ajouter_fichier(
+                    $file,
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'Fournisseurs',
+                    $fileName
+                );
+                $four->fichier_rc = $fileName;
             }
             $four->adresse = $request->adresse;
             $four->save();
@@ -138,12 +147,30 @@ class FournisseurController extends Controller
             $four->code = $request->code;
             $four->nom = $request->nom;
             $four->rc = $request->rc;
-            if ($request->hasFile('fichier_rc')) {
-                $four->fichier_rc = $request->file('fichier_rc')->getClientOriginalName();;
-                $directory = public_path('docs/' . $societe->raison_sociale_concatene . '_' . $societe->id . '/fournisseurs');
-                File::makeDirectory($directory, 0755, true, true);
-                $request->file('fichier_rc')->move($directory,$request->file('fichier_rc')->getClientOriginalName());
+            // MODIFICATION: Utiliser FichierHelper
+        if ($request->hasFile('fichier_rc')) {
+            // Supprimer l'ancien fichier s'il existe
+            if ($four->fichier_rc) {
+                FichierHelper::supprimer_fichier(
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'Fournisseurs',
+                    $four->fichier_rc
+                );
             }
+
+            $file = $request->file('fichier_rc');
+            $fileName = $file->getClientOriginalName();
+
+            FichierHelper::ajouter_fichier(
+                $file,
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                'Fournisseurs',
+                $fileName
+            );
+            $four->fichier_rc = $fileName;
+        }
             $four->adresse = $request->adresse;
             $four->projet_id = $request->projet_id;
             $four->user_id=$userAuth->value('id');
