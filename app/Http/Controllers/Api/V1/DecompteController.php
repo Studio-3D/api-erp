@@ -24,7 +24,7 @@ class DecompteController extends Controller
 
     public function indexByProjet(Request $request, $projet_id)
     {
-        if (Auth::guard('api')->check()) {
+         if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
             // Default values for pagination null si non pas envoyer avec la raquete
             $size = $request->input('size', null);
             $page = $request->input('page', null);
@@ -76,7 +76,7 @@ class DecompteController extends Controller
 
     public function store(StoreDecompteRequest $request)
     {
-        if (RoleHelper::AdminSup()||RoleHelper::Comptable()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
             $user = Auth::user();
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -101,7 +101,7 @@ class DecompteController extends Controller
      */
     public function decomptes_in_facture($projet_id)
     {
-        if (RoleHelper::AdminSup()||RoleHelper::Comptable()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
             $decomptes = Decompte::on('temp')->withSum('factures', 'montant')->where('projet_id',$projet_id)->get();
             $dec_facture = array();
@@ -125,7 +125,7 @@ class DecompteController extends Controller
 
     public function show($id)
     {
-        if (RoleHelper::AdminSup()||RoleHelper::Comptable()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
             $decompte = Decompte::on('temp')->withSum('factures','montant')->findOrfail($id);
             return response()->json(['decompte' => $decompte], 200);
@@ -136,7 +136,7 @@ class DecompteController extends Controller
 
     public function update(StoreDecompteRequest $request, $id)
     {
-        if (RoleHelper::ACSup()||RoleHelper::Comptable()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
             $decompte = Decompte::on('temp')->findOrFail($id);
             $update = $request->all();
@@ -174,7 +174,7 @@ class DecompteController extends Controller
      */
     public function destroy(string $id)
     {
-        if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable()) {
+        if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $dec = Decompte::on('temp')->findOrFail($id);
                 $factures=Facture::on('temp')->where('decompte_id',$id)->get();
@@ -196,7 +196,7 @@ class DecompteController extends Controller
 
     public function get_info_numero_decompte_unique($id,$num)
     {
-            if(RoleHelper::ACSup()||RoleHelper::Comptable()){
+            if(RoleHelper::ACSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()){
                 $user = Auth::user();
                 DatabaseHelper::Config();
 

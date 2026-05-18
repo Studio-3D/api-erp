@@ -78,7 +78,7 @@ class EtapeProjetController extends Controller
     /*
     public function store(Request $request)
     {
-    if (RoleHelper::AdminSup()) {
+    if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             $user = Auth::user();
             // Check if user is superadmin
             $isSuperAdmin = RoleHelper::SuperAdmin();
@@ -114,7 +114,7 @@ class EtapeProjetController extends Controller
          public function store(Request $request)
     {
 
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             $user = Auth::user();
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -139,7 +139,7 @@ class EtapeProjetController extends Controller
      */
     public function show($id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $ech = EcheanceProjet::on('temp')->findOrFail($id);
             return response()->json(['ech' => $ech], 200);
@@ -157,7 +157,7 @@ class EtapeProjetController extends Controller
 
     /*public function update(Request $request, $id)
 {
-    if (RoleHelper::AdminSup()) {
+    if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
 
             $user = Auth::user();
             // Check if user is superadmin
@@ -211,7 +211,7 @@ class EtapeProjetController extends Controller
 
    public function update(Request $request, $id)
 {
-    if (RoleHelper::AdminSup()) {
+    if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
         DatabaseHelper::Config();
 
         $user = Auth::user();
@@ -255,7 +255,7 @@ class EtapeProjetController extends Controller
      */
     public function destroy(string $id)
     {
-        if (RoleHelper::AdminSup() ) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $ech = EcheanceProjet::on('temp')->findOrFail($id);
             if ($ech->delete()) {

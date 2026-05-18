@@ -359,11 +359,11 @@ class BienController extends Controller
     public function biens_proposition(Request $request, $projet_id)
     {
 
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page    = $request->input('page', 1);
-            if (RoleHelper::AdminSup()) {
+            if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
                 $biens = Proposition::on('temp')->join('biens', 'biens.id', '=', 'propositions.bien_id')->latest('propositions.created_at')->where('biens.projet_id', $projet_id)->where('biens.etat', 'ENCOURS_DE_PROPOSITION')
                     ->select('propositions.*')
                     ->get()
@@ -470,7 +470,7 @@ class BienController extends Controller
      */
     public function store(StoreBienRequest $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
 
             DatabaseHelper::Config();
             $bien = new bien();
@@ -567,7 +567,7 @@ class BienController extends Controller
     }
     public function libererBien_function($id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             Config::set('broadcasting.default', 'pusher_realtime');
             Bien_Helper::libererBien($id, null, null,false);
@@ -583,7 +583,7 @@ class BienController extends Controller
      */
     public function edit($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $bien = bien::on('temp')->findOrfail($id);
             return response()->json(['message' => $bien], 200);
@@ -598,7 +598,7 @@ class BienController extends Controller
     public function update(UpdateBienRequest $request, $id)
     {
 
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $bien   = bien::on('temp')->findOrfail($id);
             $update = $request->all();
@@ -622,7 +622,7 @@ class BienController extends Controller
      */
     public function destroy($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $bien = bien::on('temp')->findOrfail($id);
             //composition
@@ -817,7 +817,7 @@ class BienController extends Controller
     }
     public function restoreBien($bien_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             Bien::on('temp')->where('id', $bien_id)->withTrashed()->restore();
 
@@ -830,7 +830,7 @@ class BienController extends Controller
     public function getTrashedBiens()
     {
 
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $biens = Bien::on('temp')->onlyTrashed()->get();
 
@@ -843,7 +843,7 @@ class BienController extends Controller
 
     public function bloquerBien($bien_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $bien       = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat = EtatBien::BLOQUE->value;
@@ -861,7 +861,7 @@ class BienController extends Controller
 
     public function reserverBien($bien_id, $visite_id, $reservation_id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
             $request = new \Illuminate\Http\Request();
             DatabaseHelper::Config();
             $bien       = Bien::on('temp')->findOrFail($bien_id);
@@ -964,7 +964,7 @@ class BienController extends Controller
 
     public function prereserverBien($bien_id, $visite_id, $appel_id, $desistement_id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $bien       = Bien::on('temp')->findOrFail($bien_id);
             $bien->etat = EtatBien::PRE_RESERVATION->name;
@@ -1044,7 +1044,7 @@ class BienController extends Controller
 
     public function getHistoriqueBien($bien_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $Historique_bien = HistoriqueBien::on('temp')->where('bien_id', $bien_id)->get();
             return response()->json(['message' => $Historique_bien], 200);
@@ -1056,7 +1056,7 @@ class BienController extends Controller
 
     public function getBiensDispoByProjet($projet_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $biens = Bien::on('temp')->where('projet_id', $projet_id)->where('etat', EtatBien::DISPONIBLE->name)->get();
             return response()->json(['message' => $biens], 200);
@@ -1069,7 +1069,7 @@ class BienController extends Controller
 
     public function getBiensDispoByTranche($tranche_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $biens = Bien::on('temp')->where('tranche_id', $tranche_id)->where('etat', EtatBien::DISPONIBLE->name)->get();
             return response()->json(['message' => $biens], 200);
@@ -1081,7 +1081,7 @@ class BienController extends Controller
     }
     public function getBiensDispoByBloc($bloc_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $biens = Bien::on('temp')->where('bloc_id', $bloc_id)->where('etat', EtatBien::DISPONIBLE->name)->get();
             return response()->json(['message' => $biens], 200);
@@ -1093,7 +1093,7 @@ class BienController extends Controller
     }
     public function getBiensDispoByImmeuble($immeuble_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $biens = Bien::on('temp')->where('immeuble_id', $immeuble_id)->where('etat', EtatBien::DISPONIBLE->name)->get();
             return response()->json(['message' => $biens], 200);
@@ -1106,7 +1106,7 @@ class BienController extends Controller
     }
   public function setPropostionBien($bien_id, $old_id)
 {
-    if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+    if ( RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
         DatabaseHelper::Config();
         Config::set('broadcasting.default', 'pusher_realtime');
 
@@ -1155,7 +1155,7 @@ class BienController extends Controller
 
     public function getEtatBien($bien_id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
 
             $bien = Bien::on('temp')
@@ -1173,7 +1173,7 @@ class BienController extends Controller
     public function getBiensByProjet_Concat($projet_id)
     {
 
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
 
             $biens_pr = Bien::on('temp')->with(['tranche', 'bloc', 'immeuble', 'is_proposed'])
@@ -1244,7 +1244,7 @@ class BienController extends Controller
 
     public function getBiensByProjet_Concat_for_reservation_visite($bien_id,$projet_id)
         {
-            if (RoleHelper::ACSup()) {
+            if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
                 DatabaseHelper::Config();
 
                 $biens_pr = Bien::on('temp')->with(['tranche', 'bloc', 'immeuble', 'is_proposed'])
@@ -1326,7 +1326,7 @@ class BienController extends Controller
     public function getBiens_Vendu_ByProjet_Concat($projet_id, $text)
     {
 
-        if (RoleHelper::ACSup()||RoleHelper::RespoLivraison()||RoleHelper::SAV()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ||RoleHelper::RespoLivraison()||RoleHelper::SAV()) {
             DatabaseHelper::Config();
             if ($text == 'BiensNonRemise') {
                 //biens vendu sans Remise
@@ -1386,7 +1386,7 @@ class BienController extends Controller
 
     public function getTotalsStatistique(Request $request)
     {
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+        if (Auth::guard('api')->check() && RoleHelper::ACSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             $query = DB::connection('temp')
@@ -1497,7 +1497,7 @@ class BienController extends Controller
 
     public function getEtatBien_ByType(Request $request, $projet_id, $type_id)
     {
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+        if ( RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
 
             $query = DB::connection('temp')
@@ -1613,7 +1613,7 @@ class BienController extends Controller
     //path en storage/app/public
     public function uploadMedia(Request $request, $id)
     {
-        if (! RoleHelper::ACSup()) {
+        if (! RoleHelper::ACSup() && RoleHelper::AgentAdmin()) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -1711,7 +1711,7 @@ class BienController extends Controller
      */
     public function deleteMedia($id, $mediaId)
     {
-        if (! RoleHelper::ACSup()) {
+        if (! RoleHelper::ACSup() && !RoleHelper::AgentAdmin() ) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -1733,7 +1733,7 @@ class BienController extends Controller
      */
     public function updateDescription(Request $request, $id)
     {
-        if (! RoleHelper::ACSup()) {
+        if (! RoleHelper::ACSup() && RoleHelper::AgentAdmin() ) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 

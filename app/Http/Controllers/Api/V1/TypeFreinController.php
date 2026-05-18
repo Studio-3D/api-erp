@@ -82,7 +82,7 @@ class TypeFreinController extends Controller
     public function store(StoreTypeFreinRequest $request)
     {
 
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
 
             DatabaseHelper::Config();
             $typefrein = new TypeFrein();
@@ -119,7 +119,7 @@ class TypeFreinController extends Controller
      */
     public function update(UpdateTypeFreinRequest $request, $id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $typefrein = TypeFrein::on('temp')->findOrfail($id);
             $update = $request->all();
@@ -140,7 +140,7 @@ class TypeFreinController extends Controller
      */
     public function destroy($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $typefrein = TypeFrein::on('temp')->findOrfail($id);
 
@@ -157,7 +157,7 @@ class TypeFreinController extends Controller
 
     public function restoreTypeFrein($typefrein_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             TypeFrein::on('temp')->where('id', $typefrein_id)->withTrashed()->restore();
 

@@ -17,7 +17,7 @@ class ServicesPrestatairesController extends Controller
 
     public function index(Request $request, $projet_id)
     {
-        if (RoleHelper::AdminSavSup()) {
+        if (RoleHelper::AdminSavSup() || RoleHelper::AgentAdmin() ) {
             $size = $request->input('size', null);
             $page = $request->input('page', null);
             DatabaseHelper::Config();
@@ -61,7 +61,7 @@ class ServicesPrestatairesController extends Controller
     }
     public function get_services(Request $request)
     {
-        if (RoleHelper::AdminSavSup()) {
+        if (RoleHelper::AdminSavSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $ser = ServicesPrestataires::on('temp')->with('prestataires')->orderBy('id', 'asc')->get();
             return response()->json(['services' => $ser], 200);
@@ -81,7 +81,7 @@ class ServicesPrestatairesController extends Controller
     public function store(Request $request)
     {
 
-        if (RoleHelper::AdminSavSup()) {
+        if (RoleHelper::AdminSavSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $ser = new ServicesPrestataires();
             $ser->setConnection('temp');
@@ -99,7 +99,7 @@ class ServicesPrestatairesController extends Controller
      */
     public function show($id)
     {
-        if (RoleHelper::AdminSavSup()) {
+        if (RoleHelper::AdminSavSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $ser = ServicesPrestataires::on('temp')->findOrFail($id);
             return response()->json(['ser' => $ser], 200);
@@ -120,7 +120,7 @@ class ServicesPrestatairesController extends Controller
      */
     public function update(Request $request, $id)
     {
-        if (RoleHelper::AdminSavSup()) {
+        if (RoleHelper::AdminSavSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $ser = ServicesPrestataires::on('temp')->findOrfail($id);
             $ser->setConnection('temp');
@@ -138,7 +138,7 @@ class ServicesPrestatairesController extends Controller
      */
     public function destroy(string $id)
     {
-        if (RoleHelper::AdminSavSup()) {
+        if (RoleHelper::AdminSavSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $ser          = ServicesPrestataires::on('temp')->findOrFail($id);
             $prestataires = Prestataire::on('temp')->where('service_id', $id)->get();

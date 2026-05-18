@@ -70,7 +70,7 @@ class AvanceController extends Controller
 
     public function getAvancesByReservation(Request $request, $reservation_id)
     {
-        if (RoleHelper::ACSup_RC()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::Comptable()) {
+        if (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
             $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
@@ -224,12 +224,12 @@ class AvanceController extends Controller
 
     public function get_avances_by_etat($projet_id, $statut, Request $request)
     {
-        if (RoleHelper::ACSup_RC()||RoleHelper::Comptable()) {
+        if (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
             $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
             $aa=0;
-            if (RoleHelper::AdminSup()||RoleHelper::Comptable()) {
+            if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
                 if($statut==3){
                     $query = Avance::on('temp')->
                     with([
@@ -443,7 +443,7 @@ class AvanceController extends Controller
 
     public function traiter_avance($id, Request $request)
     {
-        if (RoleHelper::AdminSup()||RoleHelper::Comptable()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
 
             DatabaseHelper::Config();
             $user = Auth::user();
@@ -598,7 +598,7 @@ class AvanceController extends Controller
     public function store(StoreAvanceRequest $request)
     {
 
-        if (RoleHelper::ACSup_RC()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::RespoCommercial()) {
+        if (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::RespoCommercial()) {
                     DatabaseHelper::Config();
                     DB::connection('temp')->beginTransaction();
                 try {
@@ -662,7 +662,7 @@ class AvanceController extends Controller
                     } else {
                         if (RoleHelper::Com()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::RespoCommercial()) {
                             $avance->statut = StatutReservationEnum::En_Attente->value;
-                        } elseif (RoleHelper::AdminSup()) {
+                        } elseif (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
                             $avance->statut = StatutReservationEnum::Validé->value;
                         }
                     }
@@ -777,9 +777,9 @@ class AvanceController extends Controller
                         }
                         //si avance est cree without reservaation au depart
                         //si commercial==> demande validation du paiement
-                    // && $avance->reservation->statut==StatutReservationEnum::Validé->value
-                        if($request->avance_with_reservation==false ){
-                   if ((RoleHelper::Com()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::RespoCommercial()) && $request->montant>0 ) {
+                        // && $avance->reservation->statut==StatutReservationEnum::Validé->value
+                       if($request->avance_with_reservation==false ){
+                            if ((RoleHelper::Com()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::RespoCommercial()) && $request->montant>0 ) {
                             //send mail to admin et comptable avec etat
 
                             // Get all admin and comptable users for this project
@@ -861,7 +861,7 @@ class AvanceController extends Controller
                             Config::set('broadcasting.default', 'pusher_notify');
                             //2 traitement avance (update menu counter for pending validations)
                             broadcast(new NotifMenuEvent(2));
-                        }
+                            }
                         }
                         $num_recu='';
                         //num recu cree aujourdhui
@@ -897,13 +897,35 @@ class AvanceController extends Controller
 
 
 
-                        if (RoleHelper::AdminSup()) {
-                            //store encaissement //&& ($request->num_remise != null && $request->num_remise!="null")
-                            if ($request->date_encaissement != null ) {
+                       if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()) {
+                            // Check if user can store encaissement based on conditions
+                            $canStoreEncaissement = false;
+
+                            if (RoleHelper::AdminSup()) {
+                                // Admin can always store encaissement
+                                $canStoreEncaissement = true;
+                            }elseif (RoleHelper::AgentAdmin()) {
+                                // Agent Admin can store encaissement in two scenarios:
+                                // 1. With reservation: when avance_with_reservation is true AND prix == prix_final
+                                // 2. Without reservation: when avance_with_reservation is false (or not present)
+
+                                if ($request->avance_with_reservation == true && $request->prix == $request->prix_final) {
+                                    // Case 1: Store with reservation conditions met
+                                    $canStoreEncaissement = true;
+                                } elseif ($request->avance_with_reservation == false || !$request->has('avance_with_reservation')) {
+                                    // Case 2: Store without reservation (regular avance)
+                                    $canStoreEncaissement = true;
+                                } else {
+                                    $canStoreEncaissement = false;
+                                }
+                            }
+
+                            // Store encaissement if conditions are met
+                            if ($canStoreEncaissement && $request->date_encaissement != null) {
                                 $encaiss = new Encaissement();
                                 $encaiss->setConnection('temp');
                                 $encaiss->reservation_id = $request->reservation_id;
-                                $encaiss->bien_id =$reservation->bien->id;
+                                $encaiss->bien_id = $reservation->bien->id;
                                 $encaiss->type_encaissement = 1; //Avances
                                 $encaiss->montant = $avance->montant;
                                 $encaiss->avance_id = $avance->id;
@@ -911,30 +933,27 @@ class AvanceController extends Controller
                                 $encaiss->date_encaissement = $request->date_encaissement;
                                 $encaiss->user_id_valider = $userAuth->value('id');
                                 //calcul du tva collecte
-                                    if($encaiss->save()){
-                                        //get tva du bien
-                                        if($bien->Bien_Tva!=null){
-                                            $data=[
-                                                'montant'=>$avance->montant,
-                                                'prix'=>$bien->prix,
-                                                'qp_terrain_valeur'=>$bien->Bien_Tva->qp_terrain_valeur,
-                                                'ancien_tva_collectes'=>$bien->tva_collectes,
-                                                'tva_collectes_sum_tva_a_payer'=>$bien->tva_collectes_sum_tva_a_payer,
-                                                'tva_bien'=>$bien->Bien_Tva->tva,
-                                                'reservation_id'=>$avance->reservation_id,
-                                                'bien_id'=>$bien->id,
-                                                'type'=>'avances',
-                                                'encaissement_id'=>$encaiss->id
-                                            ];
-                                            $this->store_tva_collecte($request->merge($data));
-
-                                        }
+                                if ($encaiss->save()) {
+                                    //get tva du bien
+                                    if ($bien->Bien_Tva != null) {
+                                        $data = [
+                                            'montant' => $avance->montant,
+                                            'prix' => $bien->prix,
+                                            'qp_terrain_valeur' => $bien->Bien_Tva->qp_terrain_valeur,
+                                            'ancien_tva_collectes' => $bien->tva_collectes,
+                                            'tva_collectes_sum_tva_a_payer' => $bien->tva_collectes_sum_tva_a_payer,
+                                            'tva_bien' => $bien->Bien_Tva->tva,
+                                            'reservation_id' => $avance->reservation_id,
+                                            'bien_id' => $bien->id,
+                                            'type' => 'avances',
+                                            'encaissement_id' => $encaiss->id
+                                        ];
+                                        $this->store_tva_collecte($request->merge($data));
                                     }
+                                }
                             }
-
-                            //store commission a voir
                         }
-                    }
+                         }
                         //actualiser avances
                         Config::set('broadcasting.default', 'pusher_list');
                         $reservationId = $request->reservation_id;
@@ -1055,7 +1074,7 @@ class AvanceController extends Controller
      */
     public function show($id)
     {
-        if (RoleHelper::ACSup_RC()) {
+        if (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $avance = Avance::on('temp')->with('last_statut')->withcount('historiques')->findOrFail($id);
             return response()->json(['avance' => $avance], 200);
@@ -1138,7 +1157,7 @@ class AvanceController extends Controller
     public function update(UpdateAvanceRequest $request, $id)
     {
 
-        if (RoleHelper::ACSup()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::RespoCommercial()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::RespoCommercial()) {
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -1262,7 +1281,7 @@ class AvanceController extends Controller
                 $mnt_lettre = $inWords->format($request->montant);
                 $avance->montant_par_lettre = $mnt_lettre;
 
-                if (RoleHelper::AdminSup()) {
+                if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
                     //rejete et remodifier par admin
                     if ($avance->statut == StatutReservationEnum::Refusé->value) {
                         $avance->statut = StatutReservationEnum::Validé->value;
@@ -1303,7 +1322,7 @@ class AvanceController extends Controller
                     $fiche->save();
                 }
 
-                    if(RoleHelper::AdminSup()){
+                    if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()){
                         //&& ($request->num_remise!=null || $request->num_remise!="null")
                         if($request->date_encaissement!=null   ){
                             if($avance->statut==StatutReservationEnum::Validé->value ){
@@ -1545,7 +1564,7 @@ class AvanceController extends Controller
      */
     public function destroy($id)
     {
-        if (RoleHelper::ACSup_RC()) {
+        if (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::config();
             $avance = Avance::on('temp')->findOrFail($id);
             $dd=$avance;
@@ -1615,7 +1634,7 @@ class AvanceController extends Controller
 
     public function soft_destroy_avances_by_reservationId($reservation_id)
     {
-        if (RoleHelper::ACSup_RC()) {
+        if (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::config();
             $avances = Avance::on('temp')->where('reservation_id', $reservation_id)->get();
             foreach ($avances as $avance) {
@@ -1642,7 +1661,7 @@ class AvanceController extends Controller
     }
     public function destoryUsingReservationId($reservation_id)
     {
-        if (RoleHelper::ACSup_RC()) {
+        if (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $avances = Avance::on('temp') ->where(function ($query)use ($reservation_id){
                 $query->where('reservation_id',$reservation_id)
@@ -1673,10 +1692,10 @@ class AvanceController extends Controller
     public function get_notif_avances_att_validation($projet_id)
     {
 
-        if (Auth::guard('api')->check() && (RoleHelper::ACSup_RC()||RoleHelper::Comptable())) {
+        if (Auth::guard('api')->check() && (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable())) {
             DatabaseHelper::Config();
 
-            if (RoleHelper::AdminSup()||RoleHelper::Comptable()) {
+            if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
                 //avance en attente et avance  stored by admin(validé) mais sans encaissement
                 $query = Avance::on('temp')->with('last_statut','reservation')
                     ->where('mode_paiement','!=',7)->where('montant','>',0) ->orderBy('created_at', 'desc')
@@ -1729,12 +1748,12 @@ class AvanceController extends Controller
     public function get_echeances($projet_id, Request $request)
     {
 
-        if (Auth::guard('api')->check() && (RoleHelper::ACSup_RC()||RoleHelper::Comptable())) {
+        if (Auth::guard('api')->check() && (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable())) {
             DatabaseHelper::Config();
             $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
 
-            if (RoleHelper::AdminSup()||RoleHelper::Comptable()) {
+            if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
                 //ADMIN
                     $query =Avance::on('temp')->with('last_statut','reservation')
                     ->where('mode_paiement','!=',7)->where('montant','>',0)
@@ -1821,11 +1840,11 @@ class AvanceController extends Controller
     public function get_echeances_menu($projet_id, Request $request)
     {
 
-        if (Auth::guard('api')->check() && (RoleHelper::ACSup_RC()||RoleHelper::Comptable())) {
+        if (Auth::guard('api')->check() && (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable())) {
             DatabaseHelper::Config();
 
 
-            if (RoleHelper::AdminSup()||RoleHelper::Comptable()) {
+            if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
                 //ADMIN
                 $echeances = Avance::on('temp')
                     ->join('reservations', 'avances.reservation_id', '=', 'reservations.id')

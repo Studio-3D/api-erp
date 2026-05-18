@@ -87,7 +87,7 @@ class BanqueController extends Controller
      */
     public function store(StoreBanqueRequest $request)
     {
-        if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable()) {
+        if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $banque = new Banque();
             $banque->setConnection('temp');
@@ -105,7 +105,7 @@ class BanqueController extends Controller
      */
     public function show($id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $banque = Banque::on('temp')->findOrFail($id);
             return response()->json(['banque' => $banque], 200);
@@ -126,7 +126,7 @@ class BanqueController extends Controller
      */
     public function update(UpdateBanqueRequest $request, $id)
     {
-        if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable()) {
+        if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $banque = Banque::on('temp')->findOrFail($id);
             $update = $request->all();
@@ -144,7 +144,7 @@ class BanqueController extends Controller
      */
     public function destroy(string $id)
     {
-        if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable()) {
+        if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $banque = Banque::on('temp')->findOrFail($id);
             if ($banque->delete()) {

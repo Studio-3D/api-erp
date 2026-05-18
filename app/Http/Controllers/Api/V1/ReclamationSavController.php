@@ -136,7 +136,7 @@ class ReclamationSavController extends Controller
      */
    public function store(StoreReclamationRequest $request)
 {
-    if(RoleHelper::AdminSup()||RoleHelper::SAV()){
+    if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ||RoleHelper::SAV()){
         DatabaseHelper::Config();
         $user = Auth::user();
         $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -264,7 +264,7 @@ class ReclamationSavController extends Controller
      */
    public function traiter_reclamation($id, Request $request)
 {
-    if(RoleHelper::AdminSup()||RoleHelper::SAV()){
+    if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ||RoleHelper::SAV()){
         DatabaseHelper::Config();
         $rec = Reclamation::on('temp')->findOrFail($id);
         $rec->statut = 2;
@@ -380,7 +380,7 @@ class ReclamationSavController extends Controller
     public function resoudre_reclamation($id, Request $request)
 {
 
-    if(RoleHelper::AdminSup()||RoleHelper::SAV()){
+    if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ||RoleHelper::SAV()){
         DatabaseHelper::Config();
         $rec = Reclamation::on('temp')->findOrFail($id);
         $rec->date_fin_intervention = $request->input('date_fin_intervention');
@@ -401,7 +401,7 @@ class ReclamationSavController extends Controller
      */
     public function update(UpdateReclamationRequest $request,$id)
     {
-    if(RoleHelper::AdminSup()||RoleHelper::SAV()){
+    if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ||RoleHelper::SAV()){
             DatabaseHelper::Config();
             $rec=Reclamation::on('temp')->findOrFail($id);
             $user = Auth::user();
@@ -482,7 +482,7 @@ class ReclamationSavController extends Controller
      */
     public function destroy(string $id)
     {
-    if(RoleHelper::AdminSup()||RoleHelper::SAV()){
+    if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ||RoleHelper::SAV()){
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();

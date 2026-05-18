@@ -27,7 +27,7 @@ class FournisseurController extends Controller
 
     public function indexByProjet(Request $request, $projet_id)
     {
-        if (Auth::guard('api')->check()) {
+         if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()|| RoleHelper::AdminComptable() || RoleHelper::AgentAdmin() ){
             // Default values for pagination null si non pas envoyer avec la raquete
             $size = $request->input('size', null);
             $page = $request->input('page', null);
@@ -81,8 +81,7 @@ class FournisseurController extends Controller
 
     public function store(StoreFournisseurRequest $request)
     {
-        if (RoleHelper::AdminSup()||RoleHelper::Comptable()) {
-            $user = Auth::user();
+ if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()|| RoleHelper::AdminComptable() || RoleHelper::AgentAdmin() ){            $user = Auth::user();
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
@@ -124,8 +123,7 @@ class FournisseurController extends Controller
      */
     public function show($id)
     {
-        if (RoleHelper::AdminSup()||RoleHelper::Comptable()) {
-            DatabaseHelper::Config();
+ if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()|| RoleHelper::AdminComptable() || RoleHelper::AgentAdmin() ){            DatabaseHelper::Config();
             $fournisseur = Fournisseur::on('temp')->findOrfail($id);
             return response()->json(['fournisseur' => $fournisseur], 200);
         } else {
@@ -135,7 +133,7 @@ class FournisseurController extends Controller
 
     public function update(StoreFournisseurRequest $request, $id)
     {
-        if (RoleHelper::ACSup()||RoleHelper::Comptable()) {
+         if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()|| RoleHelper::AdminComptable() || RoleHelper::AgentAdmin() ){
             DatabaseHelper::Config();
             $user = Auth::user();
             DatabaseHelper::Config();
@@ -209,7 +207,7 @@ class FournisseurController extends Controller
 
      public function destroy(string $id)
      {
-         if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable()) {
+         if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
              DatabaseHelper::Config();
              $fourn = Fournisseur::on('temp')->findOrFail($id);
              $factures=Facture::on('temp')->where('fournisseur_id',$id)->get();
@@ -230,7 +228,7 @@ class FournisseurController extends Controller
 
      public function get_info_ice_unique($id,$ice)
      {
-             if(RoleHelper::ACSup()||RoleHelper::Comptable()){
+             if(RoleHelper::ACSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()){
                  $user = Auth::user();
                  DatabaseHelper::Config();
                  //cin unique

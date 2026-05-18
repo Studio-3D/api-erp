@@ -87,7 +87,6 @@ Route::get('/health', function () {
 
 Route::post('login', [UserController::class, 'login'])->name('login');
 Route::post('/validateToken/{token}', [UserController::class, 'validateToken']);
-Route::post('/resetPassword/{token}', [V1UserController::class, 'resetPassword']);
 Route::post('sendEmail', [V1UserController::class, 'sendEmail']);
 Route::post('resendEmail', [V1UserController::class, 'resendEmail']);
 Route::post('/resetPassword/{token}', [UserController::class, 'resetPassword']);
@@ -538,11 +537,7 @@ Route::middleware('auth:api')->group(function () {
     /*************************************User***************************** */
     Route::resource('user', UserController::class);
 
-   // Route::get('getUsersBySocieteId/{id}', [UserController::class, 'getUsersBySocieteId'])->name('getUsersBySocieteId');
-  //  Route::post('restoreUser/{id}', [UserController::class, 'restoreUser'])->name('restoreUser');
-   // Route::get('getTrashedUsers', [UserController::class, 'getTrashedUsers'])->name('getTrashedUsers');
     Route::get('dashboard', [UserController::class, 'dashboard'])->name('dashboard');
-  //  Route::get('getTrashedUsersBySociete/{id}', [UserController::class, 'getTrashedUsersBySociete'])->name('getTrashedUsersBySociete');
     Route::post('logout', [UserController::class, 'logout'])->name('logout');
     Route::post('addUserProjet/{id}', [UserController::class, 'addUserProjet'])->name('addUserProjet');
     /*  Route::post('sendEmail', [UserController::class, 'sendEmail']);

@@ -126,7 +126,7 @@ class BlocController extends Controller
      */
     public function store(StoreBlocRequest $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
 
             DatabaseHelper::Config();
             $bloc = new Bloc();
@@ -164,7 +164,7 @@ class BlocController extends Controller
      */
     public function edit($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $bloc = Bloc::on('temp')->findOrfail($id);
             return response()->json(['message' => $bloc], 200);
@@ -178,7 +178,7 @@ class BlocController extends Controller
      */
     public function update(UpdateBlocRequest $request, $id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $bloc   = Bloc::on('temp')->findOrfail($id);
             $update = $request->all();
@@ -198,7 +198,7 @@ class BlocController extends Controller
      */
     public function destroy($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $bloc = Bloc::on('temp')->findOrfail($id);
             if (count($bloc->immeuble) > 0) {
@@ -237,7 +237,7 @@ class BlocController extends Controller
     }
     public function restoreBloc($bloc_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             Bloc::on('temp')->where('id', $bloc_id)->withTrashed()->restore();
             return response()->json(['message' => 'Bloc restored'], 200);
@@ -248,7 +248,7 @@ class BlocController extends Controller
     public function getTrashedBlocs()
     {
 
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $blocs = Bloc::on('temp')->onlyTrashed()->get();
             return response()->json(['message' => $blocs], 200);

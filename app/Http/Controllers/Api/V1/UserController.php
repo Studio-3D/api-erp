@@ -35,7 +35,7 @@ class UserController extends Controller
      */
     public function get_commerciaux($projet_id)
     {
-        if (RoleHelper::AdminSup()||RoleHelper::RespoCommercial()) {
+        if (RoleHelper::AdminSup()  ||RoleHelper::RespoCommercial()||RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             //->where('role',3)
             $users = UserProjet::on('temp')->with('user')
@@ -62,7 +62,7 @@ class UserController extends Controller
                 return response()->json(['users' => $users]);
             }
 
-        } else if (RoleHelper::Admin()) {
+        } else if (RoleHelper::Admin()||RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $users = User::on('temp')->where('role','>',1)->where('is_actif',1)->get();
             return response()->json(['users' => $users], 200);
@@ -75,7 +75,7 @@ class UserController extends Controller
 
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            if (RoleHelper::AdminSup()) {
+            if (RoleHelper::AdminSup() ||RoleHelper::AgentAdmin() ) {
                 $objectifs = Objectif::on('temp')->distinct(['user_id'])->get('user_id');
                 $arrQuery  = [];
                 for ($i = 0; $i < count($objectifs); $i++) {
@@ -101,7 +101,7 @@ class UserController extends Controller
 
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            if (RoleHelper::AdminSup()) {
+            if (RoleHelper::AdminSup() ||RoleHelper::AgentAdmin() ) {
 
                 //stock all user_id into array and get users where user_id not in tble objectif
                 $query = UserProjet::on('temp')->with('user')->distinct(['user_id'])
@@ -163,6 +163,9 @@ class UserController extends Controller
         if ($request->filled('role')) {
             $query->where('role', 'like', '%' . $request->input('role') . '%');
         }
+         if ($request->filled('niveau')) {
+            $query->where('niveau_etude', 'like', '%' . $request->input('niveau') . '%');
+        }
 
 
         // Si l'utilisateur s'agit d'un 'superadmin'
@@ -178,7 +181,7 @@ class UserController extends Controller
                 $query->where('role', $request->input('role'));
             }
         } // Sinon, si l'utilisateur est 'admin'
-        else if (RoleHelper::Admin() || (RoleHelper::Superadmin() && $user->societe_id != 1)) {
+        else if (RoleHelper::Admin() ||RoleHelper::AgentAdmin() || (RoleHelper::Superadmin() && $user->societe_id != 1)) {
             // Filtrer avec l'id de la société et exclure les utilisateurs ayant le role superAdmin
             $query->where('societe_id', $user->societe_id)->where('role', '!=', 1);
         }
@@ -288,7 +291,7 @@ class UserController extends Controller
             $user = User::find($id);
             $projets=[];
             $projets_de_user=[];
-        } else if (RoleHelper::Admin() || (RoleHelper::Superadmin() && $userAuth->societe_id != 1)) {
+        } else if (RoleHelper::Admin() || RoleHelper::AgentAdmin()||(RoleHelper::Superadmin() && $userAuth->societe_id != 1)) {
             DatabaseHelper::Config();
             $user = User::on('temp')
                // ->with(['projets', 'reservations', 'desistements', 'visites', 'avances', 'compromis_ventes', 'traitement_appels', 'contrat_ventes'])
@@ -414,7 +417,7 @@ class UserController extends Controller
                     return response()->json(['message' => 'profil modifié avec succès'], 200);
 
                 }
-            } else if (RoleHelper::AdminSup()) {
+            } else if (RoleHelper::AdminSup()  ) {
 
                $user = User::findOrFail($id);
                 if ($request->has('cin')) {
@@ -508,7 +511,7 @@ class UserController extends Controller
                     $user->solde_conge     = $request->solde_conge;
                     $user->save();
 
-                    if (RoleHelper::AdminSup()) {
+                    if (RoleHelper::AdminSup()  ) {
                         //modifier user projet
                         $user_projets = UserProjet::on('temp')->where('user_id', $user_societes->id)->delete();
 
@@ -792,7 +795,7 @@ public function update_password(Request $request, $id)
 
     public function activateUser($user_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()  ) {
             $user           = User::findOrFail($user_id);
             $user->is_actif = 1;
             if ($user->save()) {
@@ -808,7 +811,7 @@ public function update_password(Request $request, $id)
     }
     public function desactivateUser($user_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()  ) {
             $user           = User::findOrFail($user_id);
             $user->is_actif = 0;
             if ($user->save()) {
@@ -901,7 +904,7 @@ public function update_password(Request $request, $id)
     public function resetPassword(Request $request, $token)
     {
 
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()  ) {
             $passwordReset = DB::table('password_reset_tokens')
                 ->where('token', $token)
                 ->first();

@@ -18,7 +18,7 @@ class VueController extends Controller
      */
       public function store_multiple_vues (Request $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $dataArray_donnees = json_decode($request->input('donneesVue', '[]'), true);
             if ($dataArray_donnees) {
@@ -152,7 +152,7 @@ class VueController extends Controller
     public function store(StoreVueRequest $request)
     {
 
-        if(RoleHelper::AdminSup()){
+        if(RoleHelper::AdminSup()  || RoleHelper::AgentAdmin()){
             DatabaseHelper::Config();
             $vue=new Vue();
             $vue->setConnection('temp');
@@ -192,7 +192,7 @@ class VueController extends Controller
      */
     public function update(UpdateVueRequest $request,$id)
     {
-        if(RoleHelper::ACSup()){
+        if(RoleHelper::ACSup()  || RoleHelper::AgentAdmin()){
             DatabaseHelper::Config();
             $vue=Vue::on('temp')->findOrFail($id);
             $update=$request->all();
@@ -212,7 +212,7 @@ class VueController extends Controller
      */
     public function destroy(string $id)
     {
-        if(RoleHelper::AdminSup()){
+        if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin()){
             DatabaseHelper::Config();
             $vue=Vue::on('temp')->findOrFail($id);
             if($vue->delete())

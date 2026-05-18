@@ -28,7 +28,7 @@ class FactureController extends Controller
 
     public function indexByProjet(Request $request, $projet_id)
     {
-        if (Auth::guard('api')->check()) {
+        if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()|| RoleHelper::AdminComptable() || RoleHelper::AgentAdmin() ){
             // Default values for pagination null si non pas envoyer avec la raquete
             $size = $request->input('size', null);
             $page = $request->input('page', null);
@@ -99,7 +99,7 @@ class FactureController extends Controller
 
     public function store(StoreFactureRequest $request)
     {
-        if (RoleHelper::AdminSup()||RoleHelper::Comptable()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()|| RoleHelper::AdminComptable() || RoleHelper::AgentAdmin() ) {
             $user = Auth::user();
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -187,7 +187,7 @@ class FactureController extends Controller
      */
     public function show($id)
     {
-        if (RoleHelper::AdminSup()||RoleHelper::Comptable()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()|| RoleHelper::AdminComptable() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $facture = Facture::on('temp')->findOrfail($id);
             $decompte=Decompte::on('temp')->withSum('factures','montant')->findorfail($facture->decompte_id);
@@ -199,7 +199,7 @@ class FactureController extends Controller
 
     public function update(UpdateFactureRequest $request, $id)
     {
-        if (RoleHelper::ACSup()||RoleHelper::Comptable()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()|| RoleHelper::AdminComptable() || RoleHelper::AgentAdmin() ) {
             $user = Auth::user();
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -338,7 +338,7 @@ class FactureController extends Controller
      */
    public function destroy(string $id)
 {
-    if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable()) {
+    if (RoleHelper::SuperAdmin() || RoleHelper::Comptable() || RoleHelper::AdminComptable() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
         DatabaseHelper::Config();
 
         $fac = Facture::on('temp')->findOrFail($id);
@@ -382,7 +382,7 @@ class FactureController extends Controller
 
     public function get_info_numero_facture_unique($id,$num)
     {
-            if(RoleHelper::ACSup()||RoleHelper::Comptable()){
+            if(RoleHelper::ACSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()|| RoleHelper::AdminComptable() || RoleHelper::AgentAdmin() ){
                 $user = Auth::user();
                 DatabaseHelper::Config();
 

@@ -25,7 +25,7 @@ class RemiseCleController extends Controller
 
     public function indexByProjet(Request $request, $projet_id)
     {
-         if (RoleHelper::ACSup()||RoleHelper::RespoLivraison()) {
+         if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ||RoleHelper::RespoLivraison()) {
             // Default values for pagination null si non pas envoyer avec la raquete
             $size = $request->input('size', null);
             $page = $request->input('page', null);
@@ -115,7 +115,7 @@ class RemiseCleController extends Controller
      * Store a newly created resource in storage.*/
     public function store(Request $request)
     {
-        if (RoleHelper::ACSup()||RoleHelper::RespoLivraison()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ||RoleHelper::RespoLivraison()) {
             DatabaseHelper::Config();
 
             // Démarrer la transaction
@@ -256,7 +256,7 @@ class RemiseCleController extends Controller
      */
     public function show($id)
     {
-        if (RoleHelper::ACSup()||RoleHelper::RespoLivraison()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ||RoleHelper::RespoLivraison()) {
             DatabaseHelper::Config();
             $remise = RemiseCle::on('temp')->findOrFail($id);
             return response()->json(['remise' => $remise], 200);
@@ -278,7 +278,7 @@ class RemiseCleController extends Controller
      */
     public function update(Request $request, $id)
     {
-       if (RoleHelper::ACSup()||RoleHelper::RespoLivraison()) {
+       if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ||RoleHelper::RespoLivraison()) {
             DatabaseHelper::Config();
             $user          = Auth::user();
             $userAuth      = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -327,7 +327,7 @@ class RemiseCleController extends Controller
      */
     public function destroy(string $id)
     {
-        if (RoleHelper::ACSup()||RoleHelper::RespoLivraison()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ||RoleHelper::RespoLivraison()) {
             DatabaseHelper::Config();
             $user          = Auth::user();
             $userAuth      = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();

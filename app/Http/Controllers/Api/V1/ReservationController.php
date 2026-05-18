@@ -218,14 +218,14 @@ class ReservationController extends Controller
     /*public function get_reservations_rejets(Request $request, $projet_id)
     {
 
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+        if (Auth::guard('api')->check() && RoleHelper::ACSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $perPage = $request->input('pageSize', config('app.default_item_number_perpage')); // Get the number of items per page
             $page = $request->input('page', 1);
             $avances = Avance::on('temp')->select('reservation_id', DB::raw('SUM(avances.montant) as sum_avances'))
                 ->groupby('reservation_id');
 
-            if (RoleHelper::AdminSup()) {
+            if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
                 //ADMIN
                 $reservations = Reservation::on('temp')->with('last_statut')
                     ->joinSub($avances, 'avances_req', function ($join) {
@@ -273,8 +273,9 @@ class ReservationController extends Controller
 
     public function store(StoreReservationRequest $request)
     {
+
         $user = Auth::user();
-        if (!RoleHelper::ACSup_RC()) {
+        if (!RoleHelper::ACSup_RC()  && !RoleHelper::AgentAdmin()) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -326,7 +327,7 @@ class ReservationController extends Controller
             $this->processDependencies($reservation, $request, $userAuth);
 
             // Finalize the reservation
-            $this->finalizeReservation($reservation,$userAuth->name,$userAuth->prenom, $userAuth);
+            $this->finalizeReservation($reservation,$userAuth->name,$userAuth->prenom, $userAuth,$request->prix,$request->prix_final);
 
             // Commit transaction
             DB::connection('temp')->commit();
@@ -405,7 +406,7 @@ private function processReservationFiles($reservation, $request, $societe)
 }
 
 // Update finalizeReservation to remove file processing
- private function finalizeReservation($reservation,$userAuth_name,$userAuth_prenom,$userAuth)
+ private function finalizeReservation($reservation,$userAuth_name,$userAuth_prenom,$userAuth,$prix,$prix_final)
         {
              if (RoleHelper::Com()||RoleHelper::RespoCommercial()) {
             //create histo reservation en attente
@@ -442,7 +443,7 @@ private function processReservationFiles($reservation, $request, $societe)
 
 
             // Send notifications if needed
-            if (RoleHelper::Com()||RoleHelper::RespoCommercial()) {
+            if (RoleHelper::Com()||RoleHelper::RespoCommercial()|| (RoleHelper::AgentAdmin() && ($prix != $prix_final))) {
                 Config::set('broadcasting.default', 'pusher_notify');
 
                 $data_notif = [
@@ -555,9 +556,11 @@ private function processReservationFiles($reservation, $request, $societe)
                 $reservation->prix_forfetaire = $request->prix_forfetaire;
                 $reservation->prix_forfetaire_lettre = (new NumberFormatter('fr', NumberFormatter::SPELLOUT))->format($request->prix_forfetaire);
 
-                    $reservation->statut = RoleHelper::AdminSup()
-                            ? StatutReservationEnum::Validé->value
-                            : StatutReservationEnum::En_Attente->value;
+                    $reservation->statut = RoleHelper::AdminSup()  || (RoleHelper::AgentAdmin() && ($request->prix == $request->prix_final))
+                                            ? StatutReservationEnum::Validé->value
+                                            : StatutReservationEnum::En_Attente->value;
+
+
                     if (!$reservation->save()) {
                         throw new \Exception('Failed to create temporary reservation');
                     }
@@ -780,6 +783,8 @@ private function processReservationFiles($reservation, $request, $societe)
                     'date_encaissement' => $request->date_encaissement,
                     //'files_avance' => $request->file('files_avance'),
                     'processed_files' => $avanceFileNames, // Pass processed file names instead of file objects
+                    'prix_bien' => $request->prix,
+                    'prix_reservation' => $request->prix_final,
 
                 ];
                 // Add a small delay to ensure proper ordering in database
@@ -838,7 +843,7 @@ private function processReservationFiles($reservation, $request, $societe)
 
                 public function search_reservation_by_code($code)
                 {
-                    if (RoleHelper::ACSup()||RoleHelper::RespoCommercial()) {
+                    if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ||RoleHelper::RespoCommercial()) {
                         DatabaseHelper::Config();
                         $reservation = Reservation::on('temp')->where('code_reservation', $code)->where('etat', 1)
                             ->get()->first();
@@ -848,7 +853,7 @@ private function processReservationFiles($reservation, $request, $societe)
 
     public function info_reservation($id)
     {
-        if (RoleHelper::ACSup()||RoleHelper::RespoCommercial()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ||RoleHelper::RespoCommercial()) {
             DatabaseHelper::Config();
             $reservation = Reservation::on('temp')->with('remboursement_dd_with_transfert','compromis_vente')->findOrFail($id);
             $statut=$reservation->statut;
@@ -981,7 +986,7 @@ private function getAllHistoriquesWithAncien($reservationId)
                     },*/
     public function show($id)
     {
-        if (RoleHelper::ACSup_RC()||RoleHelper::NotaireRespoL()||RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
+        if (RoleHelper::ACSup_RC()  || RoleHelper::AgentAdmin()||RoleHelper::NotaireRespoL()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
 
             $reservation = Reservation::on('temp')
@@ -1082,7 +1087,7 @@ private function getAllHistoriquesWithAncien($reservationId)
 
     public function get_etat_dossier($id)
     {
-        if (RoleHelper::ACSup_RC()||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::Comptable()) {
+        if (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() ||RoleHelper::Notaire()||RoleHelper::RespoLivraison()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
 
             $reservation = Reservation::on('temp')->where('etat',1)
@@ -1158,7 +1163,7 @@ private function getAllHistoriquesWithAncien($reservationId)
     }
         public function show_dossier_in_dd($id)
         {
-            if (RoleHelper::ACSup_RC()) {
+            if (RoleHelper::ACSup_RC()  || RoleHelper::AgentAdmin()) {
                 DatabaseHelper::Config();
 
                 $reservation = Reservation::on('temp')
@@ -1226,7 +1231,7 @@ private function getAllHistoriquesWithAncien($reservationId)
     }
     public function getReservationssByProjet($projet_id)
     {
-        if (RoleHelper::ACSup_RC()) {
+        if (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $avances = Avance::on('temp')->select('reservation_id', DB::raw('SUM(avances.montant) as sum_avances'))
                 ->groupby('reservation_id');
@@ -1292,7 +1297,7 @@ private function getAllHistoriquesWithAncien($reservationId)
      */
         public function update(UpdateReservationRequest $request, $id)
 {
-    if (!RoleHelper::ACSup_RC()) {
+    if (!RoleHelper::ACSup_RC()  && !RoleHelper::AgentAdmin()) {
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
@@ -1412,7 +1417,7 @@ private function getAllHistoriquesWithAncien($reservationId)
         $reservation->bien_id = $request->input('bien_id');
 
         if ($reservation->save()) {
-            if (RoleHelper::AdminSup()) {
+            if (RoleHelper::AdminSup()  || RoleHelper::AgentAdmin()) {
                 // Admin/super admin can change property and advances
                 if ($old_bien_id != $request->input('bien_id')) {
                     // Reserve new property
@@ -1705,7 +1710,7 @@ $changes['files'] = [
      */
     public function destroy($id)
     {
-        if (RoleHelper::ACSup_RC()) {
+        if (RoleHelper::ACSup_RC()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $reservation = Reservation::on('temp')->findOrFail($id);
             $user = Auth::user();
@@ -2028,12 +2033,12 @@ $changes['files'] = [
     public function get_notif_reservation_att_validation($projet_id)
     {
 
-        if (Auth::guard('api')->check() && RoleHelper::ACSup_RC()) {
+        if (Auth::guard('api')->check() && RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
 
 
 
-            if (RoleHelper::AdminSup()) {
+            if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
 
                 $nb_att_validation = Reservation::on('temp')->withSum('avances','montant')->with('desistement_att_validation_rejete','last_statut','first_avance')
                 ->orderBy('created_at', 'desc')

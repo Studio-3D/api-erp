@@ -40,7 +40,7 @@ class AquereurController extends Controller
 
    /* public function getAquereurByReservation(Request $request, $reservation_id)
 {
-    if (RoleHelper::ACSup()) {
+    if (RoleHelper::ACSup() || RoleHelper::AgentAdmin()) {
         DatabaseHelper::Config();
         $size = $request->input('size', config('app.default_item_number_perpage'));
         $page = $request->input('page', 1);
@@ -126,7 +126,7 @@ class AquereurController extends Controller
      */
     public function store(StoreAquereurRequest $request)
     {
-        if(RoleHelper::ACSup()){
+        if(RoleHelper::ACSup() || RoleHelper::AgentAdmin()){
             DatabaseHelper::Config();
             if($request->client_id!=null){
                 $aquereur=new Aquereur();
@@ -145,7 +145,7 @@ class AquereurController extends Controller
 
    public function store_aquereurs_desistement(Request $request)
 {
-    if(!RoleHelper::ACSup()) {
+    if(!RoleHelper::ACSup() && !RoleHelper::AgentAdmin()) {
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
@@ -190,7 +190,7 @@ class AquereurController extends Controller
 }
     public function store_new_aquereurs_desistement(Request $request)
     {
-        if(RoleHelper::ACSup()){
+        if(RoleHelper::ACSup() || RoleHelper::AgentAdmin()){
             DatabaseHelper::Config();
             $nv_aq=new NouvelAquereurDesistement();
             $nv_aq->setConnection('temp');
@@ -212,7 +212,7 @@ class AquereurController extends Controller
      */
     public function show($id)
     {
-        if(RoleHelper::ACSup()){
+        if(RoleHelper::ACSup() || RoleHelper::AgentAdmin()){
             DatabaseHelper::Config();
             $aquereur=Aquereur::on('temp')->where('id',$id)->get();
 
@@ -234,7 +234,7 @@ class AquereurController extends Controller
      */
     public function update(UpdateAquereurRequest $request, $id)
     {
-        if(RoleHelper::ACSup()){
+        if(RoleHelper::ACSup() || RoleHelper::AgentAdmin()){
             DatabaseHelper::Config();
             $aquereur=Aquereur::on('temp')->findOrFail($id);
             $update=$request->all();
@@ -252,7 +252,7 @@ class AquereurController extends Controller
      */
     public function destroy($id)
     {
-        if(RoleHelper::ACSup()){
+        if(RoleHelper::ACSup() || RoleHelper::AgentAdmin()){
             DatabaseHelper::Config();
             $aquereur=Aquereur::on('temp')->findOrFail($id);
 
@@ -267,7 +267,7 @@ class AquereurController extends Controller
     }
 
     public function destroyAquerreursByReservationId($reservation_id){
-        if(RoleHelper::ACSup()){
+        if(RoleHelper::ACSup() || RoleHelper::AgentAdmin()){
             DatabaseHelper::Config();
             $aquereurs=Aquereur::on('temp')->where('reservation_id',$reservation_id)->get();
             foreach ($aquereurs as $aquereur){
@@ -285,7 +285,7 @@ class AquereurController extends Controller
     }
 
     public function soft_destroy_aqueureurs_by_reservationId($reservation_id){
-        if(RoleHelper::ACSup()){
+        if(RoleHelper::ACSup() || RoleHelper::AgentAdmin()){
             DatabaseHelper::Config();
             $aquereurs=Aquereur::on('temp')->where('reservation_id',$reservation_id)->get();
             foreach ($aquereurs as $aquereur){

@@ -44,7 +44,7 @@ class CommissionController extends Controller
     public function store(Request $request)
     {
 
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             $user = Auth::user();
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -105,7 +105,7 @@ class CommissionController extends Controller
     /*public function store(Request $request)
     {
 
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             $user = Auth::user();
             // Check if user is superadmin
             $isSuperAdmin = RoleHelper::SuperAdmin();
@@ -177,7 +177,7 @@ class CommissionController extends Controller
     // get montant fixe par projet
     public function commission_montant($projet_id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $commission = CommissionMontant::on('temp')->where('projet_id',$projet_id)->orderBy('created_at','desc')->first();
             return response()->json(['commission_montant' => $commission], 200);
@@ -188,7 +188,7 @@ class CommissionController extends Controller
     //liste des Commissions Mensuelle en Attente
     public function commissions_mensuelle_en_attente(Request $request, $projet_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
 
@@ -293,7 +293,7 @@ class CommissionController extends Controller
 
     public function cummulles_commissions($user_id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $cummules_commission = CommissionCumule::on('temp')->where('user_id',$user_id)->where('etat','1')->orderBy('created_at','desc')->get();
             return response()->json(['cummules_commission' => $cummules_commission], 200);
@@ -302,7 +302,7 @@ class CommissionController extends Controller
     }
     public function traiter_commission($id,Request $request)
     {
-        if (RoleHelper::AdminSup() ) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $com = new CommissionMensuelle();
 
