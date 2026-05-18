@@ -21,7 +21,7 @@ class PartenaireController extends Controller
     public function get_partenaires($projet_id)
     {
 
-        if(RoleHelper::ACSup()){
+        if(RoleHelper::ACSup()  || RoleHelper::AgentAdmin()){
             DatabaseHelper::Config();
             $partenaires = Partenaire::on('temp')->orderBy('created_at', 'desc')->where('projet_id',$projet_id)
                 ->get();
@@ -133,7 +133,7 @@ class PartenaireController extends Controller
     public function store(StorePartenaireRequest $request)
     {
 
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             //partenaire unique in this projects
 
@@ -153,7 +153,7 @@ class PartenaireController extends Controller
     }
     public function store_multiple_partenaires (Request $request)
         {
-            if (RoleHelper::AdminSup()) {
+            if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()) {
                 DatabaseHelper::Config();
                 $dataArray_donnees = json_decode($request->input('donneesPartenaire', '[]'), true);
 
@@ -201,7 +201,7 @@ class PartenaireController extends Controller
     public function update(UpdatePartenaireRequest $request,  $id)
     {
         //unique partenaire
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $partenaire = Partenaire::on('temp')->findOrfail($id);
             $update = $request->all();
@@ -224,7 +224,7 @@ class PartenaireController extends Controller
      */
     public function destroy($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $partenaire = Partenaire::on('temp')->findOrfail($id);
 
@@ -241,7 +241,7 @@ class PartenaireController extends Controller
 
     public function restorePartenaire($partenaire_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             Partenaire::on('temp')->where('id', $partenaire_id)->withTrashed()->restore();
             return response()->json(['message' => 'Partenaire bien restaurer'], 200);

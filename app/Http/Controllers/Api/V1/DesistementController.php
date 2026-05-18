@@ -370,7 +370,7 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
 
         $user = Auth::user();
         Config::set('broadcasting.default', 'pusher_notify');
-        if (RoleHelper::ACSup_RC()) {
+        if (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             DB::connection('temp')->beginTransaction();
         try{
@@ -458,7 +458,7 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
             } else {
                 $desistement->num_recu = '001';
             }
-            if (RoleHelper::AdminSup()) {
+            if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
                 //validé
                 $desistement->statut = 1;
                 $desistement->date_validation = Carbon::now();
@@ -701,7 +701,7 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
                     $pen->desistement_id = $desistement->id;
                     $pen->num_recu = $num_recu;
                     $pen->statut = 0;
-                    /*if (RoleHelper::AdminSup()) {
+                    /*if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
                     //validé
                     $pen->statut = 1;
                     }else{
@@ -1027,7 +1027,7 @@ private function handleTransferReimbursementForAdmin($request, $desistement, $re
 
 
 
-                   if (RoleHelper::AdminSup()) {
+                   if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
                     if ($type == TypeDesistement::Désistement_Définitif->value) {
                         $reservation = Reservation::on('temp')->findOrFail($request->reservation_id);
                         //update etat de reservation
@@ -1953,7 +1953,7 @@ private function createStatutClientForDesistement($desistementId, $userAuth, $aq
 }
     public function store_historique_desistement($res_id, $des_id, $bien_id, $code_des, $date)
     {
-        if (RoleHelper::ACSup_RC()) {
+        if (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $histo = new HistoriqueDesistement();
             $histo->setConnection('temp');
@@ -1969,7 +1969,7 @@ private function createStatutClientForDesistement($desistementId, $userAuth, $aq
 
     public function get_historiques_desistement_by_reservation(Request $request, $code_desistement)
     {
-        if (RoleHelper::ACSup_RC()) {
+        if (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
@@ -2078,7 +2078,7 @@ private function createStatutClientForDesistement($desistementId, $userAuth, $aq
 
     public function get_dossiers_by_bien(Request $request, $bien_id)
     {
-            if (RoleHelper::ACSup_RC()||RoleHelper::NotaireRespoL()||RoleHelper::Comptable()) {
+            if (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::NotaireRespoL()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
             $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
@@ -2254,7 +2254,7 @@ private function createStatutClientForDesistement($desistementId, $userAuth, $aq
     }
 
 public function validation_desitement($id,Request $request){
-    if(RoleHelper::AdminSup()){
+    if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()){
             DatabaseHelper::Config();
             DB::connection('temp')->beginTransaction();
         try{
@@ -3219,7 +3219,7 @@ public function validation_desitement($id,Request $request){
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
-            if(RoleHelper::AdminSup()){
+            if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()){
             $nb_desistement_att_valide = Desistement::on('temp')->where('archive', 0)->where('projet_id', $projet_id)->where('statut', 0)->count();
 
             }else{
@@ -3236,7 +3236,7 @@ public function validation_desitement($id,Request $request){
     }
 
    public function get_notif_dst_att_validation_par_type($projet_id){
-        if(RoleHelper::AdminSup_RC()){
+        if(RoleHelper::AdminSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()){
              DatabaseHelper::Config();
             //nb_des desistement par type
             $nb_dd =Desistement::on('temp')
@@ -3419,7 +3419,7 @@ public function validation_desitement($id,Request $request){
 
 
     // Gérer les rôles et la pagination
-    if (RoleHelper::AdminSup_RC()) {
+    if (RoleHelper::AdminSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
         $desistements = $query->orderBy('created_at', 'desc')
             ->paginate($size, ['*'], 'page', $page);
     } elseif (RoleHelper::Com()) {
@@ -3516,7 +3516,7 @@ public function validation_desitement($id,Request $request){
 
         $user = Auth::user();
         Config::set('broadcasting.default', 'pusher_notify');
-        if (RoleHelper::AC()||RoleHelper::RespoCommercial()) {
+        if (RoleHelper::AC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::RespoCommercial()) {
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
@@ -3537,7 +3537,7 @@ public function validation_desitement($id,Request $request){
             $pen->desistement_id = $request->desistement_id;
             $pen->num_recu = $num_recu;
             $pen->statut = 0;
-            /*if (RoleHelper::AdminSup()) {
+            /*if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             //validé
             $pen->statut = 1;
             }else{
@@ -3751,7 +3751,7 @@ public function validation_desitement($id,Request $request){
     public function get_all_penalites(Request $request, $projet_id,$statut)
     {
 
-        if (RoleHelper::ACSup_RC()||RoleHelper::Comptable()) {
+        if (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
             $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
@@ -3836,7 +3836,7 @@ public function validation_desitement($id,Request $request){
 
 
 
-                if (RoleHelper::AdminSup_RC()||RoleHelper::Comptable()) {
+                if (RoleHelper::AdminSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
                     $penalites = $query->orderBy('created_at', 'desc')
                     ->paginate($size, ['*'], 'page', $page);
                 } elseif (RoleHelper::Com()) {
@@ -3907,7 +3907,7 @@ public function validation_desitement($id,Request $request){
 
     public function update_sr_penalite($id,Request $request)
     {
-        if(RoleHelper::ACSup_RC()) {
+        if(RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $penalite = PenaliteDesistement::on('temp')->findOrFail($id);
             $penalite->sr=$request->sr_pen==true?0:1;
@@ -3919,7 +3919,7 @@ public function validation_desitement($id,Request $request){
     }
    public function traiter_penalite($id,Request $request)
     {
-        if(RoleHelper::AdminSup()||RoleHelper::Comptable()) {
+        if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
@@ -4078,7 +4078,7 @@ public function validation_desitement($id,Request $request){
     }
     public function destroy(string $id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             /*DatabaseHelper::Config();
         $vue=Vue::on('temp')->findOrFail($id);
         if($vue->delete())

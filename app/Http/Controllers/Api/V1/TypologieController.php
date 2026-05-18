@@ -18,7 +18,7 @@ class TypologieController extends Controller
      */
   public function store_multiple_typologies (Request $request)
 {
-    if (RoleHelper::AdminSup()) {
+    if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
         DatabaseHelper::Config();
         $dataArray_donnees = json_decode($request->input('donneesTypologie', '[]'), true);
 
@@ -135,7 +135,7 @@ class TypologieController extends Controller
      */
     public function store(StoreTypologieRequest $request)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $typologie = new Typologie();
             $typologie->setConnection('temp');
@@ -190,7 +190,7 @@ class TypologieController extends Controller
      */
     public function update(UpdateTypologieRequest $request, $id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $typologie = Typologie::on('temp')->findOrFail($id);
             $update = $request->all();
@@ -209,7 +209,7 @@ class TypologieController extends Controller
      */
     public function destroy($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $typologie = Typologie::on('temp')->findOrFail($id);
             if ($typologie->delete()) {

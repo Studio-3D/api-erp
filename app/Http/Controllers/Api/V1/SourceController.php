@@ -74,7 +74,7 @@ class SourceController extends Controller
      */
     public function store(StoreSourceRequest $request)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $source = new Source();
             $source->setConnection('temp');
@@ -88,7 +88,7 @@ class SourceController extends Controller
     }
       public function store_multiple_sources (Request $request)
         {
-            if (RoleHelper::AdminSup()) {
+            if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
                 DatabaseHelper::Config();
                 $dataArray_donnees = json_decode($request->input('donneesSource', '[]'), true);
 
@@ -136,7 +136,7 @@ class SourceController extends Controller
      */
     public function update(UpdateSourceRequest $request, $id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $source = Source::on('temp')->findOrFail($id);
             $update = $request->all();
@@ -155,7 +155,7 @@ class SourceController extends Controller
      */
     public function destroy(string $id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $source = Source::on('temp')->findOrFail($id);
             if ($source->delete()) {

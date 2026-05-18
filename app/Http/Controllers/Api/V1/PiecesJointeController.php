@@ -55,7 +55,7 @@ class PiecesJointeController extends Controller
      */
     public function store(StorePiecesJointeRequest $request)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $pJ = new PiecesJointe();
             $pJ->setConnection('temp');
@@ -85,7 +85,7 @@ class PiecesJointeController extends Controller
      */
     public function show($id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $pJ = PiecesJointe::on('temp')->findOrFail($id);
             return response()->json(['pJ' => $pJ], 200);
@@ -106,7 +106,7 @@ class PiecesJointeController extends Controller
      */
     public function update(UpdatePiecesJointeRequest $request, $id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $pJ = PiecesJointe::on('temp')->findOrFail($id);
 
@@ -132,7 +132,7 @@ class PiecesJointeController extends Controller
      */
     public function destroy($id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $pj = PiecesJointe::on('temp')->findOrFail($id);
             if ($pj->delete()) {
@@ -146,7 +146,7 @@ class PiecesJointeController extends Controller
 
     public function soft_destroy_pj_by_reservationId($reservation_id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $pj = PiecesJointe::on('temp')->where('reservation_id', $reservation_id)->get();
             foreach ($pj as $p) {
@@ -158,7 +158,7 @@ class PiecesJointeController extends Controller
     }
     public function soft_destroy_pj_by_penalite_id($penalite_id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $pj = PiecesJointe::on('temp')->where('penalite_id', $penalite_id)->get();
             foreach ($pj as $p) {
@@ -170,7 +170,7 @@ class PiecesJointeController extends Controller
     }
     public function getFileUsingReservationId($reservation_id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $pj = PiecesJointe::on('temp')->where('reservation_id', $reservation_id)->get();
             if ($pj->isEmpty()) {
@@ -183,7 +183,7 @@ class PiecesJointeController extends Controller
     }
     public function getFilesUsingReservationId($reservation_id,$societe)
 {
-    if (RoleHelper::ACSup()) {
+    if (RoleHelper::ACSup()  || RoleHelper::AgentAdmin()) {
         DatabaseHelper::Config();
 
         // Get all pieces jointes for this reservation
@@ -209,7 +209,7 @@ class PiecesJointeController extends Controller
 }
     public function destoryFileUsingReservationId($reservation_id,$code_reservation,$societe)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $pj = PiecesJointe::on('temp')->where('reservation_id', $reservation_id)->get();
             foreach ($pj as $p) {
@@ -230,7 +230,7 @@ class PiecesJointeController extends Controller
     }
     public function destoryFileUsingAvanceId($avance_id,$societe)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $avance=Avance::on('temp')->findOrfail($avance_id);
             $pj = PiecesJointe::on('temp')->where('avance_id', $avance_id)->get();
@@ -252,7 +252,7 @@ class PiecesJointeController extends Controller
     }
     public function destoryFileUsingReclamationId($rec_id,$societe)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $pj = PiecesJointe::on('temp')->where('reclamation_id', $rec_id)->get();
             foreach ($pj as $p) {
@@ -274,7 +274,7 @@ class PiecesJointeController extends Controller
 
     public function scanner_file(Request $request)
         {
-            if (RoleHelper::ACSup()) {
+            if (RoleHelper::ACSup() || RoleHelper::AgentAdmin()) {
                 DatabaseHelper::Config();
                 $user = Auth::user();
                 $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();

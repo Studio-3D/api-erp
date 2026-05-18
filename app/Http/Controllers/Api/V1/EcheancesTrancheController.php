@@ -38,7 +38,7 @@ class EcheancesTrancheController extends Controller
 
     public function indexByProjet(Request $request, $projet_id)
     {
-        if (Auth::guard('api')->check()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             $size = $request->input('size', null);
             $page = $request->input('page', null);
             DatabaseHelper::Config();
@@ -83,8 +83,8 @@ class EcheancesTrancheController extends Controller
 
     public function list_echeances_byTrancheId($tranche_id)
 {
-     if (Auth::guard('api')->check()) {
-        DatabaseHelper::Config();
+ if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
+            DatabaseHelper::Config();
         $query = EcheancesTranche::on('temp')
             ->with('tranche:id,nom') // Charger seulement id et nom de la tranche
             ->where('tranche_id', $tranche_id);
@@ -107,7 +107,7 @@ class EcheancesTrancheController extends Controller
 
     public function store(Request $request)
     {
-         if (RoleHelper::AdminSup()) {
+         if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             $user = Auth::user();
             // Check if user is superadmin
             $isSuperAdmin = RoleHelper::SuperAdmin();
@@ -144,7 +144,7 @@ class EcheancesTrancheController extends Controller
     }*/
           public function store(Request $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             $user = Auth::user();
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -172,7 +172,7 @@ class EcheancesTrancheController extends Controller
      */
     public function show($id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $ech = EcheancesTranche::on('temp')->findOrFail($id);
             return response()->json(['ech' => $ech], 200);
@@ -190,7 +190,7 @@ class EcheancesTrancheController extends Controller
 
     /* public function update(Request $request, $id)
     {
-       if (RoleHelper::AdminSup()) {
+       if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             $user = Auth::user();
             // Check if user is superadmin
             $isSuperAdmin = RoleHelper::SuperAdmin();
@@ -232,7 +232,7 @@ class EcheancesTrancheController extends Controller
     }**/
     public function update(Request $request, $id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $user = Auth::user();
             DatabaseHelper::Config();
@@ -265,7 +265,7 @@ class EcheancesTrancheController extends Controller
      */
     public function destroy(string $id)
     {
-        if (RoleHelper::AdminSup() ) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $ech_s=EcheancesTranche::on('temp')->where('tranche_id',$id)->get();
             if(count($ech_s)>0){

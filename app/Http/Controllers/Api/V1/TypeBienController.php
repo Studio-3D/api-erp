@@ -127,7 +127,7 @@ class TypeBienController extends Controller
      */
     public function store(StoreTypeBienRequest $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
 
             DatabaseHelper::Config();
             $typebien = new typebien();
@@ -142,7 +142,7 @@ class TypeBienController extends Controller
     }
     public function store_multiple_type_biens (Request $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $dataArray_donneesTypeBien = json_decode($request->input('donneesTypeBien', '[]'), true);
             if ($dataArray_donneesTypeBien) {
@@ -182,7 +182,7 @@ class TypeBienController extends Controller
      */
     public function edit($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $typebien = typebien::on('temp')->findOrfail($id);
             return response()->json(['message' => $typebien], 200);
@@ -196,7 +196,7 @@ class TypeBienController extends Controller
      */
     public function update(UpdateTypeBienRequest $request, $id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $typebien = typebien::on('temp')->findOrfail($id);
             $update = $request->all();
@@ -217,7 +217,7 @@ class TypeBienController extends Controller
      */
     public function destroy($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $typebien = typebien::on('temp')->findOrfail($id);
 
@@ -234,7 +234,7 @@ class TypeBienController extends Controller
 
     public function restoreTypeBien($typeBien_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             TypeBien::on('temp')->where('id', $typeBien_id)->withTrashed()->restore();
 
@@ -247,7 +247,7 @@ class TypeBienController extends Controller
     public function getTrashedTypesBien()
     {
 
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $typeBiens = TypeBien::on('temp')->onlyTrashed()->get();
 

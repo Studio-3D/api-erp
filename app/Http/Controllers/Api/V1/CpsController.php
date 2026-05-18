@@ -22,8 +22,7 @@ class CpsController extends Controller
      */
     public function indexByProjet(Request $request, $projet_id)
     {
-        if (Auth::guard('api')->check()) {
-            $size = $request->input('size', null);
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {            $size = $request->input('size', null);
             $page = $request->input('page', null);
             DatabaseHelper::Config();
 
@@ -86,7 +85,7 @@ class CpsController extends Controller
     public function store(Request $request)
     {
 
-        if (RoleHelper::AdminSup()||RoleHelper::Comptable()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
             $user = Auth::user();
             DatabaseHelper::Config();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -126,7 +125,7 @@ class CpsController extends Controller
      */
     public function show($id)
     {
-        if (RoleHelper::ACSup()||RoleHelper::Comptable()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
             $cps = Cps::on('temp')->findOrFail($id);
             return response()->json(['cps' => $cps], 200);
@@ -147,7 +146,7 @@ class CpsController extends Controller
      */
     public function update(Request $request, $id)
     {
-        if (RoleHelper::AdminSup()||RoleHelper::Comptable()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::Comptable()) {
             DatabaseHelper::Config();
 
             $user = Auth::user();
@@ -201,7 +200,7 @@ class CpsController extends Controller
  */
 public function destroy(string $id)
 {
-    if (RoleHelper::AdminSup() || RoleHelper::Comptable()) {
+    if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin() || RoleHelper::Comptable()) {
         DatabaseHelper::Config();
 
         $cps = Cps::on('temp')->findOrFail($id);

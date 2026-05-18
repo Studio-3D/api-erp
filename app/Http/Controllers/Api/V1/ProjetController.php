@@ -38,7 +38,7 @@ class ProjetController extends Controller
      */
     public function get_projets()
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             //Config::set('broadcasting.default', 'pusher_2');
             $projets = Projet::on('temp')->with('typesBien')->orderBy('created_at', 'asc')->get();
@@ -65,7 +65,7 @@ class ProjetController extends Controller
 
     /*public function get_projets_user($societe_id,$user_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config($societe_id);
             $projets_user=null;
             $projets = Projet::on('temp')->orderBy('created_at', 'asc')->get();
@@ -83,7 +83,7 @@ class ProjetController extends Controller
 
     public function get_projets_user($user_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $projets = Projet::on('temp')->orderBy('created_at', 'asc')->get();
             if ($user_id != 0) {
@@ -98,7 +98,7 @@ class ProjetController extends Controller
 
    public function index(Request $request)
     {
-            if (! RoleHelper::AdminSup() && ! RoleHelper::Notaire_Respo_Comptable_SAV_Comm_RC_AA()) {
+            if (! RoleHelper::AdminSup()  &&! RoleHelper::AgentAdmin() && ! RoleHelper::Notaire_Respo_Comptable_SAV_Comm_RC()  ) {
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
 
@@ -127,7 +127,7 @@ class ProjetController extends Controller
             }
 
              // Restriction par rôle
-            if (RoleHelper::Notaire_Respo_Comptable_SAV_Comm_RC_AA()) {
+            if (RoleHelper::Notaire_Respo_Comptable_SAV_Comm_RC() || RoleHelper::AgentAdmin() ) {
                 // Commercial connecté : voir uniquement ses projets
                 $id_auth = Auth::guard('api')->user()->id;
                 $user = User::on('temp')->where('user_id_origin', $id_auth)->first();
@@ -138,7 +138,7 @@ class ProjetController extends Controller
                     $q->where('user_id', $user->id);
                   });
                 }
-            } elseif (RoleHelper::AdminSup() && $request->filled('user_id')) {
+            } elseif ((RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) && $request->filled('user_id')) {
                 // Récupération de l'ID réel du user à partir du user_id_origin
                 $user = User::on('temp')->where('user_id_origin', $request->user_id)->first();
                 if ($user) {
@@ -184,7 +184,7 @@ class ProjetController extends Controller
      */
     public function store(StoreProjetRequest $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             //Config::set('broadcasting.default', 'pusher_2');
 
@@ -290,7 +290,7 @@ class ProjetController extends Controller
      */
     public function edit($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->findOrfail($id);
             return response()->json(['message' => $projet], 200);
@@ -304,7 +304,7 @@ class ProjetController extends Controller
      */
    public function update(UpdateProjetRequest $request, $id)
 {
-    if (RoleHelper::AdminSup()) {
+    if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
         DatabaseHelper::Config();
         //Config::set('broadcasting.default', 'pusher_2');
 
@@ -428,7 +428,7 @@ class ProjetController extends Controller
 
     public function destroy($id)
     {
-        if (! RoleHelper::AdminSup()) {
+        if (! RoleHelper::AdminSup()  || ! RoleHelper::AgentAdmin()) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
@@ -637,7 +637,7 @@ class ProjetController extends Controller
 //il y a bcp des prb dans cette destroy
     /* public function destroy($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             Config::set('broadcasting.default', 'pusher_2');
 
@@ -906,7 +906,7 @@ class ProjetController extends Controller
 
     public function restoreProjet($projet_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->where('id', $projet_id)->withTrashed()->restore();
             return response()->json(['message' => 'Projet restauré avec succès'], 200);
@@ -916,7 +916,7 @@ class ProjetController extends Controller
     }
     public function getTrashedProjets()
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()  || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $projet = Projet::on('temp')->onlyTrashed()->get();
 

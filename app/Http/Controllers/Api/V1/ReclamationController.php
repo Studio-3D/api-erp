@@ -139,7 +139,7 @@ class ReclamationController extends Controller
      */
     public function traiter_reclamation_client($id, Request $request)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
 
             DatabaseHelper::Config();
             $user     = Auth::user();

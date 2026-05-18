@@ -80,7 +80,7 @@ class ObjectifController extends Controller
     /*
     public function store(Request $request)
 {
-    if (RoleHelper::AdminSup()) {
+    if (RoleHelper::AdminSup()  || RoleHelper::AgentAdmin()) {
         $user = Auth::user();
 
         // Check if user is superadmin
@@ -120,7 +120,7 @@ class ObjectifController extends Controller
     {
 
         // return response()->json(['app' =>json_decode($request->input('appels', '[]'), true)]);
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
 
             DatabaseHelper::Config();
             $user     = Auth::user();
@@ -162,7 +162,7 @@ class ObjectifController extends Controller
      */
     /*public function edit($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $typeprojet = typeprojet::on('temp')->findOrfail($id);
             return response()->json(['typeProjet' => $typeprojet], 200);
@@ -178,7 +178,7 @@ class ObjectifController extends Controller
     {
         //return response()->json(json_decode($request->input('reservations', '[]'), true));
 
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $obj            = Objectif::on('temp')->findOrfail($id);
             $obj->projet_id = $request->projet_id;
@@ -201,7 +201,7 @@ class ObjectifController extends Controller
      */
     public function destroy($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $obj = Objectif::on('temp')->findOrfail($id);
             if ($obj->delete()) {

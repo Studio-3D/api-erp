@@ -35,7 +35,7 @@ class StatistiquesController extends Controller
         //added role
 
         DatabaseHelper::Config();
-    if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+    if (Auth::guard('api')->check() && RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
             if($de_date!="null" && $a_date!="null" ){
                 $dt = Carbon::createFromFormat('Y-m-d', date($de_date))->startOfDay();
                 if($a_date=="null"){

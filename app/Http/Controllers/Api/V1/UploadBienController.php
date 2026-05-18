@@ -24,7 +24,7 @@ class UploadBienController extends Controller
      */
     public function upload(Request $request)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $projet_id=$request->projet_id;
             $projet = Projet::on('temp')->findOrFail($request->projet_id);
@@ -81,7 +81,7 @@ class UploadBienController extends Controller
 
     public function upload_excel_bien_modif_en_masse(Request $request)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() ) {
             $user = Auth::user();
             // Now switch to tenant database
             DatabaseHelper::Config();
@@ -147,7 +147,7 @@ class UploadBienController extends Controller
     }
     public function upload_excel_titre_foncier_en_masse(Request $request)
 {
-    if (RoleHelper::AdminSup() || RoleHelper::RespoLivraison()) {
+    if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()  || RoleHelper::RespoLivraison()) {
         $user = Auth::user();
 
         // Get society information from main database BEFORE switching
@@ -257,7 +257,7 @@ class UploadBienController extends Controller
     }
 
     public function delete_fichier_import($id){
-        if(RoleHelper::ACSup()){
+        if(RoleHelper::ACSup() || RoleHelper::AgentAdmin() ){
             DatabaseHelper::Config();
             $import=Import::on('temp')->findOrFail($id);
             if ($import->delete()) {

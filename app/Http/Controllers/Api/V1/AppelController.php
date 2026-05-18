@@ -44,94 +44,94 @@ class AppelController extends Controller
      * Display a listing of the resource.
      */
    public function indexByProjet(Request $request, $projet_id)
-{
-    if (Auth::guard('api')->check()) {
-        // Default values for pagination
-        $size = $request->input('size', null);
-        $page = $request->input('page', null);
+    {
+        if (Auth::guard('api')->check()) {
+            // Default values for pagination
+            $size = $request->input('size', null);
+            $page = $request->input('page', null);
 
-        DatabaseHelper::Config();
-        $query = Appel::on('temp')->with('projet', 'prospect', 'last_traitement_appel')
-            ->where('projet_id', $projet_id);
+            DatabaseHelper::Config();
+            $query = Appel::on('temp')->with('projet', 'prospect', 'last_traitement_appel')
+                ->where('projet_id', $projet_id);
 
-        // Filter by CIN
-        if ($request->filled('cin')) {
-            $query->whereHas('prospect', function ($q) use ($request) {
-                $q->where('cin', 'like', '%' . $request->input('cin') . '%');
-            });
-        }
-
-        // Filter by nom
-        if ($request->filled('nom')) {
-            $query->whereHas('prospect', function ($q) use ($request) {
-                $q->where('nom', 'like', '%' . $request->input('nom') . '%');
-            });
-        }
-
-        // Filter by prenom
-        if ($request->filled('prenom')) {
-            $query->whereHas('prospect', function ($q) use ($request) {
-                $q->where('prenom', 'like', '%' . $request->input('prenom') . '%');
-            });
-        }
-
-        // Filter by date - corrected to use proper date comparison
-        if ($request->filled('date')) {
-            $date = Carbon::parse($request->input('date'))->format('Y-m-d');
-            $query->whereHas('last_traitement_appel', function ($q) use ($date) {
-                $q->whereDate('date', $date);
-            });
-        }
-
-        // Filter by telephone (either primary or secondary)
-        if ($request->filled('telephone')) {
-            $query->whereHas('prospect', function ($q) use ($request) {
-                $q->where(function ($q) use ($request) {
-                    $q->where('telephone', 'like', '%' . $request->input('telephone') . '%')
-                        ->orWhere('telephone_num2', 'like', '%' . $request->input('telephone') . '%');
+            // Filter by CIN
+            if ($request->filled('cin')) {
+                $query->whereHas('prospect', function ($q) use ($request) {
+                    $q->where('cin', 'like', '%' . $request->input('cin') . '%');
                 });
-            });
+            }
+
+            // Filter by nom
+            if ($request->filled('nom')) {
+                $query->whereHas('prospect', function ($q) use ($request) {
+                    $q->where('nom', 'like', '%' . $request->input('nom') . '%');
+                });
+            }
+
+            // Filter by prenom
+            if ($request->filled('prenom')) {
+                $query->whereHas('prospect', function ($q) use ($request) {
+                    $q->where('prenom', 'like', '%' . $request->input('prenom') . '%');
+                });
+            }
+
+            // Filter by date - corrected to use proper date comparison
+            if ($request->filled('date')) {
+                $date = Carbon::parse($request->input('date'))->format('Y-m-d');
+                $query->whereHas('last_traitement_appel', function ($q) use ($date) {
+                    $q->whereDate('date', $date);
+                });
+            }
+
+            // Filter by telephone (either primary or secondary)
+            if ($request->filled('telephone')) {
+                $query->whereHas('prospect', function ($q) use ($request) {
+                    $q->where(function ($q) use ($request) {
+                        $q->where('telephone', 'like', '%' . $request->input('telephone') . '%')
+                            ->orWhere('telephone_num2', 'like', '%' . $request->input('telephone') . '%');
+                    });
+                });
+            }
+
+            // Filter by secondary phone
+            if ($request->filled('telephone_num2')) {
+                $query->whereHas('prospect', function ($q) use ($request) {
+                    $q->where('telephone_num2', 'like', '%' . $request->input('telephone_num2') . '%');
+                });
+            }
+
+            // Filter by interet - corrected to properly check the value
+        /* if ($request->filled('interet')) {
+                $interet = $request->input('interet');
+                $query->whereHas('last_traitement_appel', function ($q) use ($interet) {
+                    $q->where('interet', $interet);
+                });
+            }*/
+
+            // Apply pagination if parameters are valid
+            if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
+                $appels = $query->orderBy('created_at', 'desc')
+                    ->paginate($size, ['*'], 'page', $page);
+
+                $pagination = [
+                    'currentPage' => $appels->currentPage(),
+                    'totalItems' => $appels->total(),
+                    'totalPages' => $appels->lastPage(),
+                ];
+
+                return response()->json([
+                    'data' => $appels->items(),
+                    'pagination' => $pagination,
+                ], 200);
+            }
+
+            // Return all results if no pagination parameters
+            $appels = $query->orderBy('created_at', 'desc')->get();
+            return response()->json(['appels' => $appels]);
         }
 
-        // Filter by secondary phone
-        if ($request->filled('telephone_num2')) {
-            $query->whereHas('prospect', function ($q) use ($request) {
-                $q->where('telephone_num2', 'like', '%' . $request->input('telephone_num2') . '%');
-            });
-        }
-
-        // Filter by interet - corrected to properly check the value
-       /* if ($request->filled('interet')) {
-            $interet = $request->input('interet');
-            $query->whereHas('last_traitement_appel', function ($q) use ($interet) {
-                $q->where('interet', $interet);
-            });
-        }*/
-
-        // Apply pagination if parameters are valid
-        if (is_numeric($size) && is_numeric($page) && $size > 0 && $page > 0) {
-            $appels = $query->orderBy('created_at', 'desc')
-                ->paginate($size, ['*'], 'page', $page);
-
-            $pagination = [
-                'currentPage' => $appels->currentPage(),
-                'totalItems' => $appels->total(),
-                'totalPages' => $appels->lastPage(),
-            ];
-
-            return response()->json([
-                'data' => $appels->items(),
-                'pagination' => $pagination,
-            ], 200);
-        }
-
-        // Return all results if no pagination parameters
-        $appels = $query->orderBy('created_at', 'desc')->get();
-        return response()->json(['appels' => $appels]);
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
-
-    return response()->json(['error' => 'Unauthorized'], 401);
-}
     /**
      * Show the form for creating a new resource.
      */
@@ -296,7 +296,7 @@ class AppelController extends Controller
 
     public function store(StoreAppelRequest $request)
     {
-            if(RoleHelper::ACSup()||RoleHelper::RespoCommercial()){
+            if(RoleHelper::ACSup() || RoleHelper::AgentAdmin()||RoleHelper::RespoCommercial()){
 
                 $user = Auth::user();
                 DatabaseHelper::Config();
@@ -481,7 +481,7 @@ class AppelController extends Controller
 
     public function update(Request $request,$id)
     {
-            if(RoleHelper::ACSup()||RoleHelper::RespoCommercial()){
+            if(RoleHelper::ACSup() || RoleHelper::AgentAdmin()||RoleHelper::RespoCommercial()){
                 $user = Auth::user();
                 DatabaseHelper::Config();
                 $traite_appel=TraitementAppel::on('temp')->findorfail($id);
@@ -741,7 +741,7 @@ class AppelController extends Controller
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            if(RoleHelper::AdminSup()||RoleHelper::RespoCommercial()){
+            if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin()||RoleHelper::RespoCommercial()){
 
             $nb_relances_appels =Relance_Rdv_Appel::on('temp')->with('traite_appel')
                 ->whereHas('traite_appel.appel', function ($q) use ($projet_id) {
@@ -773,7 +773,7 @@ class AppelController extends Controller
             DatabaseHelper::Config();
             $user = Auth::user();
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            if(RoleHelper::AdminSup()||RoleHelper::RespoCommercial()){
+            if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin()||RoleHelper::RespoCommercial()){
 
             $nb_rdv_appels =Relance_Rdv_Appel::on('temp')->with('traite_appel')
                 ->whereHas('traite_appel.appel', function ($q) use ($projet_id) {
@@ -813,7 +813,7 @@ class AppelController extends Controller
                 ->whereHas('traite_appel.appel', function ($q) use ($projet_id) {
                     $q->where('projet_id', $projet_id);
                 });
-            if(!RoleHelper::AdminSup()){
+            if(!RoleHelper::AdminSup() || !RoleHelper::AgentAdmin()){
                 $query->whereHas('traite_appel', function ($q) use ($userAuth) {
                     $q->where('user_id', $userAuth->value('id'));
                 });
@@ -949,7 +949,7 @@ class AppelController extends Controller
     }
     public function destroy($id)
     {
-        if (RoleHelper::AdminSup()||RoleHelper::RespoCommercial()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()||RoleHelper::RespoCommercial()) {
             DatabaseHelper::Config();
             $appel = Appel::on('temp')->findOrFail($id);
             $traitement_appels=TraitementAppel::on('temp')->where('appel_id',$id)->get();
@@ -971,7 +971,7 @@ class AppelController extends Controller
 //destroy traitement appel
     public function destroy_t_appel($id,$number)
     {
-        if (RoleHelper::AdminSup()||RoleHelper::RespoCommercial()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()||RoleHelper::RespoCommercial()) {
             DatabaseHelper::Config();
             $t_appel = TraitementAppel::on('temp')->findOrFail($id);
             $relances_rdv=Relance_Rdv_Appel::on('temp')->where('traite_appel_id',$id)->get();
@@ -1040,7 +1040,7 @@ class AppelController extends Controller
 
     public  function traiter_relance_rdv_appel($id,UpdateDate_relance_Rdv $request)
     {
-        if(RoleHelper::ACSup()||RoleHelper::RespoCommercial()) {
+        if(RoleHelper::ACSup() || RoleHelper::AgentAdmin()||RoleHelper::RespoCommercial()) {
             DatabaseHelper::Config();
             $user = Auth::user();
           //  $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
@@ -1201,7 +1201,7 @@ class AppelController extends Controller
 
      public function get_info_cin_unique($id,$cin)
     {
-            if(RoleHelper::ACSup()||RoleHelper::RespoCommercial()){
+            if(RoleHelper::ACSup() || RoleHelper::AgentAdmin()||RoleHelper::RespoCommercial()){
                 DatabaseHelper::Config();
                 //cin unique
                 $prospect_count=Prospect::on('temp')->where('cin',$cin)->where('id','!=',$id)->count();

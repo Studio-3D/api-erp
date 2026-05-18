@@ -77,7 +77,7 @@ class TypeProjetController extends Controller
      */
     public function store(StoreTypeProjetRequest $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
 
             DatabaseHelper::Config();
             $typeprojet = new typeprojet();
@@ -111,7 +111,7 @@ class TypeProjetController extends Controller
      */
     public function edit($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $typeprojet = typeprojet::on('temp')->findOrfail($id);
             return response()->json(['typeProjet' => $typeprojet], 200);
@@ -125,7 +125,7 @@ class TypeProjetController extends Controller
      */
     public function update(UpdateTypeProjetRequest $request, $id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $typeprojet = typeprojet::on('temp')->findOrfail($id);
             $update = $request->all();
@@ -145,7 +145,7 @@ class TypeProjetController extends Controller
      */
     public function destroy($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $typeprojet = typeprojet::on('temp')->findOrfail($id);
             if ($typeprojet->delete()) {
@@ -161,7 +161,7 @@ class TypeProjetController extends Controller
 
     public function restoreTypeProjet($typeprojet_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             TypeProjet::on('temp')->where('id', $typeprojet_id)->withTrashed()->restore();
 
@@ -174,7 +174,7 @@ class TypeProjetController extends Controller
     public function getTrashedTypesProjet()
     {
 
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
             DatabaseHelper::Config();
             $typeProjets = TypeProjet::on('temp')->onlyTrashed()->get();
 

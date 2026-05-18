@@ -35,14 +35,14 @@ class HomeController extends Controller
      */
     public function fullcalendar(Request $request,$projet_id,$user_id)
     {
-        if (Auth::guard('api')->check() && RoleHelper::ACSup()) {
+        if (Auth::guard('api')->check() && RoleHelper::ACSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
           //->whereDate('date', '>=', Carbon::now())
             $obj_mois_appels=0;
             $obj_mois_visites=0;
             $obj_mois_reservations=0;
 
-            if(RoleHelper::AdminSup()){
+            if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()){
 
                 if($user_id==0){
 
@@ -352,7 +352,7 @@ class HomeController extends Controller
         $obj_mois_appels=0;
         $obj_mois_visites=0;
         $obj_mois_reservations=0;
-        if (Auth::guard('api')->check() && RoleHelper::ACSup_RC()) {
+        if (Auth::guard('api')->check() && RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             $us_id=$userAuth->value('id');
             $us_id_origin=$userAuth->value('user_id_origin');
             $us_role=$userAuth->value('role');

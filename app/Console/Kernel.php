@@ -18,7 +18,6 @@ class Kernel extends ConsoleKernel
             ->everyTenMinutes()
             ->withoutOverlapping(300)
             ->runInBackground();
-         //$schedule->command('app:clear-proposition-table')->everyMinute();
         $schedule->command('app:liberer_bien_pre_reserve')
             ->everyMinute()
             ->withoutOverlapping(300)

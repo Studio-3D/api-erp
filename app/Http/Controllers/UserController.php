@@ -493,80 +493,13 @@ class UserController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-    public function activateUser($user_id)
-    {
-        if (RoleHelper::AdminSup()) {
-            $user = User::findOrFail($user_id);
-            $user->is_actif = 1;
-            if ($user->save()) {
-                DatabaseHelper::Config($user->societe_id);
-                $user_societes = User::on('temp')->where('user_id_origin', $user->id);
-                $user_societes->update(['is_actif' => 1]);
-                return response()->json(['message' => 'utilisateur activé avec succès'], 200);
 
-            }
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-    }
-    public function desactivateUser($user_id)
-    {
-        if (RoleHelper::AdminSup()) {
-            $user = User::findOrFail($user_id);
-            $user->is_actif = 0;
-            if ($user->save()) {
-                DatabaseHelper::Config($user->societe_id);
-                $user_societes = User::on('temp')->where('user_id_origin', $user->id);
-                $user_societes->update(['is_actif' => 0]);
-                return response()->json(['message' => 'utilisateur désactivé avec succès'], 200);
 
-            }
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
-    }
-    public function restoreUser($user_id)
-    {
-        if (RoleHelper::SuperAdmin()) {
-
-            User::where('id', $user_id)->withTrashed()->restore();
-            DatabaseHelper::Config();
-            $user_societes = User::on('temp')->where('user_id_origin', $user_id)->withTrashed()->restore();
-
-            return response()->json(['message' => 'Utilisateur restauré avec succès'], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-    }
-    public function getTrashedUsers()
-    {
-
-        if (RoleHelper::SuperAdmin()) {
-            $users = User::onlyTrashed()->get();
-
-            return response()->json(['message' => $users], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-    }
-    public function getTrashedUsersBySociete($societe_id)
-    {
-
-        if (RoleHelper::SuperAdmin()) {
-
-            $users = User::onlyTrashed()->where('societe_id', $societe_id)->get();
-
-            return response()->json(['message' => $users], 200);
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-    }
 
     public function addUserProjet($user_id, Request $request)
     {
 
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() ) {
             DatabaseHelper::Config();
             if ($request->selectedProjets) {
                 foreach ($request->selectedProjets as $valeur) {

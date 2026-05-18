@@ -18,7 +18,7 @@ class CompositionBienController extends Controller
      */
     public function index(Request $request)
     {
-        if (RoleHelper::ACSup_RC()||RoleHelper::NotaireRespoL()||RoleHelper::Comptable()) {
+        if (RoleHelper::ACSup_RC() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()||RoleHelper::NotaireRespoL()||RoleHelper::Comptable()) {
             $size = $request->input('size', config('app.default_item_number_perpage'));
             $page = $request->input('page', 1);
             $bien_id = $request->input('bien_id');
@@ -76,7 +76,7 @@ class CompositionBienController extends Controller
      */
     public function store(StoreCompositionBienRequest $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
 
             DatabaseHelper::Config();
             $composition_bien = new CompositionBien();
@@ -120,7 +120,7 @@ class CompositionBienController extends Controller
      */
     public function edit($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $compositionBien = compositionBien::on('temp')->findOrfail($id);
             return response()->json(['message' => $compositionBien], 200);
@@ -134,7 +134,7 @@ class CompositionBienController extends Controller
      */
     public function update(UpdateCompositionBienRequest $request, $id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $compositionBien = compositionBien::on('temp')->findOrfail($id);
             $update = $request->all();
@@ -153,7 +153,7 @@ class CompositionBienController extends Controller
      */
     public function destroy($id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $compositionBien = compositionBien::on('temp')->findOrfail($id);
             if ($compositionBien->delete()) {
@@ -169,7 +169,7 @@ class CompositionBienController extends Controller
 
     public function restoreCompositionBien($compositionBien_id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             CompositionBien::on('temp')->where('id', $compositionBien_id)->withTrashed()->restore();
 
@@ -182,7 +182,7 @@ class CompositionBienController extends Controller
     public function getTrashedCompositionBiens()
     {
 
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $compositionBiens = CompositionBien::on('temp')->onlyTrashed()->get();
 
@@ -194,7 +194,7 @@ class CompositionBienController extends Controller
     }
     public function getCompositionBybien($bien_id)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             $CompositionBiens = CompositionBien::on('temp')->where('bien_id', $bien_id)->get();
             return response()->json(['CompositionBiens' => $CompositionBiens], 200);

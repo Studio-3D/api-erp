@@ -390,7 +390,7 @@ class ActualiteController extends Controller
 
     public function get_historique($date,$id,$type)
     {
-        if (RoleHelper::ACSup()) {
+        if (RoleHelper::ACSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
             if($id='tous'){
                 //admin
