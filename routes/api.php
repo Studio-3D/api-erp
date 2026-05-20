@@ -300,7 +300,6 @@ Route::middleware('auth:api')->group(function () {
         Route::get('avances_by_etat/{projet_id}/{etat}', [V1AvanceController::class, 'get_avances_by_etat'])->name('');
         Route::get('get_echeances/{projet_id}', [V1AvanceController::class, 'get_echeances'])->name('');
         Route::get('get_echeances_menu/{projet_id}', [V1AvanceController::class, 'get_echeances_menu'])->name('');
-
         //Route::get('historiques_avance/{date}/{id}', [AvanceController::class, 'historiques_avance'])->name('');
 
         //lapi reservaton
@@ -579,6 +578,15 @@ Route::middleware('auth:api')->group(function () {
     Route::get('notifications_menu_horizontal_vente_commercial/{projet_id}', [NotificationController::class, 'get_notif_menu_horizontal_vente_comm'])->name('');
 
     /********************************DesistemenController*********** */
+    /******************************PDFSS******************* */
+    Route::post('/generate_recu_vente_pdf', [PDFController::class, 'generateRecuVentePDF']);
+    Route::post('/generate-compromis-pdf', [PDFController::class, 'generateCompromisPDF']);
+    Route::post('/generate-prospect-pdf', [PDFController::class, 'generateProspectPDF']);
+    Route::post('/generate-client-pdf', [PDFController::class, 'generateClientPDF']);
+    Route::post('/generate_bon_pre_reservation_pdf ', [PDFController::class, 'generateBonPreReservationPDF']);
+    Route::post('/generate_penalite_pdf ', [PDFController::class, 'generatePenalitePDF']);
+    Route::post('/generate_rdv_pdf ', [PDFController::class, 'generateRdvPDF']);
+    Route::post('/generate_contrat_vente_pdf ', [PDFController::class, 'generateContratVentePDF']);
 
     /***********************************Livraison*******************/
     /*******rdv notaire*** */
@@ -595,7 +603,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('creneaux-occupes', [LivraisonController::class, 'getCreneauxOccupes']);
     Route::post('/update-reservation-creneau/{reservation_id}', [LivraisonController::class, 'updateReservationCreneau']);
     /************compromis vente******/
-    Route::post('/generate-compromis-pdf', [PDFController::class, 'generateCompromisPDF']);
     Route::post('store_compromis_vente/{rdv_id}', [LivraisonController::class, 'store_compromis_vente'])->name('');
     Route::get('show_compromis/{id}', [LivraisonController::class, 'show_compromis'])->name('');
     Route::put('update_compromis/{comp_id}', [LivraisonController::class, 'update_compromis'])->name('');
