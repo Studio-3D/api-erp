@@ -72,9 +72,9 @@
         </div>
 
         <div class="content">
-            <h2>Bonjour {{ $name }} !</h2>
+             <h2>Bonjour {{ $name }} ! <span class="reminder-badge">À ne pas oublier</span></h2>
 
-            <p>Ceci est un rappel concernant le suivi de votre projet immobilier :</p>
+            <p>Ceci est un rappel concernant le prospect que vous devez relancer :</p>
 
             <div class="info-card">
                 <p><strong>Projet :</strong> {{ $projet ?? 'Non spécifié' }}</p>
@@ -84,12 +84,15 @@
                 @if($prospectName)
                 <p><strong>Prospect :</strong> {{ $prospectName }}</p>
                 @endif
+                @if($prospectName)
+                     @if($tel ?? false)
+                <p><strong>📞 Téléphone :</strong> {{ $tel }}</p>
+                    @endif
+                @endif
                 <p><strong>Date de relance :</strong> {{ $date }}</p>
             </div>
+            <p>N'oubliez pas de contacter ce prospect dans les plus brefs délais pour ne pas manquer cette opportunité.</p>
 
-            <p>Nous vous remercions pour votre confiance et restons à votre disposition pour toute information complémentaire.</p>
-
-            <p>L'équipe Immobilier</p>
         </div>
 
         <div class="footer">

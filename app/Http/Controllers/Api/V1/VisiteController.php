@@ -1,6 +1,5 @@
 <?php
 namespace App\Http\Controllers\Api\V1;
-use Twilio\Rest\Client as ClientTwilio;  // Add this with the other use statements
 use App\Enum\EtatBien;
 use App\Enum\InteretEnum;
 use App\Enum\StatutSuiviDossier;
@@ -53,15 +52,24 @@ use \NumberFormatter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Requests\StoreAvanceRequest;
-
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
 
 class VisiteController extends Controller
 {
-    /**
+  /**
      * Display a listing of the resource.
      */
-
-    public function index(Request $request, $projet_id)
+    public static $TEMPLATE_WELCOME;
+    public static $TEMPLATE_RDV_CONFIRMATION;
+    
+    public function __construct()
+    {
+        self::$TEMPLATE_WELCOME = env('TEMPLATE_WELCOME');
+        self::$TEMPLATE_RDV_CONFIRMATION = env('TEMPLATE_RDV_CONFIRMATION');
+    }
+    
+       public function index(Request $request, $projet_id)
     {
         if (Auth::guard('api')->check()) {
             DatabaseHelper::Config();
@@ -410,58 +418,107 @@ class VisiteController extends Controller
                  */
 
                 public function convertToInternational($number)
-                {
-                    // Vérifie si le numéro commence par "0" et le remplace par "+212"
-                    if (preg_match('/^0(\d{9})$/', $number, $matches)) {
-                        return '+212' . $matches[1];
+                    {
+                        // Vérifie si le numéro commence par "0" et le remplace par "+212"
+                        if (preg_match('/^0(\d{9})$/', $number, $matches)) {
+                            return '+212' . $matches[1];
+                        }
+                        // Si le numéro commence par "212" sans +
+                        if (preg_match('/^212(\d{9})$/', $number, $matches)) {
+                            return '+212' . $matches[1];
+                        }
+                        // Si le numéro a déjà le +
+                        if (substr($number, 0, 1) === '+') {
+                            return $number;
+                        }
+                        return '+' . $number;
                     }
-                    return $number; // Retourne le numéro inchangé s'il ne commence pas par "0"
-                }
-                /*public function send_whatsapp($request)
-                {
-                    // Récupérer les identifiants UltraMsg depuis le fichier .env
-                    $instanceId = env('INSTANCE_ID_ULTRA_MSG');
-                    $token      = env('TOKEN_ULTRA_MSG');
-                    $to         = $request->to;
-
-                    // Envoyer la requête à l'API UltraMsg
-                    $response = Http::timeout(60)->post("https://api.ultramsg.com/$instanceId/messages/chat", [
-                        'token' => $token,
-                        'to'    => $request->to,
-                        'body'  => $request->body,
-                    ]);
-
-                    return $response->json(); // Retourne la réponse de l'API pour vérification
-                }*/
 
                 public function send_whatsapp($data)
-                        {
-                            try {
-                                $to = $data['to'];
-                                $body = $data['body'];
+                {
+                    try {
+                        // Récupérer les paramètres
+                        $to = ltrim($data['to'], '+');
+                        $projetId = $data['projet_id'];
+                        $templateSid = $data['content_sid'];
 
-                                $twilio = new ClientTwilio(
-                                    env('TWILIO_ACCOUNT_SID'),
-                                    env('TWILIO_AUTH_TOKEN')
-                                );
-
-                                $sentMessage = $twilio->messages->create(
-                                    "whatsapp:" . $to,
-                                    [
-                                        'from' => env('TWILIO_WHATSAPP_NUMBER'),
-                                        'body' => $body
-                                    ]
-                                );
-
-                                \Log::info("✅ WhatsApp message sent successfully! SID: " . $sentMessage->sid . ", Status: " . $sentMessage->status);
-
-                                return true;
-
-                            } catch (\Exception $e) {
-                                \Log::error("❌ WhatsApp send failed for {$data['to']}: " . $e->getMessage());
-                                return false;
-                            }
+                        // S'assurer que content_variables est une chaîne JSON
+                        if (is_array($data['content_variables'])) {
+                            $contentVariables = json_encode($data['content_variables']);
+                        } else {
+                            $contentVariables = $data['content_variables'];
                         }
+
+                        // Log pour déboguer
+                        \Log::info("Sending WhatsApp template", [
+                            'to' => $to,
+                            'template_sid' => $templateSid,
+                            'variables' => $contentVariables
+                        ]);
+                        // Récupérer la configuration WhatsApp
+                        $whatsappConfig = \DB::connection('temp')->table('whatsapp_configurations')
+                            ->where('projet_id', $projetId)
+                            ->whereNull('deleted_at')
+                            ->first();
+
+                        if (!$whatsappConfig) {
+                            return ['success' => false, 'error' => 'Configuration non trouvée'];
+                        }
+
+                        // Préparer l'URL comme dans Postman
+                        $url = "https://api.twilio.com/2010-04-01/Accounts/" . $whatsappConfig->account_sid . "/Messages.json";
+
+                        // Préparer les données du formulaire (x-www-form-urlencoded)
+                        $postData = [
+                            'To' => "whatsapp:" . $to,
+                            'From' => "whatsapp:" . $whatsappConfig->phone_number_id,
+                            'ContentSid' => $templateSid,
+                            'ContentVariables' => $contentVariables
+                        ];
+
+                        // Préparer les headers avec Basic Auth comme dans Postman
+                        $auth = base64_encode($whatsappConfig->account_sid . ":" . $whatsappConfig->access_token);
+
+                        $ch = curl_init();
+                        curl_setopt($ch, CURLOPT_URL, $url);
+                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                        curl_setopt($ch, CURLOPT_POST, true);
+                        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+                        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                            'Authorization: Basic ' . $auth,
+                            'Content-Type: application/x-www-form-urlencoded'
+                        ]);
+
+                        $response = curl_exec($ch);
+                        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                        curl_close($ch);
+
+                        $responseData = json_decode($response, true);
+
+                        if ($httpCode == 201 || $httpCode == 200) {
+                            \Log::info("✅ WhatsApp sent!", ['sid' => $responseData['sid'] ?? 'unknown']);
+                            return [
+                                'success' => true,
+                                'sid' => $responseData['sid'] ?? null,
+                                'status' => $responseData['status'] ?? null
+                            ];
+                        } else {
+                            \Log::error("❌ WhatsApp failed: " . ($responseData['message'] ?? $response));
+                            return [
+                                'success' => false,
+                                'error' => $responseData['message'] ?? 'Erreur inconnue',
+                                'code' => $httpCode
+                            ];
+                        }
+
+                    } catch (\Exception $e) {
+                        \Log::error("❌ WhatsApp exception: " . $e->getMessage());
+                        return [
+                            'success' => false,
+                            'error' => $e->getMessage()
+                        ];
+                    }
+                }
                 public function store(StoreVisiteRequest $request)
                 {
                     /***liste des fonctions a ajouter
@@ -943,18 +1000,38 @@ class VisiteController extends Controller
                                                     if ($prospect->telephone != null) {
 
                                                         $bien       = Bien::on('temp')->findorfail($list_biens['bien_id']);
+                                                        // Préparez les variables pour le template
+                                                            $templateVariables = [
+                                                                "1" => $prospect->nom . ' ' . $prospect->prenom,  // Nom complet
+                                                                "2" => $projet->nom,                              // Nom du projet
+                                                                "3" => $list_biens['rdv'],                        // Date du rendez-vous
+                                                                "4" => $bien->propriete_dite_bien                 // Description du bien
+                                                            ];
                                                         $data_whtsp = [
+                                                            'projet_id'=> $visite->projet_id,
                                                             'to'   => $this->convertToInternational($prospect->telephone),
-                                                            'body' => 'Bonjour ' . $prospect->nom . ' ' . $prospect->prenom . ', '
+                                                            'content_sid' => self::$TEMPLATE_RDV_CONFIRMATION
+ ,
+                                                            'content_variables' => json_encode($templateVariables)  // ← Convertir en JSON
+                                                           /* 'body' => 'Bonjour ' . $prospect->nom . ' ' . $prospect->prenom . ', '
                                                             . 'Merci pour votre visite chez le Projet ' . $projet->nom . ' aujourd’hui. '
                                                             . 'Nous espérons que votre expérience a été agréable. '
                                                             . 'Un Rendez-vous est prévue pour vous le ' . $list_biens['rdv'] . '. '
                                                             . 'Concernant le Bien ' . $bien->propriete_dite_bien . '. '
-                                                            . 'N’hésitez pas à nous contacter si vous avez des questions d’ici là.',
+                                                            . 'N’hésitez pas à nous contacter si vous avez des questions d’ici là.',*/
                                                         ];
 
-                                                        $this->send_whatsapp($data_whtsp);
-                                                        $msg_sended = 1;
+                                                          
+                                                         try {
+                                                                $result = $this->send_whatsapp($data_whtsp);
+                                                                $msg_sended = 1;
+                                                                \Log::info("WhatsApp envoyé avec succès", 
+                                                                ['to' => $prospect->telephone,
+                                                                'variables' => json_encode($templateVariables),'result' => $result]);
+                                                            } catch (\Exception $e) {
+                                                                \Log::error("Erreur lors de l'envoi WhatsApp (non bloquante): " . $e->getMessage());
+                                                                // Ne pas modifier $msg_sended, ne pas relancer l'exception
+                                                            }
                                                     }
                                                 }
                                             }
@@ -1138,18 +1215,39 @@ class VisiteController extends Controller
 
                                                     if ($prospect->telephone != null) {
                                                         $bien       = Bien::on('temp')->findorfail($list_biens['bien_id']);
+                                                        $templateVariables = [
+                                                                "1" => $prospect->nom . ' ' . $prospect->prenom,  // Nom complet
+                                                                "2" => $projet->nom,                              // Nom du projet
+                                                                "3" => $list_biens['rdv'],                        // Date du rendez-vous
+                                                                "4" => $bien->propriete_dite_bien                 // Description du bien
+                                                            ];
                                                         $data_whtsp = [
+                                                            'projet_id'=> $visite->projet_id,
                                                             'to'   => $this->convertToInternational($prospect->telephone),
-                                                            'body' => 'Bonjour ' . $prospect->nom . ' ' . $prospect->prenom . ', '
+                                                            'content_sid' => self::$TEMPLATE_RDV_CONFIRMATION
+ ,
+                                                           'content_variables' => json_encode($templateVariables)
+                                                            /*'body' => 'Bonjour ' . $prospect->nom . ' ' . $prospect->prenom . ', '
                                                             . 'Merci pour votre visite chez le Projet ' . $projet->nom . ' aujourd’hui. '
                                                             . 'Nous espérons que votre expérience a été agréable. '
                                                             . 'Un Rendez-vous est prévue pour vous le ' . $list_biens['rdv'] . '. '
                                                             . 'Concernant le Bien ' . $bien->propriete_dite_bien . '. '
-                                                            . 'N’hésitez pas à nous contacter si vous avez des questions d’ici là.',
+                                                            . 'N’hésitez pas à nous contacter si vous avez des questions d’ici là.',*/
                                                         ];
 
-                                                        $this->send_whatsapp($data_whtsp);
-                                                        $msg_sended = 1;
+                                                           try {
+                                                                $result = $this->send_whatsapp($data_whtsp);
+                                                                $msg_sended = 1;
+                                                                \Log::info("WhatsApp envoyé avec succès", 
+                                                                ['to' => $prospect->telephone,
+                                                                'variables' => json_encode($templateVariables),'result' => $result]);
+                                                            } catch (\Exception $e) {
+                                                                \Log::error("Erreur lors de l'envoi WhatsApp (non bloquante): " . $e->getMessage());
+                                                                // Ne pas modifier $msg_sended, ne pas relancer l'exception
+                                                            }
+
+                                                          
+
                                                     }
                                                 }
                                             }
@@ -1433,15 +1531,35 @@ class VisiteController extends Controller
                         //send message WhatsApp de bienvenue en cas de n'existe pas de relance ou rendez-vous ou frein
 
                         if ($msg_sended == 0  && $prospect->telephone != null) {
+
+                             $templateVariables = [
+                                "1" => $prospect->nom . ' ' . $prospect->prenom,  // Nom complet
+                                "2" => $projet->nom,                              // Nom du projet
+                                    ];
                                 $data_whtsp = [
+                                    'projet_id'=> $request->selectedProjet,
                                     'to'   => $this->convertToInternational($prospect->telephone),
-                                    'body' => 'Bonjour ' . $prospect->nom . ' ' . $prospect->prenom . ', '
+                                    'content_sid' => self::$TEMPLATE_WELCOME
+,
+                                    'content_variables' => json_encode($templateVariables)  // ← Convertir en JSON
+
+                                   /* 'body' => 'Bonjour ' . $prospect->nom . ' ' . $prospect->prenom . ', '
                                     . 'Merci pour votre visite chez le Projet ' . $projet->nom . ' aujourd’hui. '
                                     . 'Nous espérons que votre expérience a été agréable. '
-                                    . 'N’hésitez pas à nous contacter si vous avez des questions d’ici là.',
+                                    . 'N’hésitez pas à nous contacter si vous avez des questions d’ici là.',*/
                                 ];
-
-                               $this->send_whatsapp($data_whtsp);
+ // Ajouter un log pour déboguer
+                                                               
+                                  try {
+                                    $result = $this->send_whatsapp($data_whtsp);
+                                    $msg_sended = 1;
+                                    \Log::info("WhatsApp envoyé avec succès", ['result' => $result ,'to' => $prospect->telephone,
+                                                'variables' => json_encode($templateVariables)]);
+                            } catch (\Exception $e) {
+                                \Log::error("Erreur lors de l'envoi WhatsApp (non bloquante): " . $e->getMessage());
+                                // Ne pas modifier $msg_sended, ne pas relancer l'exception
+                            }
+                                   
                         }
 
 
@@ -2447,7 +2565,7 @@ public function edit_visite($id)
 
         $originalVisite = Visite::on('temp')->find($id);
         if (! $originalVisite) {return response()->json(['error' => "L'original de la visite n'a pas été trouvé."]);}
-
+        $msg_sended = 0;
         $user = Auth::user();
         DB::connection('temp')->beginTransaction();
         $last_origin_id_prospect=$request->last_origin_id_of_prospect;
@@ -2826,6 +2944,32 @@ public function edit_visite($id)
                                         $rdv->user_id         = $userAuth->value('id');
                                         $rdv->visite_id       = $newVisit->id;
                                         $rdv->save();
+
+                                        // ========== AJOUTER LE CODE WHATSAPP ICI ==========
+                                            if ($prospect->telephone != null) {
+                                                $bien = Bien::on('temp')->findorfail($list_biens['bien_id']);
+
+                                                // Préparer les variables pour le template
+                                                $templateVariables = json_encode([
+                                                    "1" => trim($prospect->nom . ' ' . $prospect->prenom),
+                                                    "2" => trim($projet->nom),
+                                                    "3" => $list_biens['rdv'],
+                                                    "4" => trim($bien->propriete_dite_bien)
+                                                ]);
+
+                                                $data_whtsp = [
+                                                    'projet_id' => $request->selectedProjet,
+                                                    'to' => $this->convertToInternational($prospect->telephone),
+                                                    'content_sid' => self::$TEMPLATE_RDV_CONFIRMATION
+,
+                                                    'content_variables' => $templateVariables
+                                                ];
+
+                                                $this->send_whatsapp($data_whtsp);
+                                                $msg_sended = 1;
+                                            }
+                                                // ========== FIN DU CODE WHATSAPP ==========
+
                                     }
                                 }
 
@@ -3215,6 +3359,41 @@ public function edit_visite($id)
                     }
                 }
             }
+            // ========== ENVOI DU MESSAGE DE BIENVENUE (si aucun message envoyé) ==========
+            if ($msg_sended == 0 && $prospect->telephone != null) {
+
+                // Récupérer le projet
+                $projet = Projet::on('temp')->findorfail($request->selectedProjet);
+
+                // Préparer les variables pour le template de bienvenue (2 variables)
+                $templateVariables = json_encode([
+                    "1" => trim($prospect->nom . ' ' . $prospect->prenom),
+                    "2" => trim($projet->nom)
+                ]);
+
+                $data_whtsp = [
+                    'projet_id' => $request->selectedProjet,
+                    'to' => $this->convertToInternational($prospect->telephone),
+                    'content_sid' => self::$TEMPLATE_WELCOME
+,
+                    'content_variables' => $templateVariables
+                ];
+
+
+               
+                // Utilisez :
+                try {
+                    $result = $this->send_whatsapp($data_whtsp);
+                    $msg_sended = 1;
+                    \Log::info("WhatsApp envoyé avec succès", ['result' => $result ,'prospect_id' => $prospect->id,
+                    'to' => $prospect->telephone,]);
+                } catch (\Exception $e) {
+                    \Log::error("Erreur lors de l'envoi WhatsApp (non bloquante): " . $e->getMessage());
+                    // Ne pas modifier $msg_sended, ne pas relancer l'exception
+                }
+            }
+            // ========== FIN DU MESSAGE DE BIENVENUE ==========
+
             // Commit transaction if everything is successful
             DB::connection('temp')->commit();
 

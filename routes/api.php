@@ -59,7 +59,6 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SocieteController;
 use App\Http\Controllers\TikTok\TikTokApiController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\WhatsApp\WhatsAppController;
 use App\Http\Controllers\LinkedIn\LinkedInController;
 use Illuminate\Support\Facades\Route;
 
@@ -93,7 +92,6 @@ Route::post('/resetPassword/{token}', [UserController::class, 'resetPassword']);
 
 /*************************************APIs FROM Outside ***************************** */
 
-Route::post('/webhook_whtsp', [WhatsAppController::class, 'webhook_whtsp']);
 Route::post('/webhook_whatsapp_business', [\App\Http\Controllers\WhatsApp\WhatsAppBusinessController::class, 'webhook_whatsapp_business']);
 Route::get('/webhook_whatsapp_business', [\App\Http\Controllers\WhatsApp\WhatsAppBusinessController::class, 'webhook_whatsapp_business']);
 Route::post('/send_landing_page', [Landing_pageController::class, 'send_landing_page']);
@@ -134,7 +132,7 @@ Route::middleware('auth:api')->group(function () {
         Route::post('/instagram-configurations/{id}/webhook', [Facebook_InstagramController::class, 'store_instagram_webhook']);
         Route::delete('/instagram-configurations/{id}/webhook', [Facebook_InstagramController::class, 'delete_instagram_webhook']);
 
-        // WhatsApp Business configurations by project
+        // WhatsApp Business configurations by project  HERE
         Route::get('/whatsapp-configurations', [\App\Http\Controllers\WhatsApp\WhatsAppBusinessController::class, 'get_whatsapp_configurations']);
         Route::post('/whatsapp-configurations', [\App\Http\Controllers\WhatsApp\WhatsAppBusinessController::class, 'store_whatsapp_configuration']);
         Route::put('/whatsapp-configurations/{id}', [\App\Http\Controllers\WhatsApp\WhatsAppBusinessController::class, 'update_whatsapp_configuration']);
@@ -300,6 +298,7 @@ Route::middleware('auth:api')->group(function () {
         Route::get('avances_by_etat/{projet_id}/{etat}', [V1AvanceController::class, 'get_avances_by_etat'])->name('');
         Route::get('get_echeances/{projet_id}', [V1AvanceController::class, 'get_echeances'])->name('');
         Route::get('get_echeances_menu/{projet_id}', [V1AvanceController::class, 'get_echeances_menu'])->name('');
+
         //Route::get('historiques_avance/{date}/{id}', [AvanceController::class, 'historiques_avance'])->name('');
 
         //lapi reservaton
@@ -578,15 +577,6 @@ Route::middleware('auth:api')->group(function () {
     Route::get('notifications_menu_horizontal_vente_commercial/{projet_id}', [NotificationController::class, 'get_notif_menu_horizontal_vente_comm'])->name('');
 
     /********************************DesistemenController*********** */
-    /******************************PDFSS******************* */
-    Route::post('/generate_recu_vente_pdf', [PDFController::class, 'generateRecuVentePDF']);
-    Route::post('/generate-compromis-pdf', [PDFController::class, 'generateCompromisPDF']);
-    Route::post('/generate-prospect-pdf', [PDFController::class, 'generateProspectPDF']);
-    Route::post('/generate-client-pdf', [PDFController::class, 'generateClientPDF']);
-    Route::post('/generate_bon_pre_reservation_pdf ', [PDFController::class, 'generateBonPreReservationPDF']);
-    Route::post('/generate_penalite_pdf ', [PDFController::class, 'generatePenalitePDF']);
-    Route::post('/generate_rdv_pdf ', [PDFController::class, 'generateRdvPDF']);
-    Route::post('/generate_contrat_vente_pdf ', [PDFController::class, 'generateContratVentePDF']);
 
     /***********************************Livraison*******************/
     /*******rdv notaire*** */
@@ -603,6 +593,7 @@ Route::middleware('auth:api')->group(function () {
     Route::get('creneaux-occupes', [LivraisonController::class, 'getCreneauxOccupes']);
     Route::post('/update-reservation-creneau/{reservation_id}', [LivraisonController::class, 'updateReservationCreneau']);
     /************compromis vente******/
+    Route::post('/generate-compromis-pdf', [PDFController::class, 'generateCompromisPDF']);
     Route::post('store_compromis_vente/{rdv_id}', [LivraisonController::class, 'store_compromis_vente'])->name('');
     Route::get('show_compromis/{id}', [LivraisonController::class, 'show_compromis'])->name('');
     Route::put('update_compromis/{comp_id}', [LivraisonController::class, 'update_compromis'])->name('');

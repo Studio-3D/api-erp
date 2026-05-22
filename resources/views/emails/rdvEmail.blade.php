@@ -68,14 +68,16 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎯 Votre Rendez-vous Immobilier</h1>
+            <h1>🎯Rendez-vous Immobilier</h1>
         </div>
 
         <div class="content">
             <h2>Bonjour {{ $name }} !</h2>
-
-            <p>Nous sommes ravis de vous confirmer votre rendez-vous pour le projet immobilier suivant :</p>
-
+            @if($prospectName)
+             <p>Un nouveau rendez-vous a été programmé avec un prospect :</p>
+            @else
+             <p>Nous sommes ravis de vous confirmer le rendez-vous suivant :</p>
+            @endif
             <div class="info-card">
                 <p><strong>Projet :</strong> {{ $projet ?? 'Non spécifié' }}</p>
                 @if($bien)
@@ -84,12 +86,21 @@
                 @if($prospectName)
                 <p><strong>Prospect :</strong> {{ $prospectName }}</p>
                 @endif
-                <p><strong>Date du rendez-vous :</strong> {{ $date }}</p>
+                 @if($prospectName)
+                    @if($tel ?? false)
+                    <p><strong>📞 Téléphone :</strong> {{ $tel }}</p>
+                     @endif
+                @endif
+                <p><strong>Date du rendez-vous :</strong> {{ $rdv }}</p>
             </div>
+          @if($prospectName)
 
-            <p>Nous vous attendons avec impatience pour échanger sur ce projet qui correspond parfaitement à vos attentes.</p>
-
-            <p>Pour toute modification ou question, n'hésitez pas à nous contacter.</p>
+            <p>Merci de préparer ce rendez-vous et d'accueillir le prospect dans les meilleures conditions.</p>
+            <p>N'oubliez pas de confirmer votre disponibilité si ce n'est pas déjà fait.</p>
+            @else
+             <p>Nous vous attendons avec impatience pour échanger sur ce projet qui correspond parfaitement à vos attentes.</p>
+                <p>Pour toute modification ou question, n'hésitez pas à nous contacter.</p>
+            @endif
         </div>
 
         <div class="footer">

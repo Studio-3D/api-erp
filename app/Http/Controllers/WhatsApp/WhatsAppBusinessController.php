@@ -19,7 +19,7 @@ use App\Models\Societe;
 class WhatsAppBusinessController extends Controller
 {
 
-public function webhook_whatsapp_business(Request $request)
+ /*public function webhook_whatsapp_business(Request $request)
 {
       $mode = $request->query('hub_mode', $request->query('hub.mode'));
         $verifyToken = $request->query('hub_verify_token', $request->query('hub.verify_token'));
@@ -45,78 +45,7 @@ public function webhook_whatsapp_business(Request $request)
 
     // Rest of your webhook handling...
 }
-    /* WhatsApp Business API Webhook (Meta/Facebook format)
-    public function webhook_whatsapp_business(Request $request)
-    {
-        // Handle webhook verification (required by Meta)
-        // Meta sends GET with query params: hub.mode, hub.verify_token, hub.challenge
-        $mode = $request->query('hub_mode', $request->query('hub.mode'));
-        $verifyToken = $request->query('hub_verify_token', $request->query('hub.verify_token'));
-        $challenge = $request->query('hub_challenge', $request->query('hub.challenge'));
-            Log::warning("token", ['verifyToken' => $verifyToken]);
 
-        if ($mode === 'subscribe') {
-            // First: environment fallback (fast path, same as Facebook/Instagram pattern)
-            $fallback = env('WHATSAPP_WEBHOOK_VERIFY_TOKEN');
-            if ($fallback && hash_equals($fallback, (string) $verifyToken)) {
-                Log::info("WhatsApp webhook verification successful via fallback env token");
-                return response($challenge, 200)->header('Content-Type', 'text/plain');
-            }
-
-            // Then: check against all configured webhook tokens across tenants
-            $validTokens = $this->getAllWhatsAppWebhookTokens();
-            if (in_array($verifyToken, $validTokens)) {
-                Log::info("WhatsApp webhook verification successful via DB token");
-                return response($challenge, 200)->header('Content-Type', 'text/plain');
-            }
-
-            Log::warning("Invalid WhatsApp webhook verify token", ['provided' => $verifyToken]);
-            return response('Forbidden', 403);
-        }
-
-        // Handle incoming messages
-        Log::info('WhatsApp Business Webhook Received:', $request->all());
-
-        $entries = $request->input('entry', []);
-
-        foreach ($entries as $entry) {
-            // Prefer the standard location: value.metadata.phone_number_id
-            $phoneNumberId = $entry['changes'][0]['value']['metadata']['phone_number_id']
-                ?? $entry['id']
-                ?? null;
-
-            if (!$phoneNumberId) {
-                Log::warning('No phone number ID found in webhook entry', ['entry' => $entry]);
-                continue;
-            }
-
-            $societeId = $this->findSocieteByPhoneNumberId($phoneNumberId);
-
-            if (!$societeId) {
-                Log::warning("No société configuration found for phone number ID: {$phoneNumberId}");
-                continue;
-            }
-
-            DatabaseHelper::Config($societeId);
-            Config::set('broadcasting.default', 'pusher_notify');
-
-            // Check if webhooks are enabled for this configuration
-            $webhookEnabled = $this->isWhatsAppWebhookEnabledForPhone($phoneNumberId);
-
-            if (!$webhookEnabled) {
-                Log::info("Webhook received but webhooks are disabled for société {$societeId}");
-                continue;
-            }
-
-            $changes = $entry['changes'] ?? [];
-
-            foreach ($changes as $change) {
-                $this->processWhatsAppWebhookChange($change, $societeId);
-            }
-        }
-
-        return response()->json(['status' => 'success']);
-    }*/
 
     private function getAllWhatsAppWebhookTokens()
     {
@@ -325,7 +254,7 @@ public function webhook_whatsapp_business(Request $request)
     // Configuration management (following Facebook pattern)
     public function get_whatsapp_configurations()
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -353,11 +282,11 @@ public function webhook_whatsapp_business(Request $request)
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-    }
-
+    }*/
+        //Here
     public function store_whatsapp_configuration(Request $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -367,8 +296,7 @@ public function webhook_whatsapp_business(Request $request)
                         $table->id();
                         $table->string('phone_number_id');
                         $table->longText('access_token');
-                        $table->string('app_id')->nullable();
-                        $table->string('app_secret')->nullable();
+                        $table->string('account_sid');
                         $table->unsignedBigInteger('projet_id');
                         $table->string('webhook_verify_token')->nullable();
                         $table->boolean('webhook_enabled')->default(false);
@@ -393,8 +321,7 @@ public function webhook_whatsapp_business(Request $request)
                 $configId = DB::connection('temp')->table('whatsapp_configurations')->insertGetId([
                     'phone_number_id' => $request->phone_number_id,
                     'access_token' => $request->access_token,
-                    'app_id' => $request->app_id,
-                    'app_secret' => $request->app_secret,
+                    'account_sid' => $request->account_sid,
                     'projet_id' => $request->projet_id,
                     'webhook_enabled' => false, // Explicitly set to false
                     'webhook_verify_token' => null,
@@ -417,9 +344,9 @@ public function webhook_whatsapp_business(Request $request)
         }
     }
 
-    public function get_whatsapp_webhooks()
+    /*public function get_whatsapp_webhooks()
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -456,10 +383,9 @@ public function webhook_whatsapp_business(Request $request)
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-
     public function store_whatsapp_webhook_configuration(Request $request, $configId)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -496,10 +422,10 @@ public function webhook_whatsapp_business(Request $request)
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-
+      /*   //here
     public function delete_whatsapp_webhook($configId)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -528,7 +454,7 @@ public function webhook_whatsapp_business(Request $request)
 
     public function toggle_whatsapp_webhook(Request $request, $configId)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -567,16 +493,16 @@ public function webhook_whatsapp_business(Request $request)
         } else {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
-    }
-
+    }*/
+        //here
     public function update_whatsapp_configuration(Request $request, $configId)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
                 // Validate required fields
-                if (!$request->phone_number_id || !$request->access_token || !$request->projet_id) {
+                if (!$request->phone_number_id || !$request->access_token || !$request->projet_id|| !$request->account_sid) {
                     return response()->json(['error' => 'Tous les champs obligatoires doivent être remplis'], 400);
                 }
 
@@ -598,8 +524,7 @@ public function webhook_whatsapp_business(Request $request)
                     ->update([
                         'phone_number_id' => $request->phone_number_id,
                         'access_token' => $request->access_token,
-                        'app_id' => $request->app_id,
-                        'app_secret' => $request->app_secret,
+                        'account_sid' => $request->account_sid,
                         'projet_id' => $request->projet_id,
                         'updated_at' => now()
                     ]);
@@ -616,10 +541,10 @@ public function webhook_whatsapp_business(Request $request)
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
-
+        //here
     public function delete_whatsapp_configuration($configId)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -643,9 +568,9 @@ public function webhook_whatsapp_business(Request $request)
         }
     }
 
-    /**
-     * Configure the temp DB connection for a given société (mirrors Facebook controller)
-     */
+
+     /*Configure the temp DB connection for a given société (mirrors Facebook controller)
+
     private function configureDatabaseForSociete($societe)
     {
         try {
@@ -689,7 +614,6 @@ public function webhook_whatsapp_business(Request $request)
             Log::error("Error sending WhatsApp Business message: " . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
-    }
+    }*/
 }
 
-//1269697291014076?fields=name,phone_numbers,message_templates    827760573749958"

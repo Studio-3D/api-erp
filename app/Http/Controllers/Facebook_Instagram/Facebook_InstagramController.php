@@ -2177,7 +2177,7 @@ class Facebook_InstagramController extends Controller
 
     public function facebook_configurations(Request $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -2219,7 +2219,7 @@ class Facebook_InstagramController extends Controller
 
     public function store_facebook_configuration(Request $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -2301,7 +2301,7 @@ class Facebook_InstagramController extends Controller
 
     public function update_facebook_configuration(Request $request, $id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -2355,7 +2355,7 @@ class Facebook_InstagramController extends Controller
 
     public function delete_facebook_configuration(Request $request, $id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -2388,7 +2388,7 @@ class Facebook_InstagramController extends Controller
 
     public function instagram_configurations(Request $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -2430,7 +2430,7 @@ class Facebook_InstagramController extends Controller
 
     public function store_instagram_configuration(Request $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -2511,7 +2511,7 @@ class Facebook_InstagramController extends Controller
 
     public function update_instagram_configuration(Request $request, $id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -2565,7 +2565,7 @@ class Facebook_InstagramController extends Controller
 
     public function delete_instagram_configuration(Request $request, $id)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -2598,7 +2598,7 @@ class Facebook_InstagramController extends Controller
 
     public function facebook_webhook_configurations(Request $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -2639,7 +2639,7 @@ class Facebook_InstagramController extends Controller
 
     public function store_facebook_webhook(Request $request, $configId)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -2693,7 +2693,7 @@ class Facebook_InstagramController extends Controller
 
     public function delete_facebook_webhook(Request $request, $configId)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -2724,7 +2724,7 @@ class Facebook_InstagramController extends Controller
 
     public function instagram_webhook_configurations(Request $request)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -2765,7 +2765,7 @@ class Facebook_InstagramController extends Controller
 
     public function store_instagram_webhook(Request $request, $configId)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -2819,7 +2819,7 @@ class Facebook_InstagramController extends Controller
 
     public function delete_instagram_webhook(Request $request, $configId)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -2982,7 +2982,7 @@ class Facebook_InstagramController extends Controller
 
     public function toggle_facebook_webhook(Request $request, $configId)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {
@@ -3065,7 +3065,7 @@ class Facebook_InstagramController extends Controller
 
     public function toggle_instagram_webhook(Request $request, $configId)
     {
-        if (RoleHelper::AdminSup()) {
+        if (RoleHelper::AdminSup()|| RoleHelper::AgentAdmin()) {
             DatabaseHelper::Config();
 
             try {

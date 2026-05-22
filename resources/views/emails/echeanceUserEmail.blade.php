@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Échéance à venir</title>
+    <title>Urgent Échéance </title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -65,27 +65,33 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>📅 Échéance à Venir</h1>
+            <h1>⚠️ Échéance Aujourd'hui</h1>
+            <div class="today-badge">Paiement urgent</div>
         </div>
 
         <div class="content">
             <h2>Bonjour {{ $name }} !</h2>
-
-            <p>Une échéance importante approche pour le projet suivant :</p>
+                <p style="text-align: center; font-size: 16px;">
+                    <strong class="urgent">🔔 PAIEMENT À EFFECTUER AUJOURD'HUI</strong>
+                </p>
+            <p>Une échéance importante pour le Bien suivant :</p>
 
             <div class="info-card">
-                <p><strong>Projet :</strong> {{ $projet ?? 'Non spécifié' }}</p>
+               <p><strong>🏠 Projet :</strong> {{ $projet ?? 'Non spécifié' }}</p>
+                
                 @if($bien)
-                <p><strong>Bien concerné :</strong> {{ $bien }}</p>
+                <p><strong>📍 Bien concerné :</strong> {{ $bien }}</p>
                 @endif
+                
                 @if($prospectName)
-                <p><strong>Client :</strong> {{ $prospectName }}</p>
+                <p><strong>👤 Client :</strong> {{ $prospectName }}</p>
                 @endif
-                <p><strong>Date d'échéance :</strong> {{ $echeance ? \Carbon\Carbon::parse($echeance)->format('d/m/Y') : $date }}</p>
+                
+                <p><strong>📅 Date d'échéance :</strong> <span class="urgent">{{ $echeance ?? date('d/m/Y') }}</span> </p>
 
                 @if($montant)
                 <div class="amount">
-                    Montant : {{ number_format($montant, 2, ',', ' ') }} €
+                    💰 Montant à payer : {{ number_format($montant, 2, ',', ' ') }} MAD
                 </div>
                 @endif
             </div>
