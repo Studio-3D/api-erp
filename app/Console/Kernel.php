@@ -23,8 +23,8 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping(300)
             ->runInBackground();
         $schedule->command('app:destroy_notif')->dailyAt('00:00');
-        $schedule->command(command: 'emails:send-scheduled')->dailyAt('07:00'); // Exécute tous les jours à minuit
-        $schedule->command(command: 'app:echeance-email')->dailyAt('07:00'); // Exécute tous les jours à minuit
+        $schedule->command('app:send_scheduled_emails_whatsapp')->dailyAt('08:40'); // Exécute tous les jours à minuit
+        $schedule->command('app:send_email_whatsapp_echeance')->dailyAt('08:40'); // Exécute tous les jours à minuit
         $schedule->command('app:import_fichiers')
             ->everyTwoMinutes()
             ->withoutOverlapping(300)
@@ -34,7 +34,6 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping(300)
             ->runInBackground();
         $schedule->command('app:clear-webhook_events-table')->sundays()->at('07:00'); // Runs every Sunday at midnight
-        $schedule->command(command: 'whatsapp:send-reminder')->dailyAt('00:00'); // Exécute tous les jours à minuit
         $schedule->command('delete_creneau_propose')->everyThreeMinutes();//3min
         $schedule->command('annuler_rdv_automatique')->everyFifteenMinutes();//15min
 

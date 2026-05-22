@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rappel d'Échéance</title>
+    <title>Rappel Échéance - Paiement Immobilier</title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -22,7 +22,7 @@
             overflow: hidden;
         }
         .header {
-            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
             color: #ffffff;
             padding: 30px 20px;
             text-align: center;
@@ -40,8 +40,8 @@
             margin-top: 0;
         }
         .info-card {
-            background: #f8f5ff;
-            border-left: 4px solid #9b59b6;
+            background: #ffe5e5;
+            border-left: 4px solid #e74c3c;
             padding: 20px;
             margin: 20px 0;
             border-radius: 8px;
@@ -49,16 +49,18 @@
         .amount {
             font-size: 24px;
             font-weight: bold;
-            color: #27ae60;
+            color: #e74c3c;
             text-align: center;
             margin: 15px 0;
         }
-        .urgent {
-            background: #ffeaa7;
-            padding: 10px;
-            border-radius: 5px;
+        .warning-today {
+            background: #fff3cd;
+            border: 1px solid #ffecb5;
+            color: #856404;
+            padding: 12px;
+            border-radius: 6px;
             text-align: center;
-            margin: 15px 0;
+            margin-top: 15px;
         }
         .footer {
             background: #2c3e50;
@@ -72,35 +74,41 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>💰 Rappel d'Échéance</h1>
+            <h1>💰 Rappel Échéance</h1>
         </div>
 
         <div class="content">
             <h2>Bonjour {{ $name }} !</h2>
 
-            <div class="urgent">
-                <strong>📋 Votre échéance approche</strong>
+            <div style="background: #ffeaa7; padding: 10px; border-radius: 5px; text-align: center; margin: 15px 0;">
+                <strong>📋 Votre échéance est due AUJOURD'HUI</strong>
             </div>
 
-            <p>Nous vous rappelons votre prochaine échéance pour votre projet immobilier :</p>
+            <p>Nous vous rappelons votre échéance pour votre Bien :</p>
 
             <div class="info-card">
-                <p><strong>Projet :</strong> {{ $projet ?? 'Non spécifié' }}</p>
+                <p><strong>🏠 Projet :</strong> {{ $projet ?? 'Non spécifié' }}</p>
+                
                 @if($bien)
-                <p><strong>Bien concerné :</strong> {{ $bien }}</p>
+                <p><strong>📍 Bien concerné :</strong> {{ $bien }}</p>
                 @endif
-                <p><strong>Date d'échéance :</strong> {{ $echeance ? \Carbon\Carbon::parse($echeance)->format('d/m/Y') : $date }}</p>
+                
+                <p><strong>📅 Date d'échéance :</strong> <strong style="color: #e74c3c;">{{ $echeance ?? date('d/m/Y') }}</strong></p>
 
                 @if($montant)
                 <div class="amount">
-                    Montant dû : {{ number_format($montant, 2, ',', ' ') }} €
+                    Montant dû : {{ number_format($montant, 2, ',', ' ') }} MAD
                 </div>
                 @endif
             </div>
 
+            <div class="warning-today">
+                ⚠️ <strong>Ce paiement est dû aujourd'hui.</strong> Merci d'effectuer le règlement sans délai.
+            </div>
+
             <p>Nous vous remercions pour votre confiance et restons à votre disposition pour toute question concernant cette échéance.</p>
 
-            <p><strong>L'équipe Immobilier</strong></p>
+            <p><strong>Cordialement,</strong><br>L'équipe Immobilier</p>
         </div>
 
         <div class="footer">

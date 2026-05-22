@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Helpers;
-use Twilio\Rest\Client as ClientTwilio;  // Add this with the other use statements
 
 use App\Http\Helpers\Bien_Helper;
 use App\Http\Helpers\NotificationHelper;
@@ -39,6 +38,35 @@ use Illuminate\Support\Facades\Schema;
 
 class DatabaseHelper
 {
+
+ 
+    // ✅ Déclaration des propriétés statiques (obligatoire)
+    public static $TEMPLATE_ECHEANCE_PAIEMENT;
+    public static $TEMPLATE_RAPPEL_RDV_PROSPECT;
+
+    public function __construct()
+    {
+        self::$TEMPLATE_ECHEANCE_PAIEMENT = env('TEMPLATE_ECHEANCE_PAIEMENT', null);
+        self::$TEMPLATE_RAPPEL_RDV_PROSPECT = env('TEMPLATE_RAPPEL_RDV_PROSPECT', null);
+        
+        if (empty(self::$TEMPLATE_ECHEANCE_PAIEMENT)) {
+            Log::warning("TEMPLATE_ECHEANCE_PAIEMENT non configuré dans .env");
+        }
+        if (empty(self::$TEMPLATE_RAPPEL_RDV_PROSPECT)) {
+            Log::warning("TEMPLATE_RAPPEL_RDV_PROSPECT non configuré dans .env");
+        }
+    }
+/**
+ * Vérifie si un template WhatsApp est correctement configuré
+ */
+private static function isTemplateConfigured($templateSid, $templateName)
+{
+    if (empty($templateSid)) {
+        Log::warning("Template WhatsApp '{$templateName}' non configuré - Envoi ignoré");
+        return false;
+    }
+    return true;
+}
     public function createNewClientDatabase($raison_sociale, $societe_id)
     {
 
@@ -405,238 +433,120 @@ public function runSeeders($connection)
         }
     }
 
-/*public static function envoyer_email_rdv_rlc($databases)
+
+
+
+    /**
+ * Send WhatsApp template message using Twilio with database configuration
+ */
+public static function sendWhatsAppTemplate($phone, $templateSid, $variables = [], $projetId = null)
 {
-    foreach ($databases as $database) {
-        $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
-
-        // Configurer la connexion à la base de données temporaire
-        $connection = DatabaseHelper::Connection_database($databaseName);
-        config(['database.connections.temp' => $connection]);
-        DB::connection('temp')->setDatabaseName($connection['database']);
-        DB::reconnect('temp');
-
-        if (Schema::connection('temp')->hasTable('relances_rdv_visites')) {
-            $today = Carbon::now()->toDateString();
-
-            // Récupérer les relances et RDVs pour les prospects
-            $relanceProspectIds = Relance_Rdv_Visite::on('temp')
-                ->where('type', 1)
-                ->whereDate('date_relance', $today)
-                ->pluck('visite_id');
-
-            $rdvProspectIds = Relance_Rdv_Visite::on('temp')
-                ->where('type', 2)
-                ->whereDate('rdv', $today)
-                ->pluck('visite_id');
-
-            // Récupérer les prospects avec leurs emails
-            $prospects = Visite::on('temp')
-                ->with(['prospect', 'projet', 'bien'])
-                ->where('etat',1)
-                ->whereIn('id', $relanceProspectIds->merge($rdvProspectIds)->unique())
-                ->get()
-                ->pluck('prospect')
-                ->filter()
-                ->unique('id');
-
-            // Récupérer les relances et RDVs pour les utilisateurs
-            $relanceUserIds = Relance_Rdv_Visite::on('temp')
-                ->where('type', 1)
-                ->whereDate('date_relance', $today)
-                ->pluck('user_id');
-
-            $rdvUserIds = Relance_Rdv_Visite::on('temp')
-                ->where('type', 2)
-                ->whereDate('rdv', $today)
-                ->pluck('user_id');
-
-            $userIds = $relanceUserIds->merge($rdvUserIds)->unique();
-            $users = User::on('temp')->with(['visite.projet', 'visite.bien', 'visite.prospect'])->whereIn('id', $userIds)->get();
-
-            // Envoi des emails aux prospects
-            foreach ($prospects as $prospect) {
-                if ($prospect->email) {
-                    try {
-                        // Récupérer les visites du prospect
-                        $visites = Visite::on('temp')
-                            ->with(['projet', 'bien'])
-                            ->where('prospect_id', $prospect->id)
-                            ->where('etat', 1)
-                            ->get();
-
-                        $hasRelance = $visites->whereIn('id', $relanceProspectIds)->count() > 0;
-                        $hasRdv = $visites->whereIn('id', $rdvProspectIds)->count() > 0;
-
-                        // Récupérer le premier projet et bien pour l'email
-                        $projet = $visites->first()->projet->nom ?? null;
-                        $bien = $visites->first()->bien->propriete_dite_bien ?? null;
-
-                        if ($hasRelance) {
-                            Mail::to($prospect->email)->send(new ScheduledEmail(1, $prospect, $projet, $bien));
-                            Log::info("Email de relance envoyé à {$prospect->email} (Prospect) dans la base de données {$databaseName}");
-                        }
-
-                        if ($hasRdv) {
-                            Mail::to($prospect->email)->send(new ScheduledEmail(2, $prospect, $projet, $bien));
-                            Log::info("Email de RDV envoyé à {$prospect->email} (Prospect) dans la base de données {$databaseName}");
-                        }
-
-                    } catch (\Exception $e) {
-                        Log::error("Échec de l'envoi de l'email au prospect {$prospect->email}: " . $e->getMessage());
-                    }
-                } else {
-                    Log::warning("Aucun email associé au prospect ID {$prospect->id} dans la base de données {$databaseName}");
-                }
-            }
-
-            // Envoi des emails aux utilisateurs
-            foreach ($users as $user) {
-                try {
-                    $relanceExists = $relanceUserIds->contains($user->id);
-                    $rdvExists = $rdvUserIds->contains($user->id);
-
-                    // Récupérer les informations de la visite
-                    $visite = $user->visite->first();
-                    $projet = $visite->projet->nom ?? null;
-                    $bien = $visite->bien->propriete_dite_bien ?? null;
-                    $prospectName = $visite->prospect->nom.' '.$visite->prospect->prenom ?? null;
-
-                    if ($relanceExists) {
-                        Mail::to($user->email)->send(new ScheduledEmail(1, $user, $projet, $bien, $prospectName));
-                        Log::info("Email de relance envoyé à {$user->email} (Utilisateur) dans la base de données {$databaseName}");
-                    }
-
-                    if ($rdvExists) {
-                        Mail::to($user->email)->send(new ScheduledEmail(2, $user, $projet, $bien, $prospectName));
-                        Log::info("Email de RDV envoyé à {$user->email} (Utilisateur) dans la base de données {$databaseName}");
-                    }
-                } catch (\Exception $e) {
-                    Log::error("Échec de l'envoi de l'email à l'utilisateur {$user->email}: " . $e->getMessage());
-                }
-            }
-
-            Log::info('Processus de relance et notification terminé pour la base de données ' . $databaseName);
-        } else {
-            Log::warning('La table relances_rdv_visites est absente dans la base de données ' . $databaseName);
-        }
-
-
-
-        if (Schema::connection('temp')->hasTable('relances_rdvs_appels')) {
-            $today = Carbon::now()->toDateString();
-
-            // Récupérer les relances et RDVs pour les prospects
-            $relanceProspectIds = Relance_Rdv_Appel::on('temp')
-                ->where('type', 1)
-                ->whereDate('date_relance', $today)
-                ->pluck('traite_appel_id');
-
-            $rdvProspectIds = Relance_Rdv_Appel::on('temp')
-                ->where('type', 2)
-                ->whereDate('rdv', $today)
-                ->pluck('traite_appel_id');
-
-            // Récupérer les prospects avec leurs emails
-            $prospects = TraitementAppel::on('temp')
-                ->with(['appel','appel.prospect'])
-                ->whereIn('id', $relanceProspectIds->merge($rdvProspectIds)->unique())
-                ->get()
-                ->pluck('appel.prospect')
-                ->filter()
-                ->unique('id');
-
-            // Récupérer les relances et RDVs pour les utilisateurs
-            $relanceUserIds = Relance_Rdv_Appel::on('temp')->with('traite_appel')
-                ->where('type', 1)
-                ->whereDate('date_relance', $today)
-                ->pluck('traite_appel.user_id');
-
-            $rdvUserIds = Relance_Rdv_Appel::on('temp')->with('traite_appel')
-                ->where('type', 2)
-                ->whereDate('rdv', $today)
-                ->pluck('traite_appel.user_id');
-
-            $userIds = $relanceUserIds->merge($rdvUserIds)->unique();
-            $users = User::on('temp')->whereIn('id', $userIds)->get();
-
-            // Envoi des emails aux prospects
-            foreach ($prospects as $prospect) {
-                if ($prospect->email) {
-                    try {
-                        // Récupérer les visites du prospect
-                        $appels = TraitementAppel::on('temp')
-                            ->with(['appel.projet'])
-                            ->where('prospect_id', $prospect->id)
-                            ->get();
-
-                        $hasRelance = $appels->whereIn('id', $relanceProspectIds)->count() > 0;
-                        $hasRdv = $appels->whereIn('id', $rdvProspectIds)->count() > 0;
-
-                        // Récupérer le premier projet et bien pour l'email
-                        $projet = $appels->first()->appel->projet->nom ?? null;
-
-                        if ($hasRelance) {
-                            Mail::to($prospect->email)->send(new ScheduledEmail(1, $prospect, $projet, null));
-                            Log::info("Email de relance appel envoyé à {$prospect->email} (Prospect) dans la base de données {$databaseName}");
-                        }
-
-                        if ($hasRdv) {
-                            Mail::to($prospect->email)->send(new ScheduledEmail(2, $prospect, $projet, null));
-                            Log::info("Email de RDV appel envoyé à {$prospect->email} (Prospect) dans la base de données {$databaseName}");
-                        }
-
-                    } catch (\Exception $e) {
-                        Log::error("Échec de l'envoi de l'email au prospect apel {$prospect->email}: " . $e->getMessage());
-                    }
-                } else {
-                    Log::warning("Aucun email associé au prospect ID {$prospect->id} dans la base de données {$databaseName}");
-                }
-            }
-
-            // Envoi des emails aux utilisateurs
-            foreach ($users as $user) {
-                try {
-                    $relanceExists = $relanceUserIds->contains($user->id);
-                    $rdvExists = $rdvUserIds->contains($user->id);
-
-                    // Récupérer les informations de la visite depuis les traitements d'appel de l'utilisateur
-                    $traitementAppel = TraitementAppel::on('temp')
-                        ->with(['appel.projet', 'appel.prospect'])
-                        ->where('user_id', $user->id)
-                        ->whereIn('id', $relanceProspectIds->merge($rdvProspectIds))
-                        ->first();
-
-                    $projet = $traitementAppel->appel->projet->nom ?? null;
-                    $prospectName = $traitementAppel->appel->prospect->nom.' '.$traitementAppel->appel->prospect->prenom ?? null;
-
-                    if ($relanceExists) {
-                        Mail::to($user->email)->send(new ScheduledEmail(1, $user, $projet, null, $prospectName));
-                        Log::info("Email de relance appel envoyé à {$user->email} (Utilisateur) dans la base de données {$databaseName}");
-                    }
-
-                    if ($rdvExists) {
-                        Mail::to($user->email)->send(new ScheduledEmail(2, $user, $projet, null, $prospectName));
-                        Log::info("Email de RDV apppel envoyé à {$user->email} (Utilisateur) dans la base de données {$databaseName}");
-                    }
-                } catch (\Exception $e) {
-                    Log::error("Échec de l'envoi de l'email appel  à l'utilisateur {$user->email}: " . $e->getMessage());
-                }
-            }
-
-            Log::info('Processus de relance et notification terminé pour la base de données ' . $databaseName);
-        } else {
-            Log::warning('La table relances_rdv_appels est absente dans la base de données ' . $databaseName);
-        }
+    // Vérification que le template SID n'est pas vide
+    if (empty($templateSid)) {
+        Log::warning("Template SID vide - Envoi WhatsApp ignoré pour {$phone}");
+        return false;
     }
+    try {
+        
+         // Log des variables avant envoi
+        Log::info("Preparing WhatsApp template", [
+            'template_sid' => $templateSid,
+            'phone' => $phone,
+            'variables_raw' => $variables
+        ]);
 
+        // Nettoyer les variables
+        $cleanedVariables = [];
+        foreach ($variables as $key => $value) {
+            // S'assurer que la valeur n'est pas null et est une chaîne
+            $cleanedValue = $value ?? '';
+            // Limiter la longueur (WhatsApp limite à 1024 caractères)
+            $cleanedValue = substr($cleanedValue, 0, 1024);
+            $cleanedVariables[$key] = $cleanedValue;
+        }
 
+        // Prepare variables as JSON
+        $contentVariables = json_encode($cleanedVariables);
 
+        Log::info("WhatsApp variables JSON", ['json' => $contentVariables]);
+        // Clean phone number
+        $phone = preg_replace('/\s+/', '', $phone);
 
-}*/
+        if (preg_match('/^0(\d{9})$/', $phone, $matches)) {
+            $phone = '+212' . $matches[1];
+        }
 
+        if (!preg_match('/^\+\d{10,15}$/', $phone) && !preg_match('/^0\d{9}$/', $phone)) {
+            $phone = '+212' . ltrim($phone, '0');
+        }
 
-public static function envoyer_email_rdv_rlc($databases)
+        // Get WhatsApp configuration
+        $whatsappConfig = null;
+
+        if ($projetId) {
+            $whatsappConfig = \DB::connection('temp')->table('whatsapp_configurations')
+                ->where('projet_id', $projetId)
+                ->whereNull('deleted_at')
+                ->first();
+        }
+
+        if (!$whatsappConfig) {
+            $whatsappConfig = \DB::connection('temp')->table('whatsapp_configurations')
+                ->whereNull('deleted_at')
+                ->first();
+        }
+
+        if (!$whatsappConfig) {
+            Log::warning("No WhatsApp configuration found");
+            return false;
+        }
+
+        // Prepare variables as JSON
+        $contentVariables = json_encode($variables);
+
+        // Twilio API call
+        $url = "https://api.twilio.com/2010-04-01/Accounts/" . $whatsappConfig->account_sid . "/Messages.json";
+
+        $postData = [
+            'To' => "whatsapp:" . $phone,
+            'From' => "whatsapp:" . $whatsappConfig->phone_number_id,
+            'ContentSid' => $templateSid,
+            'ContentVariables' => $contentVariables
+        ];
+
+        $auth = base64_encode($whatsappConfig->account_sid . ":" . $whatsappConfig->access_token);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Basic ' . $auth,
+            'Content-Type: application/x-www-form-urlencoded'
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        $responseData = json_decode($response, true);
+
+        if ($httpCode == 201 || $httpCode == 200) {
+            Log::info("✅ WhatsApp template sent to {$phone}, SID: " . ($responseData['sid'] ?? 'unknown'));
+            return true;
+        } else {
+            Log::error("❌ WhatsApp template failed: " . ($responseData['message'] ?? $response));
+            return false;
+        }
+
+    } catch (\Exception $e) {
+        Log::error("❌ WhatsApp template exception: " . $e->getMessage());
+        return false;
+    }
+}
+
+public static function envoyer_whatsap_email_rdv_rlc($databases)
 {
     foreach ($databases as $database) {
         $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
@@ -648,16 +558,17 @@ public static function envoyer_email_rdv_rlc($databases)
         DB::reconnect('temp');
 
         $today = Carbon::now()->toDateString();
+            Log::info('todat is ' . $today);
 
         // Traitement pour les visites
-        self::traiterRelancesVisites($databaseName, $today);
+        self::traiterRelancesRdvVisites($databaseName, $today);
 
         // Traitement pour les appels
-        self::traiterRelancesAppels($databaseName, $today);
+        self::traiterRelancesRdvAppels($databaseName, $today);
     }
 }
 
-private static function traiterRelancesVisites($databaseName, $today)
+private static function traiterRelancesRdvVisites($databaseName, $today)
 {
     if (!Schema::connection('temp')->hasTable('relances_rdv_visites')) {
         Log::warning('La table relances_rdv_visites est absente dans la base de données ' . $databaseName);
@@ -668,9 +579,9 @@ private static function traiterRelancesVisites($databaseName, $today)
     $relancesRdvs = Relance_Rdv_Visite::on('temp')
         ->where(function($query) use ($today) {
             $query->where(function($q) use ($today) {
-                $q->where('type', 1)->whereDate('date_relance', $today);
+                $q->where('type', 1)->where('type_traitement', 0)->whereDate('date_relance', $today);
             })->orWhere(function($q) use ($today) {
-                $q->where('type', 2)->whereDate('rdv', $today);
+                $q->where('type', 2)->where('type_traitement', 0)->whereDate('rdv', $today);
             });
         })
         ->get();
@@ -713,7 +624,7 @@ private static function traiterRelancesVisites($databaseName, $today)
 
     // Envoi des emails aux prospects
     foreach ($prospectsData as $data) {
-        self::envoyerEmailProspectVisite($data, $databaseName);
+        self::envoyerEmail_whtsap_ProspectVisite($data, $databaseName);
     }
 
     // Envoi des emails aux utilisateurs
@@ -736,7 +647,7 @@ private static function traiterRelancesVisites($databaseName, $today)
     Log::info('Processus de relance visite terminé pour la base de données ' . $databaseName);
 }
 
-private static function traiterRelancesAppels($databaseName, $today)
+private static function traiterRelancesRdvAppels($databaseName, $today)
 {
     if (!Schema::connection('temp')->hasTable('relances_rdvs_appels')) {
         Log::warning('La table relances_rdv_appels est absente dans la base de données ' . $databaseName);
@@ -748,9 +659,9 @@ private static function traiterRelancesAppels($databaseName, $today)
         ->with('traite_appel.appel.prospect')
         ->where(function($query) use ($today) {
             $query->where(function($q) use ($today) {
-                $q->where('type', 1)->whereDate('date_relance', $today);
+                $q->where('type', 1)->where('type_traitement', 0)->whereDate('date_relance', $today);
             })->orWhere(function($q) use ($today) {
-                $q->where('type', 2)->whereDate('rdv', $today);
+                $q->where('type', 2)->where('type_traitement', 0)->whereDate('rdv', $today);
             });
         })
         ->get();
@@ -766,10 +677,10 @@ private static function traiterRelancesAppels($databaseName, $today)
     $rdvUserIds = $relancesRdvs->where('type', 2)->pluck('traite_appel.user_id');
 
     // Récupérer tous les traitements d'appel concernés en une seule requête
-    $traitementsAppels = TraitementAppel::on('temp')
-        ->with(['appel.prospect', 'appel.projet'])
-        ->whereIn('id', $relanceAppelIds->merge($rdvAppelIds)->unique())
-        ->get();
+   $traitementsAppels = TraitementAppel::on('temp')
+    ->with(['appel.prospect', 'appel.projet', 'rdv']) // Ajoutez 'rdv' ici
+    ->whereIn('id', $relanceAppelIds->merge($rdvAppelIds)->unique())
+    ->get();
 
     // Grouper par prospect
     $prospectsData = [];
@@ -792,7 +703,7 @@ private static function traiterRelancesAppels($databaseName, $today)
 
     // Envoi des emails aux prospects
     foreach ($prospectsData as $data) {
-        self::envoyerEmailProspectAppel($data, $databaseName);
+        self::envoyerEmail_whasap_ProspectAppel($data, $databaseName);
     }
 
     // Envoi des emails aux utilisateurs
@@ -809,7 +720,7 @@ private static function traiterRelancesAppels($databaseName, $today)
             ->groupBy('user_id');
 
         foreach ($users as $user) {
-            self::envoyerEmailUserAppel($user, $traitementsUsers->get($user->id, []), $relanceUserIds, $rdvUserIds, $databaseName);
+            self::envoyerEmail_whatsap_UserAppel($user, $traitementsUsers->get($user->id, []), $relanceUserIds, $rdvUserIds, $databaseName);
         }
     }
 
@@ -817,29 +728,49 @@ private static function traiterRelancesAppels($databaseName, $today)
 }
 
 // Méthodes helper pour l'envoi d'emails
-private static function envoyerEmailProspectVisite($data, $databaseName)
+private static function envoyerEmail_whtsap_ProspectVisite($data, $databaseName)
 {
     $prospect = $data['prospect'];
-    if (!$prospect->email) {
-        Log::warning("Aucun email associé au prospect ID {$prospect->id} dans la base de données {$databaseName}");
-        return;
-    }
 
     try {
-        $projet = $data['visites'][0]->projet->nom ?? null;
-        $bien = $data['visites'][0]->bien->propriete_dite_bien ?? null;
+         if ($prospect->email) {
+            $projet = $data['visites'][0]->projet->nom ?? null;
+            $bien = $data['visites'][0]->bien->propriete_dite_bien ?? null;
+// Construction du numéro de téléphone complet
+            $telephone = null;
+            if ($prospect->telephone) {
+                $telephone = $prospect->telephone;
+                if ($prospect->telephone_num2) {
+                    $telephone .= ' / ' . $prospect->telephone_num2;
+                }
+            } elseif ($prospect->telephone_num2) {
+                $telephone = $prospect->telephone_num2;
+            }
+        /* if ($data['hasRelance']) {
+                Mail::to($prospect->email)->send(new ScheduledEmail(1, $prospect, $projet, $bien, null, null, 'visite',null));
+                Log::info("Email de relance visite envoyé à {$prospect->email} (Prospect) dans la base de données {$databaseName}");
+            }*/
 
-        if ($data['hasRelance']) {
-            Mail::to($prospect->email)->send(new ScheduledEmail(1, $prospect, $projet, $bien, null, null, 'visite'));
-            Log::info("Email de relance visite envoyé à {$prospect->email} (Prospect) dans la base de données {$databaseName}");
-        }
+           if ($data['hasRdv']) {
+                // Récupérer la date du RDV
+                $rdvDate = null;
+                if (isset($data['visites'][0]->rdv_relation->rdv)) {
+                    $rdvDate = $data['visites'][0]->rdv_relation->rdv;
+                }
+                
+                Mail::to($prospect->email)->send(new ScheduledEmail(
+                    2, $prospect, $projet, $bien, null, null, 'visite', $telephone, $rdvDate
+                ));
+                Log::info("Email de RDV visite envoyé à {$prospect->email} (Prospect) dans la base de données {$databaseName}");
+            }
+         }
+            // Send WhatsApp messages if telephone numbers exist
+            self::sendWhatsAppToProspect($prospect, $data, $projet, $databaseName);
 
-        if ($data['hasRdv']) {
-            Mail::to($prospect->email)->send(new ScheduledEmail(2, $prospect, $projet, $bien, null, null, 'visite'));
-            Log::info("Email de RDV visite envoyé à {$prospect->email} (Prospect) dans la base de données {$databaseName}");
-        }
     } catch (\Exception $e) {
         Log::error("Échec de l'envoi de l'email au prospect {$prospect->email}: " . $e->getMessage());
+          // Send WhatsApp messages if telephone numbers exist
+        self::sendWhatsAppToProspect($prospect, $data, $projet, $databaseName);
     }
 }
 
@@ -852,99 +783,198 @@ private static function envoyerEmailUserVisite($user, $relanceUserIds, $rdvUserI
         $projet = $visite->projet->nom ?? null;
         $bien = $visite->bien->propriete_dite_bien ?? null;
         $prospectName = $visite->prospect->nom.' '.$visite->prospect->prenom ?? null;
+        $prospectPhone =  $visite->prospect->telephone ?? null;
+        $prospectPhone2 =  $visite->prospect->telephone_num2 ?? null;
+        
+         // Construction du téléphone du prospect pour le commercial
+        $prospectPhone = null;
+        if ($visite->prospect->telephone) {
+            $prospectPhone = $visite->prospect->telephone;
+            if ($visite->prospect->telephone_num2) {
+                $prospectPhone .= ' / ' . $visite->prospect->telephone_num2;
+            }
+        } elseif ($visite->prospect->telephone_num2) {
+            $prospectPhone = $visite->prospect->telephone_num2;
+        }
 
         if ($relanceUserIds->contains($user->id)) {
-            Mail::to($user->email)->send(new ScheduledEmail(1, $user, $projet, $bien, $prospectName, null, 'visite'));
+            Mail::to($user->email)->send(new ScheduledEmail(1, $user, $projet, $bien, $prospectName, null, 'visite',$prospectPhone));
             Log::info("Email de relance visite envoyé à {$user->email} (Utilisateur) dans la base de données {$databaseName}");
         }
 
-        if ($rdvUserIds->contains($user->id)) {
-            Mail::to($user->email)->send(new ScheduledEmail(2, $user, $projet, $bien, $prospectName, null, 'visite'));
-            Log::info("Email de RDV visite envoyé à {$user->email} (Utilisateur) dans la base de données {$databaseName}");
-        }
+        // Dans envoyerEmailUserVisite
+            if ($rdvUserIds->contains($user->id)) {
+                // Récupérer la date du RDV
+                $rdvDate = null;
+                if ($visite->rdv_relation && $visite->rdv_relation->rdv) {
+                    $rdvDate = $visite->rdv_relation->rdv;
+                }
+                
+                Mail::to($user->email)->send(new ScheduledEmail(
+                    2, $user, $projet, $bien, $prospectName, null, 'visite', $prospectPhone, $rdvDate
+                ));
+                Log::info("Email de RDV visite envoyé à {$user->email} (Utilisateur) dans la base de données {$databaseName}");
+            }
+      //  self::sendWhatsAppToUser($user, $relanceUserIds, $rdvUserIds, $projet, $prospectName, $prospectPhone, $prospectPhone2, $databaseName);
+
     } catch (\Exception $e) {
         Log::error("Échec de l'envoi de l'email à l'utilisateur {$user->email}: " . $e->getMessage());
+       //  self::sendWhatsAppToUser($user, $relanceUserIds, $rdvUserIds, $projet, $prospectName, $prospectPhone, $prospectPhone2, $databaseName);
+
     }
 }
 
-private static function envoyerEmailProspectAppel($data, $databaseName)
+private static function envoyerEmail_whasap_ProspectAppel($data, $databaseName)
 {
     $prospect = $data['prospect'];
 
     try {
         $projet = $data['traitements'][0]->appel->projet->nom ?? null;
+        
+        // Récupérer la date RDV depuis la relation rdv() du TraitementAppel
+        $rdvDate = null;
+        if (isset($data['traitements'][0])) {
+            $traitement = $data['traitements'][0];
+            // Utiliser la relation rdv() que vous avez définie
+            if ($traitement->rdv && $traitement->rdv->rdv) {
+                $rdvDate = $traitement->rdv->rdv;
+                Log::info("RDV date found for appel via relation: {$rdvDate}");
+            } else {
+                Log::warning("No rdv relation found for traitement_id: {$traitement->id}");
+            }
+        }
+        
+        $telephone = null;
+        if ($prospect->telephone) {
+            $telephone = $prospect->telephone;
+            if ($prospect->telephone_num2) {
+                $telephone .= ' / ' . $prospect->telephone_num2;
+            }
+        } elseif ($prospect->telephone_num2) {
+            $telephone = $prospect->telephone_num2;
+        }
 
         // Send emails if email exists
         if ($prospect->email) {
-            if ($data['hasRelance']) {
-                Mail::to($prospect->email)->send(new ScheduledEmail(1, $prospect, $projet, null, null, null, 'appel'));
-                Log::info("Email de relance appel envoyé à {$prospect->email} (Prospect) dans la base de données {$databaseName}");
+           if ($data['hasRdv']) {
+            // Récupérer la date RDV
+            $rdvDate = null;
+            if (isset($data['traitements'][0]) && $data['traitements'][0]->rdv) {
+                $rdvDate = $data['traitements'][0]->rdv->rdv;
             }
-
-            if ($data['hasRdv']) {
-                Mail::to($prospect->email)->send(new ScheduledEmail(2, $prospect, $projet, null, null, null, 'appel'));
-                Log::info("Email de RDV appel envoyé à {$prospect->email} (Prospect) dans la base de données {$databaseName}");
-            }
+            
+            Mail::to($prospect->email)->send(new ScheduledEmail(
+                2, $prospect, $projet, null, null, null, 'appel', $telephone, $rdvDate
+            ));
+            Log::info("Email de RDV appel envoyé à {$prospect->email} (Prospect) dans la base de données {$databaseName}");
+        }
         } else {
             Log::warning("Aucun email associé au prospect ID {$prospect->id} dans la base de données {$databaseName}");
         }
 
-        // Send WhatsApp messages if telephone numbers exist
-        self::sendWhatsAppToProspectAppel($prospect, $data, $projet, $databaseName);
+        // Send WhatsApp messages if we have a valid RDV date
+        if ($rdvDate) {
+            // Passer la date RDV directement à sendWhatsAppToProspect
+            self::sendWhatsAppToProspect($prospect, $data, $projet, $databaseName, $rdvDate);
+        } else {
+            Log::warning("No RDV date found for prospect {$prospect->id}, skipping WhatsApp");
+        }
 
     } catch (\Exception $e) {
         Log::error("Échec de l'envoi de l'email au prospect appel {$prospect->email}: " . $e->getMessage());
-        // Continue with WhatsApp even if email fails
-        self::sendWhatsAppToProspectAppel($prospect, $data, $projet, $databaseName);
     }
 }
 
-private static function sendWhatsAppToProspectAppel($prospect, $data, $projet, $databaseName)
+private static function sendWhatsAppToProspect($prospect, $data, $projet, $databaseName, $rdvDateString = null)
 {
-    // Check primary telephone
+    // Vérifier si le template est configuré
+    if (!self::isTemplateConfigured(self::$TEMPLATE_RAPPEL_RDV_PROSPECT, 'TEMPLATE_RAPPEL_RDV_PROSPECT')) {
+        return;
+    }
+    // Vérifier d'abord si c'est un RDV et si la date existe
+    $hasValidRdv = false;
+    $rdvDateFormatted = '';
+
+    if ($data['hasRdv']) {
+        // Utiliser la date passée en paramètre si disponible
+        if ($rdvDateString) {
+            $rdvDate = $rdvDateString;
+        } 
+        // Pour les visites
+        elseif (isset($data['visites'][0]->rdv_relation->rdv)) {
+            $rdvDate = $data['visites'][0]->rdv_relation->rdv;
+        }
+        else {
+            Log::warning("No RDV date provided for prospect {$prospect->id}");
+            return;
+        }
+
+        if ($rdvDate && !empty($rdvDate) && is_string($rdvDate)) {
+            $hasValidRdv = true;
+            try {
+                $rdvDateFormatted = Carbon::parse($rdvDate)->format('d/m/Y H:i');
+                Log::info("RDV date parsed successfully: {$rdvDateFormatted}");
+            } catch (\Exception $e) {
+                Log::error("Erreur de parsing de la date RDV: " . $e->getMessage());
+                return;
+            }
+        } else {
+            Log::warning("RDV date is invalid for prospect {$prospect->id}");
+            return;
+        }
+    } else {
+        // Pas de RDV, ne pas envoyer WhatsApp
+        Log::info("No RDV for prospect {$prospect->id}, skipping WhatsApp");
+        return;
+    }
+
+    if (!$hasValidRdv) {
+        Log::warning("No valid RDV date found for prospect {$prospect->id}");
+        return;
+    }
+
+    // Préparer les variables communes
+    $nomProspect = trim($prospect->nom . ' ' . $prospect->prenom);
+    $projetClean = $projet ?? '';
+
+    $variables = [
+        "1" => $nomProspect,
+        "2" => $rdvDateFormatted,
+        "3" => $projetClean
+    ];
+
+    Log::info("WhatsApp variables being sent", ['variables' => $variables]);
+
+    // Envoyer au numéro principal
     if ($prospect->telephone && !empty($prospect->telephone)) {
         try {
-            if ($data['hasRelance']) {
-                $message = "Bonjour {$prospect->nom} {$prospect->prenom}, nous vous rappelons qu'une relance est programmée concernant votre dossier pour le projet {$projet}. Nous restons à votre disposition.";
-                DatabaseHelper::sendWhatsAppMessage($prospect->telephone, $message);
-                Log::info("WhatsApp de relance appel envoyé à {$prospect->telephone} (Prospect) dans la base de données {$databaseName}");
-            }
-
-            if ($data['hasRdv']) {
-                $rdvDate = $data['traitements'][0]->rdv ?? null;
-                $rdvDateFormatted = $rdvDate ? Carbon::parse($rdvDate)->format('d/m/Y H:i') : '';
-                $message = "Bonjour {$prospect->nom} {$prospect->prenom}, nous vous rappelons votre rendez-vous prévu le {$rdvDateFormatted} pour le projet {$projet}. Nous restons à votre disposition.";
-                DatabaseHelper::sendWhatsAppMessage($prospect->telephone, $message);
-                Log::info("WhatsApp de RDV appel envoyé à {$prospect->telephone} (Prospect) dans la base de données {$databaseName}");
-            }
+            DatabaseHelper::sendWhatsAppTemplate(
+                $prospect->telephone,
+                self::$TEMPLATE_RAPPEL_RDV_PROSPECT,
+                $variables
+            );
+            Log::info("WhatsApp template RDV envoyé au numéro principal {$prospect->telephone} (Prospect) dans {$databaseName}");
         } catch (\Exception $e) {
-            Log::error("Échec de l'envoi WhatsApp au prospect {$prospect->telephone}: " . $e->getMessage());
+            Log::error("Échec de l'envoi WhatsApp au numéro principal {$prospect->telephone}: " . $e->getMessage());
         }
     }
 
-    // Check secondary telephone if different from primary
+    // Envoyer au second numéro si différent du principal
     if ($prospect->telephone_num2 && !empty($prospect->telephone_num2) && $prospect->telephone_num2 != $prospect->telephone) {
         try {
-            if ($data['hasRelance']) {
-                $message = "Bonjour {$prospect->nom} {$prospect->prenom}, nous vous rappelons qu'une relance est programmée concernant votre dossier pour le projet {$projet}. Nous restons à votre disposition.";
-                DatabaseHelper::sendWhatsAppMessage($prospect->telephone_num2, $message);
-                Log::info("WhatsApp de relance appel envoyé au second numéro {$prospect->telephone_num2} (Prospect) dans la base de données {$databaseName}");
-            }
-
-            if ($data['hasRdv']) {
-                $rdvDate = $data['traitements'][0]->rdv ?? null;
-                $rdvDateFormatted = $rdvDate ? Carbon::parse($rdvDate)->format('d/m/Y H:i') : '';
-                $message = "Bonjour {$prospect->nom} {$prospect->prenom}, nous vous rappelons votre rendez-vous prévu le {$rdvDateFormatted} pour le projet {$projet}. Nous restons à votre disposition.";
-                DatabaseHelper::sendWhatsAppMessage($prospect->telephone_num2, $message);
-                Log::info("WhatsApp de RDV appel envoyé au second numéro {$prospect->telephone_num2} (Prospect) dans la base de données {$databaseName}");
-            }
+            DatabaseHelper::sendWhatsAppTemplate(
+                $prospect->telephone_num2,
+                self::$TEMPLATE_RAPPEL_RDV_PROSPECT,
+                $variables
+            );
+            Log::info("WhatsApp template RDV envoyé au second numéro {$prospect->telephone_num2} (Prospect) dans {$databaseName}");
         } catch (\Exception $e) {
-            Log::error("Échec de l'envoi WhatsApp au second numéro prospect {$prospect->telephone_num2}: " . $e->getMessage());
+            Log::error("Échec de l'envoi WhatsApp au second numéro {$prospect->telephone_num2}: " . $e->getMessage());
         }
     }
 }
 
-private static function envoyerEmailUserAppel($user, $traitements, $relanceUserIds, $rdvUserIds, $databaseName)
+private static function envoyerEmail_whatsap_UserAppel($user, $traitements, $relanceUserIds, $rdvUserIds, $databaseName)
 {
     try {
         $traitement = $traitements->first();
@@ -955,30 +985,50 @@ private static function envoyerEmailUserAppel($user, $traitements, $relanceUserI
         $prospectPhone = $traitement->appel->prospect->telephone ?? null;
         $prospectPhone2 = $traitement->appel->prospect->telephone_num2 ?? null;
 
+        // Construction du téléphone du prospect pour le commercial
+        $prospectPhone = null;
+        $prospect = $traitement->appel->prospect;
+        if ($prospect->telephone) {
+            $prospectPhone = $prospect->telephone;
+            if ($prospect->telephone_num2) {
+                $prospectPhone .= ' / ' . $prospect->telephone_num2;
+            }
+        } elseif ($prospect->telephone_num2) {
+            $prospectPhone = $prospect->telephone_num2;
+        }
         // Send emails if email exists
         if ($user->email) {
             if ($relanceUserIds->contains($user->id)) {
-                Mail::to($user->email)->send(new ScheduledEmail(1, $user, $projet, null, $prospectName, null, 'appel'));
+                Mail::to($user->email)->send(new ScheduledEmail(1, $user, $projet, null, $prospectName, null, 'appel', $prospectPhone));
                 Log::info("Email de relance appel envoyé à {$user->email} (Utilisateur) dans la base de données {$databaseName}");
             }
 
+           // Dans envoyerEmail_whatsap_UserAppel
             if ($rdvUserIds->contains($user->id)) {
-                Mail::to($user->email)->send(new ScheduledEmail(2, $user, $projet, null, $prospectName, null, 'appel'));
+                // Récupérer la date RDV
+                $rdvDate = null;
+                if ($traitement->rdv && $traitement->rdv->rdv) {
+                    $rdvDate = $traitement->rdv->rdv;
+                }
+                
+                Mail::to($user->email)->send(new ScheduledEmail(
+                    2, $user, $projet, null, $prospectName, null, 'appel', $prospectPhone, $rdvDate
+                ));
                 Log::info("Email de RDV appel envoyé à {$user->email} (Utilisateur) dans la base de données {$databaseName}");
             }
         }
 
         // Send WhatsApp messages to user if phone number exists
-        self::sendWhatsAppToUserAppel($user, $relanceUserIds, $rdvUserIds, $projet, $prospectName, $prospectPhone, $prospectPhone2, $databaseName);
+       // self::sendWhatsAppToUser($user, $relanceUserIds, $rdvUserIds, $projet, $prospectName, $prospectPhone, $prospectPhone2, $databaseName);
 
     } catch (\Exception $e) {
         Log::error("Échec de l'envoi de l'email appel à l'utilisateur {$user->email}: " . $e->getMessage());
         // Continue with WhatsApp even if email fails
-        self::sendWhatsAppToUserAppel($user, $relanceUserIds, $rdvUserIds, $projet, $prospectName, $prospectPhone, $prospectPhone2, $databaseName);
+       // self::sendWhatsAppToUser($user, $relanceUserIds, $rdvUserIds, $projet, $prospectName, $prospectPhone, $prospectPhone2, $databaseName);
     }
 }
 
-private static function sendWhatsAppToUserAppel($user, $relanceUserIds, $rdvUserIds, $projet, $prospectName, $prospectPhone, $prospectPhone2, $databaseName)
+/*private static function sendWhatsAppToUser($user, $relanceUserIds, $rdvUserIds, $projet, $prospectName, $prospectPhone, $prospectPhone2, $databaseName)
 {
     if (!$user->phone) {
         Log::warning("Aucun numéro de téléphone associé à l'utilisateur ID {$user->id} dans la base de données {$databaseName}");
@@ -1015,248 +1065,278 @@ private static function sendWhatsAppToUserAppel($user, $relanceUserIds, $rdvUser
     } catch (\Exception $e) {
         Log::error("Échec de l'envoi WhatsApp à l'utilisateur {$user->phone}: " . $e->getMessage());
     }
-}
+}*/
 
 
- public static function envoyer_email_echeance($databases)
-    {
-        foreach ($databases as $database) {
-            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+public static function envoyer_email_whatsapp_echeance($databases)
+{
+    foreach ($databases as $database) {
+        $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
 
-            // Switch to the temporary database
-            $connection = DatabaseHelper::Connection_database($databaseName);
-            config(['database.connections.temp' => $connection]);
-            DB::connection('temp')->setDatabaseName($connection['database']);
-            DB::reconnect('temp');
+        // Switch to the temporary database
+        $connection = DatabaseHelper::Connection_database($databaseName);
+        config(['database.connections.temp' => $connection]);
+        DB::connection('temp')->setDatabaseName($connection['database']);
+        DB::reconnect('temp');
 
-            if (Schema::connection('temp')->hasTable('relances_rdv_visites')) {
-                $today = Carbon::now()->toDateString();
+        if (Schema::connection('temp')->hasTable('avances')) {
+            $today = Carbon::now()->toDateString();
 
-              // Récupérer les avances avec leurs relations
-                $echeances = Avance::on('temp')
-                    ->whereDate('echeance', $today)
-                    ->whereHas('reservation', function($query) {
-                        $query->where('etat', 1);
-                    })
-                    ->with(['reservation.aquereurs.client', 'reservation.projet', 'reservation.bien', 'user'])
-                    ->get();
+            // Récupérer les avances avec leurs relations
+            $echeances = Avance::on('temp')
+                ->whereDate('echeance', $today)
+                ->whereHas('reservation', function($query) {
+                    $query->where('etat', 1);
+                })
+                ->with(['reservation.aquereurs.client.prospect', 'reservation.projet', 'reservation.bien', 'user'])
+                ->get();
 
-                if ($echeances->isEmpty()) {
-                    Log::info("Aucune échéance trouvée pour la base de données {$databaseName}");
+            if ($echeances->isEmpty()) {
+                Log::info("Aucune échéance trouvée pour la base de données {$databaseName}");
+                continue;
+            }
+
+            // ========== ENVOI WHATSAPP AUX CLIENTS ==========
+            foreach ($echeances as $avance) {
+                if (!$avance->reservation || !$avance->reservation->aquereurs) {
                     continue;
                 }
 
-                // **Envoi d'emails aux utilisateurs (users)**
-                $userIds = $echeances->pluck('user_id')->unique();
-                if ($userIds->isNotEmpty()) {
-                    $users = User::on('temp')->whereIn('id', $userIds)->get();
+                foreach ($avance->reservation->aquereurs as $aquereur) {
+                    $client = $aquereur->client;
 
-                    foreach ($users as $user) {
-                        try {
-                            // Récupérer les échéances de cet utilisateur
-                            $userEcheances = $echeances->where('user_id', $user->id);
-
-                            foreach ($userEcheances as $avance) {
-                                $projet = $avance->reservation->projet->nom ?? null;
-                                $bien = $avance->reservation->bien->propriete_dite_bien ?? null;
-                                $clientName = $avance->reservation->aquereurs->first()->client->nom.' '.$avance->reservation->aquereurs->first()->client->prenom ?? null;
-
-                                Mail::to($user->email)->send(new ScheduledEmail(3, $user, $projet, $bien, $clientName, $avance));
-                                Log::info("Email d'échéance envoyé à l'utilisateur {$user->email} dans la base de données {$databaseName}");
-                            }
-                        } catch (\Exception $e) {
-                            Log::error("Échec de l'envoi de l'email à l'utilisateur {$user->email}: " . $e->getMessage());
-                        }
-                    }
-                } else {
-                    Log::info("Aucun utilisateur associé aux avances pour la base de données {$databaseName}");
-                }
-
-                // **Envoi d'emails aux clients (clients)**
-                foreach ($echeances as $avance) {
-                    if (!$avance->reservation || !$avance->reservation->aquereurs) {
-                        Log::warning("Aucune réservation ou acquéreurs pour l'avance ID {$avance->id} dans la base de données {$databaseName}");
+                    if (!$client) {
                         continue;
                     }
 
-                    foreach ($avance->reservation->aquereurs as $aquereur) {
-                        $client = $aquereur->client;
+                    // Récupérer les téléphones (priorité client, puis prospect)
+                    $telephone1 = self::getClientTelephone1($client);
+                    $telephone2 = self::getClientTelephone2($client);
+                    
+                    if ($telephone1 || $telephone2) {
+                        $projet = $avance->reservation->projet->nom ?? '';
+                        $bien = $avance->reservation->bien->propriete_dite_bien ?? '';
+                        $montant = number_format($avance->montant, 2, ',', ' ');
+                        $echeance = Carbon::parse($avance->echeance)->format('d/m/Y');
+                        $clientName = self::getClientName($client);
 
-                        if ($client && !empty($client->email)) {
-                            try {
-                                $projet = $avance->reservation->projet->nom ?? null;
-                                $bien = $avance->reservation->bien->propriete_dite_bien ?? null;
-                                $montant = $avance->montant ?? null;
+                        // Variables pour le template WhatsApp
+                        $variables = [
+                            "1" => $clientName,
+                            "2" => $montant,
+                            "3" => $echeance,
+                            "4" => $projet,
+                            "5" => $bien
+                        ];
+                            // Vérifier si le template est configuré
+                            if (!self::isTemplateConfigured(self::$TEMPLATE_ECHEANCE_PAIEMENT, 'TEMPLATE_ECHEANCE_PAIEMENT')) {
+                                Log::info("WhatsApp échéance non envoyé - Template non configuré dans .env");
+                            } else {
 
-                                Mail::to($client->email)->send(new ScheduledEmail(4, $client, $projet, $bien, null, $avance));
-                                Log::info("Email d'échéance envoyé au client {$client->email} (Client ID: {$client->id}) dans la base de données {$databaseName}");
-                            } catch (\Exception $e) {
-                                Log::error("Échec de l'envoi de l'email au client {$client->email}: " . $e->getMessage());
+                                    // Envoyer au numéro principal
+                                    if ($telephone1 && !empty($telephone1)) {
+                                
+                                        try {
+                                            DatabaseHelper::sendWhatsAppTemplate(
+                                                $telephone1,
+                                                self::$TEMPLATE_ECHEANCE_PAIEMENT,
+                                                $variables,
+                                                $avance->reservation->projet_id ?? null
+                                            );
+                                            Log::info("WhatsApp échéance envoyé à {$telephone1} (Client) dans {$databaseName}");
+                                        } catch (\Exception $e) {
+                                            Log::error("Échec de l'envoi WhatsApp à {$telephone1}: " . $e->getMessage());
+                                        }
+                                    
+                                    }
+                                    // Envoyer au second numéro si différent
+                                    if ($telephone2 && !empty($telephone2) && $telephone2 != $telephone1) {
+                                    
+                                            try {
+                                            DatabaseHelper::sendWhatsAppTemplate(
+                                                $telephone2,
+                                                self::$TEMPLATE_ECHEANCE_PAIEMENT,
+                                                $variables,
+                                                $avance->reservation->projet_id ?? null
+                                            );
+                                            Log::info("WhatsApp échéance envoyé au second numéro {$telephone2} dans {$databaseName}");
+                                            } catch (\Exception $e) {
+                                                Log::error("Échec de l'envoi WhatsApp à {$telephone1}: " . $e->getMessage());
+                                            }
+                                        
+                                    }
+                  
                             }
-                        } else {
-                            Log::warning("Aucun email pour le client ID {$aquereur->client_id} dans la réservation ID {$avance->reservation->id}");
-                        }
+                    }
+                    else {
+                        Log::warning("Aucun téléphone trouvé pour le client ID {$client->id}");
                     }
                 }
-
-                Log::info("Processus d'envoi des emails terminé pour la base de données {$databaseName}");
             }
+
+            // **Envoi d'emails aux utilisateurs (users)**
+            $userIds = $echeances->pluck('user_id')->unique();
+            if ($userIds->isNotEmpty()) {
+                $users = User::on('temp')->whereIn('id', $userIds)->get();
+
+                foreach ($users as $user) {
+                    try {
+                        $userEcheances = $echeances->where('user_id', $user->id);
+
+                        foreach ($userEcheances as $avance) {
+                            $projet = $avance->reservation->projet->nom ?? null;
+                            $bien = $avance->reservation->bien->propriete_dite_bien ?? null;
+                            $clientName = self::getClientName($avance->reservation->aquereurs->first()->client);
+
+                            Mail::to($user->email)->send(new ScheduledEmail(3, $user, $projet, $bien, $clientName, $avance));
+                            Log::info("Email d'échéance envoyé à l'utilisateur {$user->email} dans la base de données {$databaseName}");
+                        }
+                    } catch (\Exception $e) {
+                        Log::error("Échec de l'envoi de l'email à l'utilisateur {$user->email}: " . $e->getMessage());
+                    }
+                }
+            }
+
+            // **Envoi d'emails aux clients**
+            foreach ($echeances as $avance) {
+                if (!$avance->reservation || !$avance->reservation->aquereurs) {
+                    Log::warning("Aucune réservation ou acquéreurs pour l'avance ID {$avance->id}");
+                    continue;
+                }
+
+                foreach ($avance->reservation->aquereurs as $aquereur) {
+                    $client = $aquereur->client;
+
+                    if (!$client) {
+                        Log::warning("Client introuvable pour l'aquéreur ID {$aquereur->id}");
+                        continue;
+                    }
+
+                    // Récupérer l'email (priorité client, puis prospect)
+                    $emailTo = self::getClientEmail($client);
+                    
+                    if ($emailTo) {
+                        try {
+                            $projet = $avance->reservation->projet->nom ?? null;
+                            $bien = $avance->reservation->bien->propriete_dite_bien ?? null;
+                            
+                            Mail::to($emailTo)->send(new ScheduledEmail(4, $client, $projet, $bien, null, $avance));
+                            Log::info("Email d'échéance envoyé à {$emailTo} (Client ID: {$client->id}) dans {$databaseName}");
+                            
+                        } catch (\Exception $e) {
+                            Log::error("Échec de l'envoi de l'email à {$emailTo}: " . $e->getMessage());
+                        }
+                    } else {
+                        Log::warning("Aucun email pour le client ID {$client->id}");
+                    }
+                }
+            }
+
+            Log::info("Processus d'envoi des emails et WhatsApp terminé pour la base de données {$databaseName}");
         }
     }
+}
 
+/**
+ * Récupérer le téléphone principal du client (priorité client, puis prospect)
+ */
+private static function getClientTelephone1($client)
+{
+    if (!$client) {
+        return null;
+    }
+    
+    // Priorité au téléphone du client
+    if (!empty($client->telephone_num1)) {
+        return $client->telephone_num1;
+    }
+    
+    // Sinon, téléphone du prospect associé
+    if ($client->prospect && !empty($client->prospect->telephone)) {
+        return $client->prospect->telephone;
+    }
+    
+    return null;
+}
 
-    public static function envoyer_whatsapp_rdv_rlc($databases)
-    {
-        foreach ($databases as $database) {
-            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+/**
+ * Récupérer le téléphone secondaire du client (priorité client, puis prospect)
+ */
+private static function getClientTelephone2($client)
+{
+    if (!$client) {
+        return null;
+    }
+    
+    // Priorité au second téléphone du client
+    if (!empty($client->telephone_num2)) {
+        return $client->telephone_num2;
+    }
+    
+    // Sinon, second téléphone du prospect associé
+    if ($client->prospect && !empty($client->prospect->telephone_num2)) {
+        return $client->prospect->telephone_num2;
+    }
+    
+    return null;
+}
 
-            // Configurer la connexion à la base de données temporaire
-            $connection = DatabaseHelper::Connection_database($databaseName);
-            config(['database.connections.temp' => $connection]);
-            DB::connection('temp')->setDatabaseName($connection['database']);
-            DB::reconnect('temp');
+/**
+ * Récupérer l'email du client (priorité client, puis prospect)
+ */
+private static function getClientEmail($client)
+{
+    if (!$client) {
+        return null;
+    }
+    
+    // Priorité à l'email du client
+    if (!empty($client->email)) {
+        return $client->email;
+    }
+    
+    // Sinon, email du prospect associé
+    if ($client->prospect && !empty($client->prospect->email)) {
+        return $client->prospect->email;
+    }
+    
+    return null;
+}
 
-            if (Schema::connection('temp')->hasTable('relances_rdv_visites')) {
-                $tomorrow = Carbon::tomorrow()->toDateString();
-                $today = Carbon::now()->toDateString();
-                log::info('tom'.$tomorrow);
-               // Récupérer les relances pour les users
-                $relances = Relance_Rdv_Visite::on('temp')
-                    ->with(['user','visite.prospect'])
-                    ->whereDate('date_relance', $today)
-                    ->where('type', 1)
-                    ->get();
-                    log::info('count'.count($relances));
-                //send msg to commercial pou relancer prospect
-
-                    if(count($relances)>0){
-                        foreach ($relances as $relance) {
-                            $user = $relance->user;
-                            if($user->phone!=null){
-                                // Assuming the relationship exist
-                                $prospect = $relance->visite->prospect->nom .' '.$relance->visite->prospect->prenom; // Adjust field name as needed
-                                $phone_prospect=$relance->visite->prospect->telephone;
-                                $message = "Bonjour, nous vous rappelons que vous avez une relance à effectuer pour le prospect $prospect. le Numéro telephone est :$phone_prospect";
-                                DatabaseHelper::sendWhatsAppMessage($user->phone, $message);
-                                Log::info(' message de relance whtsap send to prospect'.$user->phone);
-
-                            }
-                         }
-                    }
-                   // Récupérer les relances pour les prospects
-                $rdvs = Relance_Rdv_Visite::on('temp')
-                    ->with(['visite.prospect','user','visite.projet','visite.bien'])
-                    ->whereDate('rdv', $tomorrow)
-                    ->where('type', 2)
-                    ->get();
-
-
-                if(count($rdvs)>0){
-                        foreach ($rdvs as $rdv) {
-                            $prospect = $rdv->visite->prospect;
-                            if($prospect!=null){
-                                // Assuming the relationship exists
-                                $phone = $prospect->telephone; // Adjust field name as needed
-                                $heure = Carbon::parse($rdv->rdv)->format('H:i'); // Extracts only the time
-                                $user=$rdv->user->name. ' '.$rdv->user->prenom;
-                                $projet=$rdv->visite->projet->nom;
-                                $bien=$rdv->visite->bien->propriete_dite_bien;
-                                $message ="Madame/Monsieur, nous vous rappelons que vous avez un rendez-vous de suivi programmée demain à $heure avec le Commercial $user pour le Projet :$projet conecernant le bien $bien. Nous restons à votre disposition pour toute information complémentaire.";
-                                DatabaseHelper::sendWhatsAppMessage($phone, $message);
-                                Log::info(' message de rdv whtsap send to prospect'.$prospect->telephone. ' w rdv id ==>'.$rdv->id);
-
-                            }
-                    }
-                }
-
-                //SEND Msg to user for reminde prosect (table statut_prospects)
-                        // Récupérer les relances pour les users
-                        $rappel_prospects_users = StatutProspect::on('temp')
-                        ->with(['user','prospect'])
-                        ->whereDate('date_rappel', $today)
-                        ->get();
-                        log::info('count'.count($rappel_prospects_users));
-                        if(count($rappel_prospects_users)>0){
-                            foreach ($rappel_prospects_users as $rel) {
-                                $user = $rel->user;
-                                if($user->phone!=null){
-                                    // Assuming the relationship exist
-                                    $prospect = $rappel_prospects_users->prospect->nom .' '.$rappel_prospects_users->prospect->prenom; // Adjust field name as needed
-                                    $phone_prospect=$rappel_prospects_users->prospect->telephone;
-                                    $message = "Bonjour, nous vous rappelons que vous avez une relance à effectuer pour le prospect $prospect. le Numéro telephone est :$phone_prospect";
-                                    DatabaseHelper::sendWhatsAppMessage($user->phone, $message);
-                                    Log::info(' message de relance whtsap send to prospect'.$user->phone);
-
-                                }
-                             }
-                        }
-
-
-                Log::info('Processus de relance et notification terminé pour la base de données ' . $databaseName);
-            } else {
-                Log::warning('La table relances_rdv_visites est absente dans la base de données ' . $databaseName);
-            }
+/**
+ * Récupérer le nom complet du client (priorité client, puis prospect)
+ */
+private static function getClientName($client)
+{
+    if (!$client) {
+        return 'Client';
+    }
+    
+    // Priorité au nom du client
+    if (!empty($client->nom) && !empty($client->prenom)) {
+        return trim($client->nom . ' ' . $client->prenom);
+    }
+    
+    if (!empty($client->nom)) {
+        return $client->nom;
+    }
+    
+    // Sinon, nom du prospect associé
+    if ($client->prospect) {
+        if (!empty($client->prospect->nom) && !empty($client->prospect->prenom)) {
+            return trim($client->prospect->nom . ' ' . $client->prospect->prenom);
+        }
+        if (!empty($client->prospect->nom)) {
+            return $client->prospect->nom;
         }
     }
+    
+    return 'Client';
+}
 
 
-    /*public static function sendWhatsAppMessage($phone, $message)
-    {
-        $instanceId =env('INSTANCE_ID_ULTRA_MSG');  // Replace with your instance ID
-        $token = env('TOKEN_ULTRA_MSG');
-        // Replace with your WhatsApp API provider details
-        $response = Http::timeout(60)->post("https://api.ultramsg.com/$instanceId/messages/chat", [
-            'to'   => $phone,
-            'body' => $message,
-            'token' => $token
-        ]);
 
-        Log::info("WhatsApp message sent to $phone: " . $response->body());
-    }*/
-        public static function sendWhatsAppMessage($phone, $message)
-        {
-            try {
-                // Clean phone number: remove spaces, ensure correct format
-                $phone = preg_replace('/\s+/', '', $phone);
 
-                // Format phone number if it starts with 0 (Moroccan numbers)
-                if (preg_match('/^0(\d{9})$/', $phone, $matches)) {
-                    $phone = '+212' . $matches[1];
-                }
-
-                // If phone doesn't have country code and doesn't start with +, add +212
-                if (!preg_match('/^\+\d{10,15}$/', $phone) && !preg_match('/^0\d{9}$/', $phone)) {
-                    // Assume it's a Moroccan number without prefix
-                    $phone = '+212' . ltrim($phone, '0');
-                }
-
-                // Initialize Twilio client if configured
-                if (env('TWILIO_ACCOUNT_SID') && env('TWILIO_AUTH_TOKEN') && env('TWILIO_WHATSAPP_NUMBER')) {
-                    $twilio = new ClientTwilio(
-                        env('TWILIO_ACCOUNT_SID'),
-                        env('TWILIO_AUTH_TOKEN')
-                    );
-
-                    $sentMessage = $twilio->messages->create(
-                        "whatsapp:" . $phone,
-                        [
-                            'from' => env('TWILIO_WHATSAPP_NUMBER'),
-                            'body' => $message
-                        ]
-                    );
-
-                    Log::info("✅ WhatsApp message sent via Twilio to {$phone}, SID: " . $sentMessage->sid);
-                    return true;
-                }
-
-                Log::warning("No WhatsApp provider configured. Message not sent to {$phone}");
-                return false;
-
-            } catch (\Exception $e) {
-                Log::error("❌ WhatsApp send failed for {$phone}: " . $e->getMessage());
-                return false;
-            }
-        }
     public static function sendImportEmail($imp, $to_email)
     {
         if($to_email != null) {

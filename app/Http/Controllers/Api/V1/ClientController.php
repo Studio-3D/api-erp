@@ -421,7 +421,7 @@ class ClientController extends Controller
                         'code_client' => $request->cin . '_' . $request->nom,
                         'name' => $request->nom,
                         'prenom' => $request->prenom,
-                        'email' => $request->email,
+                        'email' => (isset($request->email) && !empty(trim($request->email))) ? trim($request->email) : null,
                         'password' => Hash::make($client->password),
                       //  'gender' => $request->civilite,
                         'client_id' => $client->id

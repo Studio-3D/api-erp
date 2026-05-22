@@ -12,14 +12,14 @@ class EcheanceEmail extends Command
      *
      * @var string
      */
-    protected $signature = 'app:echeance-email';
+    protected $signature = 'app:send_email_whatsapp_echeance';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected $description = 'send whatsap email for echeances Command description';
 
     /**
      * Execute the console command.
@@ -30,6 +30,6 @@ class EcheanceEmail extends Command
         ->whereNull('deleted_at')
         //->where('id', '=', 233)
         ->get();
-        DatabaseHelper::envoyer_email_echeance($databases);
+        DatabaseHelper::envoyer_email_whatsapp_echeance($databases);
     }
 }
