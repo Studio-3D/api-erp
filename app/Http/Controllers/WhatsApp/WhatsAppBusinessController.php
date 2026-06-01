@@ -413,89 +413,171 @@ private function createWhatsAppNotification($prospectId, $phoneNumber, $profileN
     /**
  * Récupérer les conversations WhatsApp
  */
- public function getConversations(Request $request, $projetId)
+ /**
+ * Récupérer les conversations WhatsApp
+ */
+public function getConversations(Request $request, $projetId)
 {
     DatabaseHelper::Config();
 
-    // Récupérer tous les messages groupés par expéditeur
-    $conversations = DB::connection('temp')
+    // Check if the whatsapp_messages table exists
+    if (!Schema::connection('temp')->hasTable('whatsapp_messages')) {
+        return response()->json([
+            'conversations' => []
+        ]);
+    }
+
+    // Get the business WhatsApp number from configurations
+    $whatsappConfig = DB::connection('temp')
+        ->table('whatsapp_configurations')
+        ->where('projet_id', $projetId)
+        ->whereNull('deleted_at')
+        ->first();
+
+    if (!$whatsappConfig) {
+        // No WhatsApp configuration found for this project
+        return response()->json([
+            'conversations' => []
+        ]);
+    }
+
+    $ourWhatsappNumber = $whatsappConfig->phone_number_id;
+
+    // Get unique phone numbers from both from_number AND to_number (excluding our number)
+    $phoneNumbers = DB::connection('temp')
         ->table('whatsapp_messages')
         ->where('projet_id', $projetId)
-        ->select(
-            'from_number as phone_number',
-            'profile_name',
-            DB::raw('MAX(created_at) as last_message_date'),
-            DB::raw('COUNT(*) as message_count'),
-            DB::raw('SUM(CASE WHEN status = "received" AND read_at IS NULL THEN 1 ELSE 0 END) as unread_count')
-        )
-        ->groupBy('from_number', 'profile_name')
-        ->orderBy('last_message_date', 'desc')
-        ->get()
-        ->map(function ($conv) use ($projetId) {
-            // Récupérer le dernier message
-            $lastMessage = DB::connection('temp')
-                ->table('whatsapp_messages')
-                ->where('projet_id', $projetId)
-                ->where('from_number', $conv->phone_number)
-                ->orderBy('created_at', 'desc')
-                ->first();
+        ->select(DB::raw("DISTINCT CASE
+            WHEN from_number = '{$ourWhatsappNumber}' THEN to_number
+            ELSE from_number
+        END as phone_number"))
+        ->where(function($query) use ($ourWhatsappNumber) {
+            $query->where('from_number', '!=', $ourWhatsappNumber)
+                  ->orWhere('to_number', '!=', $ourWhatsappNumber);
+        })
+        ->get();
 
-            // Récupérer le prospect associé
+    $conversations = [];
+
+    foreach ($phoneNumbers as $phone) {
+        $phoneNumber = $phone->phone_number;
+        if (empty($phoneNumber)) continue;
+
+        // Get messages between the two parties
+        $messages = DB::connection('temp')
+            ->table('whatsapp_messages')
+            ->where('projet_id', $projetId)
+            ->where(function($query) use ($phoneNumber, $ourWhatsappNumber) {
+                $query->where(function($q) use ($phoneNumber, $ourWhatsappNumber) {
+                    $q->where('from_number', $phoneNumber)
+                      ->where('to_number', $ourWhatsappNumber);
+                })->orWhere(function($q) use ($phoneNumber, $ourWhatsappNumber) {
+                    $q->where('from_number', $ourWhatsappNumber)
+                      ->where('to_number', $phoneNumber);
+                });
+            })
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        if ($messages->count() > 0) {
+            $lastMessage = $messages->last();
+            $unreadCount = $messages->where('status', 'received')
+                                   ->whereNull('read_at')
+                                   ->where('from_number', $phoneNumber)
+                                   ->count();
+
+            // Get prospect info
             $prospect = DB::connection('temp')
                 ->table('prospects')
-                ->where('telephone', $conv->phone_number)
-                ->orWhere('telephone_num2', $conv->phone_number)
+                ->where('telephone', $phoneNumber)
+                ->orWhere('telephone_num2', $phoneNumber)
                 ->first();
 
-            return [
-                'phone_number' => $conv->phone_number,
-                'profile_name' => $conv->profile_name,
+            $conversations[] = [
+                'phone_number' => $phoneNumber,
+                'profile_name' => $lastMessage->profile_name ?? $phoneNumber,
                 'prospect_id' => $prospect->id ?? null,
-                'prospect_nom' => $prospect->nom ?? $conv->profile_name,
+                'prospect_nom' => $prospect->nom ?? $phoneNumber,
                 'last_message' => $lastMessage->message ?? null,
-                'last_message_date' => $conv->last_message_date,
-                'message_count' => $conv->message_count,
-                'unread_count' => (int) $conv->unread_count,  // ← Ajout du compteur non lu
-                'last_message_from_me' => $lastMessage && $lastMessage->from_number == $conv->phone_number
+                'last_message_date' => $lastMessage->created_at ?? now(),
+                'message_count' => $messages->count(),
+                'unread_count' => $unreadCount,
+                'last_message_from_me' => $lastMessage && $lastMessage->from_number == $ourWhatsappNumber
             ];
-        });
+        }
+    }
 
-    return response()->json(['conversations' => $conversations]);
+    // Sort by last_message_date descending
+    usort($conversations, function($a, $b) {
+        return strtotime($b['last_message_date']) - strtotime($a['last_message_date']);
+    });
+
+    return response()->json(['conversations' => array_values($conversations)]);
 }
 
     /**
      * Récupérer une conversation spécifique
      */
-    public function getConversation(Request $request, $projetId, $phoneNumber)
-    {
-        DatabaseHelper::Config();
+   /**
+ * Récupérer une conversation spécifique
+ */
+public function getConversation(Request $request, $projetId, $phoneNumber)
+{
+    DatabaseHelper::Config();
 
+    // Get the business WhatsApp number from configurations
+    $whatsappConfig = DB::connection('temp')
+        ->table('whatsapp_configurations')
+        ->where('projet_id', $projetId)
+        ->whereNull('deleted_at')
+        ->first();
+
+    $ourWhatsappNumber = $whatsappConfig ? $whatsappConfig->phone_number_id : null;
+
+    $messages = DB::connection('temp')
+        ->table('whatsapp_messages')
+        ->where('projet_id', $projetId)
+        ->where(function($query) use ($phoneNumber) {
+            $query->where('from_number', $phoneNumber)
+                  ->orWhere('to_number', $phoneNumber);
+        })
+        ->orderBy('created_at', 'asc')
+        ->get();
+
+    // If we have our business number, also show messages where we are the sender
+    if ($ourWhatsappNumber && $messages->isEmpty()) {
         $messages = DB::connection('temp')
             ->table('whatsapp_messages')
             ->where('projet_id', $projetId)
-            ->where(function($query) use ($phoneNumber) {
-                $query->where('from_number', $phoneNumber)
-                      ->orWhere('to_number', $phoneNumber);
+            ->where(function($query) use ($phoneNumber, $ourWhatsappNumber) {
+                $query->where(function($q) use ($phoneNumber, $ourWhatsappNumber) {
+                    $q->where('from_number', $ourWhatsappNumber)
+                      ->where('to_number', $phoneNumber);
+                })->orWhere(function($q) use ($phoneNumber, $ourWhatsappNumber) {
+                    $q->where('from_number', $phoneNumber)
+                      ->where('to_number', $ourWhatsappNumber);
+                });
             })
             ->orderBy('created_at', 'asc')
             ->get();
-
-        $prospect = DB::connection('temp')
-            ->table('prospects')
-            ->where('telephone', $phoneNumber)
-            ->orWhere('telephone_num2', $phoneNumber)
-            ->first();
-
-        return response()->json([
-            'conversation' => [
-                'phone_number' => $phoneNumber,
-                'profile_name' => $messages->first()->profile_name ?? 'Client',
-                'prospect_id' => $prospect->id ?? null,
-                'prospect_nom' => $prospect->nom ?? null,
-                'messages' => $messages
-            ]
-        ]);
     }
+
+    $prospect = DB::connection('temp')
+        ->table('prospects')
+        ->where('telephone', $phoneNumber)
+        ->orWhere('telephone_num2', $phoneNumber)
+        ->first();
+
+    return response()->json([
+        'conversation' => [
+            'phone_number' => $phoneNumber,
+            'profile_name' => $messages->first()->profile_name ?? 'Client',
+            'prospect_id' => $prospect->id ?? null,
+            'prospect_nom' => $prospect->nom ?? null,
+            'messages' => $messages
+        ]
+    ]);
+}
 
     /**
      * Envoyer une réponse WhatsApp
