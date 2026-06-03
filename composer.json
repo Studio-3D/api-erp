@@ -16,7 +16,7 @@
         "guzzlehttp/guzzle": "^7.2",
         "intervention/image": "^3.11",
         "laravel/framework": "*",
-        "laravel/passport": "^11.8",
+        "laravel/passport": "^12.4",
         "laravel/sanctum": "^3.2",
         "laravel/tinker": "^2.7",
         "league/flysystem-aws-s3-v3": "^3.32",

@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers\WhatsApp;
 use App\Http\Helpers\RoleHelper;
-
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -579,9 +580,8 @@ public function getConversation(Request $request, $projetId, $phoneNumber)
     ]);
 }
 
-    /**
-     * Envoyer une réponse WhatsApp
-     */
+    /**Envoyer une réponse WhatsApp
+
 public function sendReply(Request $request, $projetId, $phoneNumber)
 {
     DatabaseHelper::Config();
@@ -633,7 +633,7 @@ public function sendReply(Request $request, $projetId, $phoneNumber)
                     'body' => $messageText
                 ]
             );
-        }*/
+        }
         // Envoi texte seulement
             $sentMessage = $twilio->messages->create(
                 "whatsapp:" . $phoneNumber,
@@ -669,9 +669,97 @@ public function sendReply(Request $request, $projetId, $phoneNumber)
         return response()->json(['error' => $e->getMessage()], 500);
     }
 }
+*/
 
+/**
+ * Envoyer une réponse WhatsApp (texte ou média)
+ */
+public function sendReply(Request $request, $projetId, $phoneNumber)
+{
+    DatabaseHelper::Config();
 
+    $request->validate([
+        'message' => 'nullable|string|max:1600',
+        'media_url' => 'nullable|url',
+        'media_type' => 'nullable|string|in:image,audio,application/pdf,document'
+    ]);
 
+    $messageText = $request->input('message', '');
+    $mediaUrl = $request->input('media_url');
+    $mediaType = $request->input('media_type');
+
+    if (empty($messageText) && empty($mediaUrl)) {
+        return response()->json(['error' => 'Un message ou un média est requis'], 400);
+    }
+
+    $config = DB::connection('temp')
+        ->table('whatsapp_configurations')
+        ->where('projet_id', $projetId)
+        ->whereNull('deleted_at')
+        ->first();
+
+    if (!$config) {
+        return response()->json(['error' => 'Configuration WhatsApp non trouvée'], 404);
+    }
+
+    $twilio = new ClientTwilio($config->account_sid, $config->access_token);
+
+    try {
+        $messageParams = [
+            'from' => "whatsapp:" . $config->phone_number_id,
+        ];
+
+        // Handle media if present
+        if (!empty($mediaUrl)) {
+            $messageParams['mediaUrl'] = [$mediaUrl];
+            if (!empty($messageText)) {
+                $messageParams['body'] = $messageText;
+            }
+        } else {
+            $messageParams['body'] = $messageText;
+        }
+
+        $sentMessage = $twilio->messages->create(
+            "whatsapp:" . $phoneNumber,
+            $messageParams
+        );
+
+        // Prepare message data for database
+        $messageData = [
+            'projet_id' => $projetId,
+            'from_number' => $config->phone_number_id,
+            'to_number' => $phoneNumber,
+            'message' => $messageText ?: ($mediaType === 'audio' ? '🎤 Message vocal' : ($mediaType === 'application/pdf' ? '📄 Document PDF' : '📷 Image')),
+            'message_sid' => $sentMessage->sid,
+            'profile_name' => auth()->user()->name ?? 'Commercial',
+            'status' => 'sent',
+            'media_url' => $mediaUrl,
+            'media_type' => $mediaType,
+            'created_at' => now(),
+            'updated_at' => now()
+        ];
+
+        $messageId = DB::connection('temp')->table('whatsapp_messages')->insertGetId($messageData);
+
+        // Broadcast the message
+        $messageData['id'] = $messageId;
+        Config::set('broadcasting.default', 'pusher_whatsapp');
+        broadcast(new NewWhatsAppMessageEvent($messageData, $projetId, $phoneNumber))->toOthers();
+
+        Log::info("Message envoyé à {$phoneNumber}, SID: " . $sentMessage->sid);
+
+        return response()->json([
+            'success' => true,
+            'sid' => $sentMessage->sid,
+            'message_id' => $messageId,
+            'message' => $messageData
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error("Erreur envoi message: " . $e->getMessage());
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+}
 
     // Configuration management (following Facebook pattern)
     public function get_whatsapp_configurations()
@@ -990,29 +1078,64 @@ public function sendReply(Request $request, $projetId, $phoneNumber)
         }
     }
 
-    public function uploadMedia(Request $request)
+public function uploadMedia(Request $request)
 {
     try {
         DatabaseHelper::Config();
 
         $request->validate([
-            'file' => 'required|file|max:10240', // 10MB max
-            'type' => 'required|in:image,audio'
+            'file' => 'required|file|max:20480',
+            'type' => 'required|string|in:image,audio,pdf,document'
         ]);
 
         $file = $request->file('file');
         $type = $request->input('type');
 
-        $folder = $type === 'image' ? 'whatsapp_images' : 'whatsapp_audios';
-        $path = $file->store($folder, 'public');
-        $url = asset('storage/' . $path);
+        // Generate unique filename
+        $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+        $extension = $file->getClientOriginalExtension();
+        $filename = Str::slug($originalName) . '_' . time() . '.' . $extension;
+
+        // Determine subfolder
+        $subfolder = match($type) {
+            'image' => 'images',
+            'audio' => 'audios',
+            'pdf' => 'pdfs',
+            'document' => 'documents',
+            default => 'others'
+        };
+
+        // Create directory
+        $directory = public_path('docs/whatsapp/' . $subfolder);
+        if (!file_exists($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        // Move file
+        $file->move($directory, $filename);
+
+        // Build URL using APP_URL from .env (which should be your ngrok URL)
+        $appUrl = rtrim(env('APP_URL', 'http://localhost:8000'), '/');
+        $url = $appUrl . '/docs/whatsapp/' . $subfolder . '/' . $filename;
+
+        // Log for debugging
+        Log::info('WhatsApp Media Upload', [
+            'original_name' => $file->getClientOriginalName(),
+            'saved_as' => $filename,
+            'type' => $type,
+            'size' => $file->getSize(),
+            'public_url' => $url,
+            'app_url' => $appUrl
+        ]);
 
         return response()->json([
             'success' => true,
             'url' => $url,
             'type' => $type,
+            'filename' => $filename,
             'mime_type' => $file->getMimeType(),
-            'size' => $file->getSize()
+            'size' => $file->getSize(),
+            'original_name' => $file->getClientOriginalName()
         ]);
 
     } catch (\Exception $e) {
