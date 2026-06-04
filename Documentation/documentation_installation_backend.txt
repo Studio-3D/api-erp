@@ -32,17 +32,22 @@ Cette documentation décrit les étapes nécessaires pour installer et configure
    php artisan key:generate
    ```
 
-6. **Appliquer les migrations de la base de données :**
-   ```bash
-   php artisan migrate
-   ```
 
-7. **Créer une société manuellement avec la raison sociale "erp_Studio4d_1" :**
+
+7. **Créer une société manuellement avec la raison sociale erp_nom_db_1:**
    (Cette étape peut être faite via l'interface ou en ajoutant la société manuellement dans la base de données via un client comme phpMyAdmin).
 
-8. **Initialiser les données de test avec un seeder pour les utilisateurs :**
+	create manuel database erp_nom_db_1
+
+ADD in env ca SOCIETE_RAISON_SOCIALE=nom_db
+SOCIETE_RAISON_SOCIALE_CONCAT=nom_db
+
+php artisan migrate --path=database/migrations/migrations_societe --force
+
+
+8. **Initialiser les données de test avec les seeders :**
    ```bash
-   php artisan db:seed --class=UserSeeder
+   php artisan db:seed 
    ```
 
 9. **Installer Laravel Passport pour l'authentification API :**
@@ -57,6 +62,8 @@ Cette documentation décrit les étapes nécessaires pour installer et configure
    ```bash
    php artisan passport:client --personal
    ```
+# Créer password client avec nom par défaut  
+echo " " | php artisan passport:client --password
 
 ---
 
