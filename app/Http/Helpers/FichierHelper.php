@@ -3,7 +3,7 @@
 namespace App\Http\Helpers;
 
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class FichierHelper
 {
@@ -24,11 +24,8 @@ class FichierHelper
     private static function getBasePath()
     {
         if (self::isCloudways()) {
-            // Chemin correct sur Cloudways
             return base_path('public_html/docs');
         }
-
-        // Chemin local
         return public_path('docs');
     }
 
@@ -40,21 +37,35 @@ class FichierHelper
         $relativePath = $societe . '_' . $id . '/' . $doss;
         $directory = self::getBasePath() . '/' . $relativePath;
 
-        // Créer le dossier s'il n'existe pas
         if (!File::exists($directory)) {
             File::makeDirectory($directory, 0755, true);
         }
 
-        // Déplacer le fichier
         $file->move($directory, $nom_file);
 
-        // Corriger les permissions
         if (self::isCloudways()) {
             chmod($directory . '/' . $nom_file, 0644);
         }
 
-        // Retourner le chemin relatif pour stockage en base
         return $nom_file;
+    }
+
+    /**
+     * Supprimer un fichier
+     */
+    public static function supprimer_fichier($societe, $id, $doss, $nom_file)
+    {
+        if (!$nom_file) {
+            return true;
+        }
+
+        $filePath = self::getBasePath() . '/' . $societe . '_' . $id . '/' . $doss . '/' . $nom_file;
+
+        if (File::exists($filePath)) {
+            return File::delete($filePath);
+        }
+
+        return false;
     }
 
     /**
@@ -66,13 +77,66 @@ class FichierHelper
             return null;
         }
 
-        // Construire l'URL publique
-        if (self::isCloudways()) {
-            // Sur Cloudways, utiliser asset() qui pointe vers public_html
-            return asset('docs/' . $societe . '_' . $id . '/' . $doss . '/' . $nom_file);
+        return asset('docs/' . $societe . '_' . $id . '/' . $doss . '/' . $nom_file);
+    }
+
+    /**
+     * Vérifier si un fichier existe
+     */
+    public static function fichier_existe($societe, $id, $doss, $nom_file)
+    {
+        if (!$nom_file) {
+            return false;
         }
 
-        // En local
-        return asset('docs/' . $societe . '_' . $id . '/' . $doss . '/' . $nom_file);
+        $filePath = self::getBasePath() . '/' . $societe . '_' . $id . '/' . $doss . '/' . $nom_file;
+        return File::exists($filePath);
+    }
+
+    /**
+     * Récupérer tous les fichiers d'un dossier
+     */
+    public static function get_files($societe, $id, $doss)
+    {
+        $directory = self::getBasePath() . '/' . $societe . '_' . $id . '/' . $doss;
+
+        if (!File::exists($directory)) {
+            return [];
+        }
+
+        $files = [];
+        $allFiles = File::files($directory);
+
+        foreach ($allFiles as $file) {
+            $files[] = [
+                'name' => $file->getFilename(),
+                'path' => asset('docs/' . $societe . '_' . $id . '/' . $doss . '/' . $file->getFilename()),
+                'size' => $file->getSize(),
+                'last_modified' => date('Y-m-d H:i:s', $file->getMTime())
+            ];
+        }
+
+        return $files;
+    }
+
+    /**
+     * Renommer le dossier d'une société
+     */
+    public static function renommer_dossier_societe($ancienNom, $nouveauNom, $societeId)
+    {
+        $ancienDossierBase = $ancienNom . '_' . $societeId;
+        $nouveauDossierBase = $nouveauNom . '_' . $societeId;
+
+        $basePath = self::getBasePath();
+
+        $ancienChemin = $basePath . '/' . $ancienDossierBase;
+        $nouveauChemin = $basePath . '/' . $nouveauDossierBase;
+
+        if (File::exists($ancienChemin)) {
+            File::move($ancienChemin, $nouveauChemin);
+            return true;
+        }
+
+        return false;
     }
 }
