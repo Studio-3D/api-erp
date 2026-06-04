@@ -20,16 +20,18 @@ class FichierHelper
 
     /**
      * Obtenir le chemin de base pour les fichiers
-     * CORRIGÉ : Évite le double public_html
+     * VERSION CORRECTE POUR CLOUDWAYS
      */
-   private static function getBasePath()
-{
-    if (self::isCloudways()) {
-        // CORRECTION : Utiliser public_html/public/docs
-        return base_path('public_html/public/docs');
+    private static function getBasePath()
+    {
+        if (self::isCloudways()) {
+            // Sur Cloudways, le dossier public est public_html/public
+            // base_path() retourne /home/.../smhgztcdes/public_html
+            // Il faut donc ajouter 'public/docs' seulement
+            return base_path('public/docs');
+        }
+        return public_path('docs');
     }
-    return public_path('docs');
-}
 
     /**
      * Ajouter un fichier
@@ -39,8 +41,12 @@ class FichierHelper
         $relativePath = $societe . '_' . $id . '/' . $doss;
         $directory = self::getBasePath() . '/' . $relativePath;
 
+        Log::info("=== AJOUT FICHIER ===");
+        Log::info("Chemin complet: " . $directory);
+
         if (!File::exists($directory)) {
             File::makeDirectory($directory, 0755, true);
+            Log::info("Dossier créé: " . $directory);
         }
 
         $file->move($directory, $nom_file);
@@ -48,6 +54,8 @@ class FichierHelper
         if (self::isCloudways()) {
             chmod($directory . '/' . $nom_file, 0644);
         }
+
+        Log::info("Fichier sauvegardé: " . $directory . '/' . $nom_file);
 
         return $nom_file;
     }
@@ -62,6 +70,8 @@ class FichierHelper
         }
 
         $filePath = self::getBasePath() . '/' . $societe . '_' . $id . '/' . $doss . '/' . $nom_file;
+
+        Log::info("Suppression fichier: " . $filePath);
 
         if (File::exists($filePath)) {
             return File::delete($filePath);
