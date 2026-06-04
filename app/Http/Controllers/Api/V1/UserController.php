@@ -343,6 +343,7 @@ public function update(UpdateUserRequest $request, $id)
     try {
         // Récupérer l'utilisateur
         $user = User::findOrFail($id);
+                $old_email           = $user->email;
 
         // ========== 1. VALIDATIONS ==========
         // Validation du CIN
