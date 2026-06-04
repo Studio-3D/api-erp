@@ -322,7 +322,7 @@
                           <table role="presentation" border="0" cellpadding="0" cellspacing="0">
                             <tbody>
                               <tr>
-                                <td> <a href="{{ env('FRONTEND_URL') }}/login" target="_blank">Login</a></td>
+                                <td> <a href="{{ env('FRONTEND_URL') }}" target="_blank">Login</a></td>
                               </tr>
                             </tbody>
                           </table>
