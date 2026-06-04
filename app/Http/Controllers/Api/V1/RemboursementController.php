@@ -199,66 +199,79 @@ class RemboursementController extends Controller
         return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-  public function traiter_demande_pre_rembourse($id, Request $request)
-{
-    if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() || RoleHelper::Comptable()) {
-        DatabaseHelper::Config();
-        Config::set('broadcasting.default', 'pusher_notify');
+      public function traiter_demande_pre_rembourse($id,Request $request)
+    {
 
-        $user = Auth::user();
-        $societe = Societe::findOrfail($user->societe_id);
-        $remboursement = Remboursement::on('temp')->findOrFail($id);
+        if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ||RoleHelper::Comptable()) {
+            DatabaseHelper::Config();
+           Config::set('broadcasting.default', 'pusher_notify');
+            $user = Auth::user();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+            $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+            $societe = Societe::findOrfail($user_societes->societe_id);
 
-        // Utiliser directement l'ID de l'utilisateur original
-        $remboursement->statut = 2;
-        $remboursement->user_id_remis = $user->id;
-        $remboursement->user_id_valider = $user->id;
+            $remboursement = Remboursement::on('temp')->findOrFail($id);
+            //$remboursement->statut=1;
+            $remboursement->statut=2;
+            //added
+            $remboursement->user_id_remis=$userAuth->value('id');;
 
-        $remboursement->date_rembourse = $request->date_remboursement;
-        $remboursement->mode_rembourse_client = $request->mode_rembourse_client;
-        $remboursement->pour_le_compte = $request->pour_le_compte;
-        $remboursement->num_paiement = $request->num_paiement;
+            $remboursement->user_id_valider=$userAuth->value('id');;
+            $remboursement->date_rembourse=$request->date_remboursement;
+            $remboursement->mode_rembourse_client=$request->mode_rembourse_client;
+            $remboursement->pour_le_compte=$request->pour_le_compte;
+            $remboursement->num_paiement=$request->num_paiement;
+            $codeReservation = $remboursement->reservation->code_reservation;
 
-        $codeReservation = $remboursement->reservation->code_reservation;
+            // MODIFICATION: Utiliser FichierHelper pour fichier_autorisation
+            if ($request->hasFile('fichier_autorisation')) {
+                $file = $request->file('fichier_autorisation');
+                $fileName = $file->getClientOriginalName();
 
-        // Gestion des fichiers...
-        if ($request->hasFile('fichier_autorisation')) {
-            $file = $request->file('fichier_autorisation');
-            $fileName = $file->getClientOriginalName();
-            FichierHelper::ajouter_fichier(
-                $file,
-                $societe->raison_sociale_concatene,
-                $societe->id,
-                'remboursements/fichiers_autorisations/' . $codeReservation,
-                $fileName
-            );
-            $remboursement->fichier_autorisation = $fileName;
-        }
+                FichierHelper::ajouter_fichier(
+                    $file,
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'remboursements/fichiers_autorisations/' . $codeReservation,
+                    $fileName
+                );
+                $remboursement->fichier_autorisation = $fileName;
+            }
+            // MODIFICATION: Utiliser FichierHelper pour cheque_recu
+            if ($request->hasFile('cheque_recu')) {
+                $file = $request->file('cheque_recu');
+                $fileName = $file->getClientOriginalName();
 
-        if ($request->hasFile('cheque_recu')) {
-            $file = $request->file('cheque_recu');
-            $fileName = $file->getClientOriginalName();
-            FichierHelper::ajouter_fichier(
-                $file,
-                $societe->raison_sociale_concatene,
-                $societe->id,
-                'remboursements/cheques_recus/' . $codeReservation,
-                $fileName
-            );
-            $remboursement->cheque = $fileName;
-            $remboursement->cheque_client_signe = $fileName;
-        }
+                FichierHelper::ajouter_fichier(
+                    $file,
+                    $societe->raison_sociale_concatene,
+                    $societe->id,
+                    'remboursements/cheques_recus/' . $codeReservation,
+                    $fileName
+                );
+                $remboursement->cheque = $fileName;
+                $remboursement->cheque_client_signe = $fileName;
+            }
+            $remboursement->save();
+            //4 demande pre rembourse
+            broadcast(new NotifMenuEvent(4));
+                /*if($remboursement->save()){
+                    //store new notification validé
+                    NotificationHelper::storeNotification(
+                        '/remboursements/accuses_reception', Carbon::now(),20,'pré remboursement /le chèque de remboursement du Bien est prêt',Auth::guard('api')->user()->id,null,null,null,$reservation->projet_id,null,null
+                        );
+                        broadcast(new NotificationEvent($id));
+                }*/
 
-        $remboursement->save();
+            return response()->json(['message' => 'le chèque de remboursement  est prêt.'], 200);
 
-        broadcast(new NotifMenuEvent(4));
 
-        return response()->json(['message' => 'le chèque de remboursement est prêt.'], 200);
+
+       } else {
+           return response()->json(['error' => 'Unauthorized'], 401);
+       }
+
     }
-
-    return response()->json(['error' => 'Unauthorized'], 401);
-}
-
     public function traiter_accuse($id,Request $request)
     {
        if(RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ||RoleHelper::Comptable()) {
