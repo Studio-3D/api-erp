@@ -338,6 +338,8 @@ class UserController extends Controller
  */
 public function update(UpdateUserRequest $request, $id)
 {
+      DB::connection()->beginTransaction();
+
     try {
         // Récupérer l'utilisateur
         $user = User::findOrFail($id);
@@ -488,10 +490,38 @@ public function update(UpdateUserRequest $request, $id)
         // ========== 4. SAUVEGARDE SIMPLE (SANS TRANSACTION) ==========
         $user->save();
 
+
+                    if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
+                        //modifier user projet
+                        $user_projets = UserProjet::on('temp')->where('user_id', $user_societes->id)->delete();
+
+                            if (! empty($request->selectedProjets)) {
+                                $projets_array = explode(',', $request->selectedProjets); // $projets_array sera ['5', '2']
+                                foreach ($projets_array as $id_projet) {
+                                    UserProjetHelper::createUserProjet($id_projet, $user_societes->id);
+                                }
+                            }
+
+                    }
+
+                    if ($old_email != $request->email) {
+                        $to_email = $user->email;
+                        $data     = ['password' => 'Votre Ancien Password', 'sexe' => $request->gender, 'nom' => $request->name, 'prenom' => $request->prenom, 'email' => $request->email];
+                        Mail::send('User.mail', $data, function ($message) use ($to_email) {
+                            $message->to($to_email)
+                                ->subject('Codes Accés au Immo Gestion');
+                            $message->from(env('MAIL_USERNAME'), 'Immo Gestion');
+
+                        });
+                    }
+
+
         // ========== 5. RÉPONSE ==========
         $message = ($request->has('is_profil') && $request->is_profil)
             ? 'Profil modifié avec succès'
             : 'Utilisateur modifié avec succès';
+      // Commit transaction if everything is successful
+                DB::connection()->commit();
 
         return response()->json([
             'success' => true,
