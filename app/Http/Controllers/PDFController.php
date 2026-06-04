@@ -991,6 +991,7 @@ public function generateContratVentePDF(Request $request)
             }
         }
 
+
         $reservation = $data['reservation'] ?? [];
 
         $pdfData = [

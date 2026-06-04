@@ -328,7 +328,19 @@
                     else $niveauText = 'niveau non spécifié';
                 @endphp
                 <div class="paragraph">
-                    Ce bien immobilier est un {{ $bien['type_bien']['type'] ?? 'type non spécifié' }}, identifié par
+                    Ce bien @php
+    $bienObj = $reservation['bien'] ?? [];
+    $bienNom = '';
+    if ($bienObj) {
+        $parts = [];
+        if (!empty($bienObj['tranche']['nom'])) $parts[] = $bienObj['tranche']['nom'];
+        if (!empty($bienObj['bloc']['nom'])) $parts[] = $bienObj['bloc']['nom'];
+        if (!empty($bienObj['immeuble']['nom'])) $parts[] = $bienObj['immeuble']['nom'];
+        if (!empty($bienObj['propriete_dite_bien'])) $parts[] = $bienObj['propriete_dite_bien'];
+        $bienNom = implode(' - ', $parts);
+    }
+@endphp
+{{ $bienNom }} , immobilier est un {{ $bien['type_bien']['type'] ?? 'type non spécifié' }}, identifié par
                     le numéro <span class="bold">{{ $bien['numero'] ?? 'non renseigné' }}</span>.
                     Il est situé au <span class="bold">{{ $niveauText }}</span>
                     , d'une superficie habitable de <span class="bold">{{ $bien['superficie_habitable'] ?? '0' }} m²</span>.
