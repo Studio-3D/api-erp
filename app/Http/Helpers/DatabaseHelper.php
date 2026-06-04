@@ -69,9 +69,9 @@ private static function isTemplateConfigured($templateSid, $templateName)
 }
     public function createNewClientDatabase($raison_sociale, $societe_id)
     {
-
-        $databaseName = 'Erp_' . $raison_sociale . '_' . $societe_id;
-
+        $databaseName = env('DB_DATABASE');
+       // $databaseName = 'Erp_' . $raison_sociale . '_' . $societe_id;
+          //  $databaseName =  env('DB_DATABASE');
         if ($this->databaseExists($databaseName)) {
             return response()->json(['message' => 'Database already exists.']);
         }
@@ -196,7 +196,8 @@ public function runSeeders($connection)
             Log::info("DatabaseHelper::Config called with societe_id: {$societe_id}");
 
             $societe = Societe::findOrfail($societe_id);
-            $DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
+            //$DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
+            $DatabaseName = env('DB_DATABASE');
             $connection = DatabaseHelper::Connection_database($DatabaseName);
             config(['database.connections.temp' => $connection]);
         } catch (\Exception $e) {
@@ -235,8 +236,9 @@ public function runSeeders($connection)
    public static function deletePropositionTable($databases)
     {
         foreach ($databases as $database) {
-            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+           // $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
 
+    $databaseName =  env('DB_DATABASE');
             try {
                 // Établir la connexion
                 $connection = DatabaseHelper::Connection_database($databaseName);
@@ -299,8 +301,8 @@ public function runSeeders($connection)
   public static function deleteCreneauPropose($databases)
     {
         foreach ($databases as $database) {
-            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
-
+          //  $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+                $databaseName =  env('DB_DATABASE');
             try {
                 // Établir la connexion
                 $connection = DatabaseHelper::Connection_database($databaseName);
@@ -332,8 +334,8 @@ public function runSeeders($connection)
     public static function annuler_rdv_automatique($databases)
 {
     foreach ($databases as $database) {
-        $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
-
+        //$databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+            $databaseName =  env('DB_DATABASE');
         try {
             // Établir la connexion
             $connection = DatabaseHelper::Connection_database($databaseName);
@@ -381,8 +383,8 @@ public function runSeeders($connection)
     public static function deleteWebhookTable($databases)
     {
         foreach ($databases as $database) {
-            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
-
+           // $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+            $databaseName =  env('DB_DATABASE');
             // Switch to the temporary database
             $connection = DatabaseHelper::Connection_database($databaseName);
             config(['database.connections.temp' => $connection]);
@@ -409,8 +411,8 @@ public function runSeeders($connection)
     public static function destroy_notif($databases)
     {
         foreach ($databases as $database) {
-            $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
-
+            //$databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+                $databaseName =  env('DB_DATABASE');
             // Switch to the temporary database
             $connection = DatabaseHelper::Connection_database($databaseName);
             config(['database.connections.temp' => $connection]);
@@ -549,8 +551,8 @@ public static function sendWhatsAppTemplate($phone, $templateSid, $variables = [
 public static function envoyer_whatsap_email_rdv_rlc($databases)
 {
     foreach ($databases as $database) {
-        $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
-
+        //$databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+$databaseName =  env('DB_DATABASE');
         // Configurer la connexion à la base de données temporaire
         $connection = DatabaseHelper::Connection_database($databaseName);
         config(['database.connections.temp' => $connection]);
@@ -1071,8 +1073,8 @@ private static function envoyerEmail_whatsap_UserAppel($user, $traitements, $rel
 public static function envoyer_email_whatsapp_echeance($databases)
 {
     foreach ($databases as $database) {
-        $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
-
+       // $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+$databaseName =  env('DB_DATABASE');
         // Switch to the temporary database
         $connection = DatabaseHelper::Connection_database($databaseName);
         config(['database.connections.temp' => $connection]);
@@ -1381,8 +1383,8 @@ private static function getClientName($client)
     public static function import_fichiers($databases)
         {
             foreach ($databases as $database) {
-                $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
-
+                //$databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+$databaseName =  env('DB_DATABASE');
                 $connection = DatabaseHelper::Connection_database($databaseName);
                 config(['database.connections.temp' => $connection]);
                 DB::connection('temp')->setDatabaseName($connection['database']);
@@ -1519,8 +1521,8 @@ private static function getClientName($client)
     public static function edit_biens_titre_foncier_en_masse($databases)
         {
             foreach ($databases as $database) {
-                $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
-
+                //$databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+$databaseName =  env('DB_DATABASE');
                 // Switch to the temporary database
                 $connection = DatabaseHelper::Connection_database($databaseName);
                 config(['database.connections.temp' => $connection]);
@@ -1651,8 +1653,8 @@ private static function getClientName($client)
             Config::set('broadcasting.default', 'pusher_notify');
 
             foreach ($databases as $database) {
-                $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
-
+               // $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+$databaseName =  env('DB_DATABASE');
                 // Switch to the temporary database
                 $connection = DatabaseHelper::Connection_database($databaseName);
                 config(['database.connections.temp' => $connection]);
@@ -1704,7 +1706,8 @@ private static function getClientName($client)
         public static function Deletedatabase($databases)
         {
             foreach ($databases as $database) {
-                $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+               // $databaseName = 'Erp_' . $database->raison_sociale_concatene . '_' . $database->id;
+               $databaseName =  env('DB_DATABASE');
                 DB::statement("DROP DATABASE IF EXISTS `$databaseName`");
                 DB::table('users')->where('societe_id', $database->id)->delete();
                 DB::table('societes')->where('id', $database->id)->delete();

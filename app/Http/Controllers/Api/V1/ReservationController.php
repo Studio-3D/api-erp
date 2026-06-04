@@ -284,7 +284,8 @@ class ReservationController extends Controller
 
         $societe_id = Auth::guard('api')->user()->societe_id;
         $societe = Societe::findOrfail($societe_id);
-        $DatabaseName = 'Erp_'.$societe->raison_sociale_concatene.'_'.$societe_id;
+        //$DatabaseName = 'Erp_'.$societe->raison_sociale_concatene.'_'.$societe_id;
+        $DatabaseName = env('DB_DATABASE');
         $reservation = null;
 
         DB::connection('temp')->beginTransaction();
@@ -1312,8 +1313,8 @@ private function getAllHistoriquesWithAncien($reservationId)
         if ($request->has('code_reservation')) {
             $societe_id = Auth::guard('api')->user()->societe_id;
             $societe = Societe::findOrfail($societe_id);
-            $DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
-
+            //$DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
+             $DatabaseName = env('DB_DATABASE');
             $request->validate([
                 'code_reservation' => [
                     Rule::unique('temp.' . $DatabaseName . '.reservations', 'code_reservation')

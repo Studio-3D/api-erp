@@ -78,8 +78,8 @@ public function markMessagesAsRead(Request $request, $projetId, $phoneNumber)
             if (!$societe) {
                 throw new \Exception("Société non trouvée: {$societeId}");
             }
-
-            $databaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe->id;
+             $databaseName = env('DB_DATABASE');
+          //  $databaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe->id;
             $connection = DatabaseHelper::Connection_database($databaseName);
             config(['database.connections.temp' => $connection]);
             DB::purge('temp');
@@ -115,7 +115,8 @@ public function markMessagesAsRead(Request $request, $projetId, $phoneNumber)
         $foundSocieteId = null;
 
         foreach ($societes as $societe) {
-            $databaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe->id;
+              $databaseName = env('DB_DATABASE');
+          // $databaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe->id;
 
             Log::info("Recherche dans la base: " . $databaseName);
 

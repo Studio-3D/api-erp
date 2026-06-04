@@ -25,9 +25,10 @@ class UpdateTypeBienRequest extends FormRequest
      */
     public function rules(): array
     {
-        $societe_id = Auth::guard('api')->user()->societe_id;
-        $societe = Societe::findOrFail($societe_id);
-        $DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
+       // $societe_id = Auth::guard('api')->user()->societe_id;
+       // $societe = Societe::findOrfail($societe_id);
+        //$DatabaseName = 'Erp_' . $societe->raison_sociale_concatene . '_' . $societe_id;
+         $DatabaseName = env('DB_DATABASE');
         DatabaseHelper::Config();
 
         $id = $this->route('typeBien'); // Récupère l'ID ou l'instance

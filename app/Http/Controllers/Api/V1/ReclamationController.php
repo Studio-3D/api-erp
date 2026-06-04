@@ -30,7 +30,8 @@ class ReclamationController extends Controller
             $userAuth      = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
             $societe       = Societe::findOrfail($user_societes->societe_id);
-            $societeDB = 'erp_' . $societe->raison_sociale_concatene . '_' . $societe->id;
+            //$societeDB = 'erp_' . $societe->raison_sociale_concatene . '_' . $societe->id;
+            $societeDB = env('DB_DATABASE');
             //$user = Auth::user();
             //$userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $query = DB::connection('mysql_client')->table('reclamations')
@@ -115,8 +116,9 @@ class ReclamationController extends Controller
             $userAuth      = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
             $societe       = Societe::findOrfail($user_societes->societe_id);
-            $societeDB = 'erp_' . $societe->raison_sociale_concatene . '_' . $societe->id;
-            //$user = Auth::user();
+           // $societeDB = 'erp_' . $societe->raison_sociale_concatene . '_' . $societe->id;
+             $societeDB = env('DB_DATABASE');
+           //$user = Auth::user();
             $reclamation = DB::connection('mysql_client')->table('reclamations')
             ->Leftjoin("$societeDB.reservations", 'reservations.id', '=', 'reclamations.dossier_id')
                         ->Leftjoin("$societeDB.users", 'users.id', '=', 'reclamations.user_id_traite')
@@ -146,8 +148,9 @@ class ReclamationController extends Controller
             $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
             $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
             $societe       = Societe::findOrfail($user_societes->societe_id);
-            $societeDB = 'erp_' . $societe->raison_sociale_concatene . '_' . $societe->id;
-            $rec_f = DB::connection('mysql_client')->table('reclamations')->where('id', $id);
+          //  $societeDB = 'erp_' . $societe->raison_sociale_concatene . '_' . $societe->id;
+            $societeDB = env('DB_DATABASE');
+          $rec_f = DB::connection('mysql_client')->table('reclamations')->where('id', $id);
 
             // Préparer un tableau de mise à jour
             $updateData = [
