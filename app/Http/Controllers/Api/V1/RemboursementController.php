@@ -206,8 +206,8 @@ class RemboursementController extends Controller
             DatabaseHelper::Config();
            Config::set('broadcasting.default', 'pusher_notify');
             $user = Auth::user();
-            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
-            $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+            $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->first();
+            $user_societes = User::where('id', $userAuth->user_id_origin)->first();
             $societe = Societe::findOrfail($user_societes->societe_id);
 
             $remboursement = Remboursement::on('temp')->findOrFail($id);
