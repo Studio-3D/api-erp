@@ -159,8 +159,9 @@ class BienController extends Controller
             $query->whereHas('bien', function ($subQuery) use ($projet_id) {
                 $subQuery->where('projet_id', $projet_id);
             });
-            $query->whereHas('visite', function ($subQuery) {
-                $subQuery->where('statut', 1)->where('etat', 1);
+          $query->whereHas('visite', function ($subQuery) {
+                $subQuery->where('statut', 1)
+                        ->whereIn('etat', [0, 1]); // Accepte etat 0 ou 1
             });
             //appels
             //desistement (pas la peine)

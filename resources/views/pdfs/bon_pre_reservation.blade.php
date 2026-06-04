@@ -79,7 +79,7 @@
             margin-bottom: 15px;
         }
 
-        /* ========== SIGNATURE SECTION: FORCED SIDE BY SIDE ========== */
+        /* Signature Section */
         .signature-container {
             width: 100%;
             margin-top: 80px;
@@ -106,7 +106,6 @@
             padding-top: 10px;
             min-height: 60px;
         }
-        /* Force table cells to have equal height */
         .signature-table td {
             height: 80px;
         }
@@ -166,7 +165,7 @@
                 d'une superficie de <strong>{{ $superficie ?: '0' }}</strong> m² et d'orientation <strong>{{ $getOrientationFullName($orientation) }}</strong>.
                 Ce bien est proposé au prix de <strong>{{ $formatCurrency($prix) }}</strong>.
                 @if(!empty($rdv))
-                    Un rendez-vous a été fixé pour le <strong>{{ \Carbon\Carbon::parse($rdv)->format('d/m/Y') }}</strong> afin de finaliser cette réservation.
+                    Un rendez-vous a été fixé pour le <strong>{{ \Carbon\Carbon::parse($rdv)->format('d/m/Y') }} à {{ \Carbon\Carbon::parse($rdv)->format('H:i') }}</strong> afin de finaliser cette réservation.
                 @endif
             </p>
             <p>
@@ -174,17 +173,17 @@
             </p>
         </div>
 
-        <!-- ========== SIGNATURE SECTION: SIMPLE TABLE WITH TWO CELLS ========== -->
+        <!-- SIGNATURE SECTION -->
         <div class="signature-container">
             <table class="signature-table">
                 <tr>
                     <td class="signature-left">
-                            Signature du Client<br>
-                            CIN / Passeport
+                        Signature du Client<br>
+                        CIN / Passeport
                     </td>
                     <td class="signature-right">
-                            Signature de la Société<br>
-                            <strong>{{ $societe['raison_sociale'] ?? 'ste_sup_admin' }}</strong><br>
+                        Signature de la Société<br>
+                        <strong>{{ $societe['raison_sociale'] ?? 'ste_sup_admin' }}</strong>
                     </td>
                 </tr>
             </table>
@@ -192,7 +191,7 @@
 
         <!-- FOOTER -->
         <div class="footer">
-            Fait à ............, le {{ $currentDate }}
+            Fait à ........., le {{ $currentDate }}
         </div>
 
     </div>

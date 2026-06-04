@@ -38,7 +38,7 @@ class LibereBienPreReserve extends Command
     {
         $databases = DB::table('societes')
                         ->whereNull('deleted_at')
-                        ->where('id', '!=', 1)
+                       // ->where('id', '!=', 1)
                         ->get();
         DatabaseHelper::liberer_bien_pre_reserve($databases);
     }
