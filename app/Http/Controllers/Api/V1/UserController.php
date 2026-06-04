@@ -493,7 +493,7 @@ public function update(UpdateUserRequest $request, $id)
 
                     if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
                         //modifier user projet
-                        $user_projets = UserProjet::on('temp')->where('user_id', $user_societes->id)->delete();
+                        $user_projets = UserProjet::where('user_id', $user_societes->id)->delete();
 
                             if (! empty($request->selectedProjets)) {
                                 $projets_array = explode(',', $request->selectedProjets); // $projets_array sera ['5', '2']
