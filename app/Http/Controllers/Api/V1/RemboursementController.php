@@ -272,6 +272,7 @@ class RemboursementController extends Controller
             $remboursement = Remboursement::on('temp')->findOrFail($id);
             $remboursement->statut=2;
             $codeReservation = $remboursement->reservation->code_reservation;
+            $remboursement->user_id_remis = $userAuth->id;
 
            // $remboursement->remis_le=$request->remis_le;
             if ($request->hasFile('cheque_client_signe')) {
