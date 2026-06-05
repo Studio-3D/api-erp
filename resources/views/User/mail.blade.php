@@ -307,14 +307,17 @@
             <span class="preheader"></span>
             <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="main">
 
-              <!-- START MAIN CONTENT AREA -->
+              <!-- START MAIN CONTENT AREA COMPTE DE VOTRE NOM A ETET CREE DANS L'ERP IMMO -->
               <tr>
                 <td class="wrapper">
                   <b>Bonjour @if($sexe=='Homme') Mr @else Mme @endif {{' '.$nom.' '.$prenom}}</b>
-                  <p>Pour accéder au CRM IMMO GESTION, veuillez utiliser le code d'accès suivant :<br/>
-                    <b>Email</b>: {{$email}}<br/>
+                  <p>Votre inscription.......</p>
+                  <p>veuillez utiliser le code d'accès suivant :<br/>
+                    <b>login</b>: {{$email}}<br/>
                     <b>Mot de Passe</b>:{{$password}}
                     .</p>
+                    <p>Concernant ;;;;;;;;;;;;;</p>
+
                   <table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
                     <tbody>
                       <tr>

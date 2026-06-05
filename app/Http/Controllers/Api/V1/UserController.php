@@ -264,7 +264,7 @@ class UserController extends Controller
                     $data     = ['password' => $request->password, 'sexe' => $request->gender, 'nom' => $request->name, 'prenom' => $request->prenom, 'email' => $request->email];
                     Mail::send('User.mail', $data, function ($message) use ($to_email) {
                         $message->to($to_email)
-                            ->subject('Codes Accés au Immo Gestion');
+                            ->subject('Bienvenue chez Immo Gestion');
                         $message->from(env('MAIL_USERNAME'), 'Immo Gestion');
 
                     });
@@ -338,12 +338,13 @@ class UserController extends Controller
  */
 public function update(UpdateUserRequest $request, $id)
 {
-      DB::connection()->beginTransaction();
+    DB::connection()->beginTransaction();
 
     try {
         // Récupérer l'utilisateur
         $user = User::findOrFail($id);
-                $old_email           = $user->email;
+        $old_email = $user->email;
+        $passwordUpdated = false;
 
         // ========== 1. VALIDATIONS ==========
         // Validation du CIN
@@ -378,7 +379,6 @@ public function update(UpdateUserRequest $request, $id)
         }
 
         // ========== 2. MISE À JOUR DES CHAMPS ==========
-        // Mise à jour des informations de base
         if ($request->has('name')) {
             $user->name = $request->input('name');
         }
@@ -443,12 +443,16 @@ public function update(UpdateUserRequest $request, $id)
             $user->nb_appel_traite = $request->input('nb_appel_traite');
         }
 
+        // ========== GESTION DU MOT DE PASSE ==========
+        $plainPassword = null;
+        if ($request->has('password') && !empty($request->password)) {
+            $plainPassword = $request->password; // Stocker le mot de passe en clair TEMPORAIREMENT
+            $user->password = Hash::make($request->password);
+        }
         // ========== 3. GESTION DE LA PHOTO ==========
         if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
-            // Récupérer la société de l'utilisateur
             $societe = Societe::findOrFail($user->societe_id);
 
-            // Supprimer l'ancienne photo si elle existe
             if ($user->photo && !empty($user->photo)) {
                 try {
                     FichierHelper::supprimer_fichier(
@@ -457,25 +461,18 @@ public function update(UpdateUserRequest $request, $id)
                         'users',
                         $user->photo
                     );
-                    \Log::info("Ancienne photo supprimée: " . $user->photo);
                 } catch (\Exception $e) {
                     \Log::warning("Erreur suppression ancienne photo: " . $e->getMessage());
                 }
             }
 
-            // Générer un nom de fichier sécurisé
             $nameForFile = $request->has('name') ? $request->name : $user->name;
             $prenomForFile = $request->has('prenom') ? $request->prenom : $user->prenom;
-
-            // Nettoyer les caractères spéciaux
             $safeName = preg_replace('/[^a-zA-Z0-9]/', '_', $nameForFile);
             $safePrenom = preg_replace('/[^a-zA-Z0-9]/', '_', $prenomForFile);
-
-            // Créer le nom du fichier
             $extension = $request->photo->getClientOriginalExtension();
             $filename = time() . '_' . $safeName . '_' . $safePrenom . '.' . $extension;
 
-            // Upload de la nouvelle photo
             FichierHelper::ajouter_fichier(
                 $request->photo,
                 $societe->raison_sociale_concatene,
@@ -485,44 +482,46 @@ public function update(UpdateUserRequest $request, $id)
             );
 
             $user->photo = $filename;
-            \Log::info("Nouvelle photo uploadée: " . $filename);
         }
 
-        // ========== 4. SAUVEGARDE SIMPLE (SANS TRANSACTION) ==========
+        // ========== 4. SAUVEGARDE ==========
         $user->save();
 
+        // ========== 5. GESTION DES PROJETS ==========
+        if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin()) {
+            UserProjet::where('user_id', $user->id)->delete();
 
-                    if (RoleHelper::AdminSup() || RoleHelper::AgentAdmin() ) {
-                        //modifier user projet
-                        $user_projets = UserProjet::where('user_id', $user->id)->delete();
-
-                            if (! empty($request->selectedProjets)) {
-                                $projets_array = explode(',', $request->selectedProjets); // $projets_array sera ['5', '2']
-                                foreach ($projets_array as $id_projet) {
-                                    UserProjetHelper::createUserProjet($id_projet, $user->id);
-                                }
-                            }
-
-                    }
-
-                    if ($old_email != $request->email) {
-                        $to_email = $user->email;
-                        $data     = ['password' => 'Votre Ancien Password', 'sexe' => $request->gender, 'nom' => $request->name, 'prenom' => $request->prenom, 'email' => $request->email];
-                        Mail::send('User.mail', $data, function ($message) use ($to_email) {
-                            $message->to($to_email)
-                                ->subject('Codes Accés au Immo Gestion');
-                            $message->from(env('MAIL_USERNAME'), 'Immo Gestion');
-
-                        });
-                    }
+            if (!empty($request->selectedProjets)) {
+                $projets_array = explode(',', $request->selectedProjets);
+                foreach ($projets_array as $id_projet) {
+                    UserProjetHelper::createUserProjet($id_projet, $user->id);
+                }
+            }
+        }
 
 
-        // ========== 5. RÉPONSE ==========
+        // ========== 6. ENVOI D'EMAIL SI CHANGEMENT D'EMAIL ==========
+        if ($old_email != $request->email) {
+            $to_email = $user->email;
+            $data = [
+                'password' => $plainPassword,
+                'sexe' => $request->gender,
+                'nom' => $request->name,
+                'prenom' => $request->prenom,
+                'email' => $request->email
+            ];
+            Mail::send('User.mail', $data, function ($message) use ($to_email) {
+                $message->to($to_email)
+                    ->subject('Mise à jour de votre compte Immo Gestion');
+                $message->from(env('MAIL_USERNAME'), 'Immo Gestion');
+            });
+        }
+
+        DB::connection()->commit();
+
         $message = ($request->has('is_profil') && $request->is_profil)
             ? 'Profil modifié avec succès'
             : 'Utilisateur modifié avec succès';
-      // Commit transaction if everything is successful
-                DB::connection()->commit();
 
         return response()->json([
             'success' => true,
@@ -531,6 +530,7 @@ public function update(UpdateUserRequest $request, $id)
         ], 200);
 
     } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        DB::connection()->rollBack();
         \Log::error("Utilisateur {$id} non trouvé");
         return response()->json([
             'success' => false,
@@ -538,6 +538,7 @@ public function update(UpdateUserRequest $request, $id)
         ], 404);
 
     } catch (\Illuminate\Validation\ValidationException $e) {
+        DB::connection()->rollBack();
         return response()->json([
             'success' => false,
             'message' => 'Erreur de validation',
@@ -545,6 +546,7 @@ public function update(UpdateUserRequest $request, $id)
         ], 422);
 
     } catch (\Exception $e) {
+        DB::connection()->rollBack();
         \Log::error("Update user failed: " . $e->getMessage());
         return response()->json([
             'success' => false,
