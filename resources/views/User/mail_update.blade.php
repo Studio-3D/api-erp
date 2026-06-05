@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Bienvenue chez Immo Gestion</title>
+    <title>Mise à jour de votre compte Immo Gestion</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -46,6 +46,20 @@
             border-radius: 20px;
             font-size: 14px;
         }
+        .warning {
+            background-color: #FEF3C7;
+            border-left: 4px solid #F59E0B;
+            padding: 10px 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .info-box {
+            background-color: #E0E7FF;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #4F46E5;
+        }
     </style>
 </head>
 <body>
@@ -56,18 +70,31 @@
 
         <p>Bonjour <strong>{{ $nom ?? '' }} {{ $prenom ?? '' }}</strong>,</p>
 
-        <p>Votre inscription en tant que <strong>{{ $role ?? 'Utilisateur' }}</strong> a bien été prise en compte.</p>
+        <p>Les informations de votre compte ont été mises à jour.</p>
 
-        <p>Veuillez utiliser les accès suivants :</p>
+        <div class="info-box">
+            @if($role_changed ?? false)
+                <p><strong>📌 Votre nouveau rôle :</strong> <span class="role-badge">{{ $role ?? 'Utilisateur' }}</span></p>
+            @endif
 
-        <div class="credentials">
-            <p><strong>📧 Login :</strong> {{ $email ?? '' }}</p>
-            <p><strong>🔑 Mot de passe :</strong> {{ $password ?? '' }}</p>
+            @if($email_changed ?? false)
+                <p><strong>📧 Votre nouvel email de connexion :</strong> {{ $email ?? '' }}</p>
+            @endif
         </div>
 
-        <p>Concernant le mot de passe, <strong>vous seul le connaissez</strong>. Nous vous recommandons de le modifier lors de votre première connexion.</p>
+        @if($password_changed ?? false)
+            <div class="credentials">
+                <p><strong>🔑 Votre nouveau mot de passe :</strong> {{ $password ?? '' }}</p>
+            </div>
 
-        <p>Vous disposez à présent d'un compte <strong>{{ $role ?? 'Utilisateur' }}</strong> dans notre solution Immo Gestion.</p>
+            <div class="warning">
+                <p><strong>⚠️ Important :</strong> Nous vous recommandons de modifier ce mot de passe lors de votre prochaine connexion.</p>
+            </div>
+        @endif
+
+        <div class="warning">
+            <p><strong>🔒 Sécurité :</strong> Si vous n'êtes pas à l'origine de ces modifications, veuillez contacter immédiatement votre administrateur.</p>
+        </div>
 
         <br>
         <p>Cordialement,</p>

@@ -23,40 +23,82 @@ class UserController extends Controller
 {
 
     public function login(Request $request)
-    {
-        // Validation des entrées
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
-        ]);
+{
+    // Validation
+    $credentials = $request->validate([
+        'email' => 'required|email',
+        'password' => 'required',
+    ]);
 
-        // Rechercher l'utilisateur par email
-        $User = User::where('email', $request->email)->first();
-        // Vérifier si l'utilisateur existe
-        if (!$User) {
-            return response()->json(['error' => 'Utilisateur non trouvé'], 404);
-        }
+    // Recherche utilisateur
+    $user = User::where('email', $request->email)->first();
 
-        // Vérifier si l'utilisateur est actif
-        if ($User->is_actif != 1) {
-            return response()->json(['error' => 'Utilisateur non actif'], 422);
-        }
-
-        // Vérifier les identifiants
-        if (Auth::attempt($credentials)) {
-            $user = Auth::user();
-            $user->is_connected = 1;
-            $user->save();
-
-            // Générer le token d'accès
-            $accessToken = $user->createToken('API Token')->accessToken;
-
-            return response()->json(['access_token' => $accessToken], 200);
-        }
-
-        // Identifiants incorrects
-        return response()->json(['error' => 'Email ou mot de passe incorrect'], 422);
+    // Erreur 1: Utilisateur non trouvé
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'error' => 'Utilisateur non trouvé',
+            'code' => 'USER_NOT_FOUND'
+        ], 404);
     }
+
+    // Erreur 2: Compte désactivé
+    if ($user->is_actif != 1) {
+        return response()->json([
+            'success' => false,
+            'error' => 'Compte désactivé',
+            'code' => 'ACCOUNT_DISABLED'
+        ], 403);
+    }
+
+    // Erreur 3: Compte supprimé
+    if ($user->deleted_at !== null) {
+        return response()->json([
+            'success' => false,
+            'error' => 'Compte supprimé',
+            'code' => 'ACCOUNT_DELETED'
+        ], 403);
+    }
+
+    // Erreur 4: Mot de passe incorrect
+    if (!Hash::check($request->password, $user->password)) {
+        return response()->json([
+            'success' => false,
+            'error' => 'Mot de passe incorrect',
+            'code' => 'INVALID_PASSWORD'
+        ], 422);
+    }
+
+    // Erreur 5: Tentative de connexion échouée
+    if (!Auth::attempt($credentials)) {
+        return response()->json([
+            'success' => false,
+            'error' => 'Échec de l\'authentification',
+            'code' => 'AUTH_FAILED'
+        ], 401);
+    }
+
+    // Succès
+    $user->is_connected = 1;
+    $user->save();
+
+    $accessToken = $user->createToken('API Token')->accessToken;
+
+    return response()->json([
+        'success' => true,
+        'access_token' => $accessToken,
+        'token_type' => 'Bearer',
+        'user' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'prenom' => $user->prenom,
+            'email' => $user->email,
+            'role' => $user->role,
+            'is_actif' => $user->is_actif,
+            'societe_id' => $user->societe_id
+        ]
+    ], 200);
+}
     public function logout(Request $request)
     {
         try {
@@ -511,118 +553,9 @@ class UserController extends Controller
             }
         }
     }
-    public function sendEmail()
-    {
-        if (RoleHelper::SuperAdmin()) {
 
-            $user = Auth::guard('api')->user()->email;
 
-            if (!$user) {
-                return response()->json(['message' => 'User not found'], 404);
-            }
-            DB::table('password_reset_tokens')
-                ->where('email', $user)
-                ->delete();
 
-            $token = Str::random(60);
-            $confirmationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-            $expirationTime = now()->addMinutes(60);
-            DB::table('password_reset_tokens')->insert([
-                'email' => $user,
-                'token' => $token,
-                'expires_at' => $expirationTime,
-                'created_at' => now(),
-            ]);
-
-            // Construct the reset URL you can chenbge the url
-            $resetUrl = env('FRONTEND_URL').'/reset-password/' . $token;
-
-            // Send an email to the user with the reset URL
-            Mail::to($user)->send(new ResetPasswordMail($resetUrl, $confirmationCode));
-
-            return response()->json(['message' => 'Password reset email sent']);
-        }
-    }
-    public function resendEmail(Request $request)
-    {
-        // Validate the request and check for user existence
-        $request->validate([
-            'email' => 'required|email',
-        ]);
-
-        // Rechercher l'utilisateur par email
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user) {
-            return response()->json(['message' => 'User not found'], 404);
-        }
-        DB::table('password_reset_tokens')
-            ->where('email', $user->email)
-            ->delete();
-
-        $token = Str::random(60);
-        $confirmationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-        $expirationTime = now()->addMinutes(60); // Expires in 1 minute
-        // Store the token in the 'password_resets' table
-        DB::table('password_reset_tokens')->insert([
-            'email' => $user->email,
-            'token' => $token,
-            'expires_at' => $expirationTime,
-            'created_at' => now(),
-        ]);
-
-        // Construct the reset URL
-        $resetUrl = env('HOST_NAME_FRONT') . '/reset-password/' . $token;
-        // Send an email to the user with the reset URL
-        Mail::to($user->email)->send(new ResetPasswordMail($resetUrl, $confirmationCode));
-
-        return response()->json(['message' => 'Password reset email sent']);
-
-    }
-
-    public function resetPassword(Request $request, $token)
-    {
-
-        $passwordReset = DB::table('password_reset_tokens')
-            ->where('token', $token)
-            ->first();
-
-        if (!$passwordReset) {
-            return response()->json(['message' => 'Token not found'], 404);
-        }
-
-        if (now() > $passwordReset->expires_at) {
-            return response()->json(['message' => 'Token has expired'], 401);
-        }
-
-        $user = User::where('email', $passwordReset->email)->first();
-        $user->update(['password' => Hash::make($request->password)]);
-
-        DB::table('password_reset_tokens')
-            ->where('token', $token)
-            ->delete();
-
-        return response()->json(['message' => 'Password reset successful']);
-
-    }
-
-    public function reset(Request $request)
-    {
-        $request->validate([
-            'current_password' => 'required',
-            'new_password' => 'required|confirmed',
-        ]);
-
-        $user = auth()->user();
-
-        if (!Hash::check($request->current_password, $user->password)) {
-            return response()->json(['error' => 'Ancien mot de passe incorrect'], 400);
-        }
-
-        $user->update(['password' => Hash::make($request->new_password)]);
-
-        return response()->json(['message' => 'Mot de passe réinitialisé avec succès'], 200);
-    }
     public function validateToken($token)
     {
 

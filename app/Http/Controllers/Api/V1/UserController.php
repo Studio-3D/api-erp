@@ -205,6 +205,22 @@ class UserController extends Controller
             'pagination' => $pagination,
         ], 200);
     }
+     private function getRoleLabel($role)
+    {
+        $roles = [
+            1 => 'Super Administrateur',
+            2 => 'Administrateur',
+            3 => 'Commercial',
+            5 => 'Notaire',
+            6 => 'Responsable Livraison',
+            7 => 'Comptable',
+            8 => 'Service Après-Vente',
+            9 => 'Responsable Commercial',
+            10 => 'Agent de saisie'
+        ];
+
+        return $roles[$role] ?? 'Utilisateur';
+    }
     public function store(StoreUserRequest $request)
     {
         /*  if ($request->cin != null) {
@@ -235,7 +251,8 @@ class UserController extends Controller
                 $user->nb_appel_recu   = $request->nb_appel_recu;
                 $user->nb_appel_traite = $request->nb_appel_traite;
                 $user->solde_conge     = $request->solde_conge;
-
+                // Déterminer le libellé du rôle
+                  $roleLabel = $this->getRoleLabel($request->role);
                     if ($request->hasFile('photo')) {
                         $societe = Societe::findOrFail($request->societe_id);
                         $filename = time() . '.' . $request->name . '_' . $request->prenom . '.' . $request->photo->extension();
@@ -254,19 +271,26 @@ class UserController extends Controller
                  if ($user->save()) {
                         $user->user_id_origin=$user->id;
                         $user->save();
-                    $dataArray_projets = json_decode($request->input('selectedProjets', '[]'), true);
+                   // $dataArray_projets = json_decode($request->input('selectedProjets', '[]'), true);
 
                    // $this->createSubUser($request, $user->id, $user->photo, $dataArray_projets == null ? [] : $dataArray_projets);
 
                     //send accces par email to user
 
                     $to_email = $user->email;
-                    $data     = ['password' => $request->password, 'sexe' => $request->gender, 'nom' => $request->name, 'prenom' => $request->prenom, 'email' => $request->email];
+                    $data = [
+                    'password' => $request->password,
+                    'sexe' => $request->gender,
+                    'nom' => $request->name,
+                    'prenom' => $request->prenom,
+                    'email' => $request->email,
+                    'role' => $roleLabel,
+                    'role_value' => $request->role
+                    ];
                     Mail::send('User.mail', $data, function ($message) use ($to_email) {
                         $message->to($to_email)
-                            ->subject('Bienvenue chez Immo Gestion');
+                            ->subject('Bienvenue chez Immo Gestion - Votre compte a été créé');
                         $message->from(env('MAIL_USERNAME'), 'Immo Gestion');
-
                     });
                 }
                 // Commit transaction if everything is successful
@@ -283,6 +307,7 @@ class UserController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
     }
+
     public function show($id)
     {
         $userAuth = Auth::guard('api')->user();
@@ -344,6 +369,7 @@ public function update(UpdateUserRequest $request, $id)
         // Récupérer l'utilisateur
         $user = User::findOrFail($id);
         $old_email = $user->email;
+        $old_role = $user->role;
         $passwordUpdated = false;
 
         // ========== 1. VALIDATIONS ==========
@@ -446,9 +472,11 @@ public function update(UpdateUserRequest $request, $id)
         // ========== GESTION DU MOT DE PASSE ==========
         $plainPassword = null;
         if ($request->has('password') && !empty($request->password)) {
-            $plainPassword = $request->password; // Stocker le mot de passe en clair TEMPORAIREMENT
+            $plainPassword = $request->password;
             $user->password = Hash::make($request->password);
+            $passwordUpdated = true;
         }
+
         // ========== 3. GESTION DE LA PHOTO ==========
         if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
             $societe = Societe::findOrFail($user->societe_id);
@@ -499,18 +527,26 @@ public function update(UpdateUserRequest $request, $id)
             }
         }
 
-
-        // ========== 6. ENVOI D'EMAIL SI CHANGEMENT D'EMAIL ==========
-        if ($old_email != $request->email) {
+        // ========== 6. ENVOI D'EMAIL SI CHANGEMENT D'EMAIL OU MOT DE PASSE OU RÔLE ==========
+        if ($old_email != $request->email || $passwordUpdated || ($request->has('role') && $old_role != $request->role)) {
             $to_email = $user->email;
-            $data = [
+
+            // Déterminer le libellé du nouveau rôle
+            $roleLabel = $this->getRoleLabel($user->role);
+
+            $emailData = [
                 'password' => $plainPassword,
                 'sexe' => $request->gender,
                 'nom' => $request->name,
                 'prenom' => $request->prenom,
-                'email' => $request->email
+                'email' => $request->email,
+                'role' => $roleLabel,
+                'password_changed' => $passwordUpdated,
+                'email_changed' => ($old_email != $request->email),
+                'role_changed' => ($request->has('role') && $old_role != $request->role)
             ];
-            Mail::send('User.mail', $data, function ($message) use ($to_email) {
+
+            Mail::send('User.mail_update', $emailData, function ($message) use ($to_email) {
                 $message->to($to_email)
                     ->subject('Mise à jour de votre compte Immo Gestion');
                 $message->from(env('MAIL_USERNAME'), 'Immo Gestion');
@@ -554,6 +590,8 @@ public function update(UpdateUserRequest $request, $id)
         ], 500);
     }
 }
+
+
 
    public function update_personal_info(Request $request, $id)
 {
@@ -834,8 +872,8 @@ public function update_password(Request $request, $id)
         $user = User::where('email', $request->email)->first();
 
         // Vérifier si l'utilisateur existe
-        if (! $user) {
-            return response()->json(['error' => "Nous n'avons pas trouvé de compte associé à cette adresse e-mail."], 404);
+        if (!$user) {
+            return response()->json(['error_' => "Nous n'avons pas trouvé de compte associé à cette adresse e-mail."], 404);
         }
 
         DB::table('password_reset_tokens')
@@ -844,7 +882,7 @@ public function update_password(Request $request, $id)
 
         $token            = Str::random(60);
         $confirmationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-        $expirationTime   = now()->addMinutes(3);
+        $expirationTime   = now()->addMinutes(60);
         DB::table('password_reset_tokens')->insert([
             'email'      => $user->email,
             'token'      => $token,
@@ -858,10 +896,10 @@ public function update_password(Request $request, $id)
         // Send an email to the user with the reset URL
         Mail::to($user->email)->send(new ResetPasswordMail($resetUrl, $confirmationCode));
 
-        return response()->json(['message' => 'Password reset email sent']);
+        return response()->json(['message' => 'Un email avec les instructions a été envoyé si l\'adresse est associée à un compte']);
         // }
     }
-    public function resendEmail(Request $request)
+   /* public function resendEmail(Request $request)
     {
         // Validate the request and check for user existence
         $request->validate([
@@ -880,7 +918,7 @@ public function update_password(Request $request, $id)
 
         $token            = Str::random(60);
         $confirmationCode = str_pad(rand(0, 999999), 6, '0', STR_PAD_LEFT);
-        $expirationTime   = now()->addMinutes(3); // Expires in 1 minute
+        $expirationTime   = now()->addMinutes(60); // Expires in 1 minute
                                                   // Store the token in the 'password_resets' table
         DB::table('password_reset_tokens')->insert([
             'email'      => $user->email,
@@ -896,47 +934,44 @@ public function update_password(Request $request, $id)
 
         return response()->json(['message' => 'Password reset email sent']);
 
-    }
+    }*/
 
     public function resetPassword(Request $request, $token)
     {
 
-        if (RoleHelper::ACSup()  ) {
-            $passwordReset = DB::table('password_reset_tokens')
-                ->where('token', $token)
-                ->first();
+        $passwordReset = DB::table('password_reset_tokens')
+            ->where('token', $token)
+            ->first();
 
-            if (! $passwordReset) {
-                return response()->json(['message' => 'Token not found'], 404);
-            }
-
-            if (now() > $passwordReset->expires_at) {
-                return response()->json(['message' => 'Token has expired'], 401);
-            }
-
-            $user = User::where('email', $passwordReset->email)->first();
-            $user->update([
-                'password' => Hash::make($request->password),
-            ]);
-
-            DB::table('password_reset_tokens')
-                ->where('token', $token)
-                ->delete();
-
-            return response()->json(['message' => 'Password reset successful']);
+        if (!$passwordReset) {
+            return response()->json(['message' => 'Token not found'], 404);
         }
+
+        if (now() > $passwordReset->expires_at) {
+            return response()->json(['message' => 'Token has expired'], 401);
+        }
+
+        $user = User::where('email', $passwordReset->email)->first();
+        $user->update(['password' => Hash::make($request->password)]);
+
+        DB::table('password_reset_tokens')
+            ->where('token', $token)
+            ->delete();
+
+        return response()->json(['message' => 'Password reset successful']);
+
     }
 
     public function reset(Request $request)
     {
         $request->validate([
             'current_password' => 'required',
-            'new_password'     => 'required|confirmed',
+            'new_password' => 'required|confirmed',
         ]);
 
         $user = auth()->user();
 
-        if (! Hash::check($request->current_password, $user->password)) {
+        if (!Hash::check($request->current_password, $user->password)) {
             return response()->json(['error' => 'Ancien mot de passe incorrect'], 400);
         }
 

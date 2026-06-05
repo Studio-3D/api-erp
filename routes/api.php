@@ -88,7 +88,8 @@ Route::post('login', [UserController::class, 'login'])->name('login');
 Route::post('/validateToken/{token}', [UserController::class, 'validateToken']);
 Route::post('sendEmail', [V1UserController::class, 'sendEmail']);
 Route::post('resendEmail', [V1UserController::class, 'resendEmail']);
-Route::post('/resetPassword/{token}', [UserController::class, 'resetPassword']);
+Route::post('/resetPassword/{token}', [V1UserController::class, 'resetPassword']);
+Route::post('/reset', [V1UserController::class, 'reset']);
 
 /*************************************APIs FROM Outside ***************************** */
 
@@ -547,11 +548,8 @@ Route::middleware('auth:api')->group(function () {
     Route::get('dashboard', [UserController::class, 'dashboard'])->name('dashboard');
     Route::post('logout', [UserController::class, 'logout'])->name('logout');
     Route::post('addUserProjet/{id}', [UserController::class, 'addUserProjet'])->name('addUserProjet');
-    /*  Route::post('sendEmail', [UserController::class, 'sendEmail']);
-    Route::post('resendEmail', [UserController::class, 'resendEmail']);
-     */
 
-    Route::post('/reset', [UserController::class, 'reset']);
+
 
     /*************************************EnumController***************************** */
     Route::get('Enums', [EnumController::class, 'get_enums'])->name('');
