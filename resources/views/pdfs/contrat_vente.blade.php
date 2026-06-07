@@ -355,11 +355,13 @@
                     <div class="paragraph" style="margin-top: 8px;">
                         La composition du bien comprend :
                         @php
-                            $summedComposition = ['nbre_halls' => 0, 'nbre_salons' => 0, 'nbre_chambres' => 0, 'nbre_cuisines' => 0, 'nbre_sdb' => 0, 'nbre_balcons' => 0, 'nbre_buanderies' => 0, 'nbre_placards' => 0, 'nbre_receptions' => 0];
+                            $summedComposition = ['nbre_halls' => 0, 'nbre_salons' => 0, 'nbre_chambres' => 0, 'nbre_cuisines' => 0, 'nbre_sdb' => 0, 'nbre_balcons' => 0, 'nbre_buanderies' => 0, 'nbre_placards' => 0, 'nbre_receptions' => 0, 'nbre_kitchenette' => 0, 'nbre_sejour' => 0];
                             foreach ($bien['composition_bien'] as $comp) {
                                 $summedComposition['nbre_halls'] += $comp['nbre_halls'] ?? 0;
                                 $summedComposition['nbre_salons'] += $comp['nbre_salons'] ?? 0;
                                 $summedComposition['nbre_chambres'] += $comp['nbre_chambres'] ?? 0;
+                                $summedComposition['nbre_kitchenette'] += $comp['nbre_kitchenette'] ?? 0;
+                                $summedComposition['nbre_sejour'] += $comp['nbre_sejour'] ?? 0;
                                 $summedComposition['nbre_cuisines'] += $comp['nbre_cuisines'] ?? 0;
                                 $summedComposition['nbre_sdb'] += $comp['nbre_sdb'] ?? 0;
                                 $summedComposition['nbre_balcons'] += $comp['nbre_balcons'] ?? 0;
@@ -371,6 +373,8 @@
                             if ($summedComposition['nbre_halls'] > 0) $parts[] = $summedComposition['nbre_halls'] . ' hall' . ($summedComposition['nbre_halls'] > 1 ? 's' : '');
                             if ($summedComposition['nbre_salons'] > 0) $parts[] = $summedComposition['nbre_salons'] . ' salon' . ($summedComposition['nbre_salons'] > 1 ? 's' : '');
                             if ($summedComposition['nbre_chambres'] > 0) $parts[] = $summedComposition['nbre_chambres'] . ' chambre' . ($summedComposition['nbre_chambres'] > 1 ? 's' : '');
+                            if ($summedComposition['nbre_kitchenette'] > 0) $parts[] = $summedComposition['nbre_kitchenette'] . ' kitchenette' . ($summedComposition['nbre_kitchenette'] > 1 ? 's' : '');
+                            if ($summedComposition['nbre_sejour'] > 0) $parts[] = $summedComposition['nbre_sejour'] . ' sejour' . ($summedComposition['nbre_sejour'] > 1 ? 's' : '');
                             if ($summedComposition['nbre_cuisines'] > 0) $parts[] = $summedComposition['nbre_cuisines'] . ' cuisine' . ($summedComposition['nbre_cuisines'] > 1 ? 's' : '');
                             if ($summedComposition['nbre_sdb'] > 0) $parts[] = $summedComposition['nbre_sdb'] . ' salle' . ($summedComposition['nbre_sdb'] > 1 ? 's' : '') . ' de bain';
                             if ($summedComposition['nbre_balcons'] > 0) $parts[] = $summedComposition['nbre_balcons'] . ' balcon' . ($summedComposition['nbre_balcons'] > 1 ? 's' : '');

@@ -292,6 +292,12 @@
                     if(isset($summedComposition['nbre_chambres']) && $summedComposition['nbre_chambres'] > 0) {
                         $parts[] = $summedComposition['nbre_chambres'] . ' chambre' . ($summedComposition['nbre_chambres'] > 1 ? 's' : '');
                     }
+                     if(isset($summedComposition['nbre_kitchenette']) && $summedComposition['nbre_kitchenette'] > 0) {
+                        $parts[] = $summedComposition['nbre_kitchenette'] . ' kitchenette' . ($summedComposition['nbre_kitchenette'] > 1 ? 's' : '');
+                    }
+                     if(isset($summedComposition['nbre_sejour']) && $summedComposition['nbre_sejour'] > 0) {
+                        $parts[] = $summedComposition['nbre_sejour'] . ' sejour' . ($summedComposition['nbre_sejour'] > 1 ? 's' : '');
+                    }
                     if(isset($summedComposition['nbre_cuisines']) && $summedComposition['nbre_cuisines'] > 0) {
                         $parts[] = $summedComposition['nbre_cuisines'] . ' cuisine' . ($summedComposition['nbre_cuisines'] > 1 ? 's' : '');
                     }
