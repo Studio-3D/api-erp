@@ -14,7 +14,24 @@ return new class extends Migration
     {
         Schema::create('frein_orientations', function (Blueprint $table) {
             $table->id();
-            $table->enum('orientation',[OrientationEnum::N->name,OrientationEnum::E->name,OrientationEnum::S->name,OrientationEnum::O->name,OrientationEnum::N_E->name,OrientationEnum::N_O->name,OrientationEnum::S_E->name,OrientationEnum::S_O->name]);
+            $table->enum('orientation', [
+                OrientationEnum::N->name,
+                OrientationEnum::E->name,
+                OrientationEnum::S->name,
+                OrientationEnum::O->name,
+                OrientationEnum::N_E->name,
+                OrientationEnum::N_O->name,
+                OrientationEnum::S_E->name,
+                OrientationEnum::S_O->name,
+                OrientationEnum::NORD_SUD->name,
+                OrientationEnum::NORD_OUEST->name,
+                OrientationEnum::SUD_EST->name,
+                OrientationEnum::EST_OUEST->name,
+                OrientationEnum::NO_SE->name,
+                OrientationEnum::NORD_SUD_OUEST->name,
+                OrientationEnum::NORD_SUD_EST->name,
+                OrientationEnum::NORD_EST_OUEST->name
+            ]);
             $table->foreignId('frein_id')->constrained('freins')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();

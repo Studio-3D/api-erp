@@ -24,6 +24,8 @@ class UpdateCompositionBienRequest extends FormRequest
         return [
             'bien_id' => 'integer',
             'nbre_chambres' => 'integer',
+            'nbre_sejour' => 'integer',
+            'nbre_kitchenette' => 'integer',
             'nbre_salons' => 'integer',
             'nbre_sdb' => 'integer',
             'nbre_cuisines' => 'integer',

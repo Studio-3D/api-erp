@@ -16,6 +16,8 @@ return new class extends Migration
             $table->bigInteger('bien_id')->unsigned();
             $table->foreign('bien_id')->references('id')->on('biens');
             $table->integer('nbre_chambres')->default(0);
+            $table->integer('nbre_sejour')->default(0);
+            $table->integer('nbre_kitchenette')->default(0);
             $table->integer('nbre_salons')->default(0);
             $table->integer('nbre_sdb')->default(0);
             $table->integer('nbre_cuisines')->default(0);
@@ -29,7 +31,7 @@ return new class extends Migration
             $table->softDeletes();
 
 
-            
+
         });
     }
 

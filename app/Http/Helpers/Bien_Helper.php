@@ -406,10 +406,19 @@ class Bien_Helper
                 + ($bien->superficie_balcon ?? 0)
                 + ($bien->superficie_terrasse ?? 0)
                 + ($bien->superficie_jardin ?? 0);
-        $bien->prix = $bien->prix_unitaire * $bien->superficie_vendable + $bien->prix_parking + $bien->prix_box;
+            if (array_key_exists("Prix", $row) && $row['Prix'] != null) {
+                $bien->prix= $row['Prix'];
+            }
+            else{
+                $bien->prix = $bien->prix_unitaire * $bien->superficie_vendable + $bien->prix_parking + $bien->prix_box;
+            }
         $bien->etat = 'disponible';
 
         if ($bien->save()) {
+            $nb_sejour   = (array_key_exists("Nombre sejour", $row) && $row['Nombre sejour'] != null) ?
+                            self::validateNumericValue($row['Nombre sejour'], "Nombre sejour") : 0;
+            $nb_kitchenette   = (array_key_exists("Nombre kitchenette", $row) && $row['Nombre kitchenette'] != null) ?
+                            self::validateNumericValue($row['Nombre kitchenette'], "Nombre kitchenette") : 0;
             // Composition handling (keep your existing code)
             $nb_chambre   = (array_key_exists("Nombre chambre", $row) && $row['Nombre chambre'] != null) ?
                             self::validateNumericValue($row['Nombre chambre'], "Nombre chambre") : 0;
@@ -434,12 +443,14 @@ class Bien_Helper
 
             if ($nb_chambre != 0 || $nb_salon != 0 || $nb_cuisine != 0 || $nb_sdb != 0 ||
                 $nb_hall != 0 || $nb_placard != 0 || $nb_balcon != 0 || $nb_terasse != 0 ||
-                $nb_buanderie != 0 || $nb_reception != 0) {
+                $nb_buanderie != 0 || $nb_reception != 0|| $nb_sejour != 0|| $nb_kitchenette != 0) {
 
                 $compo = new CompositionBien();
                 $compo->setConnection('temp');
                 $compo->bien_id = $bien->id;
                 $compo->nbre_chambres = $nb_chambre;
+                $compo->nbre_sejour = $nb_sejour;
+                $compo->nbre_kitchenette = $nb_kitchenette;
                 $compo->nbre_salons = $nb_salon;
                 $compo->nbre_sdb = $nb_sdb;
                 $compo->nbre_cuisines = $nb_cuisine;
@@ -965,9 +976,15 @@ class Bien_Helper
 
             $nb_reception = (array_key_exists("Nombre reception", $row) && $row['Nombre reception'] != null) ?
                             self::validateNumericValue($row['Nombre reception'], "Nombre reception") : 0;
+            $nb_sejour   = (array_key_exists("Nombre sejour", $row) && $row['Nombre sejour'] != null) ?
+                            self::validateNumericValue($row['Nombre sejour'], "Nombre sejour") : 0;
+            $nb_kitchenette   = (array_key_exists("Nombre kitchenette", $row) && $row['Nombre kitchenette'] != null) ?
+                            self::validateNumericValue($row['Nombre kitchenette'], "Nombre kitchenette") : 0;
 
             // Update composition values
             $compo->nbre_chambres   = $nb_chambre;
+            $compo->nbre_sejour = $nb_sejour;
+            $compo->nbre_kitchenette = $nb_kitchenette;
             $compo->nbre_salons     = $nb_salon;
             $compo->nbre_sdb        = $nb_sdb;
             $compo->nbre_cuisines   = $nb_cuisine;

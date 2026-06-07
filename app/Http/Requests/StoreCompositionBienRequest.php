@@ -50,6 +50,11 @@ class StoreCompositionBienRequest extends FormRequest
 
             // Nombre de chambres
             'nbre_chambres.integer' => 'Le nombre de chambres doit être un nombre entier.',
+            // Nombre de chambres
+            'nbre_sejour.integer' => 'Le nombre de séjour doit être un nombre entier.',
+
+            // Nombre de chambres
+            'nbre_kitchenette.integer' => 'Le nombre de kitchenette doit être un nombre entier.',
 
             // Nombre de salons
             'nbre_salons.integer' => 'Le nombre de salons doit être un nombre entier.',

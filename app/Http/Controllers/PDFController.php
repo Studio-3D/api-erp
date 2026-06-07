@@ -663,8 +663,16 @@ public function generateBonPreReservationPDF(Request $request)
             'N_O' => 'Nord-Ouest',
             'S_E' => 'Sud-Est',
             'S_O' => 'Sud-Ouest',
+            'NORD_SUD' => 'Nord/Sud',
+            'NORD_OUEST' => 'Nord-Ouest',
+            'SUD_EST' => 'Sud-Est',
+            'EST_OUEST' => 'Est/Ouest',
+            'NO_SE' => 'Nord-Ouest / Sud-Est',
+            'NORD_SUD_OUEST' => 'Nord/Sud/Ouest',
+            'NORD_SUD_EST' => 'Nord-Ouest / Sud-Est',
+            'NORD_EST_OUEST' => 'Nord/Est/Ouest',
         ];
-        return $orientationMap[$abbreviation] ?? ($abbreviation ?: 'Nord');
+        return $orientationMap[$abbreviation] ?? ($abbreviation ?: '');
     },
     'getNiveauText' => function($niveau) {
         if ($niveau === null || $niveau === '') {
@@ -708,8 +716,17 @@ private function getOrientationFullName($abbreviation)
         'N_O' => 'Nord-Ouest',
         'S_E' => 'Sud-Est',
         'S_O' => 'Sud-Ouest',
+        'NORD_SUD' => 'Nord/Sud',
+        'NORD_OUEST' => 'Nord-Ouest',
+        'SUD_EST' => 'Sud-Est',
+        'EST_OUEST' => 'Est/Ouest',
+        'NO_SE' => 'Nord-Ouest / Sud-Est',
+        'NORD_SUD_OUEST' => 'Nord/Sud/Ouest',
+        'NORD_SUD_EST' => 'Nord-Ouest / Sud-Est',
+        'NORD_EST_OUEST' => 'Nord/Est/Ouest',
+
     ];
-    return $orientationMap[$abbreviation] ?? ($abbreviation ?: 'Nord');
+    return $orientationMap[$abbreviation] ?? ($abbreviation ?: ' ');
 }
 
 // Fonction pour convertir le niveau en texte

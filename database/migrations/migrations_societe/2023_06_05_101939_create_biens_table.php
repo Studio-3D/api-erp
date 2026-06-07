@@ -20,8 +20,25 @@ return new class extends Migration
             $table->string('numero');
             $table->text('description')->nullable();
             $table->integer('niveau')->nullable();
-            $table->enum('orientation', [OrientationEnum::N->name, OrientationEnum::E->name, OrientationEnum::S->name, OrientationEnum::O->name, OrientationEnum::N_E->name, OrientationEnum::N_O->name,OrientationEnum::S_E->name, OrientationEnum::S_O->name]);
-            $table->boolean('conventionne')->default(false);
+ $table->enum('orientation', [
+                OrientationEnum::N->name,
+                OrientationEnum::E->name,
+                OrientationEnum::S->name,
+                OrientationEnum::O->name,
+                OrientationEnum::N_E->name,
+                OrientationEnum::N_O->name,
+                OrientationEnum::S_E->name,
+                OrientationEnum::S_O->name,
+                OrientationEnum::NORD_SUD->name,
+                OrientationEnum::NORD_OUEST->name,
+                OrientationEnum::SUD_EST->name,
+                OrientationEnum::EST_OUEST->name,
+                OrientationEnum::NO_SE->name,
+                OrientationEnum::NORD_SUD_OUEST->name,
+                OrientationEnum::NORD_SUD_EST->name,
+                OrientationEnum::NORD_EST_OUEST->name
+            ]);
+                        $table->boolean('conventionne')->default(false);
             $table->double('prix_unitaire', 12, 2);
             $table->double('prix', 20, 2);
             $table->double('prix_parking', 12, 2)->nullable();;

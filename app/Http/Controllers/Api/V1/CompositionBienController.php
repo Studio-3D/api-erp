@@ -30,6 +30,12 @@ class CompositionBienController extends Controller
             if ($request->filled('nbre_chambres')) {
                 $query->where('nbre_chambres', 'like', '%' . $request->input('nbre_chambres') . '%');
             }
+             if ($request->filled('nbre_sejour')) {
+                $query->where('nbre_sejour', 'like', '%' . $request->input('nbre_sejour') . '%');
+            }
+             if ($request->filled('nbre_kitchenette')) {
+                $query->where('nbre_kitchenette', 'like', '%' . $request->input('nbre_kitchenette') . '%');
+            }
             if ($request->filled('nbre_buanderies')) {
                 $query->where('nbre_buanderies', 'like', '%' . $request->input('nbre_buanderies') . '%');
             }
@@ -83,6 +89,8 @@ class CompositionBienController extends Controller
             $composition_bien->setConnection('temp');
             $composition_bien->bien_id = $request->bien_id;
             $composition_bien->nbre_chambres = $request->nbre_chambres;
+            $composition_bien->nbre_sejour = $request->nbre_sejour;
+            $composition_bien->nbre_kitchenette = $request->nbre_kitchenette;
             $composition_bien->nbre_salons = $request->nbre_salons;
             $composition_bien->nbre_sdb = $request->nbre_sdb;
             $composition_bien->nbre_cuisines = $request->nbre_cuisines;
