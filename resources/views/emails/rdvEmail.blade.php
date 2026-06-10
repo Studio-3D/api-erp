@@ -104,8 +104,8 @@
         </div>
 
         <div class="footer">
-            &copy; {{ date('Y') }} Immobilier - Votre partenaire de confiance<br>
-            <small>Contact : <a href="mailto:support@immobilier.com" style="color: #3498db; text-decoration: underline;">support@immobilier.com</a></small>
+            &copy; {{ date('Y') }} Tracimo  - Votre partenaire de confiance<br>
+            <small>Contact : <a href="tracimmo.crm@gmail.com" style="color: #3498db; text-decoration: underline;">tracimmo.crm@gmail.com</a></small>
         </div>
     </div>
 </body>

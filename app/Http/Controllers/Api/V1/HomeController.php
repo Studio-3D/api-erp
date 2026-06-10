@@ -361,7 +361,108 @@ private function applyDateFilter($query, $dt, $a_dt, $dateField = 'created_at')
     /**
      * Show the form for creating a new resource.
      */
+/**
+ * Get top 4 commerciaux by CA
+ */
+/**
+ * Get top 4 commerciaux by CA - Version simplifiée
+ */
+/**
+ * Get top 4 commerciaux by CA
+ */
+private function getTopCommerciaux($projet_id, $dt, $a_dt, $us_role, $us_id)
+{
+    DatabaseHelper::Config();
 
+    // Récupérer d'abord tous les commerciaux
+    $commerciaux = User::on('temp')
+       // ->where('role', 3)
+        ->whereNull('deleted_at')
+        ->get();
+
+    $topCommerciaux = [];
+
+    foreach ($commerciaux as $commercial) {
+        // Pour chaque commercial, calculer son CA
+        $query = Encaissement::on('temp')
+            ->join('reservations', 'encaissements.reservation_id', '=', 'reservations.id')
+            ->where('encaissements.deleted_at', null)
+            ->where('reservations.etat', 1)
+            ->where('reservations.statut', StatutReservationEnum::Validé->value)
+            ->where('reservations.user_id', $commercial->id) // Lier au commercial
+            ->where(function($q) {
+                $q->where('encaissements.type_encaissement', 1)
+                  ->orWhere('encaissements.type_encaissement', 6);
+            });
+
+        // Filtre par date sur les encaissements
+        if ($dt == null && $a_dt == null) {
+            $query->whereYear('encaissements.date_reglement', Carbon::now()->year)
+                  ->whereMonth('encaissements.date_reglement', Carbon::now()->month);
+        } else {
+            if ($dt == $a_dt) {
+                $query->whereDate('encaissements.date_reglement', $dt);
+            } else {
+                $query->whereDate('encaissements.date_reglement', '>=', $dt)
+                      ->whereDate('encaissements.date_reglement', '<=', $a_dt);
+            }
+        }
+
+        // Filtre par projet
+        if ($projet_id != null) {
+            $query->where('reservations.projet_id', $projet_id);
+        }
+
+        $total_ca = $query->sum('encaissements.montant');
+
+        // Compter les ventes distinctes
+        $ventesQuery = Reservation::on('temp')
+            ->where('etat', 1)
+            ->where('statut', StatutReservationEnum::Validé->value)
+            ->where('user_id', $commercial->id);
+
+        if ($dt == null && $a_dt == null) {
+            $ventesQuery->whereYear('created_at', Carbon::now()->year)
+                        ->whereMonth('created_at', Carbon::now()->month);
+        } else {
+            if ($dt == $a_dt) {
+                $ventesQuery->whereDate('created_at', $dt);
+            } else {
+                $ventesQuery->whereDate('created_at', '>=', $dt)
+                            ->whereDate('created_at', '<=', $a_dt);
+            }
+        }
+
+        if ($projet_id != null) {
+            $ventesQuery->where('projet_id', $projet_id);
+        }
+
+        $total_ventes = $ventesQuery->count();
+
+        // Pour le commercial connecté (role=3), on garde toutes ses données
+        // Pour les autres, on ne garde que ceux qui ont des ventes ou du CA
+
+            // Pour Admin/SuperAdmin, on ajoute seulement ceux qui ont des ventes
+            if ($total_ventes > 0 || $total_ca > 0) {
+                $topCommerciaux[] = [
+                    'id' => $commercial->id,
+                    'name' => $commercial->prenom . ' ' . $commercial->name,
+                    'ca' => (float) $total_ca,
+                    'ventes' => (int) $total_ventes,
+                    'commission' => (float) $total_ca * 0.03,
+                ];
+            }
+
+    }
+
+    // Trier par CA décroissant
+    usort($topCommerciaux, function($a, $b) {
+        return $b['ca'] <=> $a['ca'];
+    });
+
+    // Limiter à 4 résultats
+    return array_slice($topCommerciaux, 0, 4);
+}
 
 public function dashboard(Request $request,$projet_id,$de_date,$a_date)
 {
@@ -887,6 +988,12 @@ public function dashboard(Request $request,$projet_id,$de_date,$a_date)
                 'réceptif' => $counts['réceptif']
             ];
         }
+        /********************Top Commerciaux********************/
+         if ($us_role <=2 ||$us_role ==10) {
+               $top_commerciaux = $this->getTopCommerciaux($projet_id, $dt, $a_dt, $us_role, $us_id);
+         }else{
+             $top_commerciaux =[];
+         }
 
         return response()->json([
             'projet_id'=>$projet_id,
@@ -916,7 +1023,9 @@ public function dashboard(Request $request,$projet_id,$de_date,$a_date)
             'obj_mois_reservations'=>$obj_mois_reservations,
             'array_encaissement'=>$array_encaissements,
             'array_ventes'=>$array_ventes,
-            'array_visite_interet_et_date'=>$array_visite_interet_et_date
+            'array_visite_interet_et_date'=>$array_visite_interet_et_date,
+            'top_commerciaux' => $top_commerciaux, // AJOUTER CETTE LIGNE
+
         ]);
     }
 }

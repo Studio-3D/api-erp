@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Mise à jour de votre compte Immo Gestion</title>
+    <title>Mise à jour de votre compte Tracimo </title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -65,7 +65,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h2>Immo Gestion</h2>
+            <h2>Tracimo </h2>
         </div>
 
         <p>Bonjour <strong>{{ $nom ?? '' }} {{ $prenom ?? '' }}</strong>,</p>
@@ -98,11 +98,11 @@
 
         <br>
         <p>Cordialement,</p>
-        <p><strong>L'équipe Immo Gestion</strong></p>
+        <p><strong>L'équipe Tracimo  </strong></p>
 
         <div class="footer">
             <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-            <p>&copy; {{ date('Y') }} Immo Gestion - Tous droits réservés.</p>
+            <p>&copy; {{ date('Y') }} Tracimo   - Tous droits réservés.</p>
         </div>
     </div>
 </body>

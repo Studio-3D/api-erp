@@ -284,7 +284,7 @@
         </div>
 
         <div class="footer">
-            <p>Cet email a été envoyé automatiquement par le système Immobilier Immo.</p>
+            <p>Cet email a été envoyé automatiquement par le système Tracimo.</p>
             <p>Si vous n'êtes pas à l'origine de cette action, veuillez contacter l'administrateur.</p>
         </div>
     </div>

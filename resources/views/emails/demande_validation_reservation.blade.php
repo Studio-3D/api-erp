@@ -111,11 +111,11 @@
                 <li>Valider ou rejeter la réservation</li>
             </ul>
 
-            <p><strong>L'équipe Immobilier</strong></p>
+            <p><strong>L'équipe Tracimmo</strong></p>
         </div>
 
         <div class="footer">
-            &copy; {{ date('Y') }} Immobilier Immo - Tous droits réservés<br>
+            &copy; {{ date('Y') }}Tracimo - Tous droits réservés<br>
             <small>Cet email a été généré automatiquement, merci de ne pas y répondre.</small>
         </div>
     </div>

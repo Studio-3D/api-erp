@@ -68,7 +68,7 @@ class ScheduledEmail extends Mailable
                         'echeance' => $this->avance->echeance ?? null,
                         'source' => $this->source,
                     ])
-                    ->from(env('MAIL_USERNAME'), 'Immobilier Immo');
+                    ->from(env('MAIL_USERNAME'), 'Tracimo ');
     }
 
     /**
@@ -80,19 +80,19 @@ class ScheduledEmail extends Mailable
         if (isset($this->user->prenom) && !empty($this->user->prenom)) {
             return $this->user->prenom;
         }
-        
+
         // Pour un objet User avec seulement name
         if (isset($this->user->name) && !empty($this->user->name)) {
             // Si name contient "prenom nom", on prend le premier mot
             $nameParts = explode(' ', trim($this->user->name));
             return $nameParts[0];
         }
-        
+
         // Pour un objet Prospect ou Client avec prenom
         if (isset($this->user->prenom)) {
             return $this->user->prenom;
         }
-        
+
         // Fallback
         return 'Cher client';
     }
@@ -105,15 +105,15 @@ class ScheduledEmail extends Mailable
         if (isset($this->user->name) && isset($this->user->prenom)) {
             return $this->user->name . ' ' . $this->user->prenom;
         }
-        
+
         if (isset($this->user->name)) {
             return $this->user->name;
         }
-        
+
         if (isset($this->user->nom) && isset($this->user->prenom)) {
             return $this->user->nom . ' ' . $this->user->prenom;
         }
-        
+
         return null;
     }
 
@@ -153,10 +153,10 @@ class ScheduledEmail extends Mailable
             case 4:
                 return 'Rappel d\'échéance  de paiement - ' . $this->projet;
             default:
-                return 'Notification Immobilier';
+                return 'Notification Tracimo ';
         }
     }
-   
+
     /**
      * Get the source label for the subject.
      */

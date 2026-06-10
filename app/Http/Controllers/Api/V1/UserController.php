@@ -289,8 +289,8 @@ class UserController extends Controller
                     ];
                     Mail::send('User.mail', $data, function ($message) use ($to_email) {
                         $message->to($to_email)
-                            ->subject('Bienvenue chez Immo Gestion - Votre compte a été créé');
-                        $message->from(env('MAIL_USERNAME'), 'Immo Gestion');
+                            ->subject('Bienvenue chez Tracimo - Votre compte a été créé');
+                        $message->from(env('MAIL_USERNAME'), 'Tracimo ');
                     });
                 }
                 // Commit transaction if everything is successful
@@ -548,8 +548,8 @@ public function update(UpdateUserRequest $request, $id)
 
             Mail::send('User.mail_update', $emailData, function ($message) use ($to_email) {
                 $message->to($to_email)
-                    ->subject('Mise à jour de votre compte Immo Gestion');
-                $message->from(env('MAIL_USERNAME'), 'Immo Gestion');
+                    ->subject('Mise à jour de votre compte Tracimo ');
+                $message->from(env('MAIL_USERNAME'), 'Tracimo ');
             });
         }
 

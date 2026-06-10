@@ -246,11 +246,11 @@
 
             <p>Pour toute question, contactez notre service SAV au 01 23 45 67 89 ou par email à sav@immobilier.com</p>
 
-            <p><strong>L'équipe Immobilier Immo - Service Après-Vente</strong></p>
+            <p><strong>L'équipe Tracimo  - Service Après-Vente</strong></p>
         </div>
 
         <div class="footer">
-            &copy; {{ date('Y') }} Immobilier Immo - Tous droits réservés<br>
+            &copy; {{ date('Y') }} Tracimo  - Tous droits réservés<br>
             <small>Cet email a été généré automatiquement. Merci de ne pas y répondre directement.<br>
             Pour répondre au client, utilisez ses coordonnées ci-dessus.</small>
         </div>

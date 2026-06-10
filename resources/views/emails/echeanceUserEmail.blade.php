@@ -78,15 +78,15 @@
 
             <div class="info-card">
                <p><strong>🏠 Projet :</strong> {{ $projet ?? 'Non spécifié' }}</p>
-                
+
                 @if($bien)
                 <p><strong>📍 Bien concerné :</strong> {{ $bien }}</p>
                 @endif
-                
+
                 @if($prospectName)
                 <p><strong>👤 Client :</strong> {{ $prospectName }}</p>
                 @endif
-                
+
                 <p><strong>📅 Date d'échéance :</strong> <span class="urgent">{{ $echeance ?? date('d/m/Y') }}</span> </p>
 
                 @if($montant)
@@ -98,12 +98,12 @@
 
             <p>Merci de prendre les dispositions nécessaires pour le suivi de cette échéance.</p>
 
-            <p>L'équipe Immobilier</p>
+            <p>L'équipe Tracimmo</p>
         </div>
 
         <div class="footer">
             &copy; {{ date('Y') }} Immobilier - Votre partenaire de confiance<br>
-            <small>Contact : <a href="mailto:support@immobilier.com" style="color: #3498db; text-decoration: underline;">support@immobilier.com</a></small>
+            <small>Contact : <a href="tracimmo.crm@gmail.com" style="color: #3498db; text-decoration: underline;">tracimmo.crm@gmail.com</a></small>
         </div>
     </div>
 </body>

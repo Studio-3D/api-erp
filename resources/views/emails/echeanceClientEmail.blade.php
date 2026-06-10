@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rappel Échéance - Paiement Immobilier</title>
+    <title>Rappel Échéance - Paiement </title>
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -88,11 +88,11 @@
 
             <div class="info-card">
                 <p><strong>🏠 Projet :</strong> {{ $projet ?? 'Non spécifié' }}</p>
-                
+
                 @if($bien)
                 <p><strong>📍 Bien concerné :</strong> {{ $bien }}</p>
                 @endif
-                
+
                 <p><strong>📅 Date d'échéance :</strong> <strong style="color: #e74c3c;">{{ $echeance ?? date('d/m/Y') }}</strong></p>
 
                 @if($montant)
@@ -112,8 +112,8 @@
         </div>
 
         <div class="footer">
-            &copy; {{ date('Y') }} Immobilier - Votre partenaire de confiance<br>
-            <small>Contact : <a href="mailto:support@immobilier.com" style="color: #3498db; text-decoration: underline;">support@immobilier.com</a></small>
+            &copy; {{ date('Y') }} Tracimo - Votre partenaire de confiance<br>
+            <small>Contact : <a href="tracimmo.crm@gmail.com" style="color: #3498db; text-decoration: underline;">tracimmo.crm@gmail.com</a></small>
         </div>
     </div>
 </body>
