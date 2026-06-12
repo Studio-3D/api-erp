@@ -41,6 +41,9 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Http\Helpers\FichierHelper;
+use App\Models\Societe;
+
 
 class BienController extends Controller
 {
@@ -1612,122 +1615,173 @@ class BienController extends Controller
      * Upload media for a specific bien
      */
     //path en storage/app/public
-    public function uploadMedia(Request $request, $id)
-    {
-        if (! RoleHelper::ACSup() && RoleHelper::AgentAdmin()) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
-        DatabaseHelper::Config();
-        $bien = Bien::on('temp')->findOrFail($id);
-
-        $request->validate([
-            'media'       => 'required|file|mimes:jpeg,jpg,png,gif,mp4,mov,avi|max:10240', // 10MB max
-            'title'       => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'is_featured' => 'nullable|boolean',
-        ]);
-
-        if ($request->hasFile('media')) {
-            $file     = $request->file('media');
-            $fileName = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
-            $filePath = $file->storeAs('biens/' . $bien->id . '/media', $fileName, 'public');
-
-            $fileType = Str::startsWith($file->getMimeType(), 'image/') ? 'image' : 'video';
-
-            $media = new BienMedia();
-            $media->setConnection('temp');
-            $media->bien_id       = $bien->id;
-            $media->file_path     = $filePath;
-            $media->file_type     = $fileType;
-            $media->mime_type     = $file->getMimeType();
-            $media->original_name = $file->getClientOriginalName();
-            $media->title         = $request->title ?? null;
-            $media->description   = $request->description ?? null;
-            $media->is_featured   = $request->is_featured ?? false;
-            $media->save();
-
-            // Update the bien description if provided
-            if ($request->has('description_bien')) {
-                $bien->description = $request->description_bien;
-                $bien->save();
-            }
-
-            // Generate HTTPS URL for the media
-            $mediaUrl = route('media.show', ['path' => $filePath]);
-
-            // Force HTTPS if APP_URL_HOST is set with HTTPS
-            $appUrlHost = env('APP_URL_HOST');
-            if ($appUrlHost && str_contains($appUrlHost, 'https://')) {
-                $mediaUrl = str_replace('http://', 'https://', $mediaUrl);
-            }
-
-            return response()->json([
-                'message' => 'Media uploaded successfully',
-                'media'   => $media,
-                'url'     => $mediaUrl,
-            ], 201);
-        }
-
-        return response()->json(['error' => 'No file uploaded'], 400);
+ /**
+ * Upload media for a specific bien
+ */
+public function uploadMedia(Request $request, $id)
+{
+    if (!RoleHelper::ACSup() && !RoleHelper::AgentAdmin()) {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
 
-    /**
-     * Get all media for a specific bien
-     */
-    public function getMedia($id)
-    {
-        if (! Auth::guard('api')->check()) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+    DatabaseHelper::Config();
+    $bien = Bien::on('temp')->findOrFail($id);
+
+    // Get the society information (like in update societe)
+    $user = Auth::user();
+    $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+    $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+    $societe = Societe::findOrfail($user_societes->societe_id);
+
+    $request->validate([
+        'media'       => 'required|file|mimes:jpeg,jpg,png,gif,mp4,mov,avi|max:10240',
+        'title'       => 'nullable|string|max:255',
+        'description' => 'nullable|string',
+        'is_featured' => 'nullable|boolean',
+    ]);
+
+    if ($request->hasFile('media')) {
+        $file = $request->file('media');
+
+        // Generate filename like in societe update
+        $fileName = time() . '_' . $file->getClientOriginalName();
+        $doss = 'biens/' . $bien->id . '/media';
+
+        // Get file info BEFORE using FichierHelper
+        $fileType = Str::startsWith($file->getMimeType(), 'image/') ? 'image' : 'video';
+        $mimeType = $file->getMimeType();
+        $originalName = $file->getClientOriginalName();
+
+        // Use FichierHelper exactly like in societe update (this stores in docs folder)
+        FichierHelper::ajouter_fichier(
+            $file,
+            $societe->raison_sociale_concatene,
+            $societe->id,
+            $doss,
+            $fileName
+        );
+
+        // Save media record in database with relative path for FichierHelper
+        $media = new BienMedia();
+        $media->setConnection('temp');
+        $media->bien_id       = $bien->id;
+        $media->file_path     = $doss . '/' . $fileName;  // Store relative path for FichierHelper
+        $media->file_type     = $fileType;
+        $media->mime_type     = $mimeType;
+        $media->original_name = $originalName;
+        $media->title         = $request->title ?? null;
+        $media->description   = $request->description ?? null;
+        $media->is_featured   = $request->is_featured ?? false;
+        $media->save();
+
+        // Update the bien description if provided
+        if ($request->has('description_bien')) {
+            $bien->description = $request->description_bien;
+            $bien->save();
         }
 
-        DatabaseHelper::Config();
-        $media = BienMedia::on('temp')->where('bien_id', $id)->get();
+        // Generate URL using FichierHelper
+        $mediaUrl = FichierHelper::get_file_url(
+            $societe->raison_sociale_concatene,
+            $societe->id,
+            $doss,
+            $fileName
+        );
 
         return response()->json([
-            'media' => $media->map(function ($item) {
-                $mediaUrl = route('media.show', ['path' => $item->file_path]);
-
-                // Force HTTPS if APP_URL_HOST is set with HTTPS
-                $appUrlHost = env('APP_URL_HOST');
-                if ($appUrlHost && str_contains($appUrlHost, 'https://')) {
-                    $mediaUrl = str_replace('http://', 'https://', $mediaUrl);
-                }
-
-                return [
-                    'id'          => $item->id,
-                    'file_type'   => $item->file_type,
-                    'title'       => $item->title,
-                    'description' => $item->description,
-                    'is_featured' => $item->is_featured,
-                    'url'         => $mediaUrl,
-                    'created_at'  => $item->created_at,
-                ];
-            }),
-        ], 200);
+            'message' => 'Media uploaded successfully',
+            'media'   => $media,
+            'url'     => $mediaUrl,
+        ], 201);
     }
 
-    /**
-     * Delete a media file
-     */
-    public function deleteMedia($id, $mediaId)
-    {
-        if (! RoleHelper::ACSup() && !RoleHelper::AgentAdmin() ) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+    return response()->json(['error' => 'No file uploaded'], 400);
+}
 
-        DatabaseHelper::Config();
-        $media = BienMedia::on('temp')->where('bien_id', $id)->findOrFail($mediaId);
-
-        // Delete the file from storage
-        if (Storage::disk('public')->exists($media->file_path)) {
-            Storage::disk('public')->delete($media->file_path);
-        }
-
-        $media->delete();
-
-        return response()->json(['message' => 'Media deleted successfully'], 200);
+/**
+ * Get all media for a specific bien
+ */
+public function getMedia($id)
+{
+    if (!Auth::guard('api')->check()) {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+    DatabaseHelper::Config();
+
+    // Get society info for URL generation
+    $user = Auth::user();
+    $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+    $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+    $societe = Societe::findOrfail($user_societes->societe_id);
+
+    $media = BienMedia::on('temp')->where('bien_id', $id)->get();
+
+    return response()->json([
+        'media' => $media->map(function ($item) use ($societe) {
+            // Extract doss and filename from file_path
+            $pathParts = explode('/', $item->file_path);
+            $fileName = array_pop($pathParts);
+            $doss = implode('/', $pathParts);
+
+            // Generate URL using FichierHelper
+            $mediaUrl = FichierHelper::get_file_url(
+                $societe->raison_sociale_concatene,
+                $societe->id,
+                $doss,
+                $fileName
+            );
+
+            return [
+                'id'          => $item->id,
+                'file_type'   => $item->file_type,
+                'title'       => $item->title,
+                'description' => $item->description,
+                'is_featured' => $item->is_featured,
+                'url'         => $mediaUrl,
+                'created_at'  => $item->created_at,
+            ];
+        }),
+    ], 200);
+}
+
+/**
+ * Delete a media file
+ */
+public function deleteMedia($id, $mediaId)
+{
+    if (!RoleHelper::ACSup() && !RoleHelper::AgentAdmin()) {
+        return response()->json(['error' => 'Unauthorized'], 401);
+    }
+
+    DatabaseHelper::Config();
+
+    // Get society info
+    $user = Auth::user();
+    $userAuth = User::on('temp')->where('user_id_origin', $user->getAuthIdentifier())->get();
+    $user_societes = User::where('id', $userAuth->value('user_id_origin'))->first();
+    $societe = Societe::findOrfail($user_societes->societe_id);
+
+    $media = BienMedia::on('temp')->where('bien_id', $id)->findOrFail($mediaId);
+
+    // Extract doss and filename
+    $pathParts = explode('/', $media->file_path);
+    $fileName = array_pop($pathParts);
+    $doss = implode('/', $pathParts);
+
+    // Delete file using FichierHelper
+    FichierHelper::supprimer_fichier(
+        $societe->raison_sociale_concatene,
+        $societe->id,
+        $doss,
+        $fileName
+    );
+
+    // Delete database record
+    $media->delete();
+
+    return response()->json(['message' => 'Media deleted successfully'], 200);
+}
 
     /**
      * Update the description of a bien
