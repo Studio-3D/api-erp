@@ -738,32 +738,63 @@ public function update_password(Request $request, $id)
         }
     }
     public static function destroy($id)
-    {
-        if (RoleHelper::SuperAdmin()) {
-            $user           = User::findOrFail($id);
-            $user->is_actif = 0;
-            $user->save();
-
-            if ($user->delete()) {
-
-                 /*DatabaseHelper::Config($user->societe_id);
-                $user_societes = User::on('temp')->where('id', $user->id);
-                $user_societes->update(['is_actif' => 0]);
-                if ($user_societes->photo != null) {
-                $image_path = public_path('img/users/' . $user_societes->photo);
-                if (file_exists($image_path)) {
-                File::delete($image_path);
-                }
-                }
-                $user_societes->delete();*/
-                return response()->json(['message' => 'utilisateur supprimé avec succès'], 200);
-            } else {
-                return response()->json(['message' => "Oups l'utilisatuer n'a pas été supprimé"], 404);
-            }
-        } else {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
+{
+    if (!RoleHelper::SuperAdmin()) {
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
+
+    try {
+        DB::connection()->beginTransaction();
+
+        $user = User::findOrFail($id);
+
+        // Récupérer la société pour la suppression du fichier
+        $societe = Societe::find($user->societe_id);
+
+        // Supprimer les associations user_projet dans la base principale
+        UserProjet::where('user_id', $id)->delete();
+
+        // Supprimer de la base temp si elle existe et configurée
+        try {
+
+            if ($user && $$user->photo && $societe) {
+                FichierHelper::supprimer_fichier(
+                    $societe->raison_sociale_concatene,
+                    $user->societe_id,
+                    'users',
+                    $user->photo
+                );
+            }
+
+            // Supprimer l'utilisateur temp
+
+        } catch (\Exception $e) {
+            \Log::warning("Erreur lors de la suppression dans la base temp: " . $e->getMessage());
+            // On continue car l'important est de supprimer l'utilisateur principal
+        }
+
+        // Désactiver et supprimer l'utilisateur principal
+        $user->is_actif = 0;
+        $user->save();
+
+        if (!$user->delete()) {
+            throw new \Exception("Impossible de supprimer l'utilisateur");
+        }
+
+        DB::connection()->commit();
+
+        return response()->json(['message' => 'Utilisateur et ses associations supprimés avec succès'], 200);
+
+    } catch (\Exception $e) {
+        DB::connection()->rollBack();
+        \Log::error("Erreur lors de la suppression de l'utilisateur {$id}: " . $e->getMessage());
+
+        return response()->json([
+            'message' => "Erreur lors de la suppression: " . $e->getMessage()
+        ], 500);
+    }
+}
+
 
     // Methodes utilitaires (partie invisible a l'exterieur de la classe)
  private function createSubUser($request, $user_id, $user_photo, $dataArray_projets)
