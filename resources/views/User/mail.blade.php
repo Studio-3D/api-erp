@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Bienvenue chez Tracimo </title>
+    <title>Bienvenue chez Greenland </title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -51,7 +51,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h2>Tracimo  </h2>
+            <h2>Greenland  </h2>
         </div>
 
         <p>Bonjour <strong>{{ $nom ?? '' }} {{ $prenom ?? '' }}</strong>,</p>
@@ -67,15 +67,15 @@
 
         <p>Concernant le mot de passe, <strong>vous seul le connaissez</strong>. Nous vous recommandons de le modifier lors de votre première connexion.</p>
 
-        <p>Vous disposez à présent d'un compte <strong>{{ $role ?? 'Utilisateur' }}</strong> dans notre solution Tracimo.</p>
+        <p>Vous disposez à présent d'un compte <strong>{{ $role ?? 'Utilisateur' }}</strong> dans notre solution Greenland.</p>
 
         <br>
         <p>Cordialement,</p>
-        <p><strong>L'équipe Tracimo</strong></p>
+        <p><strong>L'équipe Greenland</strong></p>
 
         <div class="footer">
             <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-            <p>&copy; {{ date('Y') }} Tracimo   - Tous droits réservés.</p>
+            <p>&copy; {{ date('Y') }} Greenland   - Tous droits réservés.</p>
         </div>
     </div>
 </body>

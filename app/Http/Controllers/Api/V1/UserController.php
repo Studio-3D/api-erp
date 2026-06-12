@@ -289,8 +289,8 @@ class UserController extends Controller
                     ];
                     Mail::send('User.mail', $data, function ($message) use ($to_email) {
                         $message->to($to_email)
-                            ->subject('Bienvenue chez Tracimo - Votre compte a été créé');
-                        $message->from(env('MAIL_USERNAME'), 'Tracimo ');
+                            ->subject('Bienvenue chez Greenland - Votre compte a été créé');
+                        $message->from(env('MAIL_USERNAME'), 'Greenland ');
                     });
                 }
                 // Commit transaction if everything is successful
@@ -548,8 +548,8 @@ public function update(UpdateUserRequest $request, $id)
 
             Mail::send('User.mail_update', $emailData, function ($message) use ($to_email) {
                 $message->to($to_email)
-                    ->subject('Mise à jour de votre compte Tracimo ');
-                $message->from(env('MAIL_USERNAME'), 'Tracimo ');
+                    ->subject('Mise à jour de votre compte Greenland ');
+                $message->from(env('MAIL_USERNAME'), 'Greenland');
             });
         }
 

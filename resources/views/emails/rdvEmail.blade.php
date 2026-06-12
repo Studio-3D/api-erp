@@ -68,7 +68,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🎯Rendez-vous Immobilier</h1>
+            <h1>🎯Rendez-vous Greenland</h1>
         </div>
 
         <div class="content">
@@ -104,8 +104,8 @@
         </div>
 
         <div class="footer">
-            &copy; {{ date('Y') }} Tracimo  - Votre partenaire de confiance<br>
-            <small>Contact : <a href="tracimmo.crm@gmail.com" style="color: #3498db; text-decoration: underline;">tracimmo.crm@gmail.com</a></small>
+            &copy; {{ date('Y') }} Greenland  - Votre partenaire de confiance<br>
+            <small>Contact : <a href="greenland.admin2026@gmail.com" style="color: #3498db; text-decoration: underline;">greenland.admin2026@gmail.com</a></small>
         </div>
     </div>
 </body>

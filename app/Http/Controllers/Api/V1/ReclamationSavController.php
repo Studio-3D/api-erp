@@ -218,7 +218,7 @@ class ReclamationSavController extends Controller
                     Mail::send('SAV.mail', $data, function($message) use($to_email) {
                         $message->to($to_email)
                             ->subject('Nouvelle Réclamation');
-                        $message->from(env('MAIL_USERNAME'), 'Immobilier');
+                        $message->from(env('MAIL_USERNAME'), 'Greenland');
                     });
                 } catch (\Exception $e) {
                     // Log email error but don't fail the whole operation
@@ -343,7 +343,7 @@ class ReclamationSavController extends Controller
                 Mail::send('SAV.nouvelle-reclamation-prestataire', $data, function($message) use($to_email, $prestataire, $rec) {
                     $message->to($to_email)
                         ->subject('Nouvelle Réclamation #' . $rec->id . ' - Intervention Requise');
-                    $message->from(env('MAIL_USERNAME'), 'Tracimo  - SAV');
+                    $message->from(env('MAIL_USERNAME'), 'Greenland  - SAV');
                 });
 
                 // Log email sent
@@ -465,7 +465,7 @@ class ReclamationSavController extends Controller
                         Mail::send('SAV.mail', $data, function($message) use($to_email){
                           $message->to($to_email)
                               ->subject ('Nouvlle Réclamation');
-                          $message->from('immo.immobilier02@gmail.com','Immobilier');
+                          $message->from('greenland.admin2026@gmail.com','Greenland');
 
                       });
                   } */
