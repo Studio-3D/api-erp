@@ -708,14 +708,14 @@ public function update_password(Request $request, $id)
             $user->password = Hash::make($request->new_password);
             $user->save();
 
-            // Update in temp database if exists
+            /* Update in temp database if exists
             DatabaseHelper::Config($user->societe_id);
             $user_temp = User::on('temp')->where('id', $user->id)->first();
 
             if ($user_temp) {
                 $user_temp->password = $user->password;
                 $user_temp->save();
-            }
+            }*/
 
             DB::connection()->commit();
 

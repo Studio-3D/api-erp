@@ -45,6 +45,7 @@ use App\Http\Helpers\FichierHelper;
 use App\Models\Societe;
 
 
+
 class BienController extends Controller
 {
     /**
